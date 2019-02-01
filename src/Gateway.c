@@ -47,10 +47,30 @@
  */
 
 
-#include "Server.h"
+#include "Gateway.h"
 
 
 int main(int argc, char **argv){
+
+    /* Initialize zlog */
+
+    if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0){
+
+        category_health_report = zlog_get_category(LOG_CATEGORY_HEALTH_REPORT);
+
+        if (!category_health_report)
+            zlog_fini();
+
+#ifdef debugging
+        category_debug = zlog_get_category(LOG_CATEGORY_DEBUG);
+        if (!category_debug)
+            zlog_fini();
+#endif
+    }
+
+#ifdef debugging
+    zlog_info(category_debug, "Gateway start running");
+#endif
 
     int return_value;
 
@@ -69,19 +89,24 @@ int main(int argc, char **argv){
 
     ready_to_work = true;
 
+
     /* Reading the config */
 
-    return_value = get_config( &config, CONFIG_FILE_NAME);
-
-    if(return_value != WORK_SUCCESSFULLY){
+    if(get_config( &config, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY){
+        zlog_error(category_health_report, "Opening config file Fail");
+#ifdef debugging
+        zlog_error(category_debug, "Opening config file Fail");
+#endif
         return E_OPEN_FILE;
     }
 
     /* Initialize the memory pool */
-    if(mp_init( &node_mempool, sizeof(struct BufferNode), SLOTS_IN_MEM_POOL)
+    if(mp_init( &node_mempool, sizeof(BufferNode), SLOTS_IN_MEM_POOL)
        != MEMORY_POOL_SUCCESS){
-        /* Error handling */
-        perror("E_MALLOC");
+        zlog_error(category_health_report, "Mempool Initialization Fail");
+#ifdef debugging
+        zlog_error(category_debug, "Mempool Initialization Fail");
+#endif
         return E_MALLOC;
     }
 
@@ -129,14 +154,26 @@ int main(int argc, char **argv){
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
+#ifdef debugging
+    zlog_info(category_debug, "Buffers initialize Success");
+#endif
+
     sort_priority( &priority_list_head);
 
     /* Initialize the Wifi connection */
     if(return_value = Wifi_init(config.IPaddress) != WORK_SUCCESSFULLY){
         /* Error handling and return */
         initialization_failed = true;
+        zlog_error(category_health_report, "Wi-Fi initialization Fail");
+#ifdef debugging
+        zlog_error(category_debug, "Wi-Fi initialization Fail");
+#endif
         return E_WIFI_INIT_FAIL;
     }
+
+#ifdef debugging
+    zlog_info(category_debug, "Wi-Fi initialization Success");
+#endif
 
     /* Create threads for sending and receiving data from and to LBeacons and
        the server. */
@@ -146,15 +183,29 @@ int main(int argc, char **argv){
 
     if(return_value != WORK_SUCCESSFULLY){
         initialization_failed = true;
+        zlog_error(category_health_report, "wifi_listener initialization Fail");
+#ifdef debugging
+        zlog_error(category_debug,  "wifi_listener initialization Fail");
+#endif
         return E_WIFI_INIT_FAIL;
     }
+
+#ifdef debugging
+    zlog_info(category_debug, "wifi_listener initialization Success");
+#endif
 
     NSI_initialization_complete = true;
 
     /* Create the thread of Communication Unit  */
     return_value = startThread( &CommUnit_thread, CommUnit_routine, NULL);
 
-    if(return_value != WORK_SUCCESSFULLY) return return_value;
+    if(return_value != WORK_SUCCESSFULLY){
+        zlog_error(category_health_report, "CommUnit_thread Create Fail");
+#ifdef debugging
+        zlog_error(category_debug, "CommUnit_thread Create Fail");
+#endif
+        return return_value;
+    }
 
     /* The while loop waiting for NSI, BHM and CommUnit to be ready */
     while(NSI_initialization_complete == false ||
@@ -165,20 +216,87 @@ int main(int argc, char **argv){
 
         if(initialization_failed == true){
             ready_to_work = false;
-            printf("NSI Fail\n");
+            zlog_error(category_health_report,
+                       "The Network or Buffer initialization Fail.");
+#ifdef debugging
+            zlog_error(category_debug,
+                       "The Network or Buffer initialization Fail.");
+#endif
             return E_INITIALIZATION_FAIL;
         }
     }
 
+    int current_time;
+
+    current_time = get_system_time();
+    if(config.is_polled_by_server == false){
+
+        /* Start counting down the time for polling the health reports and
+           tracking object data */
+        last_polling_LBeacon_for_HR_time = current_time;
+        last_polling_object_tracking_time = current_time;
+    }
+
     /* The while loop that keeps the program running */
     while(ready_to_work == true){
-        sleep(WAITING_TIME);
+
+        if(config.is_polled_by_server == false){
+
+            current_time = get_system_time();
+
+            /* If it is the time to poll health reports from LBeacons, get a
+               thread to do this work */
+            if(current_time - last_polling_object_tracking_time >
+               config.period_between_RFTOD){
+
+                /* Pull object tracking object data */
+                /* set the pkt type */
+                int send_type = ((from_gateway & 0x0f) << 4) +
+                                 (tracked_object_data & 0x0f);
+                char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
+                memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
+
+                temp[0] = (char)send_type;
+
+                /* broadcast to LBeacons */
+                beacon_broadcast(&LBeacon_address_map, temp,
+                                 MINIMUM_WIFI_MESSAGE_LENGTH);
+
+                /* Update the last_polling_object_tracking_time */
+                last_polling_object_tracking_time = current_time;
+            }
+            else if(current_time - last_polling_LBeacon_for_HR_time >
+                    config.period_between_RFHR){
+
+                /* Polling for health reports. */
+                /* set the pkt type */
+                int send_type = ((from_gateway & 0x0f) << 4) +
+                                 (health_report & 0x0f);
+                char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
+                memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
+
+                temp[0] = (char)send_type;
+
+                /* broadcast to LBeacons */
+                beacon_broadcast(&LBeacon_address_map, temp,
+                                 MINIMUM_WIFI_MESSAGE_LENGTH);
+
+                /* Update the last_polling_LBeacon_for_HR_time */
+                last_polling_LBeacon_for_HR_time = get_system_time();
+            }
+        }
+
         sleep(WAITING_TIME);
 
     }
 
     /* The program is going to be ended. Free the connection of Wifi */
     Wifi_free();
+
+#ifdef debugging
+    zlog_info(category_debug, "Gateway exit successfullly");
+#endif
+
     return WORK_SUCCESSFULLY;
 }
 
@@ -188,7 +306,7 @@ ErrorCode get_config(GatewayConfig *config, char *file_name) {
     FILE *file = fopen(file_name, "r");
     if (file == NULL) {
         /* Error handling */
-        /* zlog_info(category_health_report, errordesc[E_OPEN_FILE].message); */
+        zlog_error(category_health_report, "Open config file fail.");
         return E_OPEN_FILE;
     }
     else {
@@ -388,14 +506,6 @@ void* CommUnit_routine(){
     /* Set the initial time. */
     init_time = current_time;
 
-    if(config.is_polled_by_server == false){
-
-        /* Start counting down the time for polling the health reports and
-           tracking object data */
-        last_polling_LBeacon_for_HR_time = current_time;
-        last_polling_object_tracking_time = current_time;
-    }
-
     /* After all the buffers are initialized and the thread pool initialized,
        set the flag to true. */
     CommUnit_initialization_complete = true;
@@ -404,51 +514,6 @@ void* CommUnit_routine(){
     while(ready_to_work == true){
 
         current_time = get_system_time();
-
-        if(config.is_polled_by_server == false){
-
-            /* If it is the time to poll health reports from LBeacons, get a
-               thread to do this work */
-            if(current_time - last_polling_object_tracking_time >
-                       config.period_between_RFTOD){
-
-                /* Pull object tracking object data */
-                /* set the pkt type */
-                int send_type = ((from_gateway & 0x0f) << 4) +
-                                 (tracked_object_data & 0x0f);
-                char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
-                memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
-
-                temp[0] = (char)send_type;
-
-                /* broadcast to LBeacons */
-                beacon_broadcast(&LBeacon_address_map, temp,
-                                 MINIMUM_WIFI_MESSAGE_LENGTH);
-
-                /* Update the last_polling_object_tracking_time */
-                last_polling_object_tracking_time = current_time;
-            }
-            else if(current_time - last_polling_LBeacon_for_HR_time >
-                    config.period_between_RFHR){
-
-                /* Polling for health reports. */
-                /* set the pkt type */
-                int send_type = ((from_gateway & 0x0f) << 4) +
-                                 (health_report & 0x0f);
-                char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
-                memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
-
-                temp[0] = (char)send_type;
-
-                /* broadcast to LBeacons */
-                beacon_broadcast(&LBeacon_address_map, temp,
-                                 MINIMUM_WIFI_MESSAGE_LENGTH);
-
-                /* Update the last_polling_LBeacon_for_HR_time */
-                last_polling_LBeacon_for_HR_time = get_system_time();
-            }
-
-        }
 
         List_Entry *tmp;
         BufferListHead *current_head;
@@ -739,8 +804,8 @@ bool is_in_Address_Map(AddressMapArray *address_map, char *uuid){
 
     for(int n = 0;n < MAX_NUMBER_NODES;n ++){
 
-        if (address_map -> in_use[n] == true && strcmp(address_map ->
-            address_map_list[n].uuid, uuid) == 0){
+        if (address_map -> in_use[n] == true && strncmp(address_map ->
+            address_map_list[n].uuid, uuid, UUID_LENGTH) == 0){
                 return true;
         }
     }
@@ -761,8 +826,8 @@ bool beacon_join_request(AddressMapArray *address_map, char *uuid,
 
     if(is_in_Address_Map(address_map, uuid) == true){
         for(int n = 0 ; n < MAX_NUMBER_NODES ; n ++){
-            if(address_map -> in_use[n] == true && strcmp(address_map ->
-               address_map_list[n].uuid, uuid) == 0){
+            if(address_map -> in_use[n] == true && strncmp(address_map ->
+               address_map_list[n].uuid, uuid, UUID_LENGTH) == 0){
                 address_map -> address_map_list[n].last_request_time =
                                                               get_system_time();
                 break;
@@ -843,7 +908,7 @@ void Wifi_free(){
 }
 
 
-void* process_wifi_send(void *_buffer_list_head){
+void *process_wifi_send(void *_buffer_list_head){
 
     BufferListHead *buffer_list_head = (BufferListHead *)_buffer_list_head;
 
@@ -880,7 +945,7 @@ void *process_wifi_receive(){
 
     while (ready_to_work == true) {
 
-        struct BufferNode *new_node;
+        BufferNode *new_node;
 
         sPkt temppkt = udp_getrecv( &udp_config);
 
@@ -906,7 +971,6 @@ void *process_wifi_receive(){
 
             if(new_node == NULL){
                 /* Alloc memory failed, error handling. */
-                printf("E_MALLOC\n");
             }
             else{
                 /* Initialize the entry of the buffer node */
@@ -1005,7 +1069,7 @@ void *process_wifi_receive(){
                         break;
 
                     default:
-                        mp_free(&node_mempool, new_node);
+                        mp_free( &node_mempool, new_node);
                         break;
                 }
             }
