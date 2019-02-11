@@ -252,7 +252,6 @@ int SQL_query_registered_gateways(void* db,
 
     memset(result_buf, 0, sizeof(result_buf));
     while((rc = sqlite3_step(stmt)) == SQLITE_ROW){
-        //printf("%s is %d\n", sqlite3_column_text(stmt, 0), sqlite3_column_int(stmt, 1));
         count++;
 
         /* Ensure the SQL query result does not exceed the buffer
