@@ -124,8 +124,6 @@ typedef struct {
     coordinates, and location description. */
 typedef struct {
 
-    char uuid[UUID_LENGTH];
-
     /* network address of wifi link to the LBeacon*/
     char net_address[NETWORK_ADDR_LENGTH];
 
@@ -385,18 +383,18 @@ void init_Address_Map(AddressMapArray *address_map);
 /*
   is_in_Address_Map:
 
-     This function check whether the uuid is in Gateway_address_map.
+     This function check whether the network address is in Gateway_address_map.
 
   Parameters:
 
      address_map - The head of the AddressMap.
-     uuid - the uuid we decide to compare.
+     net_address - the network address we decide to compare.
 
   Return value:
 
      bool: If return true means in the address map, else false.
  */
-bool is_in_Address_Map(AddressMapArray *address_map, char *uuid);
+bool is_in_Address_Map(AddressMapArray *address_map, char *net_address);
 
 
 /*
@@ -409,7 +407,6 @@ bool is_in_Address_Map(AddressMapArray *address_map, char *uuid);
   Parameters:
 
      address_map - The head of the AddressMap.
-     uuid - The UUID of the LBeacon
      address - The mac address of the LBeacon IP.
 
   Return value:
@@ -418,7 +415,7 @@ bool is_in_Address_Map(AddressMapArray *address_map, char *uuid);
             false : Fail to join
 
  */
-bool Gateway_join_request(AddressMapArray *address_map, char *uuid, char *address
+bool Gateway_join_request(AddressMapArray *address_map, char *address
                          );
 
 

@@ -590,6 +590,8 @@ void* CommUnit_routine(){
                                                  current_head,
                                                  current_head ->
                                                  priority_nice);
+        }else{
+            sleep(WAITING_TIME);
         }
 
         /* Update the init_time */
@@ -632,7 +634,7 @@ void *NSI_routine(void *_buffer_list_head){
 
         /* Put the address into Gateway_address_map and set the return pkt type
          */
-        if (Gateway_join_request(&Gateway_address_map, current_uuid, temp ->
+        if (Gateway_join_request(&Gateway_address_map, temp ->
                                 net_address) == true)
             send_type += join_request_ack & 0x0f;
         else
@@ -731,12 +733,13 @@ void init_Address_Map(AddressMapArray *address_map){
 }
 
 
-bool is_in_Address_Map(AddressMapArray *address_map, char *uuid){
+bool is_in_Address_Map(AddressMapArray *address_map, char *net_address){
 
     for(int n = 0;n < MAX_NUMBER_NODES;n ++){
 
         if (address_map -> in_use[n] == true && strncmp(address_map ->
-            address_map_list[n].uuid, uuid, UUID_LENGTH) == 0){
+            address_map_list[n].net_address, net_address, NETWORK_ADDR_LENGTH)
+            == 0){
                 return true;
         }
     }
@@ -744,8 +747,7 @@ bool is_in_Address_Map(AddressMapArray *address_map, char *uuid){
 }
 
 
-bool Gateway_join_request(AddressMapArray *address_map, char *uuid,
-                         char *address){
+bool Gateway_join_request(AddressMapArray *address_map, char *address){
 
     pthread_mutex_lock( &address_map -> list_lock);
     /* Copy all the necessary information received from the LBeacon to the
@@ -755,10 +757,11 @@ bool Gateway_join_request(AddressMapArray *address_map, char *uuid,
        joined LBeacon. */
     int not_in_use = -1;
 
-    if(is_in_Address_Map(address_map, uuid) == true){
+    if(is_in_Address_Map(address_map, address) == true){
         for(int n = 0 ; n < MAX_NUMBER_NODES ; n ++){
             if(address_map -> in_use[n] == true && strncmp(address_map ->
-               address_map_list[n].uuid, uuid, UUID_LENGTH) == 0){
+               address_map_list[n].net_address, address, NETWORK_ADDR_LENGTH) ==
+               0){
                 address_map -> address_map_list[n].last_request_time =
                                                               get_system_time();
                 break;
@@ -782,7 +785,6 @@ bool Gateway_join_request(AddressMapArray *address_map, char *uuid,
 
         address_map -> in_use[not_in_use] = true;
 
-        strncpy(tmp -> uuid, uuid, UUID_LENGTH);
         strncpy(tmp -> net_address, address, NETWORK_ADDR_LENGTH);
         pthread_mutex_unlock( &address_map -> list_lock);
         return true;
