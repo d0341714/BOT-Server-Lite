@@ -1,8 +1,8 @@
 # Server
 #---------------------------------------------------------------------------
 CC = gcc
-OBJS =  LinkedList.o Mempool.o thpool.o pkt_Queue.o UDP_API.o
-CFLAGS = -std=gnu99 -lrt -lpthread -lzlog
+OBJS =  LinkedList.o Mempool.o thpool.o pkt_Queue.o UDP_API.o SqlWrapper.o
+CFLAGS = -std=gnu99 -lrt -lpthread -lzlog -lsqlite3
 LIB = -L /usr/local/lib
 #---------------------------------------------------------------------------
 all: Server.out
@@ -18,5 +18,7 @@ UDP_API.o: UDP_API.c UDP_API.h pkt_Queue.o
 	$(CC) $(CFLAGS) UDP_API.c -c
 pkt_Queue.o: pkt_Queue.c pkt_Queue.h
 	$(CC) $(CFLAGS) pkt_Queue.c -c
+SqlWrapper.o: SqlWrapper.c SqlWrapper.h
+	$(CC) $(CFLAGS) SqlWrapper.c -c
 clean:
 	rm -f *.o *.out *.h.gch
