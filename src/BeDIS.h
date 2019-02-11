@@ -83,6 +83,16 @@
 /* Parameter that marks the start of fracton part of float number */
 #define FRACTION_DOT "."
 
+/* Parameter that marks the separator of differnt records communicated with
+SQL wrapper API
+*/
+#define DELIMITER_SEMICOLON ";"
+
+/* Parameter that marks the separator of different information within each
+record through SQL wrapper API
+*/
+#define DELIMITER_COLON ":"
+
 /* Maximum number of characters in each line of config file */
 #define CONFIG_BUFFER_SIZE 64
 
@@ -109,6 +119,9 @@
 
 /* Maximum length of message to be sent over WiFi in bytes */
 #define WIFI_MESSAGE_LENGTH 4096
+
+/* Maximum length of message to communicate with SQL wrapper API in bytes */
+#define SQL_TEMP_BUFFER_LENGTH 4096
 
 /* Minimum Wi-Fi message size (One byte for data type and one byte for a space) */
 #define MINIMUM_WIFI_MESSAGE_LENGTH 2
@@ -174,7 +187,8 @@ typedef enum _ErrorCode{
     E_START_TRACKING_THREAD = 34,
     E_REG_SIG_HANDLER = 37,
     E_JOIN_THREAD = 38,
-
+    E_SQL_PARSE = 39,
+    E_SQL_RESULT_EXCEED = 40,
 } ErrorCode;
 
 typedef struct {

@@ -1,8 +1,7 @@
 #ifndef SQL_WRAPPER_H
 #define SQL_WRAPPER_H
 
-#include <stdio.h>
-#include <stdlib.h>
+#include "BeDIS.h"
 
 /* SQL_callback
 
@@ -19,7 +18,7 @@
 
       int: If return 0, everything work successful.
            If not 0, Something wrong.
- */
+*/
 static int SQL_callback(void *NotUsed, int argc, char **argv, char **azColName);
 
 /* SQL_execute
@@ -35,8 +34,53 @@ static int SQL_callback(void *NotUsed, int argc, char **argv, char **azColName);
 
       int: If return 0, everything work successful.
            If not 0, Something wrong.
- */
-int SQL_execute(void* db, char* sql_statement);
+*/
+static int SQL_execute(void* db, char* sql_statement);
+
+/* SQL_begin_transaction
+
+     Begin transaction of SQL database operations.
+
+  Parameter:
+
+      db - the pointer pointing to database
+
+  Return Value:
+
+      int: If return 0, everything work successful.
+           If not 0, Something wrong.
+*/
+static int SQL_begin_transaction(void* db);
+
+/* SQL_end_transaction
+
+     End transaction of SQL database operations.
+
+  Parameter:
+
+      db - the pointer pointing to database
+
+  Return Value:
+
+      int: If return 0, everything work successful.
+           If not 0, Something wrong.
+*/
+static int SQL_end_transaction(void* db);
+
+/* SQL_rollback_transaction
+
+    Rollback transaction of SQL database operations.
+
+  Parameter:
+
+      db - the pointer pointing to database
+
+  Return Value:
+
+      int: If return 0, everything work successful.
+           If not 0, Something wrong.
+*/
+static int SQL_rollback_transaction(void* db);
 
 /* SQL_open_database_connection
 
@@ -52,8 +96,8 @@ int SQL_execute(void* db, char* sql_statement);
 
       int: If return 0, everything work successful.
            If not 0, Something wrong.
- */
-int SQL_open_database_connection(char* db_filepath, void* db);
+*/
+int SQL_open_database_connection(char* db_filepath, void** db);
 
 /* SQL_close_database_connection
 
@@ -67,38 +111,8 @@ int SQL_open_database_connection(char* db_filepath, void* db);
 
       int: If return 0, everything work successful.
            If not 0, Something wrong.
- */
+*/
 int SQL_close_database_connection(void* db);
-
-/* SQL_begin_transaction
-
-     Begin transaction of SQL database operations.
-
-  Parameter:
-
-      db - the pointer pointing to database
-
-  Return Value:
-
-      int: If return 0, everything work successful.
-           If not 0, Something wrong.
- */
-int SQL_begin_transaction(void* db);
-
-/* SQL_end_transaction
-
-     End transaction of SQL database operations.
-
-  Parameter:
-
-      db - the pointer pointing to database
-
-  Return Value:
-
-      int: If return 0, everything work successful.
-           If not 0, Something wrong.
- */
-int SQL_end_transaction(void* db);
 
 /* SQL_update_gateway_registration_status
 
@@ -119,7 +133,7 @@ int SQL_end_transaction(void* db);
 
       int: If return 0, everything work successful.
            If not 0, Something wrong.
- */
+*/
 int SQL_update_gateway_registration_status(void* db, char* buf, size_t buf_len);
 
 /* SQL_update_lbeacon_registration_status
@@ -142,7 +156,7 @@ int SQL_update_gateway_registration_status(void* db, char* buf, size_t buf_len);
 
       int: If return 0, everything work successful.
            If not 0, Something wrong.
- */
+*/
 int SQL_update_lbeacon_registration_status(void* db, char* buf, size_t buf_len);
 
 /* SQL_query_registered_gateways
@@ -168,7 +182,7 @@ int SQL_update_lbeacon_registration_status(void* db, char* buf, size_t buf_len);
 
       int: If return 0, everything work successful.
            If not 0, Something wrong.
- */
+*/
 int SQL_query_registered_gateways(void* db,
                                   int health_status,
                                   char* output,
