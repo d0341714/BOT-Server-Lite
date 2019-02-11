@@ -2,7 +2,7 @@
 
 all: clean zlog Gateway.out
 
-Gateway.out:
+Server.out:
 	cd src && make clean
 	cd src && make all
 zlog:

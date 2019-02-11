@@ -12,16 +12,16 @@
 
   File Name:
 
-     Gateway.h
+     Server.h
 
   File Description:
 
      This is the header file containing the declarations of functions and
-     variables used in the Gateway.c file.
+     variables used in the Server.c file.
 
   Version:
 
-     1.0, 20190117
+     1.0, 20190201
 
   Abstract:
 
@@ -56,7 +56,7 @@
 /* Gateway config file location and defining of config file. */
 
 /* File path of the config file of the Gateway */
-#define CONFIG_FILE_NAME "../config/gateway.conf"
+#define CONFIG_FILE_NAME "../config/server.conf"
 
 /* File path of the config file of the zlog */
 #define ZLOG_CONFIG_FILE_NAME "../config/zlog.conf"
@@ -82,9 +82,6 @@
 
 /* The configuration file structure */
 typedef struct {
-
-    /* If polling from gateway set false(0) else from the server set true(1) */
-    bool is_polled_by_server;
 
     /* The IP address of server for WiFi netwok connection. */
     char IPaddress[NETWORK_ADDR_LENGTH];
@@ -120,7 +117,7 @@ typedef struct {
     int normal_priority;
     int low_priority;
 
-} GatewayConfig;
+} ServerConfig;
 
 
 /*  A struct linking network address assigned to a LBeacon to its UUID,
@@ -191,7 +188,7 @@ typedef struct {
 /* Global variables */
 
 /* A Gateway config struct stored config from the config file */
-GatewayConfig config;
+ServerConfig config;
 
 /* Struct for storing necessary objects for Wifi connection */
 sudp_config udp_config;
@@ -200,16 +197,13 @@ sudp_config udp_config;
 Memory_Pool node_mempool;
 
 /* A list of address maps */
-AddressMapArray LBeacon_address_map;
+AddressMapArray Gateway_address_map;
 
-/* For data from LBeacons to be send to server */
-BufferListHead LBeacon_receive_buffer_list_head;
-
-/* For polling tracked object data from Lbeacons and msgs define by BHM */
-BufferListHead command_msg_buffer_list_head;
+/* For data from Gateway to be send to server */
+BufferListHead Gateway_receive_buffer_list_head;
 
 /* For time critical messages list head */
-BufferListHead time_critical_LBeacon_receive_buffer_list_head;
+BufferListHead time_critical_Gateway_receive_buffer_list_head;
 
 /* For beacon join request */
 BufferListHead NSI_send_buffer_list_head;
@@ -247,7 +241,7 @@ int last_polling_object_tracking_time;
   get_config:
 
      This function reads the specified config file line by line until the
-     end of file and copies the data in the lines into the GatewayConfig
+     end of file and copies the data in the lines into the ServerConfig
      struct global variable.
 
   Parameters:
@@ -256,9 +250,9 @@ int last_polling_object_tracking_time;
 
   Return value:
 
-     config - GatewayConfig struct
+     config - ServerConfig struct
  */
-ErrorCode get_config(GatewayConfig *config, char *file_name);
+ErrorCode get_config(ServerConfig *config, char *file_name);
 
 
 /*
@@ -355,25 +349,7 @@ void *BHM_routine(void *_buffer_list_head);
 
 
 /*
-  LBeacon_routine:
-
-     This function is executed by worker threads when they process the buffer
-     nodes in LBeacon_receive_buffer_list and send to the server directly.
-
-  Parameters:
-
-     _buffer_list_head - A pointer of the buffer to be modified.
-
-  Return value:
-
-     None
-
- */
-void *LBeacon_routine(void *_buffer_list_head);
-
-
-/*
-  Server_routine:
+  Gateway_routine:
 
      This function is executed by worker threads when they process the buffer
      nodes in Command_msg_buffer_list and broadcast to LBeacons.
@@ -387,7 +363,7 @@ void *LBeacon_routine(void *_buffer_list_head);
      None
 
  */
-void *Server_routine(void *_buffer_list_head);
+void *Gateway_routine(void *_buffer_list_head);
 
 
 /*
@@ -409,7 +385,7 @@ void init_Address_Map(AddressMapArray *address_map);
 /*
   is_in_Address_Map:
 
-     This function check whether the uuid is in LBeacon_address_map.
+     This function check whether the uuid is in Gateway_address_map.
 
   Parameters:
 
@@ -424,7 +400,7 @@ bool is_in_Address_Map(AddressMapArray *address_map, char *uuid);
 
 
 /*
-  beacon_join_request:
+  Gateway_join_request:
 
      This function is executed when a beacon sends a command to join the gateway
      when executed, it fills the AddressMap with the inputs and sets the
@@ -442,16 +418,16 @@ bool is_in_Address_Map(AddressMapArray *address_map, char *uuid);
             false : Fail to join
 
  */
-bool beacon_join_request(AddressMapArray *address_map, char *uuid, char *address
+bool Gateway_join_request(AddressMapArray *address_map, char *uuid, char *address
                          );
 
 
 /*
-  beacon_brocast:
+  Gateway_Broadcast:
 
      This function is executed when a command needs to be broadcast to LBeacons.
      When called, this function sends msg to all LBeacons registered in the
-     LBeacon_address_map.
+     Gateway_address_map.
 
   Parameters:
      address_map - The head of the AddressMap.
@@ -463,7 +439,7 @@ bool beacon_join_request(AddressMapArray *address_map, char *uuid, char *address
      None
 
  */
-void beacon_broadcast(AddressMapArray *address_map, char *msg, int size);
+void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size);
 
 
 /*

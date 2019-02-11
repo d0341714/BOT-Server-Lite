@@ -12,15 +12,13 @@
 
   File Name:
 
-     Gateway.c
+     Server.c
 
   File Description:
 
      This file contains programs to transmit and receive data to and from
-     LBeacon and the sever through Wi-Fi network from and to the Gateway, and
-     programs executed by network setup and initialization, Beacon health
-     monitor and comminication unit. Each gateway is the root of a star network
-     of LBeacons.
+     Gateway through Wi-Fi network, and programs executed by network setup and
+     initialization, Beacon health monitor and comminication unit.
 
   Version:
 
@@ -47,7 +45,7 @@
  */
 
 
-#include "Gateway.h"
+#include "Server.h"
 
 
 int main(int argc, char **argv){
@@ -69,7 +67,7 @@ int main(int argc, char **argv){
     }
 
 #ifdef debugging
-    zlog_info(category_debug, "Gateway start running");
+    zlog_info(category_debug, "Server start running");
 #endif
 
     int return_value;
@@ -83,7 +81,7 @@ int main(int argc, char **argv){
     /* Reset all flags */
     NSI_initialization_complete      = false;
     CommUnit_initialization_complete = false;
-    BHM_initialization_complete      = false;
+    BHM_initialization_complete      = true; /* TEMP true for skip BHM check*/
 
     initialization_failed = false;
 
@@ -113,25 +111,20 @@ int main(int argc, char **argv){
     /* Initialize buffer_list_heads and add to the head in to the priority list.
      */
 
-    init_Address_Map( &LBeacon_address_map);
+    init_Address_Map( &Gateway_address_map);
 
     init_buffer( &priority_list_head, (void *) sort_priority,
                 config.high_priority);
 
-    init_buffer( &time_critical_LBeacon_receive_buffer_list_head,
-                (void *) LBeacon_routine, config.high_priority);
-    insert_list_tail( &time_critical_LBeacon_receive_buffer_list_head
+    init_buffer( &time_critical_Gateway_receive_buffer_list_head,
+                (void *) Gateway_routine, config.normal_priority);
+    insert_list_tail( &time_critical_Gateway_receive_buffer_list_head
                      .priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
-    init_buffer( &command_msg_buffer_list_head,
-                (void *) Server_routine, config.normal_priority);
-    insert_list_tail( &command_msg_buffer_list_head.priority_list_entry,
-                      &priority_list_head.priority_list_entry);
-
-    init_buffer( &LBeacon_receive_buffer_list_head,
-                (void *) LBeacon_routine, config.high_priority);
-    insert_list_tail( &LBeacon_receive_buffer_list_head.priority_list_entry,
+    init_buffer( &Gateway_receive_buffer_list_head,
+                (void *) Gateway_routine, config.normal_priority);
+    insert_list_tail( &Gateway_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &NSI_send_buffer_list_head,
@@ -145,12 +138,12 @@ int main(int argc, char **argv){
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &BHM_receive_buffer_list_head,
-                (void *) BHM_routine, config.low_priority);
+                (void *) BHM_routine, config.normal_priority);
     insert_list_tail( &BHM_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &BHM_send_buffer_list_head,
-                (void *) process_wifi_send, config.low_priority);
+                (void *) process_wifi_send, config.normal_priority);
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
@@ -229,61 +222,52 @@ int main(int argc, char **argv){
     int current_time;
 
     current_time = get_system_time();
-    if(config.is_polled_by_server == false){
-
-        /* Start counting down the time for polling the health reports and
-           tracking object data */
-        last_polling_LBeacon_for_HR_time = current_time;
-        last_polling_object_tracking_time = current_time;
-    }
 
     /* The while loop that keeps the program running */
     while(ready_to_work == true){
 
-        if(config.is_polled_by_server == false){
+        current_time = get_system_time();
 
-            current_time = get_system_time();
+        /* If it is the time to poll health reports from LBeacons, get a
+           thread to do this work */
+        if(current_time - last_polling_object_tracking_time >
+           config.period_between_RFTOD){
 
-            /* If it is the time to poll health reports from LBeacons, get a
-               thread to do this work */
-            if(current_time - last_polling_object_tracking_time >
-               config.period_between_RFTOD){
+            /* Pull object tracking object data */
+            /* set the pkt type */
+            int send_type = ((from_server & 0x0f) << 4) +
+                             (poll_for_tracked_object_data_from_server &
+                             0x0f);
+            char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
+            memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
-                /* Pull object tracking object data */
-                /* set the pkt type */
-                int send_type = ((from_gateway & 0x0f) << 4) +
-                                 (tracked_object_data & 0x0f);
-                char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
-                memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
+            temp[0] = (char)send_type;
 
-                temp[0] = (char)send_type;
+            /* broadcast to LBeacons */
+            Gateway_Broadcast(&Gateway_address_map, temp,
+                             MINIMUM_WIFI_MESSAGE_LENGTH);
 
-                /* broadcast to LBeacons */
-                beacon_broadcast(&LBeacon_address_map, temp,
-                                 MINIMUM_WIFI_MESSAGE_LENGTH);
+            /* Update the last_polling_object_tracking_time */
+            last_polling_object_tracking_time = current_time;
+        }
+        else if(current_time - last_polling_LBeacon_for_HR_time >
+                config.period_between_RFHR){
 
-                /* Update the last_polling_object_tracking_time */
-                last_polling_object_tracking_time = current_time;
-            }
-            else if(current_time - last_polling_LBeacon_for_HR_time >
-                    config.period_between_RFHR){
+            /* Polling for health reports. */
+            /* set the pkt type */
+            int send_type = ((from_server & 0x0f) << 4) +
+                             (RFHR_from_server & 0x0f);
+            char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
+            memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
-                /* Polling for health reports. */
-                /* set the pkt type */
-                int send_type = ((from_gateway & 0x0f) << 4) +
-                                 (health_report & 0x0f);
-                char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
-                memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
+            temp[0] = (char)send_type;
 
-                temp[0] = (char)send_type;
+            /* broadcast to LBeacons */
+            Gateway_Broadcast(&Gateway_address_map, temp,
+                             MINIMUM_WIFI_MESSAGE_LENGTH);
 
-                /* broadcast to LBeacons */
-                beacon_broadcast(&LBeacon_address_map, temp,
-                                 MINIMUM_WIFI_MESSAGE_LENGTH);
-
-                /* Update the last_polling_LBeacon_for_HR_time */
-                last_polling_LBeacon_for_HR_time = get_system_time();
-            }
+            /* Update the last_polling_LBeacon_for_HR_time */
+            last_polling_LBeacon_for_HR_time = get_system_time();
         }
 
         sleep(WAITING_TIME);
@@ -294,14 +278,14 @@ int main(int argc, char **argv){
     Wifi_free();
 
 #ifdef debugging
-    zlog_info(category_debug, "Gateway exit successfullly");
+    zlog_info(category_debug, "Server exit successfullly");
 #endif
 
     return WORK_SUCCESSFULLY;
 }
 
 
-ErrorCode get_config(GatewayConfig *config, char *file_name) {
+ErrorCode get_config(ServerConfig *config, char *file_name) {
 
     FILE *file = fopen(file_name, "r");
     if (file == NULL) {
@@ -315,12 +299,6 @@ ErrorCode get_config(GatewayConfig *config, char *file_name) {
         char  config_setting[CONFIG_BUFFER_SIZE];
         char *config_message = NULL;
         int config_message_size = 0;
-
-        fgets(config_setting, sizeof(config_setting), file);
-        config_message = strstr((char *)config_setting, DELIMITER);
-        config_message = config_message + strlen(DELIMITER);
-        trim_string_tail(config_message);
-        config->is_polled_by_server = atoi(config_message);
 
         /* Keep reading each line and store into the config struct */
         fgets(config_setting, sizeof(config_setting), file);
@@ -357,16 +335,6 @@ ErrorCode get_config(GatewayConfig *config, char *file_name) {
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->number_worker_threads = atoi(config_message);
-
-        fgets(config_setting, sizeof(config_setting), file);
-        config_message = strstr((char *)config_setting, DELIMITER);
-        config_message = config_message + strlen(DELIMITER);
-        trim_string_tail(config_message);
-        if(config_message[strlen(config_message)-1] == '\n')
-            config_message_size = strlen(config_message) - 1;
-        else
-            config_message_size = strlen(config_message);
-        memcpy(config->server_ip, config_message, config_message_size);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -519,7 +487,6 @@ void* CommUnit_routine(){
         BufferListHead *current_head;
         bool is_empty_list_head;
 
-
         /* In the normal situation, the scanning starts from the high priority
            to lower priority. If the timer expired for MAX_STARVATION_TIME,
            reverse the scanning process */
@@ -661,11 +628,11 @@ void *NSI_routine(void *_buffer_list_head){
 
         memcpy(current_uuid, &temp->content[2], UUID_LENGTH);
 
-        int send_type = (from_gateway & 0x0f)<<4;
+        int send_type = (from_server & 0x0f)<<4;
 
-        /* Put the address into LBeacon_address_map and set the return pkt type
+        /* Put the address into Gateway_address_map and set the return pkt type
          */
-        if (beacon_join_request(&LBeacon_address_map, current_uuid, temp ->
+        if (Gateway_join_request(&Gateway_address_map, current_uuid, temp ->
                                 net_address) == true)
             send_type += join_request_ack & 0x0f;
         else
@@ -709,10 +676,9 @@ void *BHM_routine(void *_buffer_list_head){
 
         temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
 
-        /* TODO Make a buffer to merge all the HR pkt and wait for polling. */
+        /* TODO  */
 
-        insert_list_tail( &temp -> buffer_entry,
-                          &BHM_send_buffer_list_head.list_head);
+        mp_free( &node_mempool, temp);
     }
     else
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
@@ -721,7 +687,7 @@ void *BHM_routine(void *_buffer_list_head){
 }
 
 
-void *LBeacon_routine(void *_buffer_list_head){
+void *Gateway_routine(void *_buffer_list_head){
 
     BufferListHead *buffer_list_head = (BufferListHead *)_buffer_list_head;
 
@@ -742,42 +708,7 @@ void *LBeacon_routine(void *_buffer_list_head){
 
         temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
 
-        /* Add the content that to be sent to the server */
-        udp_addpkt( &udp_config, config.server_ip, temp -> content,
-                    temp -> content_size);
-
-        mp_free( &node_mempool, temp);
-    }
-    else
-        pthread_mutex_unlock( &buffer_list_head -> list_lock);
-
-    return (void* )NULL;
-}
-
-
-void *Server_routine(void *_buffer_list_head){
-
-    BufferListHead *buffer_list_head = (BufferListHead *)_buffer_list_head;
-
-    /* Create a temporary node and set as the head */
-    struct List_Entry *temp_list_entry_pointers;
-
-    BufferNode *temp;
-
-    pthread_mutex_lock( &buffer_list_head -> list_lock);
-
-    if(is_entry_list_empty( &buffer_list_head -> list_head) == false){
-
-        temp_list_entry_pointers = buffer_list_head -> list_head.next;
-
-        remove_list_node(temp_list_entry_pointers);
-
-        pthread_mutex_unlock( &buffer_list_head -> list_lock);
-
-        temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
-
-        beacon_broadcast(&LBeacon_address_map, temp -> content, temp ->
-                         content_size);
+        /* TODO  */
 
         mp_free( &node_mempool, temp);
     }
@@ -813,7 +744,7 @@ bool is_in_Address_Map(AddressMapArray *address_map, char *uuid){
 }
 
 
-bool beacon_join_request(AddressMapArray *address_map, char *uuid,
+bool Gateway_join_request(AddressMapArray *address_map, char *uuid,
                          char *address){
 
     pthread_mutex_lock( &address_map -> list_lock);
@@ -865,7 +796,7 @@ bool beacon_join_request(AddressMapArray *address_map, char *uuid,
 }
 
 
-void beacon_broadcast(AddressMapArray *address_map, char *msg, int size){
+void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size){
 
     pthread_mutex_lock( &address_map -> list_lock);
 
@@ -994,43 +925,8 @@ void *process_wifi_receive(){
                 /* Insert the node to the specified buffer, and release
                    list_lock. */
                 switch (pkt_direction) {
-                    case from_server:
 
-                        switch (pkt_type) {
-
-                            case RFHR_from_server:
-                                last_polling_LBeacon_for_HR_time = current_time;
-                                pthread_mutex_lock(&command_msg_buffer_list_head
-                                                   .list_lock);
-                                insert_list_tail(&new_node -> buffer_entry,
-                                                 &command_msg_buffer_list_head
-                                                 .list_head);
-                                pthread_mutex_unlock(
-                                       &command_msg_buffer_list_head.list_lock);
-
-                                break;
-
-                            case poll_for_tracked_object_data_from_server:
-                                last_polling_object_tracking_time= current_time;
-                                pthread_mutex_lock(&command_msg_buffer_list_head
-                                                   .list_lock);
-                                insert_list_tail( &new_node -> buffer_entry,
-                                       &command_msg_buffer_list_head.list_head);
-                                pthread_mutex_unlock(
-                                       &command_msg_buffer_list_head.list_lock);
-                                break;
-
-                            case data_for_LBeacon:
-                                mp_free(&node_mempool, new_node);
-                                break;
-
-                            default:
-                                mp_free(&node_mempool, new_node);
-                                break;
-                        }
-                        break;
-
-                    case from_beacon:
+                    case from_gateway:
 
                         switch (pkt_type) {
 
@@ -1046,11 +942,11 @@ void *process_wifi_receive(){
 
                             case tracked_object_data:
                                 pthread_mutex_lock(
-                                   &LBeacon_receive_buffer_list_head.list_lock);
+                                   &Gateway_receive_buffer_list_head.list_lock);
                                 insert_list_tail( &new_node -> buffer_entry,
-                                   &LBeacon_receive_buffer_list_head.list_head);
+                                   &Gateway_receive_buffer_list_head.list_head);
                                 pthread_mutex_unlock(
-                                   &LBeacon_receive_buffer_list_head.list_lock);
+                                   &Gateway_receive_buffer_list_head.list_lock);
                                 break;
 
                             case health_report:

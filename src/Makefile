@@ -1,13 +1,13 @@
-# Gateway
+# Server
 #---------------------------------------------------------------------------
 CC = gcc
 OBJS =  LinkedList.o Mempool.o thpool.o pkt_Queue.o UDP_API.o
 CFLAGS = -std=gnu99 -lrt -lpthread -lzlog
 LIB = -L /usr/local/lib
 #---------------------------------------------------------------------------
-all: Gateway.out
-Gateway.out: $(OBJS) BeDIS.h BeDIS.c Gateway.h Gateway.c
-	$(CC) $(CFLAGS) $(OBJS) $(LIB) BeDIS.c Gateway.c -o ../bin/Gateway.out
+all: Server.out
+Server.out: $(OBJS) BeDIS.h BeDIS.c Server.h Server.c
+	$(CC) $(CFLAGS) $(OBJS) $(LIB) BeDIS.c Server.c -o ../bin/Server.out
 LinkedList.o: LinkedList.c LinkedList.h
 	$(CC) $(CFLAGS) LinkedList.c -c
 thpool.o: thpool.c thpool.h
