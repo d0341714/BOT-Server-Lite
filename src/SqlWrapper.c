@@ -13,88 +13,94 @@ static int SQL_callback(void *NotUsed,
     return 0;
 }
 
-static int SQL_execute(void* db, char* sql_statement){
+static ErrorCode SQL_execute(void* db, char* sql_statement){
     sqlite3 *sql_db = (sqlite3*) db;
     char *zErrMsg = NULL;
-    int rc;
+    int ret_val;
 
     /* Execute SQL statement */
     printf("SQL command=[%s]\n", sql_statement);
-    rc = sqlite3_exec(sql_db, sql_statement, SQL_callback, 0, &zErrMsg);
-    if( rc != SQLITE_OK ){
-        fprintf(stderr, "SQL error: [%d] [%s]\n", rc, zErrMsg);
+    ret_val = sqlite3_exec(sql_db, sql_statement, SQL_callback, 0, &zErrMsg);
+    if( ret_val != SQLITE_OK ){
+        fprintf(stderr, "SQL error: [%d] [%s]\n", ret_val, zErrMsg);
         sqlite3_free(zErrMsg);
+
+        return E_SQL_EXECUTE;
     }else{
         fprintf(stdout, "Records created successfully\n");
     }
+
+    return WORK_SUCCESSFULLY;
 }
 
-static int SQL_begin_transaction(void* db){
-    int rc = 0;
+static ErrorCode SQL_begin_transaction(void* db){
+    int ret_val;
     char *sql;
 
     /* Create SQL statement */
     sql = "BEGIN TRANSACTION;";
 
     /* Execute SQL statement */
-    rc = SQL_execute(db, sql);
+    ret_val = SQL_execute(db, sql);
 
-    return rc;
+    return WORK_SUCCESSFULLY;
 }
 
-static int SQL_end_transaction(void* db){
-    int rc = 0;
+static ErrorCode SQL_end_transaction(void* db){
+    int ret_val = 0;
     char *sql;
 
     /* Create SQL statement */
     sql = "END TRANSACTION;";
 
     /* Execute SQL statement */
-    rc = SQL_execute(db, sql);
+    ret_val = SQL_execute(db, sql);
 
-    return rc;
+    return WORK_SUCCESSFULLY;
 }
 
-static int SQL_rollback_transaction(void* db){
-    int rc = 0;
+static ErrorCode SQL_rollback_transaction(void* db){
+    int ret_val = 0;
     char *sql;
 
     /* Create SQL statement */
     sql = "ROLLBACK;";
 
     /* Execute SQL statement */
-    rc = SQL_execute(db, sql);
+    ret_val = SQL_execute(db, sql);
 
-    return rc;
+    return WORK_SUCCESSFULLY;
 }
 
-
-int SQL_open_database_connection(char* db_filepath, void** db){
+ErrorCode SQL_open_database_connection(char* db_filepath, void** db){
     sqlite3 **sql_db = (sqlite3**)db;
-    int rc = sqlite3_open(db_filepath, sql_db);
+    int ret_val = sqlite3_open(db_filepath, sql_db);
 
-    if(rc){
+    if(ret_val){
         fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(*sql_db));
+        return E_SQL_OPEN_DATABASE;
     }else{
         fprintf(stderr, "Opened database successfully\n");
     }
-    return rc;
+    return WORK_SUCCESSFULLY;
 }
 
-int SQL_close_database_connection(void* db){
+ErrorCode SQL_close_database_connection(void* db){
     sqlite3 *sql_db = (sqlite3*)db;
     sqlite3_close(sql_db);
+
+    return WORK_SUCCESSFULLY;
 }
 
-int SQL_update_gateway_registration_status(void* db,
-                                           char* buf,
-                                           size_t buf_len){
+ErrorCode SQL_update_gateway_registration_status(void* db,
+                                                 char* buf,
+                                                 size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char* string_begin;
     char* string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    int rc = 0;
+    int ret_val = 0;
     char *sql_template = "INSERT OR REPLACE INTO gateway_table " \
                          "(ip_address, " \
                          "health_status, " \
@@ -134,30 +140,31 @@ int SQL_update_gateway_registration_status(void* db,
                 current_timestamp, current_timestamp);
 
         /* Execute SQL statement */
-        rc = SQL_execute(db, sql);
-        if(0 != rc){
+        ret_val = SQL_execute(db, sql);
+        if(0 != ret_val){
             break;
         }
     }
 
-    if(0 == rc){
+    if(0 == ret_val){
         SQL_end_transaction(db);
     }else{
         SQL_rollback_transaction(db);
+        return E_SQL_EXECUTE;
     }
 
-    return rc;
+    return WORK_SUCCESSFULLY;
 }
 
-int SQL_update_lbeacon_registration_status(void* db,
-                                           char* buf,
-                                           size_t buf_len){
+ErrorCode SQL_update_lbeacon_registration_status(void* db,
+                                                 char* buf,
+                                                 size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char* string_begin;
     char* string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    int rc = 0;
+    int ret_val = 0;
     char *sql_template = "INSERT OR REPLACE INTO lbeacon_table " \
                          "(uuid, " \
                          "health_status, " \
@@ -209,27 +216,28 @@ int SQL_update_lbeacon_registration_status(void* db,
                 registered_timestamp_GMT, current_timestamp);
 
         /* Execute SQL statement */
-        rc = SQL_execute(db, sql);
-        if(0 != rc){
+        ret_val = SQL_execute(db, sql);
+        if(0 != ret_val){
             break;
         }
     }
 
-    if(0 == rc){
+    if(0 == ret_val){
         SQL_end_transaction(db);
     }else{
         SQL_rollback_transaction(db);
+        return E_SQL_EXECUTE;
     }
 
-    return rc;
+    return WORK_SUCCESSFULLY;
 }
 
-int SQL_query_registered_gateways(void* db,
-                                  int health_status,
-                                  char* output,
-                                  size_t output_len){
+ErrorCode SQL_query_registered_gateways(void* db,
+                                        int health_status,
+                                        char* output,
+                                        size_t output_len){
     sqlite3 *sql_db = (sqlite3*)db;
-    int rc = 0;
+    int ret_val = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_template = "SELECT ip_address, health_status FROM " \
                          "gateway_table WHERE " \
@@ -251,7 +259,7 @@ int SQL_query_registered_gateways(void* db,
     sqlite3_prepare_v2(sql_db, sql, strlen(sql), &stmt, NULL);
 
     memset(result_buf, 0, sizeof(result_buf));
-    while((rc = sqlite3_step(stmt)) == SQLITE_ROW){
+    while((ret_val = sqlite3_step(stmt)) == SQLITE_ROW){
         count++;
 
         /* Ensure the SQL query result does not exceed the buffer
@@ -276,18 +284,18 @@ int SQL_query_registered_gateways(void* db,
     memset(output, 0, output_len);
     sprintf(output, "%d;%s", count, result_buf);
 
-    return 0;
+    return WORK_SUCCESSFULLY;
 }
 
-int SQL_update_gateway_health_status(void* db,
-                                     char* buf,
-                                     size_t buf_len){
+ErrorCode SQL_update_gateway_health_status(void* db,
+                                           char* buf,
+                                           size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char* string_begin;
     char* string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    int rc = 0;
+    int ret_val = 0;
     char *sql_template = "INSERT OR REPLACE INTO gateway_table " \
                          "(ip_address, " \
                          "health_status, " \
@@ -330,30 +338,31 @@ int SQL_update_gateway_health_status(void* db,
                 current_timestamp);
 
         /* Execute SQL statement */
-        rc = SQL_execute(db, sql);
-        if(0 != rc){
+        ret_val = SQL_execute(db, sql);
+        if(0 != ret_val){
             break;
         }
     }
 
-    if(0 == rc){
+    if(0 == ret_val){
         SQL_end_transaction(db);
     }else{
         SQL_rollback_transaction(db);
+        return E_SQL_EXECUTE;
     }
 
-    return rc;
+    return WORK_SUCCESSFULLY;
 }
 
-int SQL_update_lbeacon_health_status(void* db,
-                                     char* buf,
-                                     size_t buf_len){
+ErrorCode SQL_update_lbeacon_health_status(void* db,
+                                           char* buf,
+                                           size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char* string_begin;
     char* string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    int rc = 0;
+    int ret_val = 0;
     char *sql_template = "INSERT OR REPLACE INTO lbeacon_table " \
                          "(uuid, " \
                          "health_status, " \
@@ -395,31 +404,36 @@ int SQL_update_lbeacon_health_status(void* db,
         sprintf(sql, sql_template, uuid, health_status, current_timestamp);
 
         /* Execute SQL statement */
-        rc = SQL_execute(db, sql);
-        if(0 != rc){
+        ret_val = SQL_execute(db, sql);
+        if(0 != ret_val){
             break;
         }
     }
 
-    if(0 == rc){
+    if(0 == ret_val){
         SQL_end_transaction(db);
     }else{
         SQL_rollback_transaction(db);
+        return E_SQL_EXECUTE;
     }
 
-    return rc;
+    return WORK_SUCCESSFULLY;
 }
 
-int SQL_update_object_tracking_data(void* db,
-                                    char* buf,
-                                    size_t buf_len){
+ErrorCode SQL_update_object_tracking_data(void* db,
+                                          char* buf,
+                                          size_t buf_len){
     SQL_begin_transaction(db);
     SQL_end_transaction(db);
+
+    return WORK_SUCCESSFULLY;
 }
 
-int SQL_update_object_geo_fencing_alert(void* db,
-                                        char* buf,
-                                        size_t buf_len){
+ErrorCode SQL_update_object_geo_fencing_alert(void* db,
+                                              char* buf,
+                                              size_t buf_len){
     SQL_begin_transaction(db);
     SQL_end_transaction(db);
+
+    return WORK_SUCCESSFULLY;
 }
