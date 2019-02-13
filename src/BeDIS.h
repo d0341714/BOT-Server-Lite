@@ -88,11 +88,6 @@ SQL wrapper API
 */
 #define DELIMITER_SEMICOLON ";"
 
-/* Parameter that marks the separator of different information within each
-record through SQL wrapper API
-*/
-#define DELIMITER_COLON ":"
-
 /* Maximum number of characters in each line of config file */
 #define CONFIG_BUFFER_SIZE 64
 

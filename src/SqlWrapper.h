@@ -153,7 +153,7 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
       buf: an input string with the format below to specify the registered
            gateways.
 
-           length;gateway_ip;uuid_1,registered_timestamp_GMT;uuid_2,\
+           length;gateway_ip;uuid_1;registered_timestamp_GMT;uuid_2;\
            reigstered_timestamp_GMT;
 
       buf_len: Length in number of bytes of buf input string
@@ -207,7 +207,7 @@ ErrorCode SQL_query_registered_gateways(void* db,
       buf: an input string with the format below to specify the health status
            of gateways
 
-           length;gateway_ip_1,health_status;gateway_ip_2,health_status;
+           length;gateway_ip_1;health_status;gateway_ip_2;health_status;
 
       buf_len: Length in number of bytes of buf input string
 
@@ -231,7 +231,8 @@ ErrorCode SQL_update_gateway_health_status(void* db,
       buf: an input string with the format below to specify the health status
            of gateways
 
-           length;lbeacon_uuid_1,health_status;lbeacon_uuid_2,health_status;
+           length;gateway_ip;lbeacon_uuid_1;health_status;lbeacon_uuid_2;\
+           health_status;
 
       buf_len: Length in number of bytes of buf input string
 
@@ -255,9 +256,9 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
       buf: an input string with the format below to specify the health status
            of gateways
 
-           length;object_mac_address_1,lbeacon_id_1,inital_timestamp_GMT_1,\
-           current_timestamp_GMT_1;object_mac_address_2,lbeacon_id_2,\
-           inital_timestamp_GMT_2,current_timestamp_GMT_2;
+           length;object_mac_address_1;lbeacon_id_1;inital_timestamp_GMT_1;\
+           current_timestamp_GMT_1;object_mac_address_2;lbeacon_id_2;\
+           inital_timestamp_GMT_2;current_timestamp_GMT_2;
 
       buf_len: Length in number of bytes of buf input string
 
@@ -281,7 +282,7 @@ ErrorCode SQL_update_object_tracking_data(void* db,
       buf: an input string with the format below to specify the health status
            of gateways
 
-           length;object_mac_address_1,object_mac_address_2;
+           length;object_mac_address_1;object_mac_address_2;
 
       buf_len: Length in number of bytes of buf input string
 

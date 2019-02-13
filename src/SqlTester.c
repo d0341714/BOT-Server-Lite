@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
    char buf3[] = "2;192.168.1.101;1;192.168.1.102;0;";
    SQL_update_gateway_health_status(db, buf3, sizeof(buf3));
 
-   char buf4[] = "2;0000001500000A65432100006E654321;1;0000001500000A65432100006E654300;0;";
+   char buf4[] = "2;192.168.1.101;0000001500000A65432100006E654321;1;0000001500000A65432100006E654300;0;";
    SQL_update_lbeacon_health_status(db, buf4, sizeof(buf4));
 
    SQL_close_database_connection(db);

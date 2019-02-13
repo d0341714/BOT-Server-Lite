@@ -357,6 +357,7 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     int ret_val = 0;
+    char *gateway_ip = NULL;
     char *sql_template = "INSERT OR REPLACE INTO lbeacon_table " \
                          "(uuid, " \
                          "health_status, " \
@@ -379,6 +380,10 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
     if(numbers <= 0){
         return E_SQL_PARSE;
     }
+
+    gateway_ip = string_end + 1;
+    string_end = strstr(gateway_ip, DELIMITER_SEMICOLON);
+    *string_end = '\0';
 
     SQL_begin_transaction(db);
 
