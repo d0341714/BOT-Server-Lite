@@ -80,6 +80,7 @@
   of attention. */
 #define MAX_STARVATION_TIME 600
 
+
 /* The configuration file structure */
 typedef struct {
 
@@ -145,6 +146,7 @@ typedef struct {
 
 } AddressMapArray;
 
+
 /* A node of buffer to store received data and/or data to be send */
 typedef struct {
 
@@ -159,6 +161,7 @@ typedef struct {
     int content_size;
 
 } BufferNode;
+
 
 /* A Head of a list of msg buffer */
 typedef struct {
@@ -217,6 +220,7 @@ BufferListHead BHM_receive_buffer_list_head;
 
 /* Head of a list of buffer_list_head in the priority order. */
 BufferListHead priority_list_head;
+
 
 /* Flags */
 
@@ -350,7 +354,7 @@ void *BHM_routine(void *_buffer_list_head);
   Gateway_routine:
 
      This function is executed by worker threads when they process the buffer
-     nodes in Command_msg_buffer_list and broadcast to LBeacons.
+     nodes in Command_msg_buffer_list and broadcast to Gateway.
 
   Parameters:
 
@@ -400,9 +404,9 @@ bool is_in_Address_Map(AddressMapArray *address_map, char *net_address);
 /*
   Gateway_join_request:
 
-     This function is executed when a beacon sends a command to join the gateway
-     when executed, it fills the AddressMap with the inputs and sets the
-     network_address if not exceed allowed_number_of_nodes.
+     This function is executed when a Gateway sends a command to join the Server
+     . When executed, it fills the AddressMap with the inputs and sets the
+     network_address if not exceed MAX_NUMBER_NODES.
 
   Parameters:
 
@@ -422,8 +426,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address
 /*
   Gateway_Broadcast:
 
-     This function is executed when a command needs to be broadcast to LBeacons.
-     When called, this function sends msg to all LBeacons registered in the
+     This function is executed when a command needs to be broadcast to Gateways.
+     When called, this function sends msg to all Gateways registered in the
      Gateway_address_map.
 
   Parameters:
