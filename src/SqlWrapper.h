@@ -33,10 +33,10 @@ static int SQL_callback(void *NotUsed, int argc, char **argv, char **azColName);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-           If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-static int SQL_execute(void* db, char* sql_statement);
+static ErrorCode SQL_execute(void* db, char* sql_statement);
 
 /* SQL_begin_transaction
 
@@ -48,10 +48,10 @@ static int SQL_execute(void* db, char* sql_statement);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-           If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-static int SQL_begin_transaction(void* db);
+static ErrorCode SQL_begin_transaction(void* db);
 
 /* SQL_end_transaction
 
@@ -63,10 +63,10 @@ static int SQL_begin_transaction(void* db);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-           If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-static int SQL_end_transaction(void* db);
+static ErrorCode SQL_end_transaction(void* db);
 
 /* SQL_rollback_transaction
 
@@ -78,10 +78,10 @@ static int SQL_end_transaction(void* db);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-           If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-static int SQL_rollback_transaction(void* db);
+static ErrorCode SQL_rollback_transaction(void* db);
 
 /* SQL_open_database_connection
 
@@ -95,10 +95,10 @@ static int SQL_rollback_transaction(void* db);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-           If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-int SQL_open_database_connection(char* db_filepath, void** db);
+ErrorCode SQL_open_database_connection(char* db_filepath, void** db);
 
 /* SQL_close_database_connection
 
@@ -110,10 +110,10 @@ int SQL_open_database_connection(char* db_filepath, void** db);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-           If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-int SQL_close_database_connection(void* db);
+ErrorCode SQL_close_database_connection(void* db);
 
 /* SQL_update_gateway_registration_status
 
@@ -132,10 +132,10 @@ int SQL_close_database_connection(void* db);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-           If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-int SQL_update_gateway_registration_status(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_gateway_registration_status(void* db, char* buf, size_t buf_len);
 
 /* SQL_update_lbeacon_registration_status
 
@@ -155,10 +155,10 @@ int SQL_update_gateway_registration_status(void* db, char* buf, size_t buf_len);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-           If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-int SQL_update_lbeacon_registration_status(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_lbeacon_registration_status(void* db, char* buf, size_t buf_len);
 
 /* SQL_query_registered_gateways
 
@@ -181,10 +181,10 @@ int SQL_update_lbeacon_registration_status(void* db, char* buf, size_t buf_len);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-           If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-int SQL_query_registered_gateways(void* db,
+ErrorCode SQL_query_registered_gateways(void* db,
                                   int health_status,
                                   char* output,
                                   size_t output_len);
@@ -206,10 +206,10 @@ int SQL_query_registered_gateways(void* db,
 
   Return Value:
 
-      int: If return 0, everything work successful.
-       If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-int SQL_update_gateway_health_status(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_gateway_health_status(void* db, char* buf, size_t buf_len);
 
 /* SQL_update_lbeacon_health_status
 
@@ -228,10 +228,10 @@ int SQL_update_gateway_health_status(void* db, char* buf, size_t buf_len);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-       If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-int SQL_update_lbeacon_health_status(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_lbeacon_health_status(void* db, char* buf, size_t buf_len);
 
 /* SQL_update_object_tracking_data
 
@@ -252,10 +252,10 @@ int SQL_update_lbeacon_health_status(void* db, char* buf, size_t buf_len);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-       If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-int SQL_update_object_tracking_data(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_object_tracking_data(void* db, char* buf, size_t buf_len);
 
 /* SQL_update_object_geo_fencing_alert
 
@@ -274,9 +274,9 @@ int SQL_update_object_tracking_data(void* db, char* buf, size_t buf_len);
 
   Return Value:
 
-      int: If return 0, everything work successful.
-       If not 0, Something wrong.
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
 */
-int SQL_update_object_geo_fencing_alert(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_object_geo_fencing_alert(void* db, char* buf, size_t buf_len);
 
 #endif
