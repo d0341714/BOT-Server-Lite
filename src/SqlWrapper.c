@@ -129,10 +129,9 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
     SQL_begin_transaction(db);
 
     while( numbers-- ){
-        string_begin = string_end + 1;
-        string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+        ip_address = string_end + 1;
+        string_end = strstr(ip_address, DELIMITER_SEMICOLON);
         *string_end = '\0';
-        ip_address = string_begin;
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
@@ -200,15 +199,13 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
     SQL_begin_transaction(db);
 
     while( numbers-- ){
-        string_begin = string_end + 1;
-        string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+        uuid = string_end + 1;
+        string_end = strstr(uuid, DELIMITER_SEMICOLON);
         *string_end = '\0';
-        uuid = string_begin;
 
-        string_begin = string_end + 1;
-        string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+        registered_timestamp_GMT = string_end + 1;
+        string_end = strstr(registered_timestamp_GMT, DELIMITER_SEMICOLON);
         *string_end = '\0';
-        registered_timestamp_GMT = string_begin;
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
@@ -322,15 +319,13 @@ ErrorCode SQL_update_gateway_health_status(void* db,
     SQL_begin_transaction(db);
 
     while( numbers-- ){
-        string_begin = string_end + 1;
-        string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+        ip_address = string_end + 1;
+        string_end = strstr(ip_address, DELIMITER_SEMICOLON);
         *string_end = '\0';
-        ip_address = string_begin;
 
-        string_begin = string_end + 1;
-        string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+        health_status = string_end + 1;
+        string_end = strstr(health_status, DELIMITER_SEMICOLON);
         *string_end = '\0';
-        health_status = string_begin;
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
@@ -389,15 +384,13 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
     SQL_begin_transaction(db);
 
     while( numbers-- ){
-        string_begin = string_end + 1;
-        string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+        uuid = string_end + 1;
+        string_end = strstr(uuid, DELIMITER_SEMICOLON);
         *string_end = '\0';
-        uuid = string_begin;
 
-        string_begin = string_end + 1;
-        string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+        health_status = string_end + 1;
+        string_end = strstr(health_status, DELIMITER_SEMICOLON);
         *string_end = '\0';
-        health_status = string_begin;
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));

@@ -19,7 +19,10 @@
       int: If return 0, everything work successful.
            If not 0, Something wrong.
 */
-static int SQL_callback(void *NotUsed, int argc, char **argv, char **azColName);
+static int SQL_callback(void *NotUsed,
+                        int argc,
+                        char **argv,
+                        char **azColName);
 
 /* SQL_execute
 
@@ -134,7 +137,9 @@ ErrorCode SQL_close_database_connection(void* db);
       ErrorCode - indicate the result of execution, the expected return code
                   is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_update_gateway_registration_status(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_gateway_registration_status(void* db,
+                                                 char* buf,
+                                                 size_t buf_len);
 
 /* SQL_update_lbeacon_registration_status
 
@@ -157,7 +162,9 @@ ErrorCode SQL_update_gateway_registration_status(void* db, char* buf, size_t buf
       ErrorCode - indicate the result of execution, the expected return code
                   is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_update_lbeacon_registration_status(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_lbeacon_registration_status(void* db,
+                                                 char* buf,
+                                                 size_t buf_len);
 
 /* SQL_query_registered_gateways
 
@@ -208,7 +215,9 @@ ErrorCode SQL_query_registered_gateways(void* db,
       ErrorCode - indicate the result of execution, the expected return code
                   is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_update_gateway_health_status(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_gateway_health_status(void* db,
+                                           char* buf,
+                                           size_t buf_len);
 
 /* SQL_update_lbeacon_health_status
 
@@ -230,7 +239,9 @@ ErrorCode SQL_update_gateway_health_status(void* db, char* buf, size_t buf_len);
       ErrorCode - indicate the result of execution, the expected return code
                   is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_update_lbeacon_health_status(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_lbeacon_health_status(void* db,
+                                           char* buf,
+                                           size_t buf_len);
 
 /* SQL_update_object_tracking_data
 
@@ -254,7 +265,9 @@ ErrorCode SQL_update_lbeacon_health_status(void* db, char* buf, size_t buf_len);
       ErrorCode - indicate the result of execution, the expected return code
                   is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_update_object_tracking_data(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_object_tracking_data(void* db,
+                                          char* buf,
+                                          size_t buf_len);
 
 /* SQL_update_object_geo_fencing_alert
 
@@ -276,6 +289,8 @@ ErrorCode SQL_update_object_tracking_data(void* db, char* buf, size_t buf_len);
       ErrorCode - indicate the result of execution, the expected return code
                   is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_update_object_geo_fencing_alert(void* db, char* buf, size_t buf_len);
+ErrorCode SQL_update_object_geo_fencing_alert(void* db,
+                                              char* buf,
+                                              size_t buf_len);
 
 #endif
