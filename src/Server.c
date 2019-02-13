@@ -542,6 +542,9 @@ void* CommUnit_routine(){
                                                      priority_nice);
 
             }
+            else{
+                sleep(WAITING_TIME);
+            }
 
             current_time = get_system_time();
         }
@@ -590,7 +593,8 @@ void* CommUnit_routine(){
                                                  current_head,
                                                  current_head ->
                                                  priority_nice);
-        }else{
+        }
+        else{
             sleep(WAITING_TIME);
         }
 
