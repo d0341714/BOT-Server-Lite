@@ -21,7 +21,7 @@
 
   Version:
 
-     2.0, 20190119
+     2.0, 20190213
 
   Abstract:
 
@@ -226,11 +226,6 @@ typedef enum pkt_types {
     health_report = 5,
     /* A pkt for LBeacon */
     data_for_LBeacon = 6,
-
-    /* For Gayeway */
-
-    /* For the Gateway polling health reports from LBeacons */
-    RFHR_from_gateway = 8,
 
     /* For server */
 
