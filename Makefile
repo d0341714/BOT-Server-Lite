@@ -1,6 +1,6 @@
 #---------------------------------------------------------------------------
 
-all: clean zlog Gateway.out
+all: clean zlog Server.out
 
 Server.out:
 	cd src && make clean

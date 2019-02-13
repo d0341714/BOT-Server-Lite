@@ -2,6 +2,7 @@
 #define SQL_WRAPPER_H
 
 #include "BeDIS.h"
+#include <sqlite3.h>
 
 /* SQL_callback
 

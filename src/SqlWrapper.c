@@ -1,4 +1,3 @@
-#include <sqlite3.h>
 #include "SqlWrapper.h"
 
 static int SQL_callback(void *NotUsed,
@@ -6,7 +5,7 @@ static int SQL_callback(void *NotUsed,
                         char **argv,
                         char **azColName){
     int i;
-    for(i = 0; i < argc; i++){
+    for(i = 0; i < argc;i ++){
         printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
     }
     printf("\n");
@@ -96,8 +95,8 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
                                                  char* buf,
                                                  size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char* string_begin;
-    char* string_end;
+    char *string_begin;
+    char *string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     int ret_val = 0;
@@ -159,8 +158,8 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
                                                  char* buf,
                                                  size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char* string_begin;
-    char* string_end;
+    char *string_begin;
+    char *string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     int ret_val = 0;
@@ -237,7 +236,7 @@ ErrorCode SQL_query_registered_gateways(void* db,
     int ret_val = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_template = "SELECT ip_address, health_status FROM " \
-                         "gateway_table WHERE " \
+                         "`gateway_table` WHERE " \
                          "health_status = \"%d\" OR health_status = \"%d\";";
     sqlite3_stmt *stmt;
     int count = 0;
@@ -261,7 +260,7 @@ ErrorCode SQL_query_registered_gateways(void* db,
 
         /* Ensure the SQL query result does not exceed the buffer
         */
-        if(sizeof(result_buf) < strlen(result_buf) + (NETWORK_ADDR_LENGTH+3)){
+        if(sizeof(result_buf) < strlen(result_buf) + (NETWORK_ADDR_LENGTH + 3)){
             return E_SQL_RESULT_EXCEED;
         }
 
@@ -288,8 +287,8 @@ ErrorCode SQL_update_gateway_health_status(void* db,
                                            char* buf,
                                            size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char* string_begin;
-    char* string_end;
+    char *string_begin;
+    char *string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     int ret_val = 0;
@@ -353,8 +352,8 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
                                            char* buf,
                                            size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char* string_begin;
-    char* string_end;
+    char *string_begin;
+    char *string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     int ret_val = 0;

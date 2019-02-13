@@ -49,6 +49,7 @@
 #define _GNU_SOURCE
 
 #include "BeDIS.h"
+#include "SqlWrapper.h"
 
 /* Enable debugging mode. */
 //#define debugging
@@ -60,6 +61,8 @@
 
 /* File path of the config file of the zlog */
 #define ZLOG_CONFIG_FILE_NAME "../config/zlog.conf"
+
+#define SQLITE_FILE_NAME "bot_lite.db"
 
 /* The category defined of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
@@ -73,12 +76,13 @@
 /* Maximum number of nodes (LBeacons) per star network rooted at a gateway */
 #define MAX_NUMBER_NODES 32
 
-#define test_malloc_max_number_times 5
+#define TEST_MALLOC_MAX_NUMBER_TIMES 5
 
 /*
   Maximum length of time in seconds low priority message lists are starved
   of attention. */
 #define MAX_STARVATION_TIME 600
+
 
 /* The configuration file structure */
 typedef struct {
@@ -145,6 +149,7 @@ typedef struct {
 
 } AddressMapArray;
 
+
 /* A node of buffer to store received data and/or data to be send */
 typedef struct {
 
@@ -159,6 +164,7 @@ typedef struct {
     int content_size;
 
 } BufferNode;
+
 
 /* A Head of a list of msg buffer */
 typedef struct {
@@ -187,6 +193,9 @@ typedef struct {
 
 /* A Gateway config struct stored config from the config file */
 ServerConfig config;
+
+/* A pointer point to db cursor */
+void *Server_db;
 
 /* Struct for storing necessary objects for Wifi connection */
 sudp_config udp_config;
@@ -217,6 +226,7 @@ BufferListHead BHM_receive_buffer_list_head;
 
 /* Head of a list of buffer_list_head in the priority order. */
 BufferListHead priority_list_head;
+
 
 /* Flags */
 
@@ -350,7 +360,7 @@ void *BHM_routine(void *_buffer_list_head);
   Gateway_routine:
 
      This function is executed by worker threads when they process the buffer
-     nodes in Command_msg_buffer_list and broadcast to LBeacons.
+     nodes in Command_msg_buffer_list and broadcast to Gateway.
 
   Parameters:
 
@@ -400,9 +410,9 @@ bool is_in_Address_Map(AddressMapArray *address_map, char *net_address);
 /*
   Gateway_join_request:
 
-     This function is executed when a beacon sends a command to join the gateway
-     when executed, it fills the AddressMap with the inputs and sets the
-     network_address if not exceed allowed_number_of_nodes.
+     This function is executed when a Gateway sends a command to join the Server
+     . When executed, it fills the AddressMap with the inputs and sets the
+     network_address if not exceed MAX_NUMBER_NODES.
 
   Parameters:
 
@@ -422,8 +432,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address
 /*
   Gateway_Broadcast:
 
-     This function is executed when a command needs to be broadcast to LBeacons.
-     When called, this function sends msg to all LBeacons registered in the
+     This function is executed when a command needs to be broadcast to Gateways.
+     When called, this function sends msg to all Gateways registered in the
      Gateway_address_map.
 
   Parameters:
