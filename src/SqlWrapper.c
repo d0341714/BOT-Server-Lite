@@ -1,4 +1,3 @@
-#include <sqlite3.h>
 #include "SqlWrapper.h"
 
 static int SQL_callback(void *NotUsed,
@@ -6,15 +5,15 @@ static int SQL_callback(void *NotUsed,
                         char **argv,
                         char **azColName){
     int i;
-    for(i = 0; i < argc; i++){
+    for(i = 0; i < argc;i ++){
         printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
     }
     printf("\n");
     return 0;
 }
 
-static int SQL_execute(void* db, char* sql_statement){
-    sqlite3 *sql_db = (sqlite3*) db;
+static int SQL_execute(void *db, char *sql_statement){
+    sqlite3 *sql_db = (sqlite3 *) db;
     char *zErrMsg = NULL;
     int rc;
 
@@ -69,8 +68,8 @@ static int SQL_rollback_transaction(void* db){
 }
 
 
-int SQL_open_database_connection(char* db_filepath, void** db){
-    sqlite3 **sql_db = (sqlite3**)db;
+int SQL_open_database_connection(char *db_filepath, void **db){
+    sqlite3 **sql_db = (sqlite3 **)db;
     int rc = sqlite3_open(db_filepath, sql_db);
 
     if(rc){
@@ -82,7 +81,7 @@ int SQL_open_database_connection(char* db_filepath, void** db){
 }
 
 int SQL_close_database_connection(void* db){
-    sqlite3 *sql_db = (sqlite3*)db;
+    sqlite3 *sql_db = (sqlite3 *)db;
     sqlite3_close(sql_db);
 }
 
@@ -90,12 +89,12 @@ int SQL_update_gateway_registration_status(void* db,
                                            char* buf,
                                            size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char* string_begin;
-    char* string_end;
+    char *string_begin;
+    char *string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     int rc = 0;
-    char *sql_template = "INSERT OR REPLACE INTO gateway_table " \
+    char *sql_template = "INSERT OR REPLACE INTO `gateway_table` " \
                          "(ip_address, " \
                          "health_status, " \
                          "registered_timestamp_GMT, " \
@@ -122,7 +121,7 @@ int SQL_update_gateway_registration_status(void* db,
 
     SQL_begin_transaction(db);
 
-    while( numbers-- ){
+    while( numbers -- ){
         string_begin = string_end + 1;
         string_end = strstr(string_begin, DELIMITER_SEMICOLON);
         *string_end = '\0';
@@ -153,12 +152,12 @@ int SQL_update_lbeacon_registration_status(void* db,
                                            char* buf,
                                            size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char* string_begin;
-    char* string_end;
+    char *string_begin;
+    char *string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     int rc = 0;
-    char *sql_template = "INSERT OR REPLACE INTO lbeacon_table " \
+    char *sql_template = "INSERT OR REPLACE INTO `lbeacon_table` " \
                          "(uuid, " \
                          "health_status, " \
                          "gateway_ip, " \
@@ -224,15 +223,15 @@ int SQL_update_lbeacon_registration_status(void* db,
     return rc;
 }
 
-int SQL_query_registered_gateways(void* db,
+int SQL_query_registered_gateways(void *db,
                                   int health_status,
-                                  char* output,
+                                  char *output,
                                   size_t output_len){
-    sqlite3 *sql_db = (sqlite3*)db;
+    sqlite3 *sql_db = (sqlite3 *)db;
     int rc = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_template = "SELECT ip_address, health_status FROM " \
-                         "gateway_table WHERE " \
+                         "`gateway_table` WHERE " \
                          "health_status = \"%d\" OR health_status = \"%d\";";
     sqlite3_stmt *stmt;
     int count = 0;
@@ -252,11 +251,11 @@ int SQL_query_registered_gateways(void* db,
 
     memset(result_buf, 0, sizeof(result_buf));
     while((rc = sqlite3_step(stmt)) == SQLITE_ROW){
-        count++;
+        count ++;
 
         /* Ensure the SQL query result does not exceed the buffer
         */
-        if(sizeof(result_buf) < strlen(result_buf) + (NETWORK_ADDR_LENGTH+3)){
+        if(sizeof(result_buf) < strlen(result_buf) + (NETWORK_ADDR_LENGTH + 3)){
             return E_SQL_RESULT_EXCEED;
         }
 
@@ -283,12 +282,12 @@ int SQL_update_gateway_health_status(void* db,
                                      char* buf,
                                      size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char* string_begin;
-    char* string_end;
+    char *string_begin;
+    char *string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     int rc = 0;
-    char *sql_template = "INSERT OR REPLACE INTO gateway_table " \
+    char *sql_template = "INSERT OR REPLACE INTO `gateway_table` " \
                          "(ip_address, " \
                          "health_status, " \
                          "last_report_timestamp_GMT) " \
@@ -349,12 +348,12 @@ int SQL_update_lbeacon_health_status(void* db,
                                      char* buf,
                                      size_t buf_len){
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char* string_begin;
-    char* string_end;
+    char *string_begin;
+    char *string_end;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     int rc = 0;
-    char *sql_template = "INSERT OR REPLACE INTO lbeacon_table " \
+    char *sql_template = "INSERT OR REPLACE INTO `lbeacon_table` " \
                          "(uuid, " \
                          "health_status, " \
                          "last_report_timestamp_GMT) " \

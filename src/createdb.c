@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
       fprintf(stderr, "Opened database successfully\n");
    }
 
-   sql = "CREATE TABLE IF NOT EXISTS tracking_table("  \
+   sql = "CREATE TABLE IF NOT EXISTS `tracking_table`("  \
          "id INTEGER PRIMARY KEY    AUTOINCREMENT," \
          "mac_address               NVARCHAR(17) NOT NULL," \
          "uuid                      NVARCHAR(32) NOT NULL," \
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
       fprintf(stdout, "Table created successfully\n");
    }
 
-   sql = "CREATE TABLE IF NOT EXISTS gateway_table("  \
+   sql = "CREATE TABLE IF NOT EXISTS `gateway_table`("  \
          "id INTEGER PRIMARY KEY     AUTOINCREMENT," \
          "ip_address                 NVARCHAR(15) NOT NULL UNIQUE," \
          "location_description       NVARCHAR(256)," \
@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
       fprintf(stdout, "Table created successfully\n");
    }
 
-   sql = "CREATE TABLE IF NOT EXISTS lbeacon_table("  \
+   sql = "CREATE TABLE IF NOT EXISTS `lbeacon_table`("  \
          "id INTEGER PRIMARY KEY     AUTOINCREMENT," \
          "uuid                       NVARCHAR(32) NOT NULL UNIQUE," \
          "location_description       NVARCHAR(256)," \
@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
       fprintf(stdout, "Table created successfully\n");
    }
 
-   sql = "CREATE TABLE IF NOT EXISTS object_table("  \
+   sql = "CREATE TABLE IF NOT EXISTS `object_table`("  \
          "id INTEGER PRIMARY KEY     AUTOINCREMENT," \
          "mac_address                NVARCHAR(17) NOT NULL UNIQUE," \
          "type                       INT NOT NULL," \
@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
    }else{
       fprintf(stdout, "Table created successfully\n");
    }
-  
+
    sqlite3_close(db);
 
    return 0;

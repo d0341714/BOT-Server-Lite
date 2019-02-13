@@ -1,7 +1,7 @@
 #include "SqlWrapper.h"
 
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
    void *db;
    SQL_open_database_connection("bot_lite.db", &db);

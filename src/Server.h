@@ -49,6 +49,7 @@
 #define _GNU_SOURCE
 
 #include "BeDIS.h"
+#include "SqlWrapper.h"
 
 /* Enable debugging mode. */
 //#define debugging
@@ -60,6 +61,8 @@
 
 /* File path of the config file of the zlog */
 #define ZLOG_CONFIG_FILE_NAME "../config/zlog.conf"
+
+#define SQLITE_FILE_NAME "bot_lite.db"
 
 /* The category defined of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
@@ -73,7 +76,7 @@
 /* Maximum number of nodes (LBeacons) per star network rooted at a gateway */
 #define MAX_NUMBER_NODES 32
 
-#define test_malloc_max_number_times 5
+#define TEST_MALLOC_MAX_NUMBER_TIMES 5
 
 /*
   Maximum length of time in seconds low priority message lists are starved
@@ -190,6 +193,9 @@ typedef struct {
 
 /* A Gateway config struct stored config from the config file */
 ServerConfig config;
+
+/* A pointer point to db cursor */
+void *Server_db;
 
 /* Struct for storing necessary objects for Wifi connection */
 sudp_config udp_config;

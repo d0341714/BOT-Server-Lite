@@ -108,6 +108,9 @@ int main(int argc, char **argv){
         return E_MALLOC;
     }
 
+    /* Open DB */
+    SQL_open_database_connection(SQLITE_FILE_NAME, &Server_db);
+
     /* Initialize buffer_list_heads and add to the head in to the priority list.
      */
 
@@ -178,7 +181,7 @@ int main(int argc, char **argv){
         initialization_failed = true;
         zlog_error(category_health_report, "wifi_listener initialization Fail");
 #ifdef debugging
-        zlog_error(category_debug,  "wifi_listener initialization Fail");
+        zlog_error(category_debug, "wifi_listener initialization Fail");
 #endif
         return E_WIFI_INIT_FAIL;
     }
@@ -280,6 +283,8 @@ int main(int argc, char **argv){
 #ifdef debugging
     zlog_info(category_debug, "Server exit successfullly");
 #endif
+
+    SQL_close_database_connection(Server_db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -630,10 +635,6 @@ void *NSI_routine(void *_buffer_list_head){
 
         temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
 
-        char current_uuid[UUID_LENGTH];
-
-        memcpy(current_uuid, &temp->content[2], UUID_LENGTH);
-
         int send_type = (from_server & 0x0f)<<4;
 
         /* Put the address into Gateway_address_map and set the return pkt type
@@ -643,6 +644,9 @@ void *NSI_routine(void *_buffer_list_head){
             send_type += join_request_ack & 0x0f;
         else
             send_type += join_request_deny & 0x0f;
+
+        SQL_update_lbeacon_registration_status(Server_db, &temp -> content[2],
+                                               temp -> content_size - 2);
 
         /* put the pkt type to content */
         temp->content[0] = (char)send_type;
@@ -896,7 +900,7 @@ void *process_wifi_receive(){
             /* Allocate memory from node_mempool a buffer node for received data
                and copy the data from Wi-Fi receive queue to the node. */
             do{
-                if(test_times == test_malloc_max_number_times)
+                if(test_times == TEST_MALLOC_MAX_NUMBER_TIMES)
                     break;
                 else if(test_times != 0)
                     sleep(1);
