@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 
    char buf5[] = "3;00:00:00:00:00:00;0000001500000A65432100006E654321;1549870728;1549870728;00:00:00:00:11:00;0000001500000A65432100006E654321;1549870728;1549870728;00:00:00:22:00:00;0000001500000A65432100006E654300;1549870728;1549870728;";
    
-   conninfo = "dbname=botdb user=postgres password=jane1807";
+   conninfo = "dbname=botdb user=postgres password=bedis402";
    SQL_open_database_connection(conninfo, &db);
 
    // use buf
