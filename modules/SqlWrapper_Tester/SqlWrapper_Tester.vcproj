@@ -264,7 +264,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\3rd_party\PostgreSQL\11\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\src&quot;;&quot;$(SolutionDir)\..\3rd_party\PostgreSQL\11\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -328,7 +328,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\SqlWrapper_Tester.c"
+				RelativePath=".\SqlWrapper_Tester.c"
 				>
 			</File>
 		</Filter>
