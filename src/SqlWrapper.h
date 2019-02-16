@@ -157,7 +157,8 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
       output: an output buffer to receive the query resutls. The result string
               is in format below.
 
-           length;health_status;gateway_ip_1;gateway_ip_2;gateway_ip_3;
+           length;gateway_ip_1;health_status_1;gateway_ip_2;health_status_2; \
+           gateway_ip_3;health_status_3;
 
       output_len: The maximum length in number of bytes of output buffer.
 
@@ -166,12 +167,11 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
       ErrorCode - indicate the result of execution, the expected return code
                   is WORK_SUCCESSFULLY
 */
-/*
 ErrorCode SQL_query_registered_gateways(void* db,
                                   int health_status,
                                   char* output,
                                   size_t output_len);
-*/
+
 /* SQL_update_lbeacon_registration_status
 
       Update the input lbeacons as registered.
@@ -258,9 +258,11 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
       buf: an input string with the format below to specify the health status
            of gateways
 
-           length;object_mac_address_1;lbeacon_uuid_1;inital_timestamp_GMT_1;\
-           final_timestamp_GMT_1;object_mac_address_2;lbeacon_uuid_2;\
-           inital_timestamp_GMT_2;final_timestamp_GMT_2;
+           lbeacon_uuid;gateway_ip;object_type;object_number; \
+           object_mac_address_1;initial_timestamp_GMT_1; \
+           final_timestamp_GMT_1;rssi_1;object_type;object_number; \
+           object_mac_address_2;initial_timestamp_GMT_2; \
+           final_timestamp_GMT_2;rssi_2;
 
       buf_len: Length in number of bytes of buf input string
 
