@@ -82,7 +82,7 @@ static ErrorCode SQL_rollback_transaction(void* db){
 }
 
 ErrorCode SQL_open_database_connection(char* conninfo, void** db){
-	*db = (PGconn*) PQconnectdb(conninfo);
+    *db = (PGconn*) PQconnectdb(conninfo);
 
     /* Check to see that the backend connection was successfully made */
     if (PQstatus(*db) != CONNECTION_OK)
@@ -104,6 +104,7 @@ ErrorCode SQL_close_database_connection(void* db){
 ErrorCode SQL_update_gateway_registration_status(void* db,
                                                  char* buf,
                                                  size_t buf_len){
+    PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *string_begin;
     char *string_end;
@@ -122,7 +123,7 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
                          "DO UPDATE SET health_status = \'%d\', " \
                          "last_report_timestamp = to_timestamp(\'%d\') ;";
     char *ip_address = NULL;
-    int health_status = 0;
+    HealthStatus health_status = S_NORMAL;
     time_t current_timestamp = get_system_time();
 
     memset(temp_buf, 0, sizeof(temp_buf));
@@ -147,7 +148,9 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
-        sprintf(sql, sql_template, ip_address, health_status,
+        sprintf(sql, sql_template,
+                PQescapeLiteral(conn, ip_address, strlen(ip_address)),
+                health_status,
                 current_timestamp, current_timestamp, health_status,
                 current_timestamp);
 
@@ -222,6 +225,7 @@ ErrorCode SQL_query_registered_gateways(void* db,
 ErrorCode SQL_update_lbeacon_registration_status(void* db,
                                                  char* buf,
                                                  size_t buf_len){
+    PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *string_begin;
     char *string_end;
@@ -242,7 +246,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
                          "gateway_ip_address = \'%s\', " \
                          "last_report_timestamp = to_timestamp(\'%d\') ;";
     char *uuid = NULL;
-    int health_status = 0;
+    HealthStatus health_status = S_NORMAL;
     char *gateway_ip = NULL;
     char *registered_timestamp_GMT = NULL;
     time_t current_timestamp = get_system_time();
@@ -278,9 +282,16 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
-        sprintf(sql, sql_template, uuid, health_status, gateway_ip,
-                registered_timestamp_GMT, current_timestamp, health_status,
-                gateway_ip, current_timestamp);
+        sprintf(sql, sql_template,
+                PQescapeLiteral(conn, uuid, strlen(uuid)),
+                health_status,
+                PQescapeLiteral(conn, gateway_ip, strlen(gateway_ip)),
+                PQescapeLiteral(conn, registered_timestamp_GMT,
+                                strlen(registered_timestamp_GMT)),
+                current_timestamp,
+                health_status,
+                PQescapeLiteral(conn, gateway_ip, strlen(gateway_ip)),
+                current_timestamp);
 
         /* Execute SQL statement */
         ret_val = SQL_execute(db, sql);
@@ -300,6 +311,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
 ErrorCode SQL_update_gateway_health_status(void* db,
                                            char* buf,
                                            size_t buf_len){
+    PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *string_begin;
     char *string_end;
@@ -340,8 +352,10 @@ ErrorCode SQL_update_gateway_health_status(void* db,
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
-        sprintf(sql, sql_template, health_status, current_timestamp,
-                ip_address);
+        sprintf(sql, sql_template,
+                PQescapeLiteral(conn, health_status, strlen(health_status)),
+                current_timestamp,
+                PQescapeLiteral(conn, ip_address, strlen(ip_address)));
 
         /* Execute SQL statement */
         ret_val = SQL_execute(db, sql);
@@ -359,6 +373,7 @@ ErrorCode SQL_update_gateway_health_status(void* db,
 ErrorCode SQL_update_lbeacon_health_status(void* db,
                                            char* buf,
                                            size_t buf_len){
+    PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *string_begin;
     char *string_end;
@@ -404,7 +419,10 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
-        sprintf(sql, sql_template, health_status, current_timestamp, uuid);
+        sprintf(sql, sql_template,
+                PQescapeLiteral(conn, health_status, strlen(health_status)),
+                current_timestamp,
+                PQescapeLiteral(conn, uuid, strlen(uuid)));
 
         /* Execute SQL statement */
         ret_val = SQL_execute(db, sql);
@@ -423,6 +441,7 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
 ErrorCode SQL_update_object_tracking_data(void* db,
                                           char* buf,
                                           size_t buf_len){
+    PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *string_begin;
     char *string_end;
@@ -493,8 +512,15 @@ ErrorCode SQL_update_object_tracking_data(void* db,
 
             /* Create SQL statement */
             memset(sql, 0, sizeof(sql));
-            sprintf(sql, sql_template, object_mac_address, lbeacon_uuid, rssi,
-                    initial_timestamp_GMT, final_timestamp_GMT);
+            sprintf(sql, sql_template,
+                    PQescapeLiteral(conn, object_mac_address,
+                                    strlen(object_mac_address)),
+                    PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid)),
+                    PQescapeLiteral(conn, rssi, strlen(rssi)),
+                    PQescapeLiteral(conn, initial_timestamp_GMT,
+                                    strlen(initial_timestamp_GMT)),
+                    PQescapeLiteral(conn, final_timestamp_GMT,
+                                    strlen(final_timestamp_GMT)));
 
             /* Execute SQL statement */
             ret_val = SQL_execute(db, sql);
