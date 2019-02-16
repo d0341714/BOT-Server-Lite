@@ -166,26 +166,30 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
 }
 
 ErrorCode SQL_query_registered_gateways(void* db,
-                                        int health_status,
+                                        HealthStatus health_status,
                                         char* output,
                                         size_t output_len){
     PGconn *conn = (PGconn *) db;
   	PGresult *res;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_template = "SELECT ip_address, health_status FROM " \
+    char *sql_template_query_all =
+                         "SELECT ip_address, health_status FROM " \
+                         "gateway_table;" ;
+    char *sql_template_query_health_status =
+                         "SELECT ip_address, health_status FROM " \
                          "gateway_table WHERE " \
-                         "health_status = \'%d\' OR health_status = \'%d\';" ;
+                         "health_status = \'%d\';" ;
     int rows = 0;
     int i = 0;
     char temp_buf[SQL_TEMP_BUFFER_LENGTH];
 
     /* Create SQL statement */
     memset(sql, 0, sizeof(sql));
-    if(-1 == health_status ){
-        sprintf(sql, sql_template, 0, 1);
+    if(MAX_STATUS == health_status ){
+        sprintf(sql, sql_template_query_all);
     }else{
-        sprintf(sql, sql_template, health_status, health_status);
+        sprintf(sql, sql_template_query_health_status, health_status);
     }
 
     res = PQexec(conn, sql_statement);

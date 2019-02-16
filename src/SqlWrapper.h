@@ -150,10 +150,7 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
 
       db - the pointer pointing to database
 
-      health_status: the desired health_status
-                     -1: all health_status
-                     0: health_status is healthy
-                     1: health_status is error
+      health_status: the health_status to be queried
       output: an output buffer to receive the query resutls. The result string
               is in format below.
 
@@ -168,9 +165,9 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
                   is WORK_SUCCESSFULLY
 */
 ErrorCode SQL_query_registered_gateways(void* db,
-                                  int health_status,
-                                  char* output,
-                                  size_t output_len);
+                                        HealthStatus health_status,
+                                        char* output,
+                                        size_t output_len);
 
 /* SQL_update_lbeacon_registration_status
 
