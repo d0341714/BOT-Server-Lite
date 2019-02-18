@@ -75,10 +75,10 @@ typedef enum _ErrorCode{
 } ErrorCode;
 
 /* Type of health_status to be queried. */
-typedef enum Health_Status {
+typedef enum _HealthStatus {
 
-    S_NORMAL = 0,
-    E_ERROR = 1,
+    S_NORMAL_STATUS = 0,
+    E_ERROR_STATUS = 1,
     MAX_STATUS = 2
 
 } HealthStatus;

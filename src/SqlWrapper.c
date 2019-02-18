@@ -123,7 +123,7 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
                          "DO UPDATE SET health_status = \'%d\', " \
                          "last_report_timestamp = to_timestamp(\'%d\') ;";
     char *ip_address = NULL;
-    HealthStatus health_status = S_NORMAL;
+    HealthStatus health_status = S_NORMAL_STATUS;
     time_t current_timestamp = get_system_time();
 
     memset(temp_buf, 0, sizeof(temp_buf));
@@ -246,7 +246,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
                          "gateway_ip_address = %s, " \
                          "last_report_timestamp = to_timestamp(\'%d\') ;";
     char *uuid = NULL;
-    HealthStatus health_status = S_NORMAL;
+    HealthStatus health_status = S_NORMAL_STATUS;
     char *gateway_ip = NULL;
     char *registered_timestamp_GMT = NULL;
     time_t current_timestamp = get_system_time();
