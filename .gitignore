@@ -9,13 +9,13 @@
 *.pch
 
 # Libraries
-*.lib
+#*.lib
 *.a
 *.la
 *.lo
 
 # Shared objects (inc. Windows DLLs)
-*.dll
+#*.dll
 *.so
 *.so.*
 *.dylib
@@ -37,3 +37,13 @@
 
 # Backup file
 *.bak
+
+# Visual Studio files
+.suo
+.ncb
+.idb
+.pdb
+.manifest
+.dep
+.htm
+.user
