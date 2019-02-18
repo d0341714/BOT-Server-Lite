@@ -443,7 +443,6 @@ ErrorCode SQL_update_object_tracking_data(void* db,
                                           size_t buf_len){
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char *string_begin;
     char *string_end;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;

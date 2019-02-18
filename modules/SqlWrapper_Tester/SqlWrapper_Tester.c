@@ -10,15 +10,15 @@ int main(int argc, char *argv[])
    char temp[4096];
 
    char buf2[] = "2;192.168.1.101;0000001500000A65432100006E654321;1549870728;0000001500000A65432100006E654300;1549870730;";
-   
+
    char buf3[] = "2;192.168.1.101;1;192.168.1.102;0;";
 
    char buf4[] = "2;192.168.1.101;0000001500000A65432100006E654321;1;0000001500000A65432100006E654300;0;";
 
    char buf5[] = "0000001500000A65432100006E654321;192.168.1.101;0;1;00:00:00:11:11:11;1549870728;1549870728;-50;1;0;";
-   
 
-   printf("start testing..\n\n");
+
+   printf("\nstart testing..\n\n");
 
    conninfo = "dbname=botdb user=postgres password=bedis402";
    SQL_open_database_connection(conninfo, &db);
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
    SQL_close_database_connection(db);
 
-   printf("finish testing..\n\n");
+   printf("\nfinish testing..\n\n");
 
    return 0;
 }
