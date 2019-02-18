@@ -117,7 +117,7 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
                          "registered_timestamp, " \
                          "last_report_timestamp) " \
                          "VALUES " \
-                         "(\'%s\', \'%d\', to_timestamp(\'%d\'), " \
+                         "(%s, \'%d\', to_timestamp(\'%d\'), " \
                          "to_timestamp(\'%d\') ) " \
                          "ON CONFLICT (ip_address) " \
                          "DO UPDATE SET health_status = \'%d\', " \
@@ -195,7 +195,7 @@ ErrorCode SQL_query_registered_gateways(void* db,
         sprintf(sql, sql_template_query_health_status, health_status);
     }
 
-    res = PQexec(conn, sql_statement);
+    res = PQexec(conn, sql);
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
         PQclear(res);
         printf("SQL_execute failed: %s", PQerrorMessage(conn));
@@ -208,7 +208,7 @@ ErrorCode SQL_query_registered_gateways(void* db,
 
     for(i = 0 ; i < rows ; i ++){
         memset(temp_buf, 0, sizeof(temp_buf));
-        sprintf(temp_buf, "%s;%s;", PQgetvalue(res,i,0) PQgetvalue(res,i,1));
+        sprintf(temp_buf, "%s;%s;", PQgetvalue(res,i,0),PQgetvalue(res,i,1));
         if(output_len < strlen(output) + strlen(temp_buf)){
             printf("String concatenation failed due to output buffer size\n");
             PQclear(res);
@@ -239,11 +239,11 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
                          "registered_timestamp, " \
                          "last_report_timestamp) " \
                          "VALUES " \
-                         "(\'%s\', \'%d\', \'%s\', to_timestamp(\'%s\'), " \
+                         "(%s, \'%d\', %s, to_timestamp(%s), " \
                          "to_timestamp(\'%d\')) " \
                          "ON CONFLICT (uuid) " \
                          "DO UPDATE SET health_status = \'%d\', " \
-                         "gateway_ip_address = \'%s\', " \
+                         "gateway_ip_address = %s, " \
                          "last_report_timestamp = to_timestamp(\'%d\') ;";
     char *uuid = NULL;
     HealthStatus health_status = S_NORMAL;
@@ -319,9 +319,9 @@ ErrorCode SQL_update_gateway_health_status(void* db,
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "UPDATE gateway_table " \
-                         "SET health_status = \'%s'\, " \
+                         "SET health_status = %s, " \
                          "last_report_timestamp = to_timestamp(\'%d\') " \
-                         "WHERE ip_address = \'%s\' ;" ;
+                         "WHERE ip_address = %s ;" ;
     char *ip_address = NULL;
     char *health_status = NULL;
     time_t current_timestamp = get_system_time();
@@ -382,9 +382,9 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *gateway_ip = NULL;
     char *sql_template = "UPDATE lbeacon_table " \
-                         "SET health_status = \'%s\', " \
+                         "SET health_status = %s, " \
                          "last_report_timestamp = to_timestamp(\'%d\') " \
-                         "WHERE uuid = \'%s\' ;";
+                         "WHERE uuid = %s ;";
     char *uuid = NULL;
     char *health_status = NULL;
     time_t current_timestamp = get_system_time();
@@ -445,7 +445,6 @@ ErrorCode SQL_update_object_tracking_data(void* db,
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *string_begin;
     char *string_end;
-    int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     int num_types = 2; // BR_EDR and BLE types
@@ -456,14 +455,13 @@ ErrorCode SQL_update_object_tracking_data(void* db,
                          "initial_timestamp, " \
                          "final_timestamp) " \
                          "VALUES " \
-                         "(\'%s\', \'%s\', \'%s\', to_timestamp(\'%s\'), " \
-                         "to_timestamp(\'%s\'));";
+                         "(%s, %s, %s, to_timestamp(%s), " \
+                         "to_timestamp(%s));";
     char *lbeacon_uuid = NULL;
     char *gateway_ip = NULL;
     char *object_type = NULL;
     char *object_number = NULL;
     int numbers = 0;
-    char *rssi = NULL;
     char *object_mac_address = NULL;
     char *initial_timestamp_GMT = NULL;
     char *final_timestamp_GMT = NULL;
