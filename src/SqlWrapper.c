@@ -32,8 +32,8 @@ static ErrorCode SQL_execute(void* db, char* sql_statement){
 
     res = PQexec(conn, sql_statement);
     if(PQresultStatus(res) != PGRES_COMMAND_OK){
+		printf("SQL_execute failed [%d]: %s", res, PQerrorMessage(conn));
         PQclear(res);
-        printf("SQL_execute failed: %s", PQerrorMessage(conn));
         return E_SQL_EXECUTE;
     }
 
@@ -97,6 +97,79 @@ ErrorCode SQL_open_database_connection(char* conninfo, void** db){
 ErrorCode SQL_close_database_connection(void* db){
     PGconn *conn = (PGconn *) db;
     PQfinish(conn);
+
+    return WORK_SUCCESSFULLY;
+}
+
+
+ErrorCode SQL_vacuum_database(void* db){
+    PGconn *conn = (PGconn *) db;
+    char *table_name[4] = {"tracking_table",
+                           "lbeacon_table",
+                           "gateway_table",
+                           "object_table"};
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char *sql_template = "VACUUM %s;";
+    int idx = 0;
+
+    for(idx = 0; idx< 4 ; idx++){
+        memset(sql, 0, sizeof(sql));
+        sprintf(sql, sql_template, table_name[idx]);
+
+        /* Execute SQL statement */
+        ret_val = SQL_execute(db, sql);
+
+        if(WORK_SUCCESSFULLY != ret_val){
+            return E_SQL_EXECUTE;
+        }
+    }
+
+    return WORK_SUCCESSFULLY;
+}
+
+ErrorCode SQL_retain_data(void* db, int retention_hours){
+    PGconn *conn = (PGconn *) db;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    time_t current_timestamp = get_system_time();
+    char *table_name[2] = {"lbeacon_table", "gateway_table"};
+    char *sql_template = "DELETE FROM %s WHERE " \
+                         "last_report_timestamp < to_timestamp(\'%d\') - " \
+                         "INTERVAL \'%d HOURS\';";
+    int idx = 0;
+    char *tsdb_table_name[1] = {"tracking_table"};
+    char *sql_tsdb_template = "SELECT drop_chunks(interval \'%d HOURS\', " \
+                              "\'%s\');";
+    PGresult *res;
+
+    for(idx = 0; idx<2; idx++){
+        memset(sql, 0, sizeof(sql));
+        sprintf(sql, sql_template, table_name[idx], current_timestamp,
+                retention_hours);
+
+    /* Execute SQL statement */
+        ret_val = SQL_execute(db, sql);
+
+        if(WORK_SUCCESSFULLY != ret_val){
+            return E_SQL_EXECUTE;
+        }
+    }
+
+    for(idx = 0; idx<1; idx++){
+        memset(sql, 0, sizeof(sql));
+        sprintf(sql, sql_tsdb_template, retention_hours, tsdb_table_name[idx]);
+
+        /* Execute SQL statement */
+        printf("SQL command = [%s]\n", sql);
+        res = PQexec(conn, sql);
+        if(PQresultStatus(res) != PGRES_TUPLES_OK){
+            PQclear(res);
+            printf("SQL_execute failed: %s", PQerrorMessage(conn));
+            return E_SQL_EXECUTE;
+        }
+        PQclear(res);
+    }
 
     return WORK_SUCCESSFULLY;
 }
@@ -195,6 +268,8 @@ ErrorCode SQL_query_registered_gateways(void* db,
         sprintf(sql, sql_template_query_health_status, health_status);
     }
 
+	/* Execute SQL statement */
+	printf("SQL command = [%s]\n", sql);
     res = PQexec(conn, sql);
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
         PQclear(res);

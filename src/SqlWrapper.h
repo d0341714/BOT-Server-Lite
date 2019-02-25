@@ -118,6 +118,37 @@ ErrorCode SQL_open_database_connection(char* db_filepath, void** db);
 */
 ErrorCode SQL_close_database_connection(void* db);
 
+/* SQL_vacuum_database();
+
+      Vacuum the database to collect garbage
+
+  Parameter:
+
+      db - the pointer pointing to database
+
+  Return Value:
+
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_vacuum_database(void* db);
+
+/* SQL_retain_data();
+
+      Vacuum the database to collect garbage
+
+  Parameter:
+
+      db - the pointer pointing to database
+      retention_hours - specify the hours for data retention
+
+  Return Value:
+
+      ErrorCode - indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_retain_data(void* db, int retention_hours);
+
 /* SQL_update_gateway_registration_status
 
       Update the input gateways as registered.
@@ -271,6 +302,7 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
 ErrorCode SQL_update_object_tracking_data(void* db,
                                           char* buf,
                                           size_t buf_len);
+
 
 
 #endif
