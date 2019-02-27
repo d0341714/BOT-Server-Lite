@@ -264,7 +264,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\src&quot;;&quot;$(SolutionDir)\..\3rd_party\PostgreSQL\11\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\src&quot;;&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -285,7 +285,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libpq.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)\..\3rd_party\PostgreSQL\11\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -338,7 +338,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\src\ErrorCode.h"
+				RelativePath="..\..\src\BeDIS.h"
 				>
 			</File>
 			<File
