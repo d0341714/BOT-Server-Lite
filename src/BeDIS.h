@@ -47,7 +47,6 @@
 #ifndef BEDIS_H
 #define BEDIS_H
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -56,26 +55,18 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <dirent.h>
-#include <pthread.h>
+#include <winsock2.h>   
+#pragma comment(lib,"WS2_32.lib")
+#include <WS2tcpip.h>
 #include <signal.h>
 #include <time.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/poll.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/timeb.h>
-#include <sys/file.h>
+#include <windows.h>
 #include "Mempool.h"
 #include "UDP_API.h"
 #include "LinkedList.h"
 #include "thpool.h"
-#include "zlog.h"
+
+//#include "zlog.h"
 
 /* Parameter that marks the start of the config file */
 #define DELIMITER "="
@@ -195,6 +186,18 @@ typedef enum _ErrorCode{
 
 } ErrorCode;
 
+
+
+/* Type of health_status to be queried. */
+typedef enum _HealthStatus {
+
+    S_NORMAL_STATUS = 0,
+    E_ERROR_STATUS = 1,
+    MAX_STATUS = 2
+
+} HealthStatus;
+
+
 typedef struct {
     ErrorCode code;
     char *message;
@@ -269,7 +272,7 @@ typedef enum DeviceType {
 bool ready_to_work;
 
 /* The pointer to the category of the log file */
-zlog_category_t *category_health_report, *category_debug;
+//zlog_category_t *category_health_report, *category_debug;
 
 
 /* FUNCTIONS */
@@ -376,101 +379,7 @@ ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
 
      system_time - system time in seconds
 */
-int get_system_time();
-
-
-/*
-  memset:
-
-      This function is called to fill a block of memory.
-
-  Parameters:
-
-     ptr    - the pointer to the block memory to fill
-     value  - The value in int type: The function will fill the memory
-              as if this value
-     number - number of bytes in the memory area starting from ptr to be
-               set to value
-
-  Return value:
-
-     void * - a pointer points to the memory area
-*/
-extern void * memset(void * ptr, int value, size_t number);
-
-
-/*
-  pthread_attr_init:
-
-      This function is called to initialize thread attributes object pointed
-      to by attr with default attribute values
-
-  Parameters:
-
-      attr - pointer to the thread attributes object to be initialized
-
-  Return value:
-
-      0 for success. error number for error.
-*/
-extern int pthread_attr_init(pthread_attr_t *attr);
-
-
-/*
-  pthread_attr_destroy:
-
-      This function is called to destroy the thread attributes object
-      pointed to by attr
-
-  Parameters:
-
-      attr - the thread attributes object to be destroyed
-
-  Return value:
-
-      0 for success. error number for error.
-*/
-extern int pthread_attr_destroy(pthread_attr_t *attr);
-
-
-/*
-  pthread_create:
-
-      This function is called to start a new thread in the calling process.
-      The new thread starts execution by invoking start_routine.
-
-  Parameters:
-
-      thread - a pointer to the new thread
-      attr - set thread properties
-      start_routine - routine to be executed by the new thread
-      arg - the parameters of the start_routine.
-
-  Return value:
-
-      0 for success. error number for error and the contents of *thread are
-      undefined.
-*/
-extern int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
-                          void *(*start_routine) (void *), void *arg);
-
-
-/*
-  pthread_detach:
-
-      This function is called to mark the thread identified by thread as
-      detached. When a detached thread returns, its resources are
-      automatically released back to the system.
-
-  Parameters:
-
-      thread - a thread to be detached
-
-  Return value:
-
-      0 for success. error number for error.
-*/
-extern int pthread_detach(pthread_t thread);
+time_t get_system_time();
 
 
 #endif

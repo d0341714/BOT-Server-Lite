@@ -42,8 +42,10 @@
 #include <stdlib.h> //exit(0)
 #include <stdbool.h>
 #include <pthread.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
+#include <winsock2.h>
+#include <windows.h>
+#pragma comment(lib,"WS2_32.lib")
+#include <WS2tcpip.h>
 #include <errno.h>
 #include "pkt_Queue.h"
 
@@ -69,7 +71,13 @@ typedef struct {
 
 typedef struct {
 
+	WSADATA wsaData;
+
+	WORD sockVersion;
+
     struct sockaddr_in si_server;
+
+	int optval;
 
     int  send_socket, recv_socket;
 

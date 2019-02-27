@@ -57,12 +57,12 @@
 /* Gateway config file location and defining of config file. */
 
 /* File path of the config file of the Gateway */
-#define CONFIG_FILE_NAME "../config/server.conf"
+#define CONFIG_FILE_NAME "./config/server.conf"
 
 /* File path of the config file of the zlog */
-#define ZLOG_CONFIG_FILE_NAME "../config/zlog.conf"
+#define ZLOG_CONFIG_FILE_NAME "/home/pi/BOT-Server-Lite/config/zlog.conf"
 
-#define SQLITE_FILE_NAME "bot_lite.db"
+#define SQLITE_FILE_NAME "./bot_lite.db"
 
 /* The category defined of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"

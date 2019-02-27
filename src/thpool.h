@@ -9,17 +9,15 @@
 
 #define _GNU_SOURCE
 
-#include <unistd.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <pthread.h>
 #include <errno.h>
 #include <time.h>
-#include <sys/time.h>
-#include <sys/resource.h>
 #include "Mempool.h"
-
+#include <unistd.h>
+#include <signal.h>
 
 /* The number of slots for the memory pool */
 #define SLOTS_FOR_MEM_POOL 100
@@ -221,7 +219,7 @@ void thpool_pause(Threadpool);
  * @example
  *    ..
  *    thpool_pause(thpool);
- *    sleep(10);              // Delay execution 10 seconds
+ *    Sleep(10);              // Delay execution 10 seconds
  *    thpool_resume(thpool);
  *    ..
  *

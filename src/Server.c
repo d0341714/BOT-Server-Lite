@@ -51,7 +51,7 @@
 int main(int argc, char **argv){
 
     /* Initialize zlog */
-
+/*
     if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0){
 
         category_health_report = zlog_get_category(LOG_CATEGORY_HEALTH_REPORT);
@@ -69,8 +69,11 @@ int main(int argc, char **argv){
 #ifdef debugging
     zlog_info(category_debug, "Server start running");
 #endif
-
+*/
     int return_value;
+	int send_type;
+	char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
+	int current_time;
 
     /* The main thread do the communication Unit */
     pthread_t CommUnit_thread;
@@ -87,9 +90,8 @@ int main(int argc, char **argv){
 
     ready_to_work = true;
 
-
     /* Reading the config */
-
+/*
     if(get_config( &config, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY){
         zlog_error(category_health_report, "Opening config file Fail");
 #ifdef debugging
@@ -97,14 +99,16 @@ int main(int argc, char **argv){
 #endif
         return E_OPEN_FILE;
     }
-
+*/
     /* Initialize the memory pool */
     if(mp_init( &node_mempool, sizeof(BufferNode), SLOTS_IN_MEM_POOL)
        != MEMORY_POOL_SUCCESS){
+/*
         zlog_error(category_health_report, "Mempool Initialization Fail");
 #ifdef debugging
         zlog_error(category_debug, "Mempool Initialization Fail");
 #endif
+*/
         return E_MALLOC;
     }
 
@@ -149,28 +153,30 @@ int main(int argc, char **argv){
                 (void *) process_wifi_send, config.normal_priority);
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
-
+/*
 #ifdef debugging
     zlog_info(category_debug, "Buffers initialize Success");
 #endif
-
+*/
     sort_priority( &priority_list_head);
 
     /* Initialize the Wifi connection */
     if(return_value = Wifi_init(config.IPaddress) != WORK_SUCCESSFULLY){
         /* Error handling and return */
         initialization_failed = true;
+/*
         zlog_error(category_health_report, "Wi-Fi initialization Fail");
 #ifdef debugging
         zlog_error(category_debug, "Wi-Fi initialization Fail");
 #endif
+*/
         return E_WIFI_INIT_FAIL;
     }
-
+/*
 #ifdef debugging
     zlog_info(category_debug, "Wi-Fi initialization Success");
 #endif
-
+*/
     /* Create threads for sending and receiving data from and to LBeacons and
        the server. */
     /* Two static threads to listen for messages from LBeacon or Sever */
@@ -179,27 +185,31 @@ int main(int argc, char **argv){
 
     if(return_value != WORK_SUCCESSFULLY){
         initialization_failed = true;
+/*
         zlog_error(category_health_report, "wifi_listener initialization Fail");
 #ifdef debugging
         zlog_error(category_debug, "wifi_listener initialization Fail");
 #endif
+*/
         return E_WIFI_INIT_FAIL;
     }
-
+/*
 #ifdef debugging
     zlog_info(category_debug, "wifi_listener initialization Success");
 #endif
-
+*/
     NSI_initialization_complete = true;
 
     /* Create the thread of Communication Unit  */
     return_value = startThread( &CommUnit_thread, CommUnit_routine, NULL);
 
     if(return_value != WORK_SUCCESSFULLY){
-        zlog_error(category_health_report, "CommUnit_thread Create Fail");
+/*
+		zlog_error(category_health_report, "CommUnit_thread Create Fail");
 #ifdef debugging
         zlog_error(category_debug, "CommUnit_thread Create Fail");
 #endif
+		*/
         return return_value;
     }
 
@@ -208,21 +218,23 @@ int main(int argc, char **argv){
           CommUnit_initialization_complete == false ||
           BHM_initialization_complete == false){
 
-        sleep(WAITING_TIME);
+        Sleep(WAITING_TIME);
 
         if(initialization_failed == true){
             ready_to_work = false;
+/*
             zlog_error(category_health_report,
                        "The Network or Buffer initialization Fail.");
 #ifdef debugging
             zlog_error(category_debug,
                        "The Network or Buffer initialization Fail.");
 #endif
+*/
             return E_INITIALIZATION_FAIL;
         }
     }
 
-    int current_time;
+
 
     current_time = get_system_time();
 
@@ -238,10 +250,9 @@ int main(int argc, char **argv){
 
             /* Pull object tracking object data */
             /* set the pkt type */
-            int send_type = ((from_server & 0x0f) << 4) +
+            send_type = ((from_server & 0x0f) << 4) +
                              (poll_for_tracked_object_data_from_server &
                              0x0f);
-            char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
             memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
             temp[0] = (char)send_type;
@@ -258,9 +269,8 @@ int main(int argc, char **argv){
 
             /* Polling for health reports. */
             /* set the pkt type */
-            int send_type = ((from_server & 0x0f) << 4) +
+            send_type = ((from_server & 0x0f) << 4) +
                              (RFHR_from_server & 0x0f);
-            char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
             memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
             temp[0] = (char)send_type;
@@ -273,17 +283,17 @@ int main(int argc, char **argv){
             last_polling_LBeacon_for_HR_time = get_system_time();
         }
 
-        sleep(WAITING_TIME);
+        Sleep(WAITING_TIME);
 
     }
 
     /* The program is going to be ended. Free the connection of Wifi */
     Wifi_free();
-
+/*
 #ifdef debugging
     zlog_info(category_debug, "Server exit successfullly");
 #endif
-
+*/
     SQL_close_database_connection(Server_db);
 
     return WORK_SUCCESSFULLY;
@@ -294,8 +304,11 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
 
     FILE *file = fopen(file_name, "r");
     if (file == NULL) {
+
         /* Error handling */
+/*
         zlog_error(category_health_report, "Open config file fail.");
+*/
         return E_OPEN_FILE;
     }
     else {
@@ -452,6 +465,8 @@ void *sort_priority(BufferListHead *list_head){
     }
 
     pthread_mutex_unlock( &list_head -> list_lock);
+
+	return (void *)NULL;
 }
 
 
@@ -461,10 +476,13 @@ void* CommUnit_routine(){
     int current_time;
     Threadpool thpool;
     int return_error_value;
+	List_Entry *tmp;
+    BufferListHead *current_head;
+    bool is_empty_list_head;
 
     /* wait for NSI get ready */
     while(NSI_initialization_complete == false){
-        sleep(WAITING_TIME);
+        Sleep(WAITING_TIME);
         if(initialization_failed == true){
             return (void *)NULL;
         }
@@ -488,17 +506,13 @@ void* CommUnit_routine(){
 
         current_time = get_system_time();
 
-        List_Entry *tmp;
-        BufferListHead *current_head;
-        bool is_empty_list_head;
-
         /* In the normal situation, the scanning starts from the high priority
            to lower priority. If the timer expired for MAX_STARVATION_TIME,
            reverse the scanning process */
         while(current_time - init_time < MAX_STARVATION_TIME){
 
             while(thpool -> num_threads_working == thpool -> num_threads_alive){
-                sleep(WAITING_TIME);
+                Sleep(WAITING_TIME);
             }
 
             /* Scan the priority_list to get the buffer list with the highest
@@ -548,14 +562,14 @@ void* CommUnit_routine(){
 
             }
             else{
-                sleep(WAITING_TIME);
+                Sleep(WAITING_TIME);
             }
 
             current_time = get_system_time();
         }
 
         while(thpool -> num_threads_working == thpool -> num_threads_alive){
-            sleep(WAITING_TIME);
+            Sleep(WAITING_TIME);
         }
 
         /* Scan the priority list in reverse order to prevent starving the
@@ -600,7 +614,7 @@ void* CommUnit_routine(){
                                                  priority_nice);
         }
         else{
-            sleep(WAITING_TIME);
+            Sleep(WAITING_TIME);
         }
 
         /* Update the init_time */
@@ -623,6 +637,8 @@ void *NSI_routine(void *_buffer_list_head){
 
     BufferNode *temp;
 
+	int send_type;
+
     pthread_mutex_lock( &buffer_list_head -> list_lock);
 
     if(is_entry_list_empty( &buffer_list_head -> list_head) == false){
@@ -635,7 +651,7 @@ void *NSI_routine(void *_buffer_list_head){
 
         temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
 
-        int send_type = (from_server & 0x0f)<<4;
+        send_type = (from_server & 0x0f)<<4;
 
         /* Put the address into Gateway_address_map and set the return pkt type
          */
@@ -731,19 +747,23 @@ void *Gateway_routine(void *_buffer_list_head){
 
 void init_Address_Map(AddressMapArray *address_map){
 
+	int n;
+
     pthread_mutex_init( &address_map -> list_lock, 0);
 
     memset(address_map -> address_map_list, 0,
            sizeof(address_map -> address_map_list));
 
-    for(int n = 0; n < MAX_NUMBER_NODES; n ++)
+    for(n = 0; n < MAX_NUMBER_NODES; n ++)
         address_map -> in_use[n] = false;
 }
 
 
 bool is_in_Address_Map(AddressMapArray *address_map, char *net_address){
 
-    for(int n = 0;n < MAX_NUMBER_NODES;n ++){
+	int n;
+
+    for(n = 0;n < MAX_NUMBER_NODES;n ++){
 
         if (address_map -> in_use[n] == true && strncmp(address_map ->
             address_map_list[n].net_address, net_address, NETWORK_ADDR_LENGTH)
@@ -757,16 +777,18 @@ bool is_in_Address_Map(AddressMapArray *address_map, char *net_address){
 
 bool Gateway_join_request(AddressMapArray *address_map, char *address){
 
+    int not_in_use = -1;
+	int n;
+
     pthread_mutex_lock( &address_map -> list_lock);
     /* Copy all the necessary information received from the LBeacon to the
        address map. */
 
     /* Record the first unused address map location in order to store the new
        joined LBeacon. */
-    int not_in_use = -1;
 
     if(is_in_Address_Map(address_map, address) == true){
-        for(int n = 0 ; n < MAX_NUMBER_NODES ; n ++){
+        for(n = 0 ; n < MAX_NUMBER_NODES ; n ++){
             if(address_map -> in_use[n] == true && strncmp(address_map ->
                address_map_list[n].net_address, address, NETWORK_ADDR_LENGTH) ==
                0){
@@ -779,7 +801,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
         return true;
     }
 
-    for(int n = 0 ; n < MAX_NUMBER_NODES ; n ++){
+    for(n = 0 ; n < MAX_NUMBER_NODES ; n ++){
         if(address_map -> in_use[n] == false && not_in_use == -1){
             not_in_use = n;
             break;
@@ -808,10 +830,12 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
 
 void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size){
 
+	int n;
+
     pthread_mutex_lock( &address_map -> list_lock);
 
     if (size <= WIFI_MESSAGE_LENGTH){
-        for(int n = 0;n < MAX_NUMBER_NODES;n ++){
+        for(n = 0;n < MAX_NUMBER_NODES;n ++){
 
             if (address_map -> in_use[n] == true){
                 /* Add the pkt that to be sent to the server */
@@ -890,12 +914,22 @@ void *process_wifi_receive(){
 
         sPkt temppkt = udp_getrecv( &udp_config);
 
+		int test_times;
+
+		int current_time;
+
+		char *tmp_addr;
+
+		int pkt_direction;
+
+		int pkt_type;
+
         if(temppkt.type == UDP){
 
             /* counting test time for mp_alloc(). */
-            int test_times = 0;
+            test_times = 0;
 
-            int current_time = get_system_time();
+            current_time = get_system_time();
 
             /* Allocate memory from node_mempool a buffer node for received data
                and copy the data from Wi-Fi receive queue to the node. */
@@ -903,7 +937,7 @@ void *process_wifi_receive(){
                 if(test_times == TEST_MALLOC_MAX_NUMBER_TIMES)
                     break;
                 else if(test_times != 0)
-                    sleep(1);
+                    Sleep(1);
 
                 new_node = mp_alloc( &node_mempool);
                 test_times ++;
@@ -923,14 +957,14 @@ void *process_wifi_receive(){
 
                 new_node -> content_size = temppkt.content_size;
 
-                char *tmp_addr = udp_hex_to_address(temppkt.address);
+                tmp_addr = udp_hex_to_address(temppkt.address);
 
                 memcpy(new_node -> net_address, tmp_addr, NETWORK_ADDR_LENGTH);
 
                 /* read the pkt direction from higher 4 bits. */
-                int pkt_direction = (new_node -> content[0] >> 4) & 0x0f;
+                pkt_direction = (new_node -> content[0] >> 4) & 0x0f;
                 /* read the pkt type from lower lower 4 bits. */
-                int pkt_type = new_node -> content[0] & 0x0f;
+                pkt_type = new_node -> content[0] & 0x0f;
 
                 /* Insert the node to the specified buffer, and release
                    list_lock. */
@@ -981,8 +1015,8 @@ void *process_wifi_receive(){
             }
         }
         else if(temppkt.type == NONE){
-            /* If there is no packet received, sleep a short time */
-            sleep(WAITING_TIME);
+            /* If there is no packet received, Sleep a short time */
+            Sleep(WAITING_TIME);
         }
     }
     return (void *)NULL;

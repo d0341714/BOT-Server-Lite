@@ -49,9 +49,11 @@
 
 size_t get_current_size_mempool(Memory_Pool *mp){
 
+	size_t mem_size;
+
     pthread_mutex_lock(&mp->mem_lock);
 
-    size_t mem_size = mp->alloc_time * mp->size * mp->slots;
+    mem_size = mp->alloc_time * mp->size * mp->slots;
 
     pthread_mutex_unlock(&mp->mem_lock);
 
@@ -60,6 +62,12 @@ size_t get_current_size_mempool(Memory_Pool *mp){
 
 
 int mp_init(Memory_Pool *mp, size_t size, size_t slots){
+
+	char *end;
+
+	char *ite;
+
+	void *temp;
 
     pthread_mutex_init( &mp->mem_lock, 0);
 
@@ -74,12 +82,12 @@ int mp_init(Memory_Pool *mp, size_t size, size_t slots){
     mp->alloc_time = 1;
 
     /* add every slot to the free list */
-    char *end = (char *)mp->memory[0] + size * slots;
+    end = (char *)mp->memory[0] + size * slots;
 
-    for(char *ite = mp->memory[0]; ite < end; ite += size){
+    for(ite = mp->memory[0]; ite < end; ite += size){
 
         /* store first address */
-        void *temp = mp->head;
+        temp = mp->head;
 
         /* link the new node */
         mp->head = (void *)ite;
@@ -95,6 +103,10 @@ int mp_init(Memory_Pool *mp, size_t size, size_t slots){
 int mp_expand(Memory_Pool *mp, size_t slots){
 
     int alloc_count;
+	char *end;
+	void *temp;
+	char *ite;
+
 
     alloc_count = mp->alloc_time;
 
@@ -106,12 +118,12 @@ int mp_expand(Memory_Pool *mp, size_t slots){
         return MEMORY_POOL_ERROR;
 
     /* add every slot to the free list */
-    char *end = (char *) mp->memory[alloc_count] + mp->size * slots;
+    end = (char *) mp->memory[alloc_count] + mp->size * slots;
 
-    for(char *ite = mp->memory[alloc_count]; ite < end; ite += mp->size){
+    for(ite = mp->memory[alloc_count]; ite < end; ite += mp->size){
 
         /* store first address */
-        void *temp = mp->head;
+        temp = mp->head;
 
         /* link the new node */
         mp->head = (void *)ite;
@@ -126,10 +138,11 @@ int mp_expand(Memory_Pool *mp, size_t slots){
 }
 
 void mp_destroy(Memory_Pool *mp){
+	int i;
 
     pthread_mutex_lock( &mp->mem_lock);
 
-    for(int i = 0; i < MAX_EXP_TIME; i++){
+    for(i = 0; i < MAX_EXP_TIME; i++){
 
         mp->memory[i] = NULL;
         free(mp->memory[i]);
@@ -143,6 +156,8 @@ void mp_destroy(Memory_Pool *mp){
 
 
 void *mp_alloc(Memory_Pool *mp){
+
+	void *temp;
 
     pthread_mutex_lock(&mp->mem_lock);
 
@@ -158,7 +173,7 @@ void *mp_alloc(Memory_Pool *mp){
     }
 
     /* store first address, i.e., address of the start of first element */
-    void *temp = mp->head;
+    temp = mp->head;
 
     /* link one past it */
     mp->head = *mp->head;
@@ -173,15 +188,19 @@ void *mp_alloc(Memory_Pool *mp){
 int mp_free(Memory_Pool *mp, void *mem){
 
     int closest = -1;
+	int i;
+	int differenceinbyte;
+	void *temp;
+	int mem_size = sizeof((char *) mem);
 
     pthread_mutex_lock(&mp->mem_lock);
 
     /* Check all the expanded memory space, to find the closest and
     most relevant mem_head for the current freeing memory. */
-    for(int i = 0; i < mp->alloc_time; i++){
+    for(i = 0; i < mp->alloc_time; i++){
 
         /* Calculate the offset from mem to mp->memory */
-        int differenceinbyte = (mem - mp->memory[i]) * sizeof(mem);
+        differenceinbyte = ((int)mem - (int)mp->memory[i]) * mem_size;
         /* Only consider the positive offset */
         if((differenceinbyte > 0) && ((differenceinbyte < closest) ||
            (closest == -1)))
@@ -194,7 +213,7 @@ int mp_free(Memory_Pool *mp, void *mem){
     }
 
     /* store first address */
-    void *temp = mp->head;
+    temp = mp->head;
     /* link new node */
     mp->head = mem;
     /* link to the list from new node */

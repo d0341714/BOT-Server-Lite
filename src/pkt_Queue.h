@@ -42,11 +42,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <string.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <sys/time.h>
+#include <windows.h>
+
+
+//typedef enum{true=1, false=0} bool;
 
 
 /* If need to debug. */
@@ -397,24 +399,5 @@ int queue_len(pkt_ptr pkt_queue);
 
  */
 void print_content(char *content, int size);
-
-
-/*
-  generate_identification
-
-      Generate a specific hex number as a unique number to identify same pkt.
-
-  Parameter:
-
-      identification : The char pointer use for storing the unique number.
-      size           : size of identification.
-
-  Return Value:
-
-      None
-
- */
-void generate_identification(char *identification, int size);
-
 
 #endif

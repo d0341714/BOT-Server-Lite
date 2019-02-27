@@ -45,6 +45,8 @@
 
 int init_Packet_Queue(pkt_ptr pkt_queue){
 
+	int num;
+
     pthread_mutex_init( &pkt_queue -> mutex, 0);
 
     pthread_mutex_lock( &pkt_queue -> mutex);
@@ -55,8 +57,9 @@ int init_Packet_Queue(pkt_ptr pkt_queue){
 
     pkt_queue -> rear  = -1;
 
-    for(int num = 0 ; num < MAX_QUEUE_LENGTH ; num ++)
+	for(num = 0;num < MAX_QUEUE_LENGTH;num ++){
         pkt_queue -> Queue[num].type = NONE;
+	}
 
     pthread_mutex_unlock( &pkt_queue -> mutex);
 
@@ -88,6 +91,8 @@ int Free_Packet_Queue(pkt_ptr pkt_queue){
 
 int addpkt(pkt_ptr pkt_queue, unsigned int type, char *raw_addr, char *content
                                                            , int content_size) {
+
+    int current_idx;
 
     if(content_size > MESSAGE_LENGTH)
         return MESSAGE_OVERSIZE;
@@ -131,7 +136,7 @@ int addpkt(pkt_ptr pkt_queue, unsigned int type, char *raw_addr, char *content
         pkt_queue -> rear ++;
     }
 
-    int current_idx = pkt_queue -> rear;
+    current_idx = pkt_queue -> rear;
 
     pkt_queue -> Queue[current_idx].type = type;
 
@@ -165,9 +170,9 @@ int addpkt(pkt_ptr pkt_queue, unsigned int type, char *raw_addr, char *content
 
 sPkt get_pkt(pkt_ptr pkt_queue){
 
-    pthread_mutex_lock( &pkt_queue -> mutex);
+	sPkt tmp;
 
-    sPkt tmp;
+    pthread_mutex_lock( &pkt_queue -> mutex);
 
     memset(&tmp, 0, sizeof(tmp));
 
@@ -196,11 +201,13 @@ sPkt get_pkt(pkt_ptr pkt_queue){
 
 int delpkt(pkt_ptr pkt_queue) {
 
+	int current_idx;
+
     if(is_null(pkt_queue)) {
         return pkt_Queue_SUCCESS;
     }
 
-    int current_idx = pkt_queue -> front;
+    current_idx = pkt_queue -> front;
 
 #ifdef debugging
     display_pkt("deledpkt", pkt_queue, current_idx);
@@ -238,13 +245,17 @@ int delpkt(pkt_ptr pkt_queue) {
 
 int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num){
 
+	pPkt current_pkt;
+	char *char_addr;
+	char *address_char;
+
     if(pkt_num < 0 && pkt_num >= MAX_QUEUE_LENGTH){
         return pkt_Queue_display_over_range;
     }
 
-    pPkt current_pkt = &pkt_queue -> Queue[pkt_num];
+    current_pkt = &pkt_queue -> Queue[pkt_num];
 
-    char *char_addr = hex_to_char(current_pkt -> address
+    char_addr = hex_to_char(current_pkt -> address
                                 , NETWORK_ADDR_LENGTH_HEX);
 
     printf("==================\n");
@@ -259,7 +270,7 @@ int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num){
 
     printf("===== address ====\n");
 
-    char *address_char = hex_to_char(current_pkt -> address
+    address_char = hex_to_char(current_pkt -> address
                                    , NETWORK_ADDR_LENGTH_HEX);
 
     print_content(address_char, NETWORK_ADDR_LENGTH);
@@ -321,9 +332,10 @@ int str_to_type(const char *conType){
 
 void char_to_hex(char *raw, unsigned char *raw_hex, int size){
 
-    for(int i = 0 ; i < (size/2) ; i ++){
+	int i;
+	char tmp[2];
 
-        char tmp[2];
+    for(i = 0 ; i < (size/2) ; i ++){
 
         tmp[0] = raw[i * 2];
         tmp[1] = raw[i * 2 + 1];
@@ -336,10 +348,11 @@ char *hex_to_char(unsigned char *hex, int size){
 
     int char_size = size * 2;
     char *char_addr = malloc(sizeof(char) * (char_size + 1));
+	int len;
 
     memset(char_addr, 0, sizeof(char) * (char_size + 1));
 
-    for(int len = 0;len < size;len ++)
+    for(len = 0;len < size;len ++)
         sprintf( &char_addr[len * 2], "%02x", hex[len]);
 
     return char_addr;
@@ -421,29 +434,8 @@ int queue_len(pkt_ptr pkt_queue){
 
 void print_content(char *content, int size){
 
-    for(int loc = 0; loc < size; loc ++)
+	int loc;
+
+    for(loc = 0; loc < size; loc ++)
         printf("%c", content[loc]);
-}
-
-
-void generate_identification(char *identification, int size){
-
-    char str[] = "0123456789ABCDEF";
-
-    memset(identification, 0 , size * sizeof(char));
-
-    struct timeval tv;
-
-    struct timezone tz;
-
-    gettimeofday (&tv , &tz);
-
-    /* Seed number for rand() */
-    srand((unsigned int) (tv.tv_sec * 1000 + tv.tv_usec));
-
-    for(int length = 0;length < size;length ++) {
-
-        identification[length] = str[rand() % 16];
-        srand(rand());
-    }
 }

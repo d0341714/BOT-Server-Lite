@@ -51,26 +51,26 @@
 #include "LinkedList.h"
 
 
-inline void init_entry(List_Entry *entry) {
+void init_entry(List_Entry *entry) {
 
     entry->next = entry;
     entry->prev = entry;
 }
 
 
-inline bool is_entry_list_empty(List_Entry *entry) {
+bool is_entry_list_empty(List_Entry *entry) {
 
 	return is_isolated_node(entry);
 }
 
 
-inline bool is_isolated_node(List_Entry *node) {
+bool is_isolated_node(List_Entry *node) {
 
     return (node == node->next);
 }
 
 
-inline void insert_entry_list(List_Entry *new_node, List_Entry *prev,
+void insert_entry_list(List_Entry *new_node, List_Entry *prev,
                               List_Entry *next) {
 
     next->prev = new_node;
@@ -80,26 +80,26 @@ inline void insert_entry_list(List_Entry *new_node, List_Entry *prev,
 }
 
 
-inline void insert_list_first(List_Entry *new_node, List_Entry *head) {
+void insert_list_first(List_Entry *new_node, List_Entry *head) {
 
     insert_entry_list(new_node, head, head->next);
 }
 
 
-inline void insert_list_tail(List_Entry *new_node, List_Entry *head) {
+void insert_list_tail(List_Entry *new_node, List_Entry *head) {
 
     insert_entry_list(new_node, head->prev, head);
 }
 
 
-inline void remove_entry_list(List_Entry *prev, List_Entry *next) {
+void remove_entry_list(List_Entry *prev, List_Entry *next) {
 
     next->prev = prev;
     prev->next = next;
 }
 
 
-inline void remove_list_node(List_Entry *removed_node_ptrs) {
+void remove_list_node(List_Entry *removed_node_ptrs) {
 
     remove_entry_list(removed_node_ptrs->prev, removed_node_ptrs->next);
 
@@ -108,7 +108,7 @@ inline void remove_list_node(List_Entry *removed_node_ptrs) {
 }
 
 
-inline int get_list_length(List_Entry *entry) {
+int get_list_length(List_Entry *entry) {
 
     struct List_Entry *listptrs;
     int list_length = 0;

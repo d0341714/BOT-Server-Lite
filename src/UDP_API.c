@@ -40,6 +40,15 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
 
     int ret;
 
+	struct timeval timeout;
+
+     udp_config -> sockVersion = MAKEWORD(2,2);
+
+	 if(WSAStartup(udp_config -> sockVersion, &udp_config -> wsaData) != 0)
+     {
+         return 0;
+     }
+
     // zero out the structure
     memset((char *) &udp_config -> si_server, 0, sizeof(udp_config
             -> si_server));
@@ -64,7 +73,7 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
          == -1)
         return recv_socket_error;
 
-    struct timeval timeout;
+
     timeout.tv_sec = UDP_SELECT_TIMEOUT; //秒
 
     if (setsockopt(udp_config -> recv_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout
@@ -81,7 +90,7 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
     udp_config -> recv_port = recv_port;
 
     //bind recv socket to port
-    if( bind(udp_config -> recv_socket , (struct sockaddr *)&udp_config ->
+    if( bind(udp_config -> recv_socket, (struct sockaddr *)&udp_config ->
              si_server, sizeof(udp_config -> si_server) ) == -1)
         return recv_socket_bind_error;
 
@@ -96,10 +105,12 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
 
 int udp_addpkt(pudp_config udp_config, char *raw_addr, char *content, int size){
 
+	char *removed_address;
+
     if(size > MESSAGE_LENGTH)
         return addpkt_msg_oversize;
 
-    char *removed_address = udp_address_reduce_point(raw_addr);
+    removed_address = udp_address_reduce_point(raw_addr);
 
     addpkt(&udp_config -> pkt_Queue, UDP, removed_address, content, size);
 
@@ -131,15 +142,10 @@ void *udp_send_pkt(void *udpconfig){
                 char *dest_address = udp_hex_to_address(
                                                       current_send_pkt.address);
 
-                bzero(&si_send, sizeof(si_send));
+                memset(&si_send, 0, sizeof(si_send));
                 si_send.sin_family = AF_INET;
                 si_send.sin_port   = htons(udp_config -> send_port);
-
-                if (inet_aton(dest_address, &si_send.sin_addr) == 0){
-#ifdef debugging
-                    printf("inet_aton error.\n");
-#endif
-                }
+				si_send.sin_addr.S_un.S_addr   = inet_addr(dest_address);
 
                 if (sendto(udp_config -> send_socket, current_send_pkt.content
                   , current_send_pkt.content_size, 0,(struct sockaddr *)&si_send
@@ -151,7 +157,7 @@ void *udp_send_pkt(void *udpconfig){
             }
         }
         else{
-            sleep(SEND_NULL_SLEEP);
+            Sleep(SEND_NULL_SLEEP);
         }
 
     }
@@ -193,6 +199,7 @@ void *udp_recv_pkt(void *udpconfig){
 #endif
         }
         else if(recv_len > 0){
+/*
 #ifdef debugging
             //print details of the client/peer and the data received
             printf("Received packet from %s:%d\n", inet_ntoa(si_recv.sin_addr),
@@ -200,6 +207,7 @@ void *udp_recv_pkt(void *udpconfig){
             printf("Data: %s\n" , recv_buf);
             printf("Data Length %d\n", recv_len);
 #endif
+*/
             addpkt(&udp_config -> Received_Queue, UDP
                  , udp_address_reduce_point(inet_ntoa(si_recv.sin_addr))
                  , recv_buf, recv_len);
@@ -225,6 +233,8 @@ int udp_release(pudp_config udp_config){
 
     close(udp_config -> recv_socket);
 
+	WSACleanup();
+
     Free_Packet_Queue( &udp_config -> pkt_Queue);
 
     Free_Packet_Queue( &udp_config -> Received_Queue);
@@ -235,19 +245,21 @@ int udp_release(pudp_config udp_config){
 
 char *udp_address_reduce_point(char *raw_addr){
 
+    //Record current filled Address Location.
+    unsigned int address_loc = 0;
+
+	//in each part, at most 3 number.
+    int count = 0;
+    unsigned char tmp[3];
+
+	int lo, n;
+
     char *address = malloc(sizeof(char) * NETWORK_ADDR_LENGTH);
 
     memset(address, 0, NETWORK_ADDR_LENGTH);
 
-    //Record current filled Address Location.
-    int address_loc = 0;
-
     // Four part in a address.(devided by '.')
-    for(int n = 0; n < 4; n++){
-
-        //in each part, at most 3 number.
-        int count = 0;
-        unsigned char tmp[3];
+    for(n = 0; n < 4; n++){
 
         memset(&tmp, 0, sizeof(char) * 3);
 
@@ -271,7 +283,7 @@ char *udp_address_reduce_point(char *raw_addr){
             }
         }
 
-        for(int lo = 0; lo < 3;lo ++)
+        for(lo = 0; lo < 3;lo ++)
 
             if ((3 - count) > lo )
                 address[n * 3 + lo] = '0';
@@ -290,14 +302,16 @@ char *udp_hex_to_address(unsigned char *hex_addr){
 
     // Stored a recovered address.
     char *dest_address;
-    dest_address = malloc(sizeof(char) * 17);
-    memset(dest_address, 0, sizeof(char) * 17);
     char *tmp_address = hex_to_char(hex_addr, 6);
     int address_loc = 0;
-    for(int n=0;n < 4;n ++){
+	int loc, n;
+	dest_address = malloc(sizeof(char) * 17);
+    memset(dest_address, 0, sizeof(char) * 17);
+
+    for(n=0;n < 4;n ++){
 
         bool no_zero = false;
-        for(int loc=0;loc < 3;loc ++){
+        for(loc=0;loc < 3;loc ++){
 
             if(tmp_address[n * 3 + loc]== '0' && no_zero == false &&
                loc != 2)

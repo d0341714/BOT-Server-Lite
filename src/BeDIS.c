@@ -87,6 +87,8 @@ unsigned int *uuid_str_to_data(char *uuid) {
     int uuid_length = strlen(uuid);
     unsigned int *data =
         (unsigned int *)malloc(sizeof(unsigned int) * uuid_length);
+	unsigned int *data_pointer;
+	char *uuid_counter;
 
     if (data == NULL) {
         /* Error handling */
@@ -94,8 +96,8 @@ unsigned int *uuid_str_to_data(char *uuid) {
         return NULL;
     }
 
-    unsigned int *data_pointer = data;
-    char *uuid_counter = uuid;
+    data_pointer = data;
+    uuid_counter = uuid;
 
     for (; uuid_counter < uuid + uuid_length;
 
@@ -156,21 +158,12 @@ ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
 }
 
 
-int get_system_time() {
-    /* A struct that stores the time */
-    struct timeb t;
+time_t get_system_time(){
+    time_t ltime;
+    struct tm* timeinfo;
 
-    /* Return value as a long long type */
-    int system_time;
-
-    /* Convert time from Epoch to time in milliseconds of a long long type */
-    ftime(&t);
-
-    /* millisecond ver. */
-    /* system_time = 1000 * (long long)t.time + (long long)t.millitm; */
-
-    /* second ver. */
-    system_time = (int)t.time;
-
-    return system_time;
+    time(&ltime);
+    timeinfo = gmtime(&ltime);
+    ltime = mktime(timeinfo);
+    return ltime;
 }

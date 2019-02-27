@@ -49,6 +49,8 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <windows.h>
+
 
 #define MEMORY_POOL_SUCCESS 1
 #define MEMORY_POOL_ERROR 0
