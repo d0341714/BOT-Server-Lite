@@ -1,7 +1,7 @@
 #ifndef SQL_WRAPPER_H
 #define SQL_WRAPPER_H
 
-#include "ErrorCode.h"
+#include "BeDIS.h"
 
 /* SQL_callback
 
