@@ -264,7 +264,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\src&quot;;&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\src&quot;;&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\include&quot;;&quot;$(SolutionDir)\..\..\3rd_party\inc&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -283,9 +283,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libpq.lib"
+				AdditionalDependencies="libpq.lib pthreadVC2.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\lib\x64\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -323,6 +323,10 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath="..\..\src\BeDIS.c"
+				>
+			</File>
 			<File
 				RelativePath="..\..\src\SqlWrapper.c"
 				>

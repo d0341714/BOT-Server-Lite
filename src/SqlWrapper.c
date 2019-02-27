@@ -1,15 +1,6 @@
 #include "SqlWrapper.h"
 #include "libpq-fe.h"
 
-time_t get_system_time(){
-    time_t ltime;
-    struct tm* timeinfo;
-
-    time(&ltime);
-    timeinfo = gmtime(&ltime);
-    ltime = mktime(timeinfo);
-    return ltime;
-}
 /*
 static int SQL_callback(void *NotUsed,
                         int argc,
