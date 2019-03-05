@@ -39,11 +39,11 @@
 *.bak
 
 # Visual Studio files
-.suo
-.ncb
-.idb
-.pdb
-.manifest
-.dep
-.htm
-.user
+*.suo
+*.ncb
+*.idb
+*.pdb
+*.manifest
+*.dep
+*.htm
+*.user
