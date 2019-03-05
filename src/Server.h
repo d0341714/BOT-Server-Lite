@@ -45,7 +45,7 @@
 
 #ifndef GATEWAY_H
 #define GATEWAY_H
-
+#define debugging
 #define _GNU_SOURCE
 
 #include "BeDIS.h"
@@ -61,8 +61,6 @@
 
 /* File path of the config file of the zlog */
 #define ZLOG_CONFIG_FILE_NAME "/home/pi/BOT-Server-Lite/config/zlog.conf"
-
-#define SQLITE_FILE_NAME "./bot_lite.db"
 
 /* The category defined of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
@@ -88,9 +86,12 @@
 typedef struct {
 
     /* The IP address of server for WiFi netwok connection. */
-    char IPaddress[NETWORK_ADDR_LENGTH];
+    char server_ip[NETWORK_ADDR_LENGTH];
 
-    /* The number of LBeacon nodes in the star network of this gateway */
+	/* The IP address of database for server to connect. */
+	char db_ip[NETWORK_ADDR_LENGTH];
+    
+	/* The number of LBeacon nodes in the star network of this gateway */
     int allowed_number_nodes;
 
     /* The time interval in seconds for gateway sending request for health
@@ -104,9 +105,6 @@ typedef struct {
     /*The number of worker threads used by the communication unit for sending
       and receiving packets to and from LBeacons and the sever.*/
     int number_worker_threads;
-
-    /* The address of server ip */
-    char server_ip[NETWORK_ADDR_LENGTH];
 
     /* A port which beacons and server are listening on and for gateway to send
        to. */

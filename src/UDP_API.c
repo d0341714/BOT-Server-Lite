@@ -40,7 +40,7 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
 
     int ret;
 
-	struct timeval timeout;
+	int timeout;
 
      udp_config -> sockVersion = MAKEWORD(2,2);
 
@@ -74,7 +74,7 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
         return recv_socket_error;
 
 
-    timeout.tv_sec = UDP_SELECT_TIMEOUT; //秒
+    timeout = UDP_SELECT_TIMEOUT; //毫秒
 
     if (setsockopt(udp_config -> recv_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout
                  , sizeof(timeout)) == -1)
@@ -130,13 +130,15 @@ void *udp_send_pkt(void *udpconfig){
 
     pudp_config udp_config = (pudp_config) udpconfig;
 
+	sPkt current_send_pkt;
+
     struct sockaddr_in si_send;
 
     while(!(udp_config -> shutdown)){
 
         if(!(is_null( &udp_config -> pkt_Queue))){
 
-            sPkt current_send_pkt = get_pkt(&udp_config -> pkt_Queue);
+            current_send_pkt = get_pkt(&udp_config -> pkt_Queue);
 
             if (current_send_pkt.type == UDP){
                 char *dest_address = udp_hex_to_address(
@@ -145,7 +147,11 @@ void *udp_send_pkt(void *udpconfig){
                 memset(&si_send, 0, sizeof(si_send));
                 si_send.sin_family = AF_INET;
                 si_send.sin_port   = htons(udp_config -> send_port);
-				si_send.sin_addr.S_un.S_addr   = inet_addr(dest_address);
+				si_send.sin_addr.s_addr   = inet_addr(dest_address);
+
+#ifdef debugging
+			printf("Entrer Send pkts\n(sendto [%s] msg [%s])\n", dest_address, current_send_pkt.content);
+#endif
 
                 if (sendto(udp_config -> send_socket, current_send_pkt.content
                   , current_send_pkt.content_size, 0,(struct sockaddr *)&si_send
@@ -153,8 +159,13 @@ void *udp_send_pkt(void *udpconfig){
 #ifdef debugging
                       printf("sendto error.[%s]\n", strerror(errno));
 #endif
-                  }
-            }
+                 }
+				else{
+#ifdef debugging
+					printf("Send pkt success\n");
+#endif
+				}
+			}
         }
         else{
             Sleep(SEND_NULL_SLEEP);
@@ -172,6 +183,8 @@ void *udp_recv_pkt(void *udpconfig){
     int recv_len;
 
     char recv_buf[MESSAGE_LENGTH];
+
+	char *addr_tmp;
 
     struct sockaddr_in si_recv;
 
@@ -199,7 +212,8 @@ void *udp_recv_pkt(void *udpconfig){
 #endif
         }
         else if(recv_len > 0){
-/*
+
+			addr_tmp = inet_ntoa(si_recv.sin_addr);
 #ifdef debugging
             //print details of the client/peer and the data received
             printf("Received packet from %s:%d\n", inet_ntoa(si_recv.sin_addr),
@@ -207,9 +221,8 @@ void *udp_recv_pkt(void *udpconfig){
             printf("Data: %s\n" , recv_buf);
             printf("Data Length %d\n", recv_len);
 #endif
-*/
             addpkt(&udp_config -> Received_Queue, UDP
-                 , udp_address_reduce_point(inet_ntoa(si_recv.sin_addr))
+                 , udp_address_reduce_point(addr_tmp)
                  , recv_buf, recv_len);
         }
 #ifdef debugging
@@ -229,9 +242,9 @@ int udp_release(pudp_config udp_config){
 
     pthread_join(udp_config -> udp_receive, NULL);
 
-    close(udp_config -> send_socket);
+    closesocket(udp_config -> send_socket);
 
-    close(udp_config -> recv_socket);
+    closesocket(udp_config -> recv_socket);
 
 	WSACleanup();
 
@@ -246,7 +259,7 @@ int udp_release(pudp_config udp_config){
 char *udp_address_reduce_point(char *raw_addr){
 
     //Record current filled Address Location.
-    unsigned int address_loc = 0;
+    int address_loc = 0;
 
 	//in each part, at most 3 number.
     int count = 0;
@@ -254,12 +267,18 @@ char *udp_address_reduce_point(char *raw_addr){
 
 	int lo, n;
 
-    char *address = malloc(sizeof(char) * NETWORK_ADDR_LENGTH);
+	char *address = malloc(sizeof(char) * NETWORK_ADDR_LENGTH);
 
-    memset(address, 0, NETWORK_ADDR_LENGTH);
+#ifdef debugging
+	printf("Enter udp_address_reduce_point address [%s]\n", raw_addr);
+#endif 
+
+	memset(address, 0, NETWORK_ADDR_LENGTH);
 
     // Four part in a address.(devided by '.')
     for(n = 0; n < 4; n++){
+
+		count = 0;
 
         memset(&tmp, 0, sizeof(char) * 3);
 
@@ -293,7 +312,9 @@ char *udp_address_reduce_point(char *raw_addr){
         if (count == 3)
             address_loc ++;
     }
-
+#ifdef debugging
+	printf("Result of udp_address_reduce_point address [%s]\n", address);
+#endif 
     return address;
 }
 

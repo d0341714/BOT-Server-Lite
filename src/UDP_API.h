@@ -37,6 +37,8 @@
 #ifndef UDP_API_H
 #define UDP_API_H
 
+#define debugging
+
 #include <stdio.h> //printf
 #include <string.h> //memset
 #include <stdlib.h> //exit(0)
@@ -50,7 +52,7 @@
 #include "pkt_Queue.h"
 
 
-#define UDP_SELECT_TIMEOUT 30    //second
+#define UDP_SELECT_TIMEOUT 30000    //second
 #define SEND_NULL_SLEEP 30
 
 /* If need to debug. */

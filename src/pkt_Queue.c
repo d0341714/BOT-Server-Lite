@@ -258,6 +258,7 @@ int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num){
     char_addr = hex_to_char(current_pkt -> address
                                 , NETWORK_ADDR_LENGTH_HEX);
 
+
     printf("==================\n");
 
     printf("%s\n", display_title);

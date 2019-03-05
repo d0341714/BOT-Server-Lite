@@ -41,6 +41,7 @@ static int SQL_callback(void *NotUsed,
 */
 static ErrorCode SQL_execute(void* db, char* sql_statement);
 
+
 /* SQL_begin_transaction
 
      Begin transaction of SQL database operations.
@@ -55,6 +56,7 @@ static ErrorCode SQL_execute(void* db, char* sql_statement);
                   is WORK_SUCCESSFULLY
 */
 static ErrorCode SQL_begin_transaction(void* db);
+
 
 /* SQL_end_transaction
 
@@ -71,6 +73,7 @@ static ErrorCode SQL_begin_transaction(void* db);
 */
 static ErrorCode SQL_end_transaction(void* db);
 
+
 /* SQL_rollback_transaction
 
     Rollback transaction of SQL database operations.
@@ -85,6 +88,7 @@ static ErrorCode SQL_end_transaction(void* db);
                   is WORK_SUCCESSFULLY
 */
 static ErrorCode SQL_rollback_transaction(void* db);
+
 
 /* SQL_open_database_connection
 
@@ -103,6 +107,7 @@ static ErrorCode SQL_rollback_transaction(void* db);
 */
 ErrorCode SQL_open_database_connection(char* db_filepath, void** db);
 
+
 /* SQL_close_database_connection
 
       Close the database connection
@@ -117,6 +122,7 @@ ErrorCode SQL_open_database_connection(char* db_filepath, void** db);
                   is WORK_SUCCESSFULLY
 */
 ErrorCode SQL_close_database_connection(void* db);
+
 
 /* SQL_vacuum_database();
 
@@ -133,6 +139,7 @@ ErrorCode SQL_close_database_connection(void* db);
 */
 ErrorCode SQL_vacuum_database(void* db);
 
+
 /* SQL_retain_data();
 
       Vacuum the database to collect garbage
@@ -148,6 +155,7 @@ ErrorCode SQL_vacuum_database(void* db);
                   is WORK_SUCCESSFULLY
 */
 ErrorCode SQL_retain_data(void* db, int retention_hours);
+
 
 /* SQL_update_gateway_registration_status
 
@@ -172,6 +180,7 @@ ErrorCode SQL_retain_data(void* db, int retention_hours);
 ErrorCode SQL_update_gateway_registration_status(void* db,
                                                  char* buf,
                                                  size_t buf_len);
+
 
 /* SQL_query_registered_gateways
 
@@ -199,6 +208,7 @@ ErrorCode SQL_query_registered_gateways(void* db,
                                         HealthStatus health_status,
                                         char* output,
                                         size_t output_len);
+
 
 /* SQL_update_lbeacon_registration_status
 
@@ -250,6 +260,7 @@ ErrorCode SQL_update_gateway_health_status(void* db,
                                            char* buf,
                                            size_t buf_len);
 
+
 /* SQL_update_lbeacon_health_status
 
       Update health status of lbeacons
@@ -274,6 +285,7 @@ ErrorCode SQL_update_gateway_health_status(void* db,
 ErrorCode SQL_update_lbeacon_health_status(void* db,
                                            char* buf,
                                            size_t buf_len);
+
 
 /* SQL_update_object_tracking_data
 
@@ -302,7 +314,6 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
 ErrorCode SQL_update_object_tracking_data(void* db,
                                           char* buf,
                                           size_t buf_len);
-
 
 
 #endif

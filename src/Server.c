@@ -50,26 +50,6 @@
 
 int main(int argc, char **argv){
 
-    /* Initialize zlog */
-/*
-    if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0){
-
-        category_health_report = zlog_get_category(LOG_CATEGORY_HEALTH_REPORT);
-
-        if (!category_health_report)
-            zlog_fini();
-
-#ifdef debugging
-        category_debug = zlog_get_category(LOG_CATEGORY_DEBUG);
-        if (!category_debug)
-            zlog_fini();
-#endif
-    }
-
-#ifdef debugging
-    zlog_info(category_debug, "Server start running");
-#endif
-*/
     int return_value;
 	int send_type;
 	char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
@@ -90,32 +70,42 @@ int main(int argc, char **argv){
 
     ready_to_work = true;
 
-    /* Reading the config */
-/*
-    if(get_config( &config, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY){
-        zlog_error(category_health_report, "Opening config file Fail");
 #ifdef debugging
-        zlog_error(category_debug, "Opening config file Fail");
+	printf("Start Server\n");
 #endif
+
+    /* Reading the config */
+
+    if(get_config( &config, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY){
+
         return E_OPEN_FILE;
     }
-*/
+
+#ifdef debugging
+	printf("Mempool Initializing\n");
+#endif
+
     /* Initialize the memory pool */
     if(mp_init( &node_mempool, sizeof(BufferNode), SLOTS_IN_MEM_POOL)
        != MEMORY_POOL_SUCCESS){
-/*
-        zlog_error(category_health_report, "Mempool Initialization Fail");
-#ifdef debugging
-        zlog_error(category_debug, "Mempool Initialization Fail");
-#endif
-*/
+
         return E_MALLOC;
     }
 
-    /* Open DB */
-    SQL_open_database_connection(SQLITE_FILE_NAME, &Server_db);
+#ifdef debugging
+	printf("Mempool Initialized\n");
 
-    /* Initialize buffer_list_heads and add to the head in to the priority list.
+	printf("Start connect to Database\n");
+#endif
+
+    /* Open DB */
+    SQL_open_database_connection("dbname=botdb user=postgres password=bedis402 host=140.109.22.34 port=5432", &Server_db);
+
+#ifdef debugging
+	printf("Database connected\n");
+#endif
+    
+	/* Initialize buffer_list_heads and add to the head in to the priority list.
      */
 
     init_Address_Map( &Gateway_address_map);
@@ -153,63 +143,32 @@ int main(int argc, char **argv){
                 (void *) process_wifi_send, config.normal_priority);
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
-/*
-#ifdef debugging
-    zlog_info(category_debug, "Buffers initialize Success");
-#endif
-*/
+
     sort_priority( &priority_list_head);
 
     /* Initialize the Wifi connection */
-    if(return_value = Wifi_init(config.IPaddress) != WORK_SUCCESSFULLY){
+    if(return_value = Wifi_init(config.server_ip) != WORK_SUCCESSFULLY){
         /* Error handling and return */
         initialization_failed = true;
-/*
-        zlog_error(category_health_report, "Wi-Fi initialization Fail");
-#ifdef debugging
-        zlog_error(category_debug, "Wi-Fi initialization Fail");
-#endif
-*/
         return E_WIFI_INIT_FAIL;
     }
-/*
-#ifdef debugging
-    zlog_info(category_debug, "Wi-Fi initialization Success");
-#endif
-*/
-    /* Create threads for sending and receiving data from and to LBeacons and
-       the server. */
-    /* Two static threads to listen for messages from LBeacon or Sever */
+
     return_value = startThread( &wifi_listener, (void *)process_wifi_receive,
                                NULL);
 
     if(return_value != WORK_SUCCESSFULLY){
         initialization_failed = true;
-/*
-        zlog_error(category_health_report, "wifi_listener initialization Fail");
-#ifdef debugging
-        zlog_error(category_debug, "wifi_listener initialization Fail");
-#endif
-*/
+
         return E_WIFI_INIT_FAIL;
     }
-/*
-#ifdef debugging
-    zlog_info(category_debug, "wifi_listener initialization Success");
-#endif
-*/
+
     NSI_initialization_complete = true;
 
     /* Create the thread of Communication Unit  */
     return_value = startThread( &CommUnit_thread, CommUnit_routine, NULL);
 
     if(return_value != WORK_SUCCESSFULLY){
-/*
-		zlog_error(category_health_report, "CommUnit_thread Create Fail");
-#ifdef debugging
-        zlog_error(category_debug, "CommUnit_thread Create Fail");
-#endif
-		*/
+
         return return_value;
     }
 
@@ -222,14 +181,7 @@ int main(int argc, char **argv){
 
         if(initialization_failed == true){
             ready_to_work = false;
-/*
-            zlog_error(category_health_report,
-                       "The Network or Buffer initialization Fail.");
-#ifdef debugging
-            zlog_error(category_debug,
-                       "The Network or Buffer initialization Fail.");
-#endif
-*/
+
             return E_INITIALIZATION_FAIL;
         }
     }
@@ -289,11 +241,7 @@ int main(int argc, char **argv){
 
     /* The program is going to be ended. Free the connection of Wifi */
     Wifi_free();
-/*
-#ifdef debugging
-    zlog_info(category_debug, "Server exit successfullly");
-#endif
-*/
+
     SQL_close_database_connection(Server_db);
 
     return WORK_SUCCESSFULLY;
@@ -328,7 +276,17 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
         else
             config_message_size = strlen(config_message);
 
-        memcpy(config->IPaddress, config_message, config_message_size);
+        memcpy(config->server_ip, config_message, config_message_size);
+
+		config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        if(config_message[strlen(config_message)-1] == '\n')
+            config_message_size = strlen(config_message) - 1;
+        else
+            config_message_size = strlen(config_message);
+
+        memcpy(config->db_ip, config_message, config_message_size);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -639,6 +597,8 @@ void *NSI_routine(void *_buffer_list_head){
 
 	int send_type;
 
+	char  *gateway_record = malloc(WIFI_MESSAGE_LENGTH*sizeof(char));
+
     pthread_mutex_lock( &buffer_list_head -> list_lock);
 
     if(is_entry_list_empty( &buffer_list_head -> list_head) == false){
@@ -660,10 +620,23 @@ void *NSI_routine(void *_buffer_list_head){
             send_type += join_request_ack & 0x0f;
         else
             send_type += join_request_deny & 0x0f;
+		
+		printf("Pre Register\n");
 
-        SQL_update_lbeacon_registration_status(Server_db, &temp -> content[2],
-                                               temp -> content_size - 2);
+		memset(gateway_record, 0, WIFI_MESSAGE_LENGTH*sizeof(char));
 
+		sprintf(gateway_record, "1;%s;", temp -> net_address);
+
+		printf("%s \nlength: %d\n", gateway_record, strlen(gateway_record));
+
+#ifdef debugging
+		printf("Registering Gateway...\n");
+#endif
+        SQL_update_gateway_registration_status(Server_db, gateway_record,
+                                               strlen(gateway_record));
+#ifdef debugging
+		printf("Register Gateway Success\n");
+#endif
         /* put the pkt type to content */
         temp->content[0] = (char)send_type;
 
@@ -780,6 +753,10 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
     int not_in_use = -1;
 	int n;
 
+#ifdef debugging
+	printf("Enter Gateway_join_request address [%s]\n", address);
+#endif
+
     pthread_mutex_lock( &address_map -> list_lock);
     /* Copy all the necessary information received from the LBeacon to the
        address map. */
@@ -787,7 +764,11 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
     /* Record the first unused address map location in order to store the new
        joined LBeacon. */
 
-    if(is_in_Address_Map(address_map, address) == true){
+#ifdef debugging
+	printf("Check whether joined\n");
+#endif
+
+	if(is_in_Address_Map(address_map, address) == true){
         for(n = 0 ; n < MAX_NUMBER_NODES ; n ++){
             if(address_map -> in_use[n] == true && strncmp(address_map ->
                address_map_list[n].net_address, address, NETWORK_ADDR_LENGTH) ==
@@ -798,7 +779,11 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
             }
         }
         pthread_mutex_unlock( &address_map -> list_lock);
-        return true;
+
+#ifdef debugging
+        printf("Exist and Return\n");
+#endif
+		return true;
     }
 
     for(n = 0 ; n < MAX_NUMBER_NODES ; n ++){
@@ -807,6 +792,9 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
             break;
         }
     }
+#ifdef debugging
+	printf("Start join...\n");
+#endif
 
     /* If still has space for the LBeacon to register */
     if (not_in_use != -1){
@@ -817,14 +805,28 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
 
         strncpy(tmp -> net_address, address, NETWORK_ADDR_LENGTH);
         pthread_mutex_unlock( &address_map -> list_lock);
-        return true;
+
+		printf("[%s] joined\n", address);
+
+#ifdef debugging
+		printf("Join Success\n");
+#endif
+
+		return true;
     }
     else{
         pthread_mutex_unlock( &address_map -> list_lock);
+#ifdef debugging
+		printf("Join maximum\n");
+#endif
         return false;
     }
 
-    return false;
+#ifdef debugging
+	printf("Fatal Error in Gateway_join_request\n");
+#endif
+
+	return false;
 }
 
 
@@ -881,7 +883,11 @@ void *process_wifi_send(void *_buffer_list_head){
 
     BufferNode *temp;
 
-    pthread_mutex_lock( &buffer_list_head -> list_lock);
+#ifdef debugging
+    printf("Start Send pkt\naddress [%s]\nmsg [%s]\n", temp->content, temp->content_size);
+#endif
+
+	pthread_mutex_lock( &buffer_list_head -> list_lock);
 
     if(is_entry_list_empty( &buffer_list_head -> list_head) == false){
 
@@ -901,7 +907,9 @@ void *process_wifi_send(void *_buffer_list_head){
     }
     else
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
-
+#ifdef debugging
+	printf("Send Success\n");
+#endif
     return (void *)NULL;
 }
 
@@ -948,7 +956,10 @@ void *process_wifi_receive(){
                 /* Alloc memory failed, error handling. */
             }
             else{
-                /* Initialize the entry of the buffer node */
+#ifdef debugging
+				printf("Data Start Receiving...\n");
+#endif
+				/* Initialize the entry of the buffer node */
                 init_entry( &new_node -> buffer_entry);
 
                 /* Copy the content to the buffer_node */
