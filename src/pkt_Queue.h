@@ -39,7 +39,7 @@
 
 #ifndef pkt_Queue_H
 #define pkt_Queue_H
-#define debugging
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>

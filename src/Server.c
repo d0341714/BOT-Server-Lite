@@ -428,7 +428,7 @@ void *sort_priority(BufferListHead *list_head){
 }
 
 
-void* CommUnit_routine(){
+void *CommUnit_routine(){
 
     int init_time;
     int current_time;
@@ -436,7 +436,6 @@ void* CommUnit_routine(){
     int return_error_value;
 	List_Entry *tmp;
     BufferListHead *current_head;
-    bool is_empty_list_head;
 
     /* wait for NSI get ready */
     while(NSI_initialization_complete == false){
@@ -480,8 +479,6 @@ void* CommUnit_routine(){
 
             list_for_each(tmp, &priority_list_head.priority_list_entry){
 
-                is_empty_list_head = true;
-
                 current_head= ListEntry(tmp, BufferListHead,
                                         priority_list_entry);
 
@@ -495,36 +492,29 @@ void* CommUnit_routine(){
                 }
                 else {
 
-                    is_empty_list_head = false;
+					/* If there is a node in the buffer and the buffer is not be
+                       occupied, do the work according to the function pointer */
+					return_error_value = thpool_add_work(thpool,
+                                                         current_head -> function,
+                                                         current_head,
+                                                         current_head ->
+                                                         priority_nice);
 
-                    /* Currently, a work thread is processing this buffer list.
+					/* Currently, a work thread is processing this buffer list.
                      */
-                    pthread_mutex_unlock( &current_head -> list_lock);
+					pthread_mutex_unlock( &current_head -> list_lock);
+
                     /* Go to check the next buffer list in the priority
                         list */
                     break;
                 }
             }
 
-            pthread_mutex_unlock( &priority_list_head.list_lock);
-
-            if (is_empty_list_head == false){
-
-                /* If there is a node in the buffer and the buffer is not be
-                   occupied, do the work according to the function pointer */
-                return_error_value = thpool_add_work(thpool,
-                                                     current_head -> function,
-                                                     current_head,
-                                                     current_head ->
-                                                     priority_nice);
-
-            }
-            else{
-                Sleep(WAITING_TIME);
-            }
+            Sleep(WAITING_TIME);
 
             current_time = get_system_time();
-        }
+			pthread_mutex_unlock( &priority_list_head.list_lock);
+		}
 
         while(thpool -> num_threads_working == thpool -> num_threads_alive){
             Sleep(WAITING_TIME);
@@ -537,8 +527,6 @@ void* CommUnit_routine(){
 
         list_for_each_reverse(tmp, &priority_list_head.priority_list_entry){
 
-            is_empty_list_head = true;
-
             current_head= ListEntry(tmp, BufferListHead, priority_list_entry);
 
             pthread_mutex_lock( &current_head -> list_lock);
@@ -550,33 +538,26 @@ void* CommUnit_routine(){
                 continue;
             }
             else {
-
-                is_empty_list_head = false;
-
+				/* If there is a node in the buffer and the buffer is not be
+                   occupied, do the work according to the function pointer */
+                return_error_value = thpool_add_work(thpool,
+                                                     current_head -> function,
+                                                     current_head,
+                                                     current_head ->
+                                                     priority_nice);
                 /* Currently, a work thread is processing this buffer list. */
                 pthread_mutex_unlock( &current_head -> list_lock);
                 /* Go to check the next buffer list in the priority list */
                 break;
             }
         }
-
-        pthread_mutex_unlock( &priority_list_head.list_lock);
-
-        if (is_empty_list_head == false){
-            /* If there is a node in the buffer and the buffer is not be
-               occupied, do the work according to the function pointer */
-            return_error_value = thpool_add_work(thpool,
-                                                 current_head -> function,
-                                                 current_head,
-                                                 current_head ->
-                                                 priority_nice);
-        }
-        else{
-            Sleep(WAITING_TIME);
-        }
+            
+		Sleep(WAITING_TIME);
 
         /* Update the init_time */
         init_time = get_system_time();
+
+		pthread_mutex_unlock( &priority_list_head.list_lock);
     } /* End while(ready_to_work == true) */
 
 
@@ -620,25 +601,35 @@ void *NSI_routine(void *_buffer_list_head){
             send_type += join_request_ack & 0x0f;
         else
             send_type += join_request_deny & 0x0f;
-		
+
+		printf("send_type [%d]\n", send_type);
+
+		printf("add return [%d]\n", get_system_time());
+
 		printf("Pre Register\n");
 
 		memset(gateway_record, 0, WIFI_MESSAGE_LENGTH*sizeof(char));
 
 		sprintf(gateway_record, "1;%s;", temp -> net_address);
 
-		printf("%s \nlength: %d\n", gateway_record, strlen(gateway_record));
+		printf("%s\nlength: %d\n", gateway_record, strlen(gateway_record));
 
 #ifdef debugging
 		printf("Registering Gateway...\n");
 #endif
         SQL_update_gateway_registration_status(Server_db, gateway_record,
                                                strlen(gateway_record));
+		
+		SQL_update_lbeacon_registration_status(Server_db, &temp->content[2], strlen(&temp->content[2]));
+
 #ifdef debugging
 		printf("Register Gateway Success\n");
 #endif
-        /* put the pkt type to content */
+
+		/* put the pkt type to content */
         temp->content[0] = (char)send_type;
+
+		printf("NSI msg IP: [%s] msg: [%s]\n", temp->net_address, temp->content);
 
         pthread_mutex_lock(&NSI_send_buffer_list_head.list_lock);
 
@@ -690,6 +681,8 @@ void *Gateway_routine(void *_buffer_list_head){
 
     BufferListHead *buffer_list_head = (BufferListHead *)_buffer_list_head;
 
+	int pkt_type;
+
     /* Create a temporary node and set as the head */
     struct List_Entry *temp_list_entry_pointers;
 
@@ -707,7 +700,12 @@ void *Gateway_routine(void *_buffer_list_head){
 
         temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
 
-        /* TODO  */
+        /* read the pkt type from lower lower 4 bits. */
+        pkt_type = temp ->content[0] & 0x0f;
+		
+		if(pkt_type == tracked_object_data){
+			SQL_update_object_tracking_data(Server_db, &temp ->content[1], strlen(&temp ->content[1]));
+		}
 
         mp_free( &node_mempool, temp);
     }
@@ -804,7 +802,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
         address_map -> in_use[not_in_use] = true;
 
         strncpy(tmp -> net_address, address, NETWORK_ADDR_LENGTH);
-        pthread_mutex_unlock( &address_map -> list_lock);
+        
+		pthread_mutex_unlock( &address_map -> list_lock);
 
 		printf("[%s] joined\n", address);
 
@@ -816,17 +815,12 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
     }
     else{
         pthread_mutex_unlock( &address_map -> list_lock);
+
 #ifdef debugging
 		printf("Join maximum\n");
 #endif
         return false;
     }
-
-#ifdef debugging
-	printf("Fatal Error in Gateway_join_request\n");
-#endif
-
-	return false;
 }
 
 
@@ -883,9 +877,7 @@ void *process_wifi_send(void *_buffer_list_head){
 
     BufferNode *temp;
 
-#ifdef debugging
-    printf("Start Send pkt\naddress [%s]\nmsg [%s]\n", temp->content, temp->content_size);
-#endif
+	printf("Enter send\n");
 
 	pthread_mutex_lock( &buffer_list_head -> list_lock);
 
@@ -897,6 +889,12 @@ void *process_wifi_send(void *_buffer_list_head){
 
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
 
+		printf("send return [%d]\n", get_system_time());
+
+#ifdef debugging
+		printf("Start Send pkt\naddress [%s]\nmsg [%d]\n", temp->content, temp->content_size);
+#endif
+
         temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
 
         /* Add the content that to be sent to the server */
@@ -904,12 +902,15 @@ void *process_wifi_send(void *_buffer_list_head){
                    temp->content_size);
 
         mp_free( &node_mempool, temp);
-    }
+
+#ifdef debugging
+		printf("Send Success\n");
+#endif
+
+	}
     else
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
-#ifdef debugging
-	printf("Send Success\n");
-#endif
+
     return (void *)NULL;
 }
 
@@ -954,6 +955,9 @@ void *process_wifi_receive(){
 
             if(new_node == NULL){
                 /* Alloc memory failed, error handling. */
+#ifdef debugging
+				printf("No memory allow to alloc...\n");
+#endif
             }
             else{
 #ifdef debugging
@@ -986,6 +990,7 @@ void *process_wifi_receive(){
                         switch (pkt_type) {
 
                             case request_to_join:
+								printf("Get Join pkt\n");
                                 pthread_mutex_lock(&NSI_receive_buffer_list_head
                                                    .list_lock);
                                 insert_list_tail(&new_node -> buffer_entry,
@@ -996,6 +1001,7 @@ void *process_wifi_receive(){
                                 break;
 
                             case tracked_object_data:
+								printf("Get TOD pkt\n");
                                 pthread_mutex_lock(
                                    &Gateway_receive_buffer_list_head.list_lock);
                                 insert_list_tail( &new_node -> buffer_entry,
@@ -1005,6 +1011,7 @@ void *process_wifi_receive(){
                                 break;
 
                             case health_report:
+								printf("Get HR pkt\n");
                                 pthread_mutex_lock(&BHM_receive_buffer_list_head
                                                    .list_lock);
                                 insert_list_tail( &new_node -> buffer_entry,

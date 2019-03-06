@@ -150,7 +150,7 @@ void *udp_send_pkt(void *udpconfig){
 				si_send.sin_addr.s_addr   = inet_addr(dest_address);
 
 #ifdef debugging
-			printf("Entrer Send pkts\n(sendto [%s] msg [%s])\n", dest_address, current_send_pkt.content);
+				printf("Entrer Send pkts\n(sendto [%s] msg [%s])\n", dest_address, current_send_pkt.content);
 #endif
 
                 if (sendto(udp_config -> send_socket, current_send_pkt.content

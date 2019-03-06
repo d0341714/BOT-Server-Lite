@@ -45,7 +45,7 @@
 
 #ifndef GATEWAY_H
 #define GATEWAY_H
-#define debugging
+
 #define _GNU_SOURCE
 
 #include "BeDIS.h"
