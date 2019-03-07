@@ -134,7 +134,7 @@ SQL wrapper API
 #define INTERVAL_FOR_BUSY_WAITING_CHECK_IN_SEC 3
 
 /* Timeout interval in ms */
-#define WAITING_TIME 10000
+#define WAITING_TIME 3000
 
 
 typedef enum _ErrorCode{
@@ -197,11 +197,6 @@ typedef enum _HealthStatus {
 
 } HealthStatus;
 
-
-typedef struct {
-    ErrorCode code;
-    char *message;
-} errordesc;
 
 typedef struct coordinates{
 

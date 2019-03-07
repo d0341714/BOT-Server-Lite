@@ -1,6 +1,7 @@
 #include "SqlWrapper.h"
 #include "libpq-fe.h"
 
+
 /*
 static int SQL_callback(void *NotUsed,
                         int argc,
@@ -14,6 +15,7 @@ static int SQL_callback(void *NotUsed,
     return 0;
 }
 */
+
 
 static ErrorCode SQL_execute(void* db, char* sql_statement){
     PGconn *conn = (PGconn *) db;
@@ -33,6 +35,7 @@ static ErrorCode SQL_execute(void* db, char* sql_statement){
     return WORK_SUCCESSFULLY;
 }
 
+
 static ErrorCode SQL_begin_transaction(void* db){
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql;
@@ -45,6 +48,7 @@ static ErrorCode SQL_begin_transaction(void* db){
 
     return WORK_SUCCESSFULLY;
 }
+
 
 static ErrorCode SQL_end_transaction(void* db){
     ErrorCode ret_val = WORK_SUCCESSFULLY;
@@ -59,6 +63,7 @@ static ErrorCode SQL_end_transaction(void* db){
     return WORK_SUCCESSFULLY;
 }
 
+
 static ErrorCode SQL_rollback_transaction(void* db){
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql;
@@ -72,6 +77,7 @@ static ErrorCode SQL_rollback_transaction(void* db){
     return WORK_SUCCESSFULLY;
 }
 
+
 ErrorCode SQL_open_database_connection(char* conninfo, void** db){
     *db = (PGconn*) PQconnectdb(conninfo);
 
@@ -84,6 +90,7 @@ ErrorCode SQL_open_database_connection(char* conninfo, void** db){
 
     return WORK_SUCCESSFULLY;
 }
+
 
 ErrorCode SQL_close_database_connection(void* db){
     PGconn *conn = (PGconn *) db;
@@ -118,6 +125,7 @@ ErrorCode SQL_vacuum_database(void* db){
 
     return WORK_SUCCESSFULLY;
 }
+
 
 ErrorCode SQL_retain_data(void* db, int retention_hours){
     PGconn *conn = (PGconn *) db;
@@ -164,6 +172,7 @@ ErrorCode SQL_retain_data(void* db, int retention_hours){
 
     return WORK_SUCCESSFULLY;
 }
+
 
 ErrorCode SQL_update_gateway_registration_status(void* db,
                                                  char* buf,
@@ -232,6 +241,7 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
     return WORK_SUCCESSFULLY;
 }
 
+
 ErrorCode SQL_query_registered_gateways(void* db,
                                         HealthStatus health_status,
                                         char* output,
@@ -287,6 +297,7 @@ ErrorCode SQL_query_registered_gateways(void* db,
 
     return WORK_SUCCESSFULLY;
 }
+
 
 ErrorCode SQL_update_lbeacon_registration_status(void* db,
                                                  char* buf,
@@ -436,6 +447,7 @@ ErrorCode SQL_update_gateway_health_status(void* db,
     return WORK_SUCCESSFULLY;
 }
 
+
 ErrorCode SQL_update_lbeacon_health_status(void* db,
                                            char* buf,
                                            size_t buf_len){
@@ -503,6 +515,7 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
 
     return WORK_SUCCESSFULLY;
 }
+
 
 ErrorCode SQL_update_object_tracking_data(void* db,
                                           char* buf,

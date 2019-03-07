@@ -207,6 +207,9 @@ AddressMapArray Gateway_address_map;
 /* For data from Gateway to be send to server */
 BufferListHead Gateway_receive_buffer_list_head;
 
+/* For data from LBeacon to be send to server */
+BufferListHead LBeacon_receive_buffer_list_head;
+
 /* For time critical messages list head */
 BufferListHead time_critical_Gateway_receive_buffer_list_head;
 
@@ -352,6 +355,24 @@ void *NSI_routine(void *_buffer_list_head);
 
  */
 void *BHM_routine(void *_buffer_list_head);
+
+
+/*
+  LBeacon_routine:
+
+     This function is executed by worker threads when they process the buffer
+     nodes in LBeacon_receive_buffer_list and send to the server directly.
+
+  Parameters:
+
+     _buffer_list_head - A pointer of the buffer to be modified.
+
+  Return value:
+
+     None
+
+ */
+void *LBeacon_routine(void *_buffer_list_head);
 
 
 /*

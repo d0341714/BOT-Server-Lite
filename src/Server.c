@@ -124,6 +124,11 @@ int main(int argc, char **argv){
     insert_list_tail( &Gateway_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
+	init_buffer( &LBeacon_receive_buffer_list_head,
+                (void *) LBeacon_routine, config.normal_priority);
+    insert_list_tail( &LBeacon_receive_buffer_list_head.priority_list_entry,
+                      &priority_list_head.priority_list_entry);
+
     init_buffer( &NSI_send_buffer_list_head,
                 (void *) process_wifi_send, config.normal_priority);
     insert_list_tail( &NSI_send_buffer_list_head.priority_list_entry,
@@ -203,7 +208,7 @@ int main(int argc, char **argv){
             /* Pull object tracking object data */
             /* set the pkt type */
             send_type = ((from_server & 0x0f) << 4) +
-                             (poll_for_tracked_object_data_from_server &
+                             (tracked_object_data &
                              0x0f);
             memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
@@ -222,7 +227,7 @@ int main(int argc, char **argv){
             /* Polling for health reports. */
             /* set the pkt type */
             send_type = ((from_server & 0x0f) << 4) +
-                             (RFHR_from_server & 0x0f);
+                             (health_report & 0x0f);
             memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
             temp[0] = (char)send_type;
@@ -677,6 +682,45 @@ void *BHM_routine(void *_buffer_list_head){
 }
 
 
+void *LBeacon_routine(void *_buffer_list_head){
+
+    BufferListHead *buffer_list_head = (BufferListHead *)_buffer_list_head;
+
+	int pkt_type;
+
+    /* Create a temporary node and set as the head */
+    struct List_Entry *temp_list_entry_pointers;
+
+    BufferNode *temp;
+
+    pthread_mutex_lock( &buffer_list_head -> list_lock);
+
+    if(is_entry_list_empty( &buffer_list_head -> list_head) == false){
+
+        temp_list_entry_pointers = buffer_list_head -> list_head.next;
+
+        remove_list_node(temp_list_entry_pointers);
+
+        pthread_mutex_unlock( &buffer_list_head -> list_lock);
+
+        temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
+
+        /* read the pkt type from lower lower 4 bits. */
+        pkt_type = temp ->content[0] & 0x0f;
+		
+		if(pkt_type == tracked_object_data){
+			SQL_update_object_tracking_data(Server_db, &temp ->content[1], strlen(&temp ->content[1]));
+		}
+
+        mp_free( &node_mempool, temp);
+    }
+    else
+        pthread_mutex_unlock( &buffer_list_head -> list_lock);
+
+    return (void* )NULL;
+}
+
+
 void *Gateway_routine(void *_buffer_list_head){
 
     BufferListHead *buffer_list_head = (BufferListHead *)_buffer_list_head;
@@ -805,8 +849,6 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
         
 		pthread_mutex_unlock( &address_map -> list_lock);
 
-		printf("[%s] joined\n", address);
-
 #ifdef debugging
 		printf("Join Success\n");
 #endif
@@ -877,8 +919,6 @@ void *process_wifi_send(void *_buffer_list_head){
 
     BufferNode *temp;
 
-	printf("Enter send\n");
-
 	pthread_mutex_lock( &buffer_list_head -> list_lock);
 
     if(is_entry_list_empty( &buffer_list_head -> list_head) == false){
@@ -888,8 +928,6 @@ void *process_wifi_send(void *_buffer_list_head){
         remove_list_node(temp_list_entry_pointers);
 
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
-
-		printf("send return [%d]\n", get_system_time());
 
 #ifdef debugging
 		printf("Start Send pkt\naddress [%s]\nmsg [%d]\n", temp->content, temp->content_size);
@@ -990,7 +1028,9 @@ void *process_wifi_receive(){
                         switch (pkt_type) {
 
                             case request_to_join:
-								printf("Get Join pkt\n");
+#ifdef debugging
+								printf("Get Join request from Gateway.\n");
+#endif
                                 pthread_mutex_lock(&NSI_receive_buffer_list_head
                                                    .list_lock);
                                 insert_list_tail(&new_node -> buffer_entry,
@@ -1001,8 +1041,10 @@ void *process_wifi_receive(){
                                 break;
 
                             case tracked_object_data:
-								printf("Get TOD pkt\n");
-                                pthread_mutex_lock(
+#ifdef debugging
+								printf("Get Tracked Object Data from Gateway\n");
+#endif
+								pthread_mutex_lock(
                                    &Gateway_receive_buffer_list_head.list_lock);
                                 insert_list_tail( &new_node -> buffer_entry,
                                    &Gateway_receive_buffer_list_head.list_head);
@@ -1011,13 +1053,36 @@ void *process_wifi_receive(){
                                 break;
 
                             case health_report:
-								printf("Get HR pkt\n");
+#ifdef debugging
+								printf("Get Health Report from Gateway\n");
+#endif
                                 pthread_mutex_lock(&BHM_receive_buffer_list_head
                                                    .list_lock);
                                 insert_list_tail( &new_node -> buffer_entry,
                                        &BHM_receive_buffer_list_head.list_head);
                                 pthread_mutex_unlock(
                                        &BHM_receive_buffer_list_head.list_lock);
+                                break;
+
+                            default:
+                                mp_free( &node_mempool, new_node);
+                                break;
+                        }
+                        break;
+
+					case from_beacon:
+						switch (pkt_type) {
+
+                            case tracked_object_data:
+#ifdef debugging
+								printf("Get Tracked Object Data from LBeacon\n");
+#endif
+                                pthread_mutex_lock(
+                                   &LBeacon_receive_buffer_list_head.list_lock);
+                                insert_list_tail( &new_node -> buffer_entry,
+                                   &LBeacon_receive_buffer_list_head.list_head);
+                                pthread_mutex_unlock(
+                                   &LBeacon_receive_buffer_list_head.list_lock);
                                 break;
 
                             default:
