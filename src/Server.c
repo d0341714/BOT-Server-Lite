@@ -52,7 +52,7 @@ int main(int argc, char **argv){
     int return_value;
 
     /* The pkt type to be send */
-    int send_type;
+    int send_pkt_type;
 
     /* The msg for sending commend */
     char command_msg[MINIMUM_WIFI_MESSAGE_LENGTH];
@@ -62,13 +62,13 @@ int main(int argc, char **argv){
 
     int current_time;
 
-    /* The main thread do the communication Unit */
+    /* The main thread of the communication Unit */
     pthread_t CommUnit_thread;
 
-    /* The thread to listen for messages from Wi-Fi */
+    /* The thread to listen for messages from Wi-Fi interface */
     pthread_t wifi_listener;
 
-    /* Reset all flags */
+    /* All global flags */
     NSI_initialization_complete      = false;
     CommUnit_initialization_complete = false;
     BHM_initialization_complete      = true; /* TEMP true for skip BHM check*/
@@ -83,7 +83,7 @@ int main(int argc, char **argv){
     printf("Start Server\n");
 #endif
 
-    /* Reading the config */
+    /* Create the config from input config file */
 
     if(get_config( &config, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY){
 
@@ -122,12 +122,13 @@ int main(int argc, char **argv){
 
     printf("Initialize buffer lists\n");
 
+    /* Initialize the address map*/
+    init_Address_Map( &Gateway_address_map);
+
     /* Initialize buffer_list_heads and add to the head in to the priority list.
      */
 
-    init_Address_Map( &Gateway_address_map);
-
-    init_buffer( &priority_list_head, (void *) sort_priority,
+    init_buffer( &priority_list_head, (void *) sort_priority_list,
                 config.high_priority);
 
     init_buffer( &time_critical_Gateway_receive_buffer_list_head,
@@ -166,7 +167,7 @@ int main(int argc, char **argv){
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
-    sort_priority( &priority_list_head);
+    sort_priority_list( &priority_list_head);
 
     printf("Buffer lists initialized\n");
 
@@ -197,7 +198,7 @@ int main(int argc, char **argv){
 
     printf("Initialize Communication Unit\n");
 
-    /* Create the thread of Communication Unit  */
+    /* Create the main thread of Communication Unit  */
     return_value = startThread( &CommUnit_thread, CommUnit_routine, NULL);
 
     if(return_value != WORK_SUCCESSFULLY){
@@ -235,12 +236,12 @@ int main(int argc, char **argv){
 
             /* Pull object tracking object data */
             /* set the pkt type */
-            send_type = ((from_server & 0x0f) << 4) +
+            send_pkt_type = ((from_server & 0x0f) << 4) +
                              (tracked_object_data &
                              0x0f);
             memset(command_msg, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
-            command_msg[0] = (char)send_type;
+            command_msg[0] = (char)send_pkt_type;
 
             /* broadcast to LBeacons */
             Gateway_Broadcast(&Gateway_address_map, command_msg,
@@ -254,11 +255,11 @@ int main(int argc, char **argv){
 
             /* Polling for health reports. */
             /* set the pkt type */
-            send_type = ((from_server & 0x0f) << 4) +
+            send_pkt_type = ((from_server & 0x0f) << 4) +
                              (health_report & 0x0f);
             memset(command_msg, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
-            command_msg[0] = (char)send_type;
+            command_msg[0] = (char)send_pkt_type;
 
             /* broadcast to LBeacons */
             Gateway_Broadcast(&Gateway_address_map, command_msg,
@@ -471,7 +472,7 @@ void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
 }
 
 
-void *sort_priority(BufferListHead *list_head){
+void *sort_priority_list(BufferListHead *list_head){
 
     List_Entry *list_pointers,
                *list_pointers_in_bubble,
@@ -561,8 +562,8 @@ void *CommUnit_routine(){
     /* Set the initial time. */
     init_time = current_time;
 
-    /* After all the buffers are initialized and the thread pool initialized,
-       set the flag to true. */
+    /* All the buffers lists have been are initialized and the thread pool
+       initialized. Set the flag to true. */
     CommUnit_initialization_complete = true;
 
     /* When there is no dead thead, do the work. */
@@ -571,7 +572,7 @@ void *CommUnit_routine(){
         current_time = get_system_time();
 
         /* In the normal situation, the scanning starts from the high priority
-           to lower priority. If the timer expired for MAX_STARVATION_TIME,
+           to lower priority. When the timer expired for MAX_STARVATION_TIME,
            reverse the scanning process */
         while(current_time - init_time < MAX_STARVATION_TIME){
 
@@ -609,12 +610,7 @@ void *CommUnit_routine(){
                                                         current_head ->
                                                         priority_nice);
 
-                    /* Currently, a work thread is processing this buffer list.
-                     */
                     pthread_mutex_unlock( &current_head -> list_lock);
-
-                    /* Go to check the next buffer list in the priority
-                        list */
                     break;
                 }
             }
@@ -656,9 +652,8 @@ void *CommUnit_routine(){
                                                      current_head,
                                                      current_head ->
                                                      priority_nice);
-                /* Currently, a work thread is processing this buffer list. */
+
                 pthread_mutex_unlock( &current_head -> list_lock);
-                /* Go to check the next buffer list in the priority list */
                 break;
             }
         }
@@ -687,7 +682,7 @@ void *NSI_routine(void *_buffer_list_head){
 
     BufferNode *current_node;
 
-    int send_type;
+    int send_pkt_type;
 
     char  *gateway_record = malloc(WIFI_MESSAGE_LENGTH*sizeof(char));
 
@@ -704,7 +699,7 @@ void *NSI_routine(void *_buffer_list_head){
         current_node = ListEntry(temp_list_entry_pointers, BufferNode,
                                  buffer_entry);
 
-        send_type = (from_server & 0x0f)<<4;
+        send_pkt_type = (from_server & 0x0f)<<4;
 
 #ifdef debugging
         printf("Start join...(%s)\n", current_node -> net_address);
@@ -714,9 +709,9 @@ void *NSI_routine(void *_buffer_list_head){
          */
         if (Gateway_join_request(&Gateway_address_map, current_node ->
                                 net_address) == true)
-            send_type += join_request_ack & 0x0f;
+            send_pkt_type += join_request_ack & 0x0f;
         else
-            send_type += join_request_deny & 0x0f;
+            send_pkt_type += join_request_deny & 0x0f;
 
         memset(gateway_record, 0, WIFI_MESSAGE_LENGTH*sizeof(char));
 
@@ -735,7 +730,7 @@ void *NSI_routine(void *_buffer_list_head){
 #endif
 
         /* put the pkt type to content */
-        current_node->content[0] = (char)send_type;
+        current_node->content[0] = (char)send_pkt_type;
 
         pthread_mutex_lock(&NSI_send_buffer_list_head.list_lock);
 
@@ -884,7 +879,7 @@ void init_Address_Map(AddressMapArray *address_map){
 }
 
 
-bool is_in_Address_Map(AddressMapArray *address_map, char *net_address){
+int is_in_Address_Map(AddressMapArray *address_map, char *net_address){
 
     int n;
 
@@ -893,11 +888,11 @@ bool is_in_Address_Map(AddressMapArray *address_map, char *net_address){
         if (address_map -> in_use[n] == true && strncmp(address_map ->
             address_map_list[n].net_address, net_address, NETWORK_ADDR_LENGTH)
             == 0){
-                return true;
+                return n;
         }
 
     }
-    return false;
+    return -1;
 }
 
 
@@ -905,6 +900,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
 
     int not_in_use = -1;
     int n;
+    int answer;
 
 #ifdef debugging
     printf("Enter Gateway_join_request address [%s]\n", address);
@@ -914,23 +910,16 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
     /* Copy all the necessary information received from the LBeacon to the
        address map. */
 
-    /* Record the first unused address map location in order to store the new
-       joined LBeacon. */
+    /* Find the first unused address map location and use the location to store
+       the new joined LBeacon. */
 
 #ifdef debugging
     printf("Check whether joined\n");
 #endif
 
-    if(is_in_Address_Map(address_map, address) == true){
-        for(n = 0 ; n < MAX_NUMBER_NODES ; n ++){
-            if(address_map -> in_use[n] == true && strncmp(address_map ->
-               address_map_list[n].net_address, address, NETWORK_ADDR_LENGTH) ==
-               0){
-                address_map -> address_map_list[n].last_request_time =
+    if(answer=is_in_Address_Map(address_map, address) >=0){
+        address_map -> address_map_list[answer].last_request_time =
                                                               get_system_time();
-                break;
-            }
-        }
         pthread_mutex_unlock( &address_map -> list_lock);
 
 #ifdef debugging
@@ -991,7 +980,8 @@ void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size){
         {
 
             if (address_map -> in_use[current_index] == true){
-                /* Add the pkt that to be sent to the server */
+                /* Add the content of tje buffer node to the UDP to be sent to
+                   the server */
                 udp_addpkt( &udp_config,
                             address_map ->
                             address_map_list[current_index].net_address,
@@ -1055,7 +1045,8 @@ void *process_wifi_send(void *_buffer_list_head){
         current_node = ListEntry(temp_list_entry_pointers, BufferNode,
                                  buffer_entry);
 
-        /* Add the content that to be sent to the server */
+        /* Add the content of tje buffer node to the UDP to be sent to the
+           server */
         udp_addpkt( &udp_config, current_node -> net_address,
                     current_node->content, current_node->content_size);
 
