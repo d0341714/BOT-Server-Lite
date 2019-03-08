@@ -25,7 +25,7 @@
 
   Version:
 
-     2.0, 20190119
+     2.0, 20190308
 
   Abstract:
 
@@ -138,6 +138,7 @@ int mp_expand(Memory_Pool *mp, size_t slots){
 }
 
 void mp_destroy(Memory_Pool *mp){
+	
 	int i;
 
     pthread_mutex_lock( &mp->mem_lock);
@@ -182,6 +183,7 @@ void *mp_alloc(Memory_Pool *mp){
 
     /* return the first address */
     return temp;
+
 }
 
 

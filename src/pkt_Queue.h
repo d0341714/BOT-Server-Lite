@@ -51,7 +51,7 @@
 //typedef enum{true=1, false=0} bool;
 
 
-/* If need to debug. */
+/* When debugging is needed */
 //#define debugging
 
 /* Length of address of the network */

@@ -7,7 +7,7 @@
  *//** @file thpool.h *//*
  *
  ********************************/
-
+//TODO thread priority
 
 
 #include "thpool.h"

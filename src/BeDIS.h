@@ -55,7 +55,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <winsock2.h>   
+#include <winsock2.h>
 #pragma comment(lib,"WS2_32.lib")
 #include <WS2tcpip.h>
 #include <signal.h>
@@ -109,7 +109,8 @@ SQL wrapper API
 /* Maximum length of message to communicate with SQL wrapper API in bytes */
 #define SQL_TEMP_BUFFER_LENGTH 4096
 
-/* Minimum Wi-Fi message size (One byte for data type and one byte for a space) */
+/* Minimum Wi-Fi message size (One byte for data type and one byte for a space)
+ */
 #define MINIMUM_WIFI_MESSAGE_LENGTH 2
 
 /* The size of array to store Wi-Fi SSID */

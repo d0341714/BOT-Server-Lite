@@ -53,7 +53,7 @@
 #define UDP_SELECT_TIMEOUT 30000    //second
 #define SEND_NULL_SLEEP 30
 
-/* If need to debug. */
+/* When debugging is needed */
 //#define debugging
 
 typedef struct {

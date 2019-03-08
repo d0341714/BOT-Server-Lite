@@ -393,7 +393,8 @@ bool is_full(pkt_ptr pkt_queue){
     if(pkt_queue -> front == pkt_queue -> rear + 1){
         return true;
     }
-    else if(pkt_queue -> front == 0 && pkt_queue -> rear == MAX_QUEUE_LENGTH - 1){
+    else if(pkt_queue -> front == 0 && pkt_queue -> rear == MAX_QUEUE_LENGTH - 1
+	       ){
         return true;
     }
     else{

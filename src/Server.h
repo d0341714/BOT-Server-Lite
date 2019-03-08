@@ -51,7 +51,7 @@
 #include "BeDIS.h"
 #include "SqlWrapper.h"
 
-/* Enable debugging mode. */
+/* When debugging is needed */
 //#define debugging
 
 /* Gateway config file location and defining of config file. */

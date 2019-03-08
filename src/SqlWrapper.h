@@ -1,7 +1,52 @@
+/*
+  Copyright (c) 2016 Academia Sinica, Institute of Information Science
+
+  License:
+
+     GPL 3.0 : The content of this file is subject to the terms and conditions
+     defined in file 'COPYING.txt', which is part of this source code package.
+
+  Project Name:
+
+     BeDIS
+
+  File Name:
+
+     sqlWrapper.h
+
+  File Description:
+
+     This file contains the header of  function declarations and variable used
+     in sqlWrapper.c
+
+  Version:
+
+     1.0, 20190308
+
+  Abstract:
+
+     BeDIS uses LBeacons to deliver 3D coordinates and textual descriptions of
+     their locations to users' devices. Basically, a LBeacon is an inexpensive,
+     Bluetooth Smart Ready device. The 3D coordinates and location description
+     of every LBeacon are retrieved from BeDIS (Building/environment Data and
+     Information System) and stored locally during deployment and maintenance
+     times. Once initialized, each LBeacon broadcasts its coordinates and
+     location description to Bluetooth enabled user devices within its coverage
+     area.
+
+  Authors:
+
+     Chun Yu Lai   , chunyu1202@gmail.com
+ */
+
 #ifndef SQL_WRAPPER_H
 #define SQL_WRAPPER_H
 
 #include "BeDIS.h"
+#include <libpq-fe.h>
+
+/* When debugging is needed */
+//#define debugging
 
 /* SQL_callback
 
@@ -25,6 +70,8 @@ static int SQL_callback(void *NotUsed,
                         char **argv,
                         char **azColName);
 */
+
+
 /* SQL_execute
 
       The execution function used by database operations

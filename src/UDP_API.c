@@ -150,7 +150,8 @@ void *udp_send_pkt(void *udpconfig){
 				si_send.sin_addr.s_addr   = inet_addr(dest_address);
 
 #ifdef debugging
-				printf("Entrer Send pkts\n(sendto [%s] msg [%s])\n", dest_address, current_send_pkt.content);
+				printf("Entrer Send pkts\n(sendto [%s] msg [%s])\n",
+                       dest_address, current_send_pkt.content);
 #endif
 
                 if (sendto(udp_config -> send_socket, current_send_pkt.content
@@ -271,7 +272,7 @@ char *udp_address_reduce_point(char *raw_addr){
 
 #ifdef debugging
 	printf("Enter udp_address_reduce_point address [%s]\n", raw_addr);
-#endif 
+#endif
 
 	memset(address, 0, NETWORK_ADDR_LENGTH);
 
@@ -314,7 +315,7 @@ char *udp_address_reduce_point(char *raw_addr){
     }
 #ifdef debugging
 	printf("Result of udp_address_reduce_point address [%s]\n", address);
-#endif 
+#endif
     return address;
 }
 

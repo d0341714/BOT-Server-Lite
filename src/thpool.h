@@ -3,6 +3,7 @@
  * License:     MIT
  *
  **********************************/
+//TODO thread priority
 
 #ifndef THPOOL_H
 #define THPOOL_H
