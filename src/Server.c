@@ -22,7 +22,7 @@
 
   Version:
 
-     1.0, 20190117
+     1.0, 20190307
 
   Abstract:
 
@@ -47,12 +47,19 @@
 
 #include "Server.h"
 
-
 int main(int argc, char **argv){
-
+	
     int return_value;
+	
+	/* The pkt type to be send */
 	int send_type;
-	char temp[MINIMUM_WIFI_MESSAGE_LENGTH];
+
+	/* The msg for sending commend */
+	char command_msg[MINIMUM_WIFI_MESSAGE_LENGTH];
+
+	/* The command for opening database */
+	char database_argument[SQL_TEMP_BUFFER_LENGTH];
+
 	int current_time;
 
     /* The main thread do the communication Unit */
@@ -66,7 +73,9 @@ int main(int argc, char **argv){
     CommUnit_initialization_complete = false;
     BHM_initialization_complete      = true; /* TEMP true for skip BHM check*/
 
-    initialization_failed = false;
+	/* Initialize flags */
+    
+	initialization_failed = false;
 
     ready_to_work = true;
 
@@ -99,7 +108,13 @@ int main(int argc, char **argv){
 #endif
 
     /* Open DB */
-    SQL_open_database_connection("dbname=botdb user=postgres password=bedis402 host=140.109.22.34 port=5432", &Server_db);
+
+	memset(database_argument, 0, SQL_TEMP_BUFFER_LENGTH);
+	
+	sprintf(database_argument, "dbname=%s user=%s password=%s host=%s port=%d", config.database_name, config.database_account, config.database_password, config.db_ip, config.database_port );
+    
+	printf("Database Argument [%s]\n", database_argument);
+	SQL_open_database_connection(database_argument, &Server_db);
 
 #ifdef debugging
 	printf("Database connected\n");
@@ -210,12 +225,12 @@ int main(int argc, char **argv){
             send_type = ((from_server & 0x0f) << 4) +
                              (tracked_object_data &
                              0x0f);
-            memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
+            memset(command_msg, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
-            temp[0] = (char)send_type;
+            command_msg[0] = (char)send_type;
 
             /* broadcast to LBeacons */
-            Gateway_Broadcast(&Gateway_address_map, temp,
+            Gateway_Broadcast(&Gateway_address_map, command_msg,
                              MINIMUM_WIFI_MESSAGE_LENGTH);
 
             /* Update the last_polling_object_tracking_time */
@@ -228,12 +243,12 @@ int main(int argc, char **argv){
             /* set the pkt type */
             send_type = ((from_server & 0x0f) << 4) +
                              (health_report & 0x0f);
-            memset(temp, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
+            memset(command_msg, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
-            temp[0] = (char)send_type;
+            command_msg[0] = (char)send_type;
 
             /* broadcast to LBeacons */
-            Gateway_Broadcast(&Gateway_address_map, temp,
+            Gateway_Broadcast(&Gateway_address_map, command_msg,
                              MINIMUM_WIFI_MESSAGE_LENGTH);
 
             /* Update the last_polling_LBeacon_for_HR_time */
@@ -282,7 +297,9 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
             config_message_size = strlen(config_message);
 
         memcpy(config->server_ip, config_message, config_message_size);
+		printf("Server IP [%s]\n", config->server_ip);
 
+		fgets(config_setting, sizeof(config_setting), file);
 		config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
@@ -292,66 +309,120 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
             config_message_size = strlen(config_message);
 
         memcpy(config->db_ip, config_message, config_message_size);
+		printf("Database IP [%s]\n", config->db_ip);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->allowed_number_nodes = atoi(config_message);
+		printf("Allow Number of Nodes [%d]\n", config->allowed_number_nodes);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->period_between_RFHR = atoi(config_message);
+		printf("Periods between request for health report [%d]\n", config->period_between_RFHR);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->period_between_RFTOD = atoi(config_message);
+		printf("Periods between request for tracked object data [%d]\n", config->period_between_RFTOD);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->number_worker_threads = atoi(config_message);
+		printf("Number of worker threads [%d]\n", config->number_worker_threads);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->send_port = atoi(config_message);
+		printf("The destination port when sending [%d]\n", config->send_port);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->recv_port = atoi(config_message);
+		printf("The received port [%d]\n", config->recv_port);
+
+		fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        config->database_port = atoi(config_message);
+		printf("The database port [%d]\n", config->database_port);
+
+		fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        if(config_message[strlen(config_message)-1] == '\n')
+            config_message_size = strlen(config_message) - 1;
+        else
+            config_message_size = strlen(config_message);
+
+		memcpy(config->database_name, config_message, config_message_size);
+		printf("Database Name [%s]\n", config->database_name);
+
+		fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        if(config_message[strlen(config_message)-1] == '\n')
+            config_message_size = strlen(config_message) - 1;
+        else
+            config_message_size = strlen(config_message);
+
+		memcpy(config->database_account, config_message, config_message_size);
+		printf("Database Account [%s]\n", config->database_account);
+
+		fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        if(config_message[strlen(config_message)-1] == '\n')
+            config_message_size = strlen(config_message) - 1;
+        else
+            config_message_size = strlen(config_message);
+
+		memcpy(config->database_password, config_message, config_message_size);
+		printf("Database Password [%s]\n", config->database_password);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->critical_priority = atoi(config_message);
+		printf("The nice of critical priority is [%d]\n", config->critical_priority);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->high_priority = atoi(config_message);
+		printf("The nice of high priority is [%d]\n", config->high_priority);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->normal_priority = atoi(config_message);
+		printf("The nice of normal priority is [%d]\n", config->normal_priority);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->low_priority = atoi(config_message);
+		printf("The nice of low priority is [%d]\n", config->low_priority);
 
         fclose(file);
 
@@ -435,11 +506,19 @@ void *sort_priority(BufferListHead *list_head){
 
 void *CommUnit_routine(){
 
+	/* The last reset time */
     int init_time;
+
     int current_time;
-    Threadpool thpool;
-    int return_error_value;
-	List_Entry *tmp;
+	
+	Threadpool thpool;
+    
+	int return_error_value;
+	
+	/* The pointer point to the current priority buffer list entry */
+	List_Entry *current_entry;
+
+	/* The pointer point to the current buffer list head */
     BufferListHead *current_head;
 
     /* wait for NSI get ready */
@@ -482,9 +561,9 @@ void *CommUnit_routine(){
 
             pthread_mutex_lock( &priority_list_head.list_lock);
 
-            list_for_each(tmp, &priority_list_head.priority_list_entry){
+            list_for_each(current_entry, &priority_list_head.priority_list_entry){
 
-                current_head= ListEntry(tmp, BufferListHead,
+                current_head= ListEntry(current_entry, BufferListHead,
                                         priority_list_entry);
 
                 pthread_mutex_lock( &current_head -> list_lock);
@@ -530,9 +609,9 @@ void *CommUnit_routine(){
 
         pthread_mutex_lock( &priority_list_head.list_lock);
 
-        list_for_each_reverse(tmp, &priority_list_head.priority_list_entry){
+        list_for_each_reverse(current_entry, &priority_list_head.priority_list_entry){
 
-            current_head= ListEntry(tmp, BufferListHead, priority_list_entry);
+            current_head= ListEntry(current_entry, BufferListHead, priority_list_entry);
 
             pthread_mutex_lock( &current_head -> list_lock);
 
@@ -579,7 +658,7 @@ void *NSI_routine(void *_buffer_list_head){
 
     struct List_Entry *temp_list_entry_pointers;
 
-    BufferNode *temp;
+    BufferNode *current_node;
 
 	int send_type;
 
@@ -595,13 +674,13 @@ void *NSI_routine(void *_buffer_list_head){
 
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
 
-        temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
+        current_node = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
 
         send_type = (from_server & 0x0f)<<4;
 
         /* Put the address into Gateway_address_map and set the return pkt type
          */
-        if (Gateway_join_request(&Gateway_address_map, temp ->
+        if (Gateway_join_request(&Gateway_address_map, current_node ->
                                 net_address) == true)
             send_type += join_request_ack & 0x0f;
         else
@@ -615,7 +694,7 @@ void *NSI_routine(void *_buffer_list_head){
 
 		memset(gateway_record, 0, WIFI_MESSAGE_LENGTH*sizeof(char));
 
-		sprintf(gateway_record, "1;%s;", temp -> net_address);
+		sprintf(gateway_record, "1;%s;", current_node -> net_address);
 
 		printf("%s\nlength: %d\n", gateway_record, strlen(gateway_record));
 
@@ -625,20 +704,20 @@ void *NSI_routine(void *_buffer_list_head){
         SQL_update_gateway_registration_status(Server_db, gateway_record,
                                                strlen(gateway_record));
 		
-		SQL_update_lbeacon_registration_status(Server_db, &temp->content[2], strlen(&temp->content[2]));
+		SQL_update_lbeacon_registration_status(Server_db, &current_node->content[2], strlen(&current_node->content[2]));
 
 #ifdef debugging
 		printf("Register Gateway Success\n");
 #endif
 
 		/* put the pkt type to content */
-        temp->content[0] = (char)send_type;
+        current_node->content[0] = (char)send_type;
 
-		printf("NSI msg IP: [%s] msg: [%s]\n", temp->net_address, temp->content);
+		printf("NSI msg IP: [%s] msg: [%s]\n", current_node->net_address, current_node->content);
 
         pthread_mutex_lock(&NSI_send_buffer_list_head.list_lock);
 
-        insert_list_tail( &temp->buffer_entry,
+        insert_list_tail( &current_node->buffer_entry,
                           &NSI_send_buffer_list_head.list_head);
 
         pthread_mutex_unlock( &NSI_send_buffer_list_head.list_lock);
@@ -657,7 +736,7 @@ void *BHM_routine(void *_buffer_list_head){
     /* Create a temporary node and set as the head */
     struct List_Entry *temp_list_entry_pointers;
 
-    BufferNode *temp;
+    BufferNode *current_node;
 
     pthread_mutex_lock( &buffer_list_head->list_lock);
 
@@ -669,11 +748,11 @@ void *BHM_routine(void *_buffer_list_head){
 
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
 
-        temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
+        current_node = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
 
         /* TODO  */
 
-        mp_free( &node_mempool, temp);
+        mp_free( &node_mempool, current_node);
     }
     else
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
@@ -691,7 +770,7 @@ void *LBeacon_routine(void *_buffer_list_head){
     /* Create a temporary node and set as the head */
     struct List_Entry *temp_list_entry_pointers;
 
-    BufferNode *temp;
+    BufferNode *current_node;
 
     pthread_mutex_lock( &buffer_list_head -> list_lock);
 
@@ -703,16 +782,16 @@ void *LBeacon_routine(void *_buffer_list_head){
 
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
 
-        temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
+        current_node = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
 
         /* read the pkt type from lower lower 4 bits. */
-        pkt_type = temp ->content[0] & 0x0f;
+        pkt_type = current_node ->content[0] & 0x0f;
 		
 		if(pkt_type == tracked_object_data){
-			SQL_update_object_tracking_data(Server_db, &temp ->content[1], strlen(&temp ->content[1]));
+			SQL_update_object_tracking_data(Server_db, &current_node ->content[1], strlen(&current_node ->content[1]));
 		}
 
-        mp_free( &node_mempool, temp);
+        mp_free( &node_mempool, current_node);
     }
     else
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
@@ -730,7 +809,7 @@ void *Gateway_routine(void *_buffer_list_head){
     /* Create a temporary node and set as the head */
     struct List_Entry *temp_list_entry_pointers;
 
-    BufferNode *temp;
+    BufferNode *current_node;
 
     pthread_mutex_lock( &buffer_list_head -> list_lock);
 
@@ -742,16 +821,16 @@ void *Gateway_routine(void *_buffer_list_head){
 
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
 
-        temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
+        current_node = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
 
         /* read the pkt type from lower lower 4 bits. */
-        pkt_type = temp ->content[0] & 0x0f;
+        pkt_type = current_node ->content[0] & 0x0f;
 		
 		if(pkt_type == tracked_object_data){
-			SQL_update_object_tracking_data(Server_db, &temp ->content[1], strlen(&temp ->content[1]));
+			SQL_update_object_tracking_data(Server_db, &current_node ->content[1], strlen(&current_node ->content[1]));
 		}
 
-        mp_free( &node_mempool, temp);
+        mp_free( &node_mempool, current_node);
     }
     else
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
@@ -868,16 +947,17 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
 
 void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size){
 
-	int n;
+	/* The counter for for-loop*/
+	int current_index;
 
     pthread_mutex_lock( &address_map -> list_lock);
 
     if (size <= WIFI_MESSAGE_LENGTH){
-        for(n = 0;n < MAX_NUMBER_NODES;n ++){
+        for(current_index = 0;current_index < MAX_NUMBER_NODES;current_index ++){
 
-            if (address_map -> in_use[n] == true){
+            if (address_map -> in_use[current_index] == true){
                 /* Add the pkt that to be sent to the server */
-                udp_addpkt( &udp_config, address_map -> address_map_list[n]
+                udp_addpkt( &udp_config, address_map -> address_map_list[current_index]
                             .net_address, msg, size);
             }
         }
@@ -917,7 +997,7 @@ void *process_wifi_send(void *_buffer_list_head){
 
     struct List_Entry *temp_list_entry_pointers;
 
-    BufferNode *temp;
+    BufferNode *current_node;
 
 	pthread_mutex_lock( &buffer_list_head -> list_lock);
 
@@ -933,13 +1013,13 @@ void *process_wifi_send(void *_buffer_list_head){
 		printf("Start Send pkt\naddress [%s]\nmsg [%d]\n", temp->content, temp->content_size);
 #endif
 
-        temp = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
+        current_node = ListEntry(temp_list_entry_pointers, BufferNode, buffer_entry);
 
         /* Add the content that to be sent to the server */
-        udp_addpkt( &udp_config, temp -> net_address, temp->content,
-                   temp->content_size);
+        udp_addpkt( &udp_config, current_node -> net_address, current_node->content,
+                   current_node->content_size);
 
-        mp_free( &node_mempool, temp);
+        mp_free( &node_mempool, current_node);
 
 #ifdef debugging
 		printf("Send Success\n");

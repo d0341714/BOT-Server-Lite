@@ -65,6 +65,8 @@
 /* The category defined of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
 
+#define MAXIMUM_DATABASE_INFO 1024
+
 #ifdef debugging
 /* The category defined for the printf during debugging */
 #define LOG_CATEGORY_DEBUG "LBeacon_Debug"
@@ -112,6 +114,16 @@ typedef struct {
 
     /* A port which gateway is listening for beacons and server to send to */
     int recv_port;
+	
+	/* A port with database is lisening for server to send to */
+	int database_port;
+
+	char database_name[MAXIMUM_DATABASE_INFO];
+
+	char database_account[MAXIMUM_DATABASE_INFO];
+
+	char database_password[MAXIMUM_DATABASE_INFO];
+
 
     /* each priority levels */
     int critical_priority;
