@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190201
+     1.0, 20190308
 
   Abstract:
 
@@ -90,10 +90,10 @@ typedef struct {
     /* The IP address of server for WiFi netwok connection. */
     char server_ip[NETWORK_ADDR_LENGTH];
 
-	/* The IP address of database for server to connect. */
-	char db_ip[NETWORK_ADDR_LENGTH];
+    /* The IP address of database for server to connect. */
+    char db_ip[NETWORK_ADDR_LENGTH];
     
-	/* The number of LBeacon nodes in the star network of this gateway */
+    /* The number of LBeacon nodes in the star network of this gateway */
     int allowed_number_nodes;
 
     /* The time interval in seconds for gateway sending request for health
@@ -114,15 +114,15 @@ typedef struct {
 
     /* A port which gateway is listening for beacons and server to send to */
     int recv_port;
-	
-	/* A port with database is lisening for server to send to */
-	int database_port;
+    
+    /* A port with database is lisening for server to send to */
+    int database_port;
 
-	char database_name[MAXIMUM_DATABASE_INFO];
+    char database_name[MAXIMUM_DATABASE_INFO];
 
-	char database_account[MAXIMUM_DATABASE_INFO];
+    char database_account[MAXIMUM_DATABASE_INFO];
 
-	char database_password[MAXIMUM_DATABASE_INFO];
+    char database_password[MAXIMUM_DATABASE_INFO];
 
 
     /* each priority levels */
@@ -295,7 +295,7 @@ ErrorCode get_config(ServerConfig *config, char *file_name);
      None
  */
 void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
-								int priority_nice);
+                                int priority_nice);
 
 
 /*

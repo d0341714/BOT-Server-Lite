@@ -51,8 +51,8 @@ unsigned int *uuid_str_to_data(char *uuid) {
     int uuid_length = strlen(uuid);
     unsigned int *data =
         (unsigned int *)malloc(sizeof(unsigned int) * uuid_length);
-	unsigned int *data_pointer;
-	char *uuid_counter;
+    unsigned int *data_pointer;
+    char *uuid_counter;
 
     if (data == NULL) {
         /* Error handling */
