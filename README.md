@@ -1,29 +1,16 @@
-# Lbeacon-Gateway
+# BOT-Server
 
-LBeacon-Gateway: The Lbeacon Gateway is used for managing Lbeacons in a Star Network and connecting them with the BeDIS Server for the purposes of downloading files to the Location Beacons during reconfiguration and maintenance and monitoring the health of the Beacons by the BeDIS Server.
+BOT-Server is used for managing Gateways and LBeacons in a Star Network for the purposes of maintening and monitoring the health of the Gateways and LBeacons and tracking objects.
 
-## General Installation
+## Preparation
+* Windows OS
+* PostgreSQL 11
+* TimescaleDB(an extension of PostgreSQL 11)
 
-### Installing OS and Update on Raspberry Pi
-
-[Download](https://www.raspberrypi.org/downloads/raspbian/) Raspbian Jessie lite for the Raspberry Pi and follow its installation guide.
-
-In Raspberry Pi, install packages by running the following command:
-```sh
-sudo apt-get update
-sudo apt-get dist-upgrade -y
-sudo apt-get install git make build-essential
-```
-
-### Installing Gateway
-
-Clone code from Github
-```sh
-git clone https://github.com/OpenISDM/Lbeacon-Gateway.git
-```
-
-Entering to Lbeacon-Gateway and use make to start installation
-```sh
-cd ./Lbeacon-Gateway
-sudo make all
-```
+## Configuration
+In file `./config/server.conf`, change the following config.
+* `IP_address` to current Server IP
+* `database_ip`
+* `atabase_name`
+* `atabase_account`
+* `atabase_password`
