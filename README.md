@@ -8,7 +8,7 @@ BOT-Server is used for managing Gateways and LBeacons in a Star Network for the 
 * TimescaleDB(an extension of PostgreSQL 11)
 
 ## Configuration
-In file `./config/server.conf`, change the following config.
+In file `./config/server.conf`, change the following configuration.
 * `IP_address` to current Server IP
 * `database_ip`
 * `atabase_name`
