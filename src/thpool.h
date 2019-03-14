@@ -53,13 +53,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <unistd.h>
+#include <signal.h>
 #include <pthread.h>
 #include <errno.h>
 #include <time.h>
 #include "Mempool.h"
-#include <unistd.h>
-#include <signal.h>
+
 
 /* The number of slots for the memory pool */
 #define SLOTS_FOR_MEM_POOL 100
