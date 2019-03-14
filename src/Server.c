@@ -93,6 +93,7 @@ int main(int argc, char **argv){
     printf("Mempool Initializing\n");
 
     /* Initialize the memory pool */
+    printf("Buffer Node [%d]\n", sizeof(BufferNode));
     if(mp_init( &node_mempool, sizeof(BufferNode), SLOTS_IN_MEM_POOL)
        != MEMORY_POOL_SUCCESS){
 
@@ -218,10 +219,11 @@ int main(int argc, char **argv){
         if(initialization_failed == true){
             ready_to_work = false;
 
-			/* The program is going to be ended. Free the connection of Wifi */
-			Wifi_free();
+            /* The program is going to be ended. Free the connection of Wifi */
+            Wifi_free();
 
-			SQL_close_database_connection(Server_db);
+            SQL_close_database_connection(Server_db);
+            
             return E_INITIALIZATION_FAIL;
         }
     }
@@ -548,7 +550,7 @@ void *CommUnit_routine(){
 
     /* The pointer point to the current buffer list head */
     BufferListHead *current_head;
-
+    
     /* wait for NSI get ready */
     while(NSI_initialization_complete == false){
         Sleep(WAITING_TIME);
@@ -1042,8 +1044,8 @@ void *process_wifi_send(void *_buffer_list_head){
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
 
 #ifdef debugging
-        printf("Start Send pkt\naddress [%s]\nmsg [%d]\n", temp->content,
-                                                           temp->content_size);
+        printf("Start Send pkt\naddress [%s]\nmsg [%d]\n", current_node->content,
+                                                           current_node->content_size);
 #endif
 
         current_node = ListEntry(temp_list_entry_pointers, BufferNode,
