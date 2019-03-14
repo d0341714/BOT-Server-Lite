@@ -24,8 +24,6 @@ struct thpool_ *thpool_init(int num_threads){
 
 	thpool_ *thpool_p;
 
-	threads_keepalive = 1;
-
 	if (num_threads < 0){
 		num_threads = 0;
 	}
@@ -36,6 +34,8 @@ struct thpool_ *thpool_init(int num_threads){
 		err("thpool_init(): Could not allocate memory for thread pool\n");
 		return NULL;
 	}
+
+	thpool_p->threads_keepalive = 1;
 
     /* Initialize the memory pool */
     if(mp_init(&th_mempool, SIZE_FOR_MEM_POOL, SLOTS_FOR_MEM_POOL)
@@ -116,7 +116,7 @@ void thpool_destroy(thpool_ *thpool_p){
 	threads_total = thpool_p ->  num_threads_alive;
 
 	/* End each thread 's infinite loop */
-	threads_keepalive = 0;
+	thpool_p->threads_keepalive = 0;
 
 	/* Give one second to kill idle threads */
 	TIMEOUT = 1.0;
@@ -203,7 +203,7 @@ static void *thread_do(thread *thread_p){
 	thpool_p->num_threads_alive += 1;
 	pthread_mutex_unlock(&thpool_p -> thcount_lock);
 
-	while(threads_keepalive){
+	while(thpool_p->threads_keepalive){
 
 		void ( *func_buff)(void *);
 		void *arg_buff;
@@ -211,7 +211,7 @@ static void *thread_do(thread *thread_p){
 
 		bsem_wait(thpool_p -> jobqueue.has_jobs);
 
-		if (threads_keepalive){
+		if (thpool_p->threads_keepalive){
 
 			pthread_mutex_lock(&thpool_p -> thcount_lock);
 			thpool_p->num_threads_working ++;

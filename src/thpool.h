@@ -28,8 +28,6 @@
 
 #define err(str) fprintf(stderr, str)
 
-static volatile int threads_keepalive;
-
 /* ========================== STRUCTURES ============================ */
 
 
@@ -75,7 +73,7 @@ typedef struct thpool_{
 	volatile int num_threads_working;    /* threads currently working */
 	pthread_mutex_t  thcount_lock;       /* used for thread count etc */
 	jobqueue  jobqueue;                  /* job queue                 */
-	
+	volatile int threads_keepalive;
 	
 } thpool_;
 
