@@ -58,19 +58,6 @@
 
 typedef struct {
 
-    char send_ipv4_addr[NETWORK_ADDR_LENGTH];
-    int send_portno;
-    spkt_ptr send_pkt_queue;
-
-    struct sockaddr_in si_recv;
-    int recv_portno;
-    int  recv_socket;
-    spkt_ptr recv_pkt_queue;
-
-} sudp_config_beacon;
-
-typedef struct {
-
 	WSADATA wsaData;
 
 	WORD sockVersion;
