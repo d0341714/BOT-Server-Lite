@@ -76,6 +76,7 @@ typedef struct thpool_{
 	pthread_mutex_t  thcount_lock;       /* used for thread count etc */
 	jobqueue  jobqueue;                  /* job queue                 */
 	
+	
 } thpool_;
 
 
@@ -103,6 +104,9 @@ static void  bsem_wait(bsem *bsem_p);
 
 typedef thpool_ *Threadpool;
 
+/* The memory pool for the allocation of all nodes in scanned_device_list and
+   tracked_object_list */
+Memory_Pool th_mempool;
 
 /**
  * @brief  Initialize threadpool

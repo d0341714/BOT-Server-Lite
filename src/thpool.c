@@ -12,9 +12,7 @@
 
 #include "thpool.h"
 
-/* The memory pool for the allocation of all nodes in scanned_device_list and
- tracked_object_list */
-Memory_Pool th_mempool;
+
 
 /* ========================== THREADPOOL ============================ */
 
@@ -32,17 +30,18 @@ struct thpool_ *thpool_init(int num_threads){
 		num_threads = 0;
 	}
 
+	/* Make new thread pool */
+	thpool_p = (thpool_ *)malloc(sizeof(thpool_));
+	if (thpool_p == NULL){
+		err("thpool_init(): Could not allocate memory for thread pool\n");
+		return NULL;
+	}
+
     /* Initialize the memory pool */
     if(mp_init(&th_mempool, SIZE_FOR_MEM_POOL, SLOTS_FOR_MEM_POOL)
        != MEMORY_POOL_SUCCESS)
         return NULL;
 
-	/* Make new thread pool */
-	thpool_p = (thpool_ *)mp_alloc(&th_mempool);
-	if (thpool_p == NULL){
-		err("thpool_init(): Could not allocate memory for thread pool\n");
-		return NULL;
-	}
 	thpool_p->num_threads_alive   = 0;
 	thpool_p->num_threads_working = 0;
 
