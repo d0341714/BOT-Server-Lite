@@ -218,6 +218,10 @@ int main(int argc, char **argv){
         if(initialization_failed == true){
             ready_to_work = false;
 
+			/* The program is going to be ended. Free the connection of Wifi */
+			Wifi_free();
+
+			SQL_close_database_connection(Server_db);
             return E_INITIALIZATION_FAIL;
         }
     }

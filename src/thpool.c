@@ -26,7 +26,6 @@ struct thpool_ *thpool_init(int num_threads){
 
 	thpool_ *thpool_p;
 
-	threads_on_hold   = 0;
 	threads_keepalive = 1;
 
 	if (num_threads < 0){
@@ -64,7 +63,6 @@ struct thpool_ *thpool_init(int num_threads){
 	}
 
 	pthread_mutex_init(&(thpool_p -> thcount_lock), NULL);
-	pthread_cond_init(&thpool_p -> threads_all_idle, NULL);
 
 	/* Thread init */
 	for (n = 0; n < num_threads; n ++){
@@ -99,17 +97,6 @@ int thpool_add_work(thpool_ *thpool_p, void (*function_p)(void *),
 	jobqueue_push(&thpool_p -> jobqueue, newjob);
 
 	return 0;
-}
-
-
-/* Wait until all jobs have finished */
-void thpool_wait(thpool_ *thpool_p){
-	pthread_mutex_lock(&thpool_p -> thcount_lock);
-	while (thpool_p -> jobqueue.len || thpool_p -> num_threads_working) {
-		pthread_cond_wait(&thpool_p -> threads_all_idle,
-			              &thpool_p->thcount_lock);
-	}
-	pthread_mutex_unlock(&thpool_p -> thcount_lock);
 }
 
 
@@ -156,16 +143,6 @@ void thpool_destroy(thpool_ *thpool_p){
 	}
 	mp_free(&th_mempool, thpool_p -> threads);
 	mp_free(&th_mempool, thpool_p);
-}
-
-/* Resume all threads in threadpool */
-void thpool_resume(thpool_ *thpool_p) {
-    // resuming a single threadpool hasn't been
-    // implemented yet, meanwhile this supresses
-    // the warnings
-    (void)thpool_p;
-
-	threads_on_hold = 0;
 }
 
 
@@ -254,9 +231,6 @@ static void *thread_do(thread *thread_p){
 
 			pthread_mutex_lock(&thpool_p -> thcount_lock);
 			thpool_p -> num_threads_working --;
-			if ( !thpool_p -> num_threads_working) {
-				pthread_cond_signal(&thpool_p -> threads_all_idle);
-			}
 			pthread_mutex_unlock(&thpool_p -> thcount_lock);
 
 		}

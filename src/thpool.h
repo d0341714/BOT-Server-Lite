@@ -24,14 +24,11 @@
 #define SLOTS_FOR_MEM_POOL 100
 
 /* The number of slots for the memory pool */
-#define SIZE_FOR_MEM_POOL 256
+#define SIZE_FOR_MEM_POOL 100
 
 #define err(str) fprintf(stderr, str)
 
-
 static volatile int threads_keepalive;
-static volatile int threads_on_hold;
-
 
 /* ========================== STRUCTURES ============================ */
 
@@ -77,8 +74,8 @@ typedef struct thpool_{
 	volatile int num_threads_alive;      /* threads currently alive   */
 	volatile int num_threads_working;    /* threads currently working */
 	pthread_mutex_t  thcount_lock;       /* used for thread count etc */
-	pthread_cond_t  threads_all_idle;    /* signal to thpool_wait     */
 	jobqueue  jobqueue;                  /* job queue                 */
+	
 } thpool_;
 
 
@@ -87,7 +84,6 @@ typedef struct thpool_{
 
 static int   thread_init(thpool_ *thpool_p, thread **thread_p, int id);
 static void *thread_do(thread *thread_p);
-static void  thread_hold(int sig_id);
 static void  thread_destroy(thread *thread_p);
 
 static int   jobqueue_init(jobqueue *jobqueue_p);
@@ -158,76 +154,6 @@ Threadpool thpool_init(int num_threads);
  */
 int thpool_add_work(Threadpool threadpool, void (*function_p)(void *),
 					void *arg_p, int priority);
-
-
-/**
- * @brief Wait for all queued jobs to finish
- *
- * Will wait for all jobs - both queued and currently running to finish.
- * Once the queue is empty and all work has completed, the calling thread
- * (probably the main program) will continue.
- *
- * Smart polling is used in wait. The polling is initially 0 - meaning that
- * there is virtually no polling at all. If after 1 seconds the threads haven't
- * finished, the polling interval starts growing exponentially untill it reaches
- * max_secs seconds. Then it jumps down to a maximum polling interval assuming
- * that heavy processing is being used in the threadpool.
- *
- * @example
- *
- *    ..
- *    threadpool thpool = thpool_init(4);
- *    ..
- *    // Add a bunch of work
- *    ..
- *    thpool_wait(thpool);
- *    puts("All added work has finished");
- *    ..
- *
- * @param threadpool     the threadpool to wait for
- * @return nothing
- */
-void thpool_wait(Threadpool);
-
-
-/**
- * @brief Pauses all threads immediately
- *
- * The threads will be paused no matter if they are idle or working.
- * The threads return to their previous states once thpool_resume
- * is called.
- *
- * While the thread is being paused, new work can be added.
- *
- * @example
- *
- *    threadpool thpool = thpool_init(4);
- *    thpool_pause(thpool);
- *    ..
- *    // Add a bunch of work
- *    ..
- *    thpool_resume(thpool); // Let the threads start their magic
- *
- * @param threadpool    the threadpool where the threads should be paused
- * @return nothing
- */
-void thpool_pause(Threadpool);
-
-
-/**
- * @brief Unpauses all threads if they are paused
- *
- * @example
- *    ..
- *    thpool_pause(thpool);
- *    Sleep(10);              // Delay execution 10 seconds
- *    thpool_resume(thpool);
- *    ..
- *
- * @param threadpool     the threadpool where the threads should be unpaused
- * @return nothing
- */
-void thpool_resume(Threadpool threadpool);
 
 
 /**
