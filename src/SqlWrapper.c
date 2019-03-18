@@ -413,7 +413,8 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
                          "registered_timestamp, " \
                          "last_report_timestamp) " \
                          "VALUES " \
-                         "(%s, \'%d\', %s, to_timestamp(%s), " \
+                         "(%s, \'%d\', %s, " \
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
                          "to_timestamp(\'%d\')) " \
                          "ON CONFLICT (uuid) " \
                          "DO UPDATE SET health_status = \'%d\', " \
@@ -637,8 +638,9 @@ ErrorCode SQL_update_object_tracking_data(void* db,
                          "initial_timestamp, " \
                          "final_timestamp) " \
                          "VALUES " \
-                         "(%s, %s, %s, to_timestamp(%s), " \
-                         "to_timestamp(%s));";
+                         "(%s, %s, %s, " \
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval);";
     char *lbeacon_uuid = NULL;
     char *gateway_ip = NULL;
     char *object_type = NULL;
@@ -702,7 +704,7 @@ ErrorCode SQL_update_object_tracking_data(void* db,
                                     strlen(initial_timestamp_GMT)),
                     PQescapeLiteral(conn, final_timestamp_GMT,
                                     strlen(final_timestamp_GMT)));
-
+                   
             /* Execute SQL statement */
             ret_val = SQL_execute(db, sql);
 

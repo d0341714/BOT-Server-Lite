@@ -9,7 +9,7 @@ int main(int argc, char *argv[]){
     char temp[4096];
 
     char buf2[] = "2;192.168.1.101;0000001500000A65432100006E654321;" \
-                  "1549870728;0000001500000A65432100006E654300;1549870730;";
+                  "1552895096;0000001500000A65432100006E654300;1552895096;";
 
     char buf3[] = "2;192.168.1.101;1;192.168.1.102;0;";
 
@@ -17,11 +17,11 @@ int main(int argc, char *argv[]){
                   "1;0000001500000A65432100006E654300;0;";
 
     char buf5[] = "0000001500000A65432100006E654321;192.168.1.101;" \
-                  "0;1;00:00:00:11:11:11;1549870728;1549870728;-50;1;0;";
+                  "0;1;00:00:00:11:11:11;1552895096;1549870728;-50;1;0;";
 
     printf("\nstart testing..\n\n");
 
-    conninfo = "dbname=botdb user=postgres password=bedis402";
+    conninfo = "host=140.109.22.34 port=5432 dbname=botdb user=postgres password=bedis402";
     SQL_open_database_connection(conninfo, &db);
 
     printf("\nSQL_update_gateway_registration_status\n\n");
@@ -49,9 +49,10 @@ int main(int argc, char *argv[]){
     // use buf5
     SQL_update_object_tracking_data(db, buf5, sizeof(buf5));
 
+
     SQL_vacuum_database(db);
 
-    SQL_retain_data(db, 240);
+    SQL_retain_data(db, 0);
 
     SQL_close_database_connection(db);
 
