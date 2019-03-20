@@ -193,23 +193,21 @@ ErrorCode SQL_retain_data(void* db, int retention_hours){
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
-    time_t current_timestamp = get_system_time();
-    char *table_name[2] = {"lbeacon_table", "gateway_table"};
+    char *table_name[3] = {"lbeacon_table", "gateway_table", "tracking_table"};
     char *sql_template = "DELETE FROM %s WHERE " \
-                         "last_report_timestamp < to_timestamp(\'%d\') - " \
-                         "INTERVAL \'%d HOURS\';";
+                         "last_report_timestamp < " \
+                         "NOW() - INTERVAL \'%d HOURS\';";
     int idx = 0;
     char *tsdb_table_name[1] = {"tracking_table"};
     char *sql_tsdb_template = "SELECT drop_chunks(interval \'%d HOURS\', " \
                               "\'%s\');";
     PGresult *res;
 
-    for(idx = 0; idx<2; idx++){
+    for(idx = 0; idx<3; idx++){
 
         memset(sql, 0, sizeof(sql));
 
-        sprintf(sql, sql_template, table_name[idx], current_timestamp,
-                retention_hours);
+        sprintf(sql, sql_template, table_name[idx], retention_hours);
 
         /* Execute SQL statement */
         ret_val = SQL_execute(db, sql);
@@ -263,14 +261,12 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
                          "registered_timestamp, " \
                          "last_report_timestamp) " \
                          "VALUES " \
-                         "(%s, \'%d\', to_timestamp(\'%d\'), " \
-                         "to_timestamp(\'%d\') ) " \
+                         "(%s, \'%d\', NOW(), NOW())" \
                          "ON CONFLICT (ip_address) " \
                          "DO UPDATE SET health_status = \'%d\', " \
-                         "last_report_timestamp = to_timestamp(\'%d\') ;";
+                         "last_report_timestamp = NOW();";
     char *ip_address = NULL;
     HealthStatus health_status = S_NORMAL_STATUS;
-    time_t current_timestamp = get_system_time();
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -297,9 +293,7 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_template,
                 PQescapeLiteral(conn, ip_address, strlen(ip_address)),
-                health_status,
-                current_timestamp, current_timestamp, health_status,
-                current_timestamp);
+                health_status, health_status);
 
         /* Execute SQL statement */
         ret_val = SQL_execute(db, sql);
@@ -415,16 +409,15 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
                          "VALUES " \
                          "(%s, \'%d\', %s, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
-                         "to_timestamp(\'%d\')) " \
+                         "NOW()) " \
                          "ON CONFLICT (uuid) " \
                          "DO UPDATE SET health_status = \'%d\', " \
                          "gateway_ip_address = %s, " \
-                         "last_report_timestamp = to_timestamp(\'%d\') ;";
+                         "last_report_timestamp = NOW() ;";
     char *uuid = NULL;
     HealthStatus health_status = S_NORMAL_STATUS;
     char *gateway_ip = NULL;
     char *registered_timestamp_GMT = NULL;
-    time_t current_timestamp = get_system_time();
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -464,10 +457,8 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
                 PQescapeLiteral(conn, gateway_ip, strlen(gateway_ip)),
                 PQescapeLiteral(conn, registered_timestamp_GMT,
                                 strlen(registered_timestamp_GMT)),
-                current_timestamp,
                 health_status,
-                PQescapeLiteral(conn, gateway_ip, strlen(gateway_ip)),
-                current_timestamp);
+                PQescapeLiteral(conn, gateway_ip, strlen(gateway_ip)));
 
         /* Execute SQL statement */
         ret_val = SQL_execute(db, sql);
@@ -498,11 +489,10 @@ ErrorCode SQL_update_gateway_health_status(void* db,
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "UPDATE gateway_table " \
                          "SET health_status = %s, " \
-                         "last_report_timestamp = to_timestamp(\'%d\') " \
+                         "last_report_timestamp = NOW() " \
                          "WHERE ip_address = %s ;" ;
     char *ip_address = NULL;
     char *health_status = NULL;
-    time_t current_timestamp = get_system_time();
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -533,7 +523,6 @@ ErrorCode SQL_update_gateway_health_status(void* db,
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_template,
                 PQescapeLiteral(conn, health_status, strlen(health_status)),
-                current_timestamp,
                 PQescapeLiteral(conn, ip_address, strlen(ip_address)));
 
         /* Execute SQL statement */
@@ -565,12 +554,11 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
     char *gateway_ip = NULL;
     char *sql_template = "UPDATE lbeacon_table " \
                          "SET health_status = %s, " \
-                         "last_report_timestamp = to_timestamp(\'%d\') " \
+                         "last_report_timestamp = NOW() " \
                          "WHERE uuid = %s ;";
     char *uuid = NULL;
     char *health_status = NULL;
-    time_t current_timestamp = get_system_time();
-
+ 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
@@ -603,7 +591,6 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_template,
                 PQescapeLiteral(conn, health_status, strlen(health_status)),
-                current_timestamp,
                 PQescapeLiteral(conn, uuid, strlen(uuid)));
 
         /* Execute SQL statement */

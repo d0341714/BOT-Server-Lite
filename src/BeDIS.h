@@ -376,7 +376,7 @@ ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
 
      system_time - system time in seconds
 */
-time_t get_system_time();
+int get_system_time();
 
 
 #endif

@@ -119,12 +119,14 @@ ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
 }
 
 
-time_t get_system_time(){
-    time_t ltime;
-    struct tm* timeinfo;
+int get_system_time(){
+    /* Return value as a long long type */
+    int system_time;
 
-    time(&ltime);
-    timeinfo = gmtime(&ltime);
-    ltime = mktime(timeinfo);
-    return ltime;
+    time_t now = time(NULL);
+    
+    /* second ver. */
+    system_time = (int)now;
+
+    return system_time;
 }
