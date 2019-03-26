@@ -71,7 +71,6 @@ int main(int argc, char **argv){
     /* All global flags */
     NSI_initialization_complete      = false;
     CommUnit_initialization_complete = false;
-    BHM_initialization_complete      = true; /* TEMP true for skip BHM check*/
 
     /* Initialize flags */
 
@@ -209,10 +208,9 @@ int main(int argc, char **argv){
 
     printf("Start Communication\n");
 
-    /* The while loop waiting for NSI, BHM and CommUnit to be ready */
+    /* The while loop waiting for NSI and CommUnit to be ready */
     while(NSI_initialization_complete == false ||
-          CommUnit_initialization_complete == false ||
-          BHM_initialization_complete == false){
+          CommUnit_initialization_complete == false){
 
         Sleep(WAITING_TIME);
 
@@ -249,6 +247,10 @@ int main(int argc, char **argv){
 
             command_msg[0] = (char)send_pkt_type;
 
+//#ifdef debugging
+            printf("Send Request for Tracked Object Data\n");
+//#endif
+
             /* broadcast to LBeacons */
             Gateway_Broadcast(&Gateway_address_map, command_msg,
                              MINIMUM_WIFI_MESSAGE_LENGTH);
@@ -266,6 +268,10 @@ int main(int argc, char **argv){
             memset(command_msg, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
             command_msg[0] = (char)send_pkt_type;
+
+//#ifdef debugging
+            printf("Send Request for Health Report\n");
+//#endif
 
             /* broadcast to LBeacons */
             Gateway_Broadcast(&Gateway_address_map, command_msg,
@@ -776,7 +782,9 @@ void *BHM_routine(void *_buffer_list_head){
         current_node = ListEntry(temp_list_entry_pointers, BufferNode,
                                  buffer_entry);
 
-        /* TODO  */
+        SQL_update_lbeacon_health_status(Server_db,
+                                         &current_node ->content[1],
+                                         strlen(&current_node ->content[1]));
 
         mp_free( &node_mempool, current_node);
     }
@@ -1202,6 +1210,18 @@ void *process_wifi_receive(){
                                    &LBeacon_receive_buffer_list_head.list_head);
                                 pthread_mutex_unlock(
                                    &LBeacon_receive_buffer_list_head.list_lock);
+                                break;
+
+                            case health_report:
+//#ifdef debugging
+                                printf("Get Health Report from LBeacon\n");
+//#endif
+                                pthread_mutex_lock(&BHM_receive_buffer_list_head
+                                                   .list_lock);
+                                insert_list_tail( &new_node -> buffer_entry,
+                                       &BHM_receive_buffer_list_head.list_head);
+                                pthread_mutex_unlock(
+                                       &BHM_receive_buffer_list_head.list_lock);
                                 break;
 
                             default:
