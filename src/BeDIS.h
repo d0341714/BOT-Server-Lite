@@ -75,8 +75,7 @@
 #define FRACTION_DOT "."
 
 /* Parameter that marks the separator of differnt records communicated with
-SQL wrapper API
-*/
+   SQL wrapper API */
 #define DELIMITER_SEMICOLON ";"
 
 /* Maximum number of characters in each line of config file */

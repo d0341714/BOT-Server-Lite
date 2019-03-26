@@ -32,7 +32,7 @@
 
   Authors:
 
-     Gary Xiao		, garyh0205@hotmail.com
+     Gary Xiao      , garyh0205@hotmail.com
  */
 #ifndef UDP_API_H
 #define UDP_API_H
@@ -58,13 +58,13 @@
 
 typedef struct {
 
-	WSADATA wsaData;
+    WSADATA wsaData;
 
-	WORD sockVersion;
+    WORD sockVersion;
 
     struct sockaddr_in si_server;
 
-	int optval;
+    int optval;
 
     int  send_socket, recv_socket;
 

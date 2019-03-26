@@ -31,7 +31,7 @@
      area.
 
   Authors:
-     Gary Xiao		, garyh0205@hotmail.com
+     Gary Xiao      , garyh0205@hotmail.com
  */
 #include "UDP_API.h"
 
@@ -40,11 +40,11 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
 
     int ret;
 
-	int timeout;
+    int timeout;
 
      udp_config -> sockVersion = MAKEWORD(2,2);
 
-	 if(WSAStartup(udp_config -> sockVersion, &udp_config -> wsaData) != 0)
+     if(WSAStartup(udp_config -> sockVersion, &udp_config -> wsaData) != 0)
      {
          return 0;
      }
@@ -105,7 +105,7 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
 
 int udp_addpkt(pudp_config udp_config, char *raw_addr, char *content, int size){
 
-	char *removed_address;
+    char *removed_address;
 
     if(size > MESSAGE_LENGTH)
         return addpkt_msg_oversize;
@@ -130,7 +130,7 @@ void *udp_send_pkt(void *udpconfig){
 
     pudp_config udp_config = (pudp_config) udpconfig;
 
-	sPkt current_send_pkt;
+    sPkt current_send_pkt;
 
     struct sockaddr_in si_send;
 
@@ -147,11 +147,12 @@ void *udp_send_pkt(void *udpconfig){
                 memset(&si_send, 0, sizeof(si_send));
                 si_send.sin_family = AF_INET;
                 si_send.sin_port   = htons(udp_config -> send_port);
-				si_send.sin_addr.s_addr   = inet_addr(dest_address);
+                si_send.sin_addr.s_addr   = inet_addr(dest_address);
 
 #ifdef debugging
-				printf("Entrer Send pkts\n(sendto [%s] msg [%s])\n",
-                       dest_address, current_send_pkt.content);
+                printf("Start Send pkts\n(sendto [%s] msg [", dest_address);
+				print_content(current_send_pkt.content, current_send_pkt.content_size);
+				printf("])\n");
 #endif
 
                 if (sendto(udp_config -> send_socket, current_send_pkt.content
@@ -161,12 +162,12 @@ void *udp_send_pkt(void *udpconfig){
                       printf("sendto error.[%s]\n", strerror(errno));
 #endif
                  }
-				else{
+                else{
 #ifdef debugging
-					printf("Send pkt success\n");
+                    printf("Send pkt success\n");
 #endif
-				}
-			}
+                }
+            }
         }
         else{
             Sleep(SEND_NULL_SLEEP);
@@ -185,7 +186,7 @@ void *udp_recv_pkt(void *udpconfig){
 
     char recv_buf[MESSAGE_LENGTH];
 
-	char *addr_tmp;
+    char *addr_tmp;
 
     struct sockaddr_in si_recv;
 
@@ -212,12 +213,14 @@ void *udp_recv_pkt(void *udpconfig){
         }
         else if(recv_len > 0){
 
-			addr_tmp = inet_ntoa(si_recv.sin_addr);
+            addr_tmp = inet_ntoa(si_recv.sin_addr);
 #ifdef debugging
             /* print details of the client/peer and the data received */
             printf("Received packet from %s:%d\n", inet_ntoa(si_recv.sin_addr),
                                                    ntohs(si_recv.sin_port));
-            printf("Data: %s\n" , recv_buf);
+			printf("Data: [");
+            print_content(recv_buf, recv_len);
+            printf("]\n");
             printf("Data Length %d\n", recv_len);
 #endif
             addpkt(&udp_config -> Received_Queue, UDP
@@ -246,7 +249,7 @@ int udp_release(pudp_config udp_config){
 
     closesocket(udp_config -> recv_socket);
 
-	WSACleanup();
+    WSACleanup();
 
     Free_Packet_Queue( &udp_config -> pkt_Queue);
 
@@ -261,24 +264,24 @@ char *udp_address_reduce_point(char *raw_addr){
     /* Record current filled Address Location. */
     int address_loc = 0;
 
-	/* in each part, at most 3 number. */
+    /* in each part, at most 3 number. */
     int count = 0;
     unsigned char tmp[3];
 
-	int lo, n;
+    int lo, n;
 
-	char *address = malloc(sizeof(char) * NETWORK_ADDR_LENGTH);
+    char *address = malloc(sizeof(char) * NETWORK_ADDR_LENGTH);
 
 #ifdef debugging
-	printf("Enter udp_address_reduce_point address [%s]\n", raw_addr);
+    printf("Enter udp_address_reduce_point address [%s]\n", raw_addr);
 #endif
 
-	memset(address, 0, NETWORK_ADDR_LENGTH);
+    memset(address, 0, NETWORK_ADDR_LENGTH);
 
     /* Four part in a address.(devided by '.') */
     for(n = 0; n < 4; n++){
 
-		count = 0;
+        count = 0;
 
         memset(&tmp, 0, sizeof(char) * 3);
 
@@ -313,7 +316,7 @@ char *udp_address_reduce_point(char *raw_addr){
             address_loc ++;
     }
 #ifdef debugging
-	printf("Result of udp_address_reduce_point address [%s]\n", address);
+    printf("Result of udp_address_reduce_point address [%s]\n", address);
 #endif
     return address;
 }
@@ -325,8 +328,8 @@ char *udp_hex_to_address(unsigned char *hex_addr){
     char *dest_address;
     char *tmp_address = hex_to_char(hex_addr, 6);
     int address_loc = 0;
-	int loc, n;
-	dest_address = malloc(sizeof(char) * 17);
+    int loc, n;
+    dest_address = malloc(sizeof(char) * 17);
     memset(dest_address, 0, sizeof(char) * 17);
 
     for(n=0;n < 4;n ++){

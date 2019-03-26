@@ -49,7 +49,7 @@
 
 size_t get_current_size_mempool(Memory_Pool *mp){
 
-	size_t mem_size;
+    size_t mem_size;
 
     pthread_mutex_lock(&mp->mem_lock);
 
@@ -63,11 +63,11 @@ size_t get_current_size_mempool(Memory_Pool *mp){
 
 int mp_init(Memory_Pool *mp, size_t size, size_t slots){
 
-	char *end;
+    char *end;
 
-	char *ite;
+    char *ite;
 
-	void *temp;
+    void *temp;
 
     pthread_mutex_init( &mp->mem_lock, 0);
 
@@ -103,9 +103,9 @@ int mp_init(Memory_Pool *mp, size_t size, size_t slots){
 int mp_expand(Memory_Pool *mp, size_t slots){
 
     int alloc_count;
-	char *end;
-	void *temp;
-	char *ite;
+    char *end;
+    void *temp;
+    char *ite;
 
 
     alloc_count = mp->alloc_time;
@@ -138,8 +138,8 @@ int mp_expand(Memory_Pool *mp, size_t slots){
 }
 
 void mp_destroy(Memory_Pool *mp){
-	
-	int i;
+    
+    int i;
 
     pthread_mutex_lock( &mp->mem_lock);
 
@@ -158,7 +158,7 @@ void mp_destroy(Memory_Pool *mp){
 
 void *mp_alloc(Memory_Pool *mp){
 
-	void *temp;
+    void *temp;
 
     pthread_mutex_lock(&mp->mem_lock);
 
@@ -190,10 +190,10 @@ void *mp_alloc(Memory_Pool *mp){
 int mp_free(Memory_Pool *mp, void *mem){
 
     int closest = -1;
-	int i;
-	int differenceinbyte;
-	void *temp;
-	int mem_size = sizeof((char *) mem);
+    int i;
+    int differenceinbyte;
+    void *temp;
+    int mem_size = sizeof((char *) mem);
 
     pthread_mutex_lock(&mp->mem_lock);
 
