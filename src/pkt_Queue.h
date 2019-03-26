@@ -34,7 +34,7 @@
      area.
 
   Authors:
-     Gary Xiao		, garyh0205@hotmail.com
+     Gary Xiao      , garyh0205@hotmail.com
  */
 
 #ifndef pkt_Queue_H
@@ -46,9 +46,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include <windows.h>
-
-
-//typedef enum{true=1, false=0} bool;
 
 
 /* When debugging is needed */

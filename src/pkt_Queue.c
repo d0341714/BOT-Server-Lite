@@ -34,7 +34,7 @@
      area.
 
   Authors:
-     Gary Xiao		, garyh0205@hotmail.com
+     Gary Xiao      , garyh0205@hotmail.com
  */
 
 #include "pkt_Queue.h"
@@ -45,7 +45,7 @@
 
 int init_Packet_Queue(pkt_ptr pkt_queue){
 
-	int num;
+    int num;
 
     pthread_mutex_init( &pkt_queue -> mutex, 0);
 
@@ -57,9 +57,9 @@ int init_Packet_Queue(pkt_ptr pkt_queue){
 
     pkt_queue -> rear  = -1;
 
-	for(num = 0;num < MAX_QUEUE_LENGTH;num ++){
+    for(num = 0;num < MAX_QUEUE_LENGTH;num ++){
         pkt_queue -> Queue[num].type = NONE;
-	}
+    }
 
     pthread_mutex_unlock( &pkt_queue -> mutex);
 
@@ -170,7 +170,7 @@ int addpkt(pkt_ptr pkt_queue, unsigned int type, char *raw_addr, char *content
 
 sPkt get_pkt(pkt_ptr pkt_queue){
 
-	sPkt tmp;
+    sPkt tmp;
 
     pthread_mutex_lock( &pkt_queue -> mutex);
 
@@ -201,7 +201,7 @@ sPkt get_pkt(pkt_ptr pkt_queue){
 
 int delpkt(pkt_ptr pkt_queue) {
 
-	int current_idx;
+    int current_idx;
 
     if(is_null(pkt_queue)) {
         return pkt_Queue_SUCCESS;
@@ -245,9 +245,9 @@ int delpkt(pkt_ptr pkt_queue) {
 
 int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num){
 
-	pPkt current_pkt;
-	char *char_addr;
-	char *address_char;
+    pPkt current_pkt;
+    char *char_addr;
+    char *address_char;
 
     if(pkt_num < 0 && pkt_num >= MAX_QUEUE_LENGTH){
         return pkt_Queue_display_over_range;
@@ -333,8 +333,8 @@ int str_to_type(const char *conType){
 
 void char_to_hex(char *raw, unsigned char *raw_hex, int size){
 
-	int i;
-	char tmp[2];
+    int i;
+    char tmp[2];
 
     for(i = 0 ; i < (size/2) ; i ++){
 
@@ -349,7 +349,7 @@ char *hex_to_char(unsigned char *hex, int size){
 
     int char_size = size * 2;
     char *char_addr = malloc(sizeof(char) * (char_size + 1));
-	int len;
+    int len;
 
     memset(char_addr, 0, sizeof(char) * (char_size + 1));
 
@@ -394,7 +394,7 @@ bool is_full(pkt_ptr pkt_queue){
         return true;
     }
     else if(pkt_queue -> front == 0 && pkt_queue -> rear == MAX_QUEUE_LENGTH - 1
-	       ){
+           ){
         return true;
     }
     else{
@@ -436,7 +436,7 @@ int queue_len(pkt_ptr pkt_queue){
 
 void print_content(char *content, int size){
 
-	int loc;
+    int loc;
 
     for(loc = 0; loc < size; loc ++)
         printf("%c", content[loc]);
