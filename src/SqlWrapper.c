@@ -72,9 +72,10 @@ static ErrorCode SQL_execute(void* db, char* sql_statement){
 
 
 static ErrorCode SQL_begin_transaction(void* db){
-
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql;
+
+    pthread_mutex_lock(&db_lock);
 
     /* Create SQL statement */
     sql = "BEGIN TRANSACTION;";
@@ -97,6 +98,8 @@ static ErrorCode SQL_commit_transaction(void* db){
     /* Execute SQL statement */
     ret_val = SQL_execute(db, sql);
 
+    pthread_mutex_unlock(&db_lock);
+
     return WORK_SUCCESSFULLY;
 }
 
@@ -111,6 +114,8 @@ static ErrorCode SQL_rollback_transaction(void* db){
 
     /* Execute SQL statement */
     ret_val = SQL_execute(db, sql);
+
+    pthread_mutex_unlock(&db_lock);
 
     return WORK_SUCCESSFULLY;
 }
@@ -131,6 +136,8 @@ ErrorCode SQL_open_database_connection(char* conninfo, void** db){
         return E_SQL_OPEN_DATABASE;
     }
 
+    pthread_mutex_init(&db_lock, 0);
+
     return WORK_SUCCESSFULLY;
 }
 
@@ -138,6 +145,8 @@ ErrorCode SQL_open_database_connection(char* conninfo, void** db){
 ErrorCode SQL_close_database_connection(void* db){
     PGconn *conn = (PGconn *) db;
     PQfinish(conn);
+
+    pthread_mutex_destroy(&db_lock);
 
     return WORK_SUCCESSFULLY;
 }

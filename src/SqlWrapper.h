@@ -48,6 +48,9 @@
 /* When debugging is needed */
 //#define debugging
 
+/* db lock */
+pthread_mutex_t db_lock;
+
 /* 
   SQL_execute
 
