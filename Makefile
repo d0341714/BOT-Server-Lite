@@ -1,3 +1,4 @@
+# Allow only tabs in the Makefile
 #---------------------------------------------------------------------------
 
 all: clean zlog Server.out

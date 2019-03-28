@@ -66,7 +66,6 @@
 #include "LinkedList.h"
 #include "thpool.h"
 
-//#include "zlog.h"
 
 /* Parameter that marks the start of the config file */
 #define DELIMITER "="
@@ -134,7 +133,7 @@
 #define INTERVAL_FOR_BUSY_WAITING_CHECK_IN_SEC 3
 
 /* Timeout interval in ms */
-#define WAITING_TIME 3000
+#define WAITING_TIME 500
 
 
 typedef enum _ErrorCode{
@@ -185,7 +184,6 @@ typedef enum _ErrorCode{
     MAX_ERROR_CODE = 42
 
 } ErrorCode;
-
 
 
 /* Type of health_status to be queried. */
@@ -265,9 +263,6 @@ typedef enum DeviceType {
    indicating that it is about to exit. In addition, if user presses Ctrl+C,
    the ready_to_work flag will be set as false to stop all threads. */
 bool ready_to_work;
-
-/* The pointer to the category of the log file */
-//zlog_category_t *category_health_report, *category_debug;
 
 
 /* FUNCTIONS */

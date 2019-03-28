@@ -221,7 +221,7 @@ int main(int argc, char **argv){
             Wifi_free();
 
             SQL_close_database_connection(Server_db);
-            
+
             return E_INITIALIZATION_FAIL;
         }
     }
@@ -556,7 +556,7 @@ void *CommUnit_routine(){
 
     /* The pointer point to the current buffer list head */
     BufferListHead *current_head;
-    
+
     /* wait for NSI get ready */
     while(NSI_initialization_complete == false){
         Sleep(WAITING_TIME);
@@ -627,10 +627,10 @@ void *CommUnit_routine(){
                 }
             }
 
-            Sleep(WAITING_TIME);
-
             current_time = get_system_time();
             pthread_mutex_unlock( &priority_list_head.list_lock);
+			
+			Sleep(WAITING_TIME);
         }
 
         while(thpool -> num_threads_working == thpool -> num_threads_alive){
@@ -670,12 +670,13 @@ void *CommUnit_routine(){
             }
         }
 
-        Sleep(WAITING_TIME);
-
         /* Update the init_time */
         init_time = get_system_time();
 
         pthread_mutex_unlock( &priority_list_head.list_lock);
+
+		Sleep(WAITING_TIME);
+
     } /* End while(ready_to_work == true) */
 
 
@@ -737,10 +738,6 @@ void *NSI_routine(void *_buffer_list_head){
                                                strlen(&current_node->content[2])
                                                );
 
-#ifdef debugging
-        printf("Join Success\n");
-#endif
-
         /* put the pkt type to content */
         current_node->content[0] = (char)send_pkt_type;
 
@@ -750,11 +747,12 @@ void *NSI_routine(void *_buffer_list_head){
                           &NSI_send_buffer_list_head.list_head);
 
         pthread_mutex_unlock( &NSI_send_buffer_list_head.list_lock);
-    }
+
+		printf("%s join success\n", current_node -> net_address);
+    
+	}
     else
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
-
-    printf("%s join success\n", current_node -> net_address);
 
     return (void *)NULL;
 }
@@ -1052,8 +1050,9 @@ void *process_wifi_send(void *_buffer_list_head){
         pthread_mutex_unlock( &buffer_list_head -> list_lock);
 
 #ifdef debugging
-        printf("Start Send pkt\naddress [%s]\nmsg [%d]\n", current_node->content,
-                                                           current_node->content_size);
+        printf("Start Send pkt\naddress [%s]\nmsg [%d]\nsize [%d]\n", current_node->net_address,
+                                                                      current_node->content, 
+																	  current_node->content_size);
 #endif
 
         current_node = ListEntry(temp_list_entry_pointers, BufferNode,
@@ -1123,9 +1122,7 @@ void *process_wifi_receive(){
 #endif
             }
             else{
-#ifdef debugging
-                printf("Data Start Receiving...\n");
-#endif
+
                 /* Initialize the entry of the buffer node */
                 init_entry( &new_node -> buffer_entry);
 
@@ -1197,6 +1194,7 @@ void *process_wifi_receive(){
                         break;
 
                     case from_beacon:
+
                         switch (pkt_type) {
 
                             case tracked_object_data:

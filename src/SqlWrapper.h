@@ -46,7 +46,7 @@
 #include <libpq-fe.h>
 
 /* When debugging is needed */
-//#define debugging
+#define debugging
 
 /* 
   SQL_callback
