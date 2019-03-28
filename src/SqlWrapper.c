@@ -565,15 +565,15 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
         return E_SQL_PARSE;
     }
 
-    gateway_ip = string_end + 1;
-    string_end = strstr(gateway_ip, DELIMITER_SEMICOLON);
-    *string_end = '\0';
-
     SQL_begin_transaction(db);
 
     while( numbers-- ){
         uuid = string_end + 1;
         string_end = strstr(uuid, DELIMITER_SEMICOLON);
+        *string_end = '\0';
+		
+        gateway_ip = string_end + 1;
+        string_end = strstr(gateway_ip, DELIMITER_SEMICOLON);
         *string_end = '\0';
 
         health_status = string_end + 1;

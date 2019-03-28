@@ -318,8 +318,8 @@ ErrorCode SQL_update_gateway_health_status(void* db,
      buf - pointer to an input string with the format below to specify the 
            health status of gateways
 
-           length;gateway_ip;lbeacon_uuid_1;health_status;lbeacon_uuid_2;\
-           health_status;
+           length;lbeacon_uuid_1;gateway_ip;health_status_1; \
+		   lbeacon_uuid_2;gateway_ip;health_status_2;
 
      buf_len - Length in number of bytes of buf input string
 

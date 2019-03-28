@@ -728,7 +728,7 @@ void *NSI_routine(void *_buffer_list_head){
 
         memset(gateway_record, 0, WIFI_MESSAGE_LENGTH*sizeof(char));
 
-        sprintf(gateway_record, "1;%s;", current_node -> net_address);
+        sprintf(gateway_record, "1;%s;%d;", current_node -> net_address, S_NORMAL_STATUS);
 
         SQL_update_gateway_registration_status(Server_db, gateway_record,
                                                strlen(gateway_record));
@@ -767,6 +767,8 @@ void *BHM_routine(void *_buffer_list_head){
 
     BufferNode *current_node;
 
+    char  *lbeacon_record = malloc(WIFI_MESSAGE_LENGTH*sizeof(char));
+
     pthread_mutex_lock( &buffer_list_head->list_lock);
 
     if(is_entry_list_empty( &buffer_list_head -> list_head) == false){
@@ -780,9 +782,13 @@ void *BHM_routine(void *_buffer_list_head){
         current_node = ListEntry(temp_list_entry_pointers, BufferNode,
                                  buffer_entry);
 
+        memset(lbeacon_record, 0, WIFI_MESSAGE_LENGTH*sizeof(char));
+
+        sprintf(lbeacon_record, "1;%s;", &current_node ->content[1]);
+
         SQL_update_lbeacon_health_status(Server_db,
-                                         &current_node ->content[1],
-                                         strlen(&current_node ->content[1]));
+                                         lbeacon_record,
+                                         strlen(lbeacon_record));
 
         mp_free( &node_mempool, current_node);
     }
