@@ -44,22 +44,6 @@
 #include "SqlWrapper.h"
 
 
-
-/*
-static int SQL_callback(void *NotUsed,
-                        int argc,
-                        char **argv,
-                        char **azColName){
-    int i;
-    for(i = 0; i < argc;i ++){
-        printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-    }
-    printf("\n");
-    return 0;
-}
-*/
-
-
 static ErrorCode SQL_execute(void* db, char* sql_statement){
 
     PGconn *conn = (PGconn *) db;
@@ -102,7 +86,7 @@ static ErrorCode SQL_begin_transaction(void* db){
 }
 
 
-static ErrorCode SQL_end_transaction(void* db){
+static ErrorCode SQL_commit_transaction(void* db){
 
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql;
@@ -305,7 +289,7 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
 
     }
 
-    SQL_end_transaction(db);
+    SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -470,7 +454,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
 
     }
 
-    SQL_end_transaction(db);
+    SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -534,7 +518,7 @@ ErrorCode SQL_update_gateway_health_status(void* db,
 
     }
 
-    SQL_end_transaction(db);
+    SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -603,7 +587,7 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
     
     }
 
-    SQL_end_transaction(db);
+    SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -704,7 +688,7 @@ ErrorCode SQL_update_object_tracking_data(void* db,
 
     }
 
-    SQL_end_transaction(db);
+    SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
