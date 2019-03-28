@@ -46,7 +46,7 @@
 #include <libpq-fe.h>
 
 /* When debugging is needed */
-//#define debugging
+#define debugging
 
 /* db lock */
 pthread_mutex_t db_lock;

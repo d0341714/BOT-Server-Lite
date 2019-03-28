@@ -1,4 +1,5 @@
 # Server
+# Allow only tabs in the Makefile
 #---------------------------------------------------------------------------
 CC = gcc
 OBJS =  LinkedList.o Mempool.o thpool.o pkt_Queue.o UDP_API.o SqlWrapper.o

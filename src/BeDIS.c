@@ -62,7 +62,8 @@ unsigned int *uuid_str_to_data(char *uuid) {
 
     data_pointer = data;
 
-    for (uuid_counter = uuid; uuid_counter < uuid + uuid_length;data_pointer++, uuid_counter += 2) {
+    for (uuid_counter = uuid; uuid_counter < uuid + uuid_length;data_pointer++,
+         uuid_counter += 2) {
         *data_pointer =
             ((strchr(conversion, toupper(*uuid_counter)) - conversion) * 16) +
             (strchr(conversion, toupper(*(uuid_counter + 1))) - conversion);
@@ -124,7 +125,7 @@ int get_system_time(){
     int system_time;
 
     time_t now = time(NULL);
-    
+
     /* second ver. */
     system_time = (int)now;
 

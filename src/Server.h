@@ -52,15 +52,12 @@
 #include "SqlWrapper.h"
 
 /* When debugging is needed */
-//#define debugging
+#define debugging
 
 /* Server config file location and the config file definition. */
 
 /* File path of the config file of the Server */
 #define CONFIG_FILE_NAME "./config/server.conf"
-
-/* File path of the config file of the zlog */
-#define ZLOG_CONFIG_FILE_NAME "/home/pi/BOT-Server-Lite/config/zlog.conf"
 
 /* The category of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
@@ -68,6 +65,7 @@
 #define MAXIMUM_DATABASE_INFO 1024
 
 #ifdef debugging
+
 /* The category of the printf during debugging */
 #define LOG_CATEGORY_DEBUG "LBeacon_Debug"
 
@@ -122,7 +120,6 @@ typedef struct {
     char database_account[MAXIMUM_DATABASE_INFO];
 
     char database_password[MAXIMUM_DATABASE_INFO];
-
 
     /* Priority levels at which buffer lists are processed by the worker threads
      */
@@ -271,7 +268,8 @@ int last_polling_object_tracking_time;
 
   Return value:
 
-     config - ServerConfig struct
+     ErrorCode - WORK_SUCCESSFULLY: work successfully.
+                 E_OPEN_FILE: config file  fail to open.
  */
 ErrorCode get_config(ServerConfig *config, char *file_name);
 
@@ -434,7 +432,7 @@ void init_Address_Map(AddressMapArray *address_map);
 
   Return value:
 
-     bool: If return true means in the address map, else false.
+     int: If not find, return -1, else return its array number.
  */
 int is_in_Address_Map(AddressMapArray *address_map, char *net_address);
 
