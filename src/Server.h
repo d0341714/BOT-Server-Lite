@@ -348,7 +348,7 @@ void *CommUnit_routine();
      None
 
  */
-void *NSI_routine(void *_buffer_list_head);
+void *NSI_routine(void *_buffer_node);
 
 /*
   BHM_routine:
@@ -365,7 +365,7 @@ void *NSI_routine(void *_buffer_list_head);
      None
 
  */
-void *BHM_routine(void *_buffer_list_head);
+void *BHM_routine(void *_buffer_node);
 
 
 /*
@@ -383,7 +383,7 @@ void *BHM_routine(void *_buffer_list_head);
      None
 
  */
-void *LBeacon_routine(void *_buffer_list_head);
+void *LBeacon_routine(void *_buffer_node);
 
 
 /*
@@ -401,7 +401,7 @@ void *LBeacon_routine(void *_buffer_list_head);
      None
 
  */
-void *Gateway_routine(void *_buffer_list_head);
+void *Gateway_routine(void *_buffer_node);
 
 
 /*
@@ -526,7 +526,7 @@ void Wifi_free();
 
      None
  */
-void *process_wifi_send(void *_buffer_list_head);
+void *process_wifi_send(void *_buffer_node);
 
 
 /*
