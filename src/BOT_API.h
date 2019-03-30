@@ -117,7 +117,14 @@ typedef struct {
        When the type is "once", the processing time is a timestamp.
        When the type is "period", the processing time is a period of seconds.
      */
-    int process_time;
+    int period_of_process_time;
+
+    /* The id of data type the schedule is required. */
+    int data_type;
+
+    /* If the type of the schedule is "period", it will use to count next
+       trigger time. */
+    int remain_time;
 
     List_Entry list_node;
 
@@ -130,11 +137,13 @@ typedef sschedule_list_node *pschedule_list_node;
   bot_api_initial:
 
      This function initialize API and sockets in BOT system.
-     sockets including UDP sender and receiver.
+     * Sockets including UDP sender and receiver.
 
   Parameters:
 
      pbot_api_config - The pointer points to the api_config.
+     number_worker_thread - The number of worker thread will be use for
+                            processing schedules
      module_dest_port - The port number of the module to which the api is sent.
      api_recv_port - The port number of the api for receiving data from modules.
 
@@ -150,6 +159,8 @@ ErrorCode bot_api_initial(pbot_api_config api_config, int number_worker_thread,
 /*
   bot_api_free:
 
+     The function release sockets for sending and receiving and schedule lists
+     for scheduling.
 
   Parameters:
 
@@ -157,6 +168,7 @@ ErrorCode bot_api_initial(pbot_api_config api_config, int number_worker_thread,
 
   Return value:
 
+     ErrorCode
 
  */
 ErrorCode bot_api_free(pbot_api_config api_config);
@@ -165,39 +177,49 @@ ErrorCode bot_api_free(pbot_api_config api_config);
 /*
   bot_api_schedule_routine:
 
+     This function process data subscription, public and update and process
+     "update" type schedule.
 
   Parameters:
 
+     api_config - The pointer points to the api config.
 
   Return value:
 
+     None
 
  */
-void *bot_api_schedule_routine();
+void *bot_api_schedule_routine(void *api_config);
 
 
 /*
   process_schedule_routine:
 
+     This function process schedule lists which the type of the schedule list is
+     "period".
 
   Parameters:
 
+     schedule_list - The pointer points to the schedule list head.
 
   Return value:
 
+     None
 
  */
-void *process_schedule_routine();
+void *process_schedule_routine(void *schedule_list);
 
 
 /*
   init_schedule_list:
 
+     This function initialize the schedule list.
 
   Parameters:
 
-     pbot_api_config - The pointer points to the api_config.
-
+     schedule_list - The pointer points to the schedule list head.
+     function - The pointer points to the function to be called to process
+                schedule nodes in the schedule list.
 
   Return value:
 
@@ -210,10 +232,11 @@ void *process_schedule_routine();
 /*
   free_schedule_list:
 
+     This function free the schedule list.
 
   Parameters:
 
-     pbot_api_config - The pointer points to the api_config.
+     schedule_list - The pointer points to the schedule list head.
 
   Return value:
 
