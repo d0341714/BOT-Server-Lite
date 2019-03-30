@@ -52,6 +52,10 @@ typedef struct {
     /* UDP for receiving or sending message from and to the modules */
     sudp_config udp_config;
 
+    int module_dest_port;
+
+    int api_recv_port;
+
     /* worker threads for processing scheduled tasks from modules by assign a
        worker thread. */
     Threadpool schedule_workers;
@@ -59,7 +63,9 @@ typedef struct {
     /* Number of schedule_worker allow to use */
     int number_schedule_workers;
 
-    Memory_Pool schedule_node_mempool;
+    /* The schedule stored in the buffer list will be executed when data update
+     */
+    pschedule_list_head event_schedule_list;
 
     /* The schedule stored in the buffer list will be executed within 1 hour */
     pschedule_list_head short_term_schedule_list;
@@ -83,6 +89,8 @@ typedef struct {
 
     pthread_mutex_t mutex;
 
+    Memory_Pool schedule_node_mempool;
+
     /* The pointer point to the function to be called to schedule nodes in
        the list. */
     void (*function)(void *arg);
@@ -99,9 +107,17 @@ typedef sschedule_list_head *pschedule_list_head;
 
 typedef struct {
 
+    /* The id in the BOT database */
     int id;
 
+    /* The type of the schedule */
     int type;
+
+    /* The time to process the schedule.
+       When the type is "once", the processing time is a timestamp.
+       When the type is "period", the processing time is a period of seconds.
+     */
+    int process_time;
 
     List_Entry list_node;
 
@@ -127,34 +143,23 @@ typedef sschedule_list_node *pschedule_list_node;
      ErrorCode
 
  */
-ErrorCode bot_api_initial(pbot_api_config api_config, int module_dest_port,
-                          int api_recv_port );
+ErrorCode bot_api_initial(pbot_api_config api_config, int number_worker_thread,
+                          int module_dest_port, int api_recv_port );
 
 
 /*
-  bot_api_recv_routine:
+  bot_api_free:
 
 
   Parameters:
 
+     pbot_api_config - The pointer points to the api_config.
 
   Return value:
 
- */
-ErrorCode bot_api_recv_routine();
-
-
-/*
-  bot_api_recv_routine:
-
-
-  Parameters:
-
-
-  Return value:
 
  */
-ErrorCode bot_api_recv_routine();
+ErrorCode bot_api_free(pbot_api_config api_config);
 
 
 /*
@@ -166,12 +171,13 @@ ErrorCode bot_api_recv_routine();
 
   Return value:
 
+
  */
-ErrorCode bot_api_schedule_routine();
+void *bot_api_schedule_routine();
 
 
 /*
-  bot_api_release:
+  process_schedule_routine:
 
 
   Parameters:
@@ -179,8 +185,42 @@ ErrorCode bot_api_schedule_routine();
 
   Return value:
 
+
  */
-ErrorCode bot_api_release();
+void *process_schedule_routine();
+
+
+/*
+  init_schedule_list:
+
+
+  Parameters:
+
+     pbot_api_config - The pointer points to the api_config.
+
+
+  Return value:
+
+     ErrorCode
+
+ */
+ ErrorCode init_schedule_list(pschedule_list_head schedule_list,
+                              void (*function_p)(void *) );
+
+/*
+  free_schedule_list:
+
+
+  Parameters:
+
+     pbot_api_config - The pointer points to the api_config.
+
+  Return value:
+
+     ErrorCode
+
+ */
+ErrorCode free_schedule_list(pschedule_list_head schedule_list);
 
 
 #endif

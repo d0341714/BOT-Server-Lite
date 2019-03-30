@@ -241,6 +241,8 @@ void *udp_recv_pkt(void *udpconfig){
 
 int udp_release(pudp_config udp_config){
 
+    udp_config -> shutdown = true;
+
     pthread_join(udp_config -> udp_send, NULL);
 
     pthread_join(udp_config -> udp_receive, NULL);
