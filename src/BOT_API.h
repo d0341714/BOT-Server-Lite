@@ -67,77 +67,11 @@ typedef struct {
     /* Number of schedule_worker allow to use */
     int number_schedule_workers;
 
-    /* The schedule stored in the buffer list will be executed within 1 hour */
-    pschedule_list_head short_term_schedule_list;
-
-    /* The schedule stored in the buffer list will be executed within 1 day but
-       more than 1 hour */
-    pschedule_list_head medium_term_schedule_list;
-
-    /* The schedule stored in the buffer list will be executed more than 1 day
-     */
-    pschedule_list_head long_term_schedule_list;
+    bool is_running;
 
 } sbot_api_config;
 
 typedef sbot_api_config *pbot_api_config;
-
-typedef struct {
-
-    /* The interval in seconds that the worker thread start to scan the list */
-    int scan_periods;
-
-    /* The mutex use for locking the list when update or scan the list */
-    pthread_mutex_t mutex;
-
-    /* The mempool use for the node in this schedule list */
-    Memory_Pool schedule_node_mempool;
-
-    /* The pointer point to the function to be called to schedule nodes in
-       the list. */
-    void (*function)(void *arg);
-
-    /* function's argument */
-    void *arg;
-
-    /* The head of this schedule list */
-    List_Entry list_head;
-
-} sschedule_list_head;
-
-typedef sschedule_list_head *pschedule_list_head;
-
-
-typedef struct {
-
-    /* The id in the BOT database */
-    int id;
-
-    /* The type of the schedule */
-    int type;
-
-    /* The ip address of the module that schedule to request data */
-    char ip_address[NETWORK_ADDR_LENGTH];
-
-    /* The time to process the schedule.
-       When the type is "once", the processing time is a timestamp.
-       When the type is "period", the processing time is a period of seconds.
-     */
-    int period_of_process_time;
-
-    /* The id of data type the schedule is required. */
-    int data_type;
-
-    /* If the type of the schedule is "period", it will use to count next
-       trigger time. */
-    int remain_time;
-
-    /* The node of this schedule list */
-    List_Entry list_node;
-
-} sschedule_list_node;
-
-typedef sschedule_list_node *pschedule_list_node;
 
 
 /*
