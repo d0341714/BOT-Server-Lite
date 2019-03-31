@@ -271,7 +271,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\inc\&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\inc\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\json-c\inc\&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -290,9 +290,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="pthreadVC2.lib libpq.lib"
+				LinkLibraryDependencies="false"
+				AdditionalDependencies="pthreadVC2.lib libpq.lib json-c.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\lib\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\lib\x64\&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\lib\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\lib\x64\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\json-c\lib\&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
