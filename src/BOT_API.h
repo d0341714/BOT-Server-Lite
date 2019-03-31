@@ -60,16 +60,12 @@ typedef struct {
        the module such as Geo-Fencing. */
     int api_recv_port;
 
-    /* worker threads for processing scheduled tasks from modules by assign a
+    /* Worker threads for processing scheduled tasks from modules by assign a
        worker thread. */
     Threadpool schedule_workers;
 
     /* Number of schedule_worker allow to use */
     int number_schedule_workers;
-
-    /* The schedule stored in the buffer list will be executed when data update
-     */
-    pschedule_list_head event_schedule_list;
 
     /* The schedule stored in the buffer list will be executed within 1 hour */
     pschedule_list_head short_term_schedule_list;
@@ -85,7 +81,6 @@ typedef struct {
 } sbot_api_config;
 
 typedef sbot_api_config *pbot_api_config;
-
 
 typedef struct {
 
@@ -121,6 +116,9 @@ typedef struct {
     /* The type of the schedule */
     int type;
 
+    /* The ip address of the module that schedule to request data */
+    char ip_address[NETWORK_ADDR_LENGTH];
+
     /* The time to process the schedule.
        When the type is "once", the processing time is a timestamp.
        When the type is "period", the processing time is a period of seconds.
@@ -134,8 +132,7 @@ typedef struct {
        trigger time. */
     int remain_time;
 
-    char *ip_address[NETWORK_ADDR_LENGTH];
-
+    /* The node of this schedule list */
     List_Entry list_node;
 
 } sschedule_list_node;
