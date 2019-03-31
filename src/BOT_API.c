@@ -17,7 +17,7 @@
   File Description:
 
      This header file contains programs to send request, subscribe, publish and
-	 process data from modules.
+	 process data from and to modules.
 
   Version:
 
@@ -89,15 +89,30 @@ ErrorCode bot_api_free(pbot_api_config api_config){
 }
 
 
-void * bot_api_schedule_routine(void *_schedule_node){
+void *bot_api_schedule_routine(void *_api_config){
+
+    pbot_api_config api_config = (pbot_api_config)_api_config;
 
 }
 
 
-void *process_schedule_routine(){
+void *process_schedule_routine(void *_schedule_list){
+
+    pschedule_list_head schedule_list = (pschedule_list_head)_schedule_list;
+
+}
 
 
+void *process_api_send(void *_schedule_node){
 
+    pschedule_list_node schedule_list = (pschedule_list_node)_schedule_list;
+
+}
+
+
+void *process_api_recv(void *_api_config){
+
+    pbot_api_config api_config = (pbot_api_config)_api_config;
 
 }
 
