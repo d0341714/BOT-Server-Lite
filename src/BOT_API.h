@@ -52,8 +52,12 @@ typedef struct {
     /* UDP for receiving or sending message from and to the modules */
     sudp_config udp_config;
 
+    /* The port number which the module use for receiving message from the api
+       module */
     int module_dest_port;
 
+    /* The port number which is use for the api module to receive message from
+       the module such as Geo-Fencing. */
     int api_recv_port;
 
     /* worker threads for processing scheduled tasks from modules by assign a
@@ -85,10 +89,13 @@ typedef sbot_api_config *pbot_api_config;
 
 typedef struct {
 
+    /* The interval in seconds that the worker thread start to scan the list */
     int scan_periods;
 
+    /* The mutex use for locking the list when update or scan the list */
     pthread_mutex_t mutex;
 
+    /* The mempool use for the node in this schedule list */
     Memory_Pool schedule_node_mempool;
 
     /* The pointer point to the function to be called to schedule nodes in
@@ -98,6 +105,7 @@ typedef struct {
     /* function's argument */
     void *arg;
 
+    /* The head of this schedule list */
     List_Entry list_head;
 
 } sschedule_list_head;
@@ -126,6 +134,8 @@ typedef struct {
        trigger time. */
     int remain_time;
 
+    char *ip_address[NETWORK_ADDR_LENGTH];
+
     List_Entry list_node;
 
 } sschedule_list_node;
@@ -141,7 +151,7 @@ typedef sschedule_list_node *pschedule_list_node;
 
   Parameters:
 
-     pbot_api_config - The pointer points to the api_config.
+     api_config - The pointer points to the api_config.
      number_worker_thread - The number of worker thread will be use for
                             processing schedules
      module_dest_port - The port number of the module to which the api is sent.
@@ -164,7 +174,7 @@ ErrorCode bot_api_initial(pbot_api_config api_config, int number_worker_thread,
 
   Parameters:
 
-     pbot_api_config - The pointer points to the api_config.
+     api_config - The pointer points to the api_config.
 
   Return value:
 
@@ -177,37 +187,74 @@ ErrorCode bot_api_free(pbot_api_config api_config);
 /*
   bot_api_schedule_routine:
 
-     This function process data subscription, public and update and process
-     "update" type schedule.
+     This function is executed by worker threads when processing data
+     subscription, public and update and processing the type of the schedule
+     lists is "update" .
 
   Parameters:
 
-     api_config - The pointer points to the api config.
+     _api_config - The pointer points to the api config.
 
   Return value:
 
      None
 
  */
-void *bot_api_schedule_routine(void *api_config);
+void *bot_api_schedule_routine(void *_api_config);
 
 
 /*
   process_schedule_routine:
 
-     This function process schedule lists which the type of the schedule list is
-     "period".
+     This function is executed by worker threads when processing schedule lists
+     which the type of the schedule list is "period".
 
   Parameters:
 
-     schedule_list - The pointer points to the schedule list head.
+     _schedule_list - The pointer points to the schedule list head.
 
   Return value:
 
      None
 
  */
-void *process_schedule_routine(void *schedule_list);
+void *process_schedule_routine(void *_schedule_list);
+
+
+/*
+  process_api_send:
+
+     This function is executed by worker threads when sending the msg to
+     modules.
+
+  Parameters:
+
+     _schedule_node - The pointer points to the node in the schedule list head.
+
+  Return value:
+
+     None
+
+ */
+void *process_api_send(void *_schedule_node);
+
+
+/*
+  process_api_recv:
+
+     This function is executed by worker threads when reveiving msgs from
+     modules.
+
+  Parameters:
+
+     _api_config - The pointer points to the api config.
+
+  Return value:
+
+     None
+
+ */
+void *process_api_recv(void *_api_config);
 
 
 /*
