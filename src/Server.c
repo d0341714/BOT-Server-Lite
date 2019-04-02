@@ -1008,8 +1008,6 @@ void *process_wifi_receive(){
 
         int test_times;
 
-        int current_time;
-
         char *tmp_addr;
 
         int pkt_direction;
@@ -1020,8 +1018,6 @@ void *process_wifi_receive(){
 
             /* counting test time for mp_alloc(). */
             test_times = 0;
-
-            current_time = get_system_time();
 
             /* Allocate memory from node_mempool a buffer node for received data
                and copy the data from Wi-Fi receive queue to the node. */
@@ -1058,6 +1054,8 @@ void *process_wifi_receive(){
                 tmp_addr = udp_hex_to_address(temppkt.address);
 
                 memcpy(new_node -> net_address, tmp_addr, NETWORK_ADDR_LENGTH);
+
+                free(tmp_addr);
 
                 /* read the pkt direction from higher 4 bits. */
                 pkt_direction = (new_node -> content[0] >> 4) & 0x0f;
