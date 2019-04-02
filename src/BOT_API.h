@@ -64,6 +64,8 @@ typedef struct {
        worker thread. */
     Threadpool schedule_workers;
 
+    Mempool pkt_content_mempool;
+
     /* Number of schedule_worker allow to use */
     int number_schedule_workers;
 
@@ -72,6 +74,19 @@ typedef struct {
 } sbot_api_config;
 
 typedef sbot_api_config *pbot_api_config;
+
+
+typedef struct {
+
+    char ip_address[NETWORK_ADDR_LENGTH];
+
+    char content[WIFI_MESSAGE_LENGTH];
+
+    int content_size;
+
+} spkt_content;
+
+typedef spkt_content *ppkt_content;
 
 
 /*
@@ -142,14 +157,14 @@ void *bot_api_schedule_routine(void *_api_config);
 
   Parameters:
 
-     _schedule_list - The pointer points to the schedule list head.
+     _pkt_content - The pointer points to the node.
 
   Return value:
 
      None
 
  */
-void *process_schedule_routine(void *_schedule_list);
+void *process_schedule_routine(void *_pkt_content);
 
 
 /*
@@ -160,14 +175,14 @@ void *process_schedule_routine(void *_schedule_list);
 
   Parameters:
 
-     _schedule_node - The pointer points to the node in the schedule list head.
+     _pkt_content - The pointer points to the node.
 
   Return value:
 
      None
 
  */
-void *process_api_send(void *_schedule_node);
+void *process_api_send(void *_pkt_content);
 
 
 /*
@@ -186,42 +201,6 @@ void *process_api_send(void *_schedule_node);
 
  */
 void *process_api_recv(void *_api_config);
-
-
-/*
-  init_schedule_list:
-
-     This function initialize the schedule list.
-
-  Parameters:
-
-     schedule_list - The pointer points to the schedule list head.
-     function - The pointer points to the function to be called to process
-                schedule nodes in the schedule list.
-
-  Return value:
-
-     ErrorCode
-
- */
- ErrorCode init_schedule_list(pschedule_list_head schedule_list,
-                              void (*function_p)(void *) );
-
-/*
-  free_schedule_list:
-
-     This function free the schedule list.
-
-  Parameters:
-
-     schedule_list - The pointer points to the schedule list head.
-
-  Return value:
-
-     ErrorCode
-
- */
-ErrorCode free_schedule_list(pschedule_list_head schedule_list);
 
 
 #endif
