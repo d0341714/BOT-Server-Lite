@@ -232,18 +232,33 @@ typedef enum pkt_types {
     /* For the Gateway polling tracked object data from LBeacons */
     poll_for_tracked_object_data_from_server = 9,
     /* A polling request for health report from server */
-    RFHR_from_server = 10
+    RFHR_from_server = 10,
+
+    /* For api */
+
+    /* Public */
+    add_data_type = 11,
+    del_data_type = 12,
+    update_data = 13,
+
+    /* Subscription */
+    add_subscriber = 14,
+    del_subscriber = 15
+
 
 } PktType;
 
 
 typedef enum pkt_direction {
+
     /* pkt from gateway */
     from_gateway = 10,
     /* pkt from server */
     from_server = 8,
     /* pkt from beacon */
-    from_beacon = 0
+    from_beacon = 0,
+    /* pkt from modules */
+    from_modules = 12
 
 } PktDirection;
 
