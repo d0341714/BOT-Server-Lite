@@ -47,6 +47,8 @@ ErrorCode bot_api_initial(pbot_api_config api_config, int number_worker_thread,
                                                       int module_dest_port,
                                                       int api_recv_port){
 
+    api_config -> is_running = true;
+
     api_config -> module_dest_port = module_dest_port;
 
     api_config -> api_recv_port = api_recv_port;
@@ -55,14 +57,11 @@ ErrorCode bot_api_initial(pbot_api_config api_config, int number_worker_thread,
 
     api_config -> schedule_workers = thpool_init(number_worker_thread);
 
-    init_schedule_list(api_config -> event_schedule_list,
-                       (void *)bot_api_schedule_routine);
-    init_schedule_list(api_config -> short_term_schedule_list,
-                       (void *)bot_api_schedule_routine);
-    init_schedule_list(api_config -> medium_term_schedule_list,
-                       (void *)bot_api_schedule_routine);
-    init_schedule_list(api_config -> long_term_schedule_list,
-                       (void *)bot_api_schedule_routine);
+    if(mp_init( &(api_config -> pkt_content_mempool), sizeof(spkt_content),
+               SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS){
+
+        return E_MALLOC;
+    }
 
     if (udp_initial(&api_config -> udp_config, module_dest_port, api_recv_port)
         == WORK_SUCCESSFULLY){
@@ -77,15 +76,6 @@ ErrorCode bot_api_free(pbot_api_config api_config){
 
     udp_release( &api_config -> udp_config);
 
-    init_schedule_list(api_config -> event_schedule_list,
-                       (void *)bot_api_schedule_routine);
-    init_schedule_list(api_config -> short_term_schedule_list,
-                       (void *)bot_api_schedule_routine);
-    init_schedule_list(api_config -> medium_term_schedule_list,
-                       (void *)bot_api_schedule_routine);
-    init_schedule_list(api_config -> long_term_schedule_list,
-                       (void *)bot_api_schedule_routine);
-
 }
 
 
@@ -93,52 +83,132 @@ void *bot_api_schedule_routine(void *_api_config){
 
     pbot_api_config api_config = (pbot_api_config)_api_config;
 
+    while(api_config -> is_running == true) {
+
+
+
+
+
+
+    }
 }
 
 
-void *process_schedule_routine(void *_schedule_list){
+void *process_schedule_routine(void *_pkt_content){
 
-    pschedule_list_head schedule_list = (pschedule_list_head)_schedule_list;
+        int pkt_direction;
+
+        int pkt_type;
+
+        ppkt_content pkt_content = (ppkt_content)_pkt_content;
+
+        /* read the pkt direction from higher 4 bits. */
+        pkt_direction = (new_node -> content[0] >> 4) & 0x0f;
+        /* read the pkt type from lower lower 4 bits. */
+        pkt_type = new_node -> content[0] & 0x0f;
+
+        switch (pkt_direction) {
+
+            case from_modules:
+
+                switch (pkt_type) {
+                    case add_data_type:
+
+
+                        break;
+
+                    case del_data_type:
+
+
+                        break;
+                    case update_data:
+
+
+                        break;
+
+                    case add_subscriber:
+
+
+                        break;
+
+                    case del_subscriber:
+
+
+                        break;
+
+                    default:
+
+
+                        break;
+
+                }
+
+                break;
+
+            default:
+
+
+                break;
+        }
+
 
 }
 
 
-void *process_api_send(void *_schedule_node){
+void *process_api_send(void *_pkt_content){
 
-    pschedule_list_node schedule_list = (pschedule_list_node)_schedule_list;
+    spkt_content schedule_list = (ppkt_content)_spkt_content;
 
 }
 
 
 void *process_api_recv(void *_api_config){
 
+    int return_value;
+
+    sPkt temppkt;
+
+    char *tmp_addr;
+
+    ppkt_content pkt_content;
+
     pbot_api_config api_config = (pbot_api_config)_api_config;
 
-}
+    while(api_config -> is_running == true){
+
+        temppkt = udp_getrecv( &api_config -> udp_config);
+
+        if(temppkt.type == UDP){
+
+            tmp_addr = udp_hex_to_address(temppkt.address);
+
+            pkt_content = mp_alloc(&(api_config -> pkt_content_mempool));
+
+            memset(pkt_content, 0, strlen(pkt_content) * sizeof(char));
+
+            memcpy(pkt_content -> ip_address, tmp_addr, strlen(tmp_addr) *
+                   sizeof(char));
+
+            memcpy(pkt_content -> content, temppkt -> content,
+                   temppkt -> content_size);
+
+            pkt_content -> content_size = temppkt -> content_size;
+
+            while(api_config -> schedule_workers -> num_threads_working ==
+                  api_config -> schedule_workers -> num_threads_alive){
+                Sleep(WAITING_TIME);
+            }
+
+            return_value = thpool_add_work(api_config -> schedule_workers,
+                                           process_schedule_routine,
+                                           pkt_content,
+                                           0);
 
 
-ErrorCode init_schedule_list(pschedule_list_head schedule_list,
-                             void (*function_p)(void *) ){
 
-    pthread_mutex_init( &schedule_list -> mutex);
-
-    mp_init( &(schedule_list -> schedule_node_mempool),
-            sizeof(sschedule_list_node),
-            SLOTS_IN_MEM_POOL);
-
-    init_entry( &(schedule_list -> list_head));
-
-    schedule_list -> function = function_p;
-
-    schedule_list -> arg = (void *)schedule_list;
-
-}
+            free(tmp_addr);
 
 
-ErrorCode free_schedule_list(pschedule_list_head schedule_list ){
-
-    pthread_mutex_destroy(&schedule_list -> mutex);
-
-    mp_destroy( &(schedule_list -> list_head));
-
+        }
+    }
 }
