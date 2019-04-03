@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190326
+     1.0, 20190403
 
   Abstract:
 
@@ -66,7 +66,7 @@ typedef struct {
        worker thread. */
     Threadpool schedule_workers;
 
-    Mempool pkt_content_mempool;
+    Memory_Pool pkt_content_mempool;
 
     /* Number of schedule_worker allow to use */
     int number_schedule_workers;
@@ -86,7 +86,7 @@ typedef struct {
 
     int content_size;
 
-    void *db;
+    pbot_api_config api_config;
 
 } spkt_content;
 

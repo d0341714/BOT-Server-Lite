@@ -16,12 +16,12 @@
 
   File Description:
 
-     This header file contains programs to send request, subscribe, publish and
+     This file contains programs to send request, subscribe, publish and
 	 process data from and to modules.
 
   Version:
 
-     1.0, 20190326
+     1.0, 20190403
 
   Abstract:
 
@@ -83,7 +83,7 @@ ErrorCode bot_api_free(pbot_api_config api_config){
 
 void *bot_api_schedule_routine(void *_pkt_content){
 
-    ppkt_content pkt_content = (spkt_content)_pkt_content;
+    ppkt_content pkt_content = (ppkt_content)_pkt_content;
 
     int data_type;
 
@@ -94,7 +94,7 @@ void *bot_api_schedule_routine(void *_pkt_content){
         case add_data_type:
         case del_data_type:
 
-            SQL_update_api_data_type(pkt_content -> db,
+            SQL_update_api_data_type(pkt_content -> api_config -> db,
                                      pkt_content -> ip_address,
                                      &(pkt_content -> content[1]),
                                      pkt_content -> content_size - 1);
@@ -104,16 +104,16 @@ void *bot_api_schedule_routine(void *_pkt_content){
         case add_subscriber:
         case del_subscriber:
 
-            SQL_update_api_subscription(api_config -> db,
+            SQL_update_api_subscription(pkt_content -> api_config -> db,
                                         pkt_content -> ip_address,
-                                        &(api_config -> content[1]),
+                                        &(pkt_content -> content[1]),
                                         pkt_content -> content_size - 1);
 
             break;
 
     }
 
-    mp_free(_pkt_content);
+    mp_free( &pkt_content -> api_config -> pkt_content_mempool, _pkt_content);
 
 }
 
@@ -125,13 +125,13 @@ void *process_schedule_routine(void *_pkt_content){
         unsigned long int data_type_id;
         char data_content[WIFI_MESSAGE_LENGTH];
         char *current_data_pointer = NULL;
-        char *data_content;
         char *return_data;
 
         sscanf(&(pkt_content -> content[1]), "%lu;%s", data_type_id,
                                                        data_content);
 
-        return_data = SQL_get_subscriber(pkt_content -> db, data_type_id);
+        return_data = SQL_get_subscriber(pkt_content -> api_config -> db,
+                                         data_type_id);
 
         if(return_data != NULL && return_data[0] != DELIMITER_SEMICOLON){
             printf ("Splitting return_data \"%s\":\n",return_data);
@@ -141,15 +141,17 @@ void *process_schedule_routine(void *_pkt_content){
             while(current_data_pointer != NULL){
                 printf ("Current Process IP: %s\n",current_data_pointer);
 
-                udp_addpkt(api_config, current_data_pointer,
+                udp_addpkt(pkt_content -> api_config,
+                           current_data_pointer,
                            &pkt_content -> content[1],
-                           api_config -> content_size -1);
+                           pkt_content -> content_size -1);
 
                 current_data_pointer = strtok (NULL, DELIMITER_SEMICOLON);
             }
         }
 
-        mp_free(_pkt_content);
+        mp_free(& pkt_content -> api_config -> pkt_content_mempool,
+                _pkt_content);
 
 }
 
@@ -185,12 +187,12 @@ void *process_api_recv(void *_api_config){
             memcpy(pkt_content -> ip_address, tmp_addr, strlen(tmp_addr) *
                    sizeof(char));
 
-            memcpy(pkt_content -> content, temppkt -> content,
-                   temppkt -> content_size);
+            memcpy(pkt_content -> content, temppkt.content,
+                   temppkt.content_size);
 
-            pkt_content -> content_size = temppkt -> content_size;
+            pkt_content -> content_size = temppkt.content_size;
 
-            pkt_content -> db = api_config -> db;
+            pkt_content -> api_config = api_config;
 
             while(api_config -> schedule_workers -> num_threads_working ==
                   api_config -> schedule_workers -> num_threads_alive){
@@ -198,9 +200,9 @@ void *process_api_recv(void *_api_config){
             }
 
             /* read the pkt direction from higher 4 bits. */
-            pkt_direction = (temppkt -> content[0] >> 4) & 0x0f;
+            pkt_direction = (temppkt.content[0] >> 4) & 0x0f;
             /* read the pkt type from lower lower 4 bits. */
-            pkt_type = temppkt -> content[0] & 0x0f;
+            pkt_type = temppkt.content[0] & 0x0f;
 
             switch (pkt_direction) {
 
