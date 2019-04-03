@@ -43,9 +43,9 @@
 #include "BOT_API.h"
 
 
-ErrorCode bot_api_initial(pbot_api_config api_config, int number_worker_thread,
-                                                      int module_dest_port,
-                                                      int api_recv_port){
+ErrorCode bot_api_initial(pbot_api_config api_config , void *db,
+                          int number_worker_thread, int module_dest_port,
+                          int api_recv_port){
 
     api_config -> is_running = true;
 
@@ -57,16 +57,18 @@ ErrorCode bot_api_initial(pbot_api_config api_config, int number_worker_thread,
 
     api_config -> schedule_workers = thpool_init(number_worker_thread);
 
-    if(mp_init( &(api_config -> pkt_content_mempool), sizeof(spkt_content),
-               SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS){
+    if (db != NULL)
+        api_config -> db = db;
+    else
+        return E_SQL_OPEN_DATABASE;
 
+    if(mp_init( &(api_config -> pkt_content_mempool), sizeof(spkt_content),
+               SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
         return E_MALLOC;
-    }
 
     if (udp_initial(&api_config -> udp_config, module_dest_port, api_recv_port)
-        == WORK_SUCCESSFULLY){
+        != WORK_SUCCESSFULLY)
         return E_WIFI_INIT_FAIL;
-    }
 
     return WORK_SUCCESSFULLY;
 }
@@ -79,85 +81,75 @@ ErrorCode bot_api_free(pbot_api_config api_config){
 }
 
 
-void *bot_api_schedule_routine(void *_api_config){
+void *bot_api_schedule_routine(void *_pkt_content){
 
-    pbot_api_config api_config = (pbot_api_config)_api_config;
+    ppkt_content pkt_content = (spkt_content)_pkt_content;
 
-    while(api_config -> is_running == true) {
+    int data_type;
 
+    /* read the pkt type from lower lower 4 bits. */
+    data_type = pkt_content -> content[0] & 0x0f;
 
+    switch(data_type){
+        case add_data_type:
+        case del_data_type:
 
+            SQL_update_api_data_type(pkt_content -> db,
+                                     pkt_content -> ip_address,
+                                     &(pkt_content -> content[1]),
+                                     pkt_content -> content_size - 1);
 
+            break;
 
+        case add_subscriber:
+        case del_subscriber:
+
+            SQL_update_api_subscription(api_config -> db,
+                                        pkt_content -> ip_address,
+                                        &(api_config -> content[1]),
+                                        pkt_content -> content_size - 1);
+
+            break;
 
     }
+
+    mp_free(_pkt_content);
+
 }
 
 
 void *process_schedule_routine(void *_pkt_content){
 
-        int pkt_direction;
-
-        int pkt_type;
-
         ppkt_content pkt_content = (ppkt_content)_pkt_content;
 
-        /* read the pkt direction from higher 4 bits. */
-        pkt_direction = (new_node -> content[0] >> 4) & 0x0f;
-        /* read the pkt type from lower lower 4 bits. */
-        pkt_type = new_node -> content[0] & 0x0f;
+        unsigned long int data_type_id;
+        char data_content[WIFI_MESSAGE_LENGTH];
+        char *current_data_pointer = NULL;
+        char *data_content;
+        char *return_data;
 
-        switch (pkt_direction) {
+        sscanf(&(pkt_content -> content[1]), "%lu;%s", data_type_id,
+                                                       data_content);
 
-            case from_modules:
+        return_data = SQL_get_subscriber(pkt_content -> db, data_type_id);
 
-                switch (pkt_type) {
-                    case add_data_type:
+        if(return_data != NULL && return_data[0] != DELIMITER_SEMICOLON){
+            printf ("Splitting return_data \"%s\":\n",return_data);
 
+            current_data_pointer = strtok(return_data, DELIMITER_SEMICOLON);
 
-                        break;
+            while(current_data_pointer != NULL){
+                printf ("Current Process IP: %s\n",current_data_pointer);
 
-                    case del_data_type:
+                udp_addpkt(api_config, current_data_pointer,
+                           &pkt_content -> content[1],
+                           api_config -> content_size -1);
 
-
-                        break;
-                    case update_data:
-
-
-                        break;
-
-                    case add_subscriber:
-
-
-                        break;
-
-                    case del_subscriber:
-
-
-                        break;
-
-                    default:
-
-
-                        break;
-
-                }
-
-                break;
-
-            default:
-
-
-                break;
+                current_data_pointer = strtok (NULL, DELIMITER_SEMICOLON);
+            }
         }
 
-
-}
-
-
-void *process_api_send(void *_pkt_content){
-
-    spkt_content schedule_list = (ppkt_content)_spkt_content;
+        mp_free(_pkt_content);
 
 }
 
@@ -165,6 +157,10 @@ void *process_api_send(void *_pkt_content){
 void *process_api_recv(void *_api_config){
 
     int return_value;
+
+    int pkt_direction;
+
+    int pkt_type;
 
     sPkt temppkt;
 
@@ -194,21 +190,51 @@ void *process_api_recv(void *_api_config){
 
             pkt_content -> content_size = temppkt -> content_size;
 
+            pkt_content -> db = api_config -> db;
+
             while(api_config -> schedule_workers -> num_threads_working ==
                   api_config -> schedule_workers -> num_threads_alive){
                 Sleep(WAITING_TIME);
             }
 
-            return_value = thpool_add_work(api_config -> schedule_workers,
-                                           process_schedule_routine,
-                                           pkt_content,
-                                           0);
+            /* read the pkt direction from higher 4 bits. */
+            pkt_direction = (temppkt -> content[0] >> 4) & 0x0f;
+            /* read the pkt type from lower lower 4 bits. */
+            pkt_type = temppkt -> content[0] & 0x0f;
 
+            switch (pkt_direction) {
 
+                case from_modules:
+
+                    switch (pkt_type) {
+
+                        case add_data_type:
+                        case del_data_type:
+                        case add_subscriber:
+                        case del_subscriber:
+
+                            return_value = thpool_add_work(
+                                            api_config -> schedule_workers,
+                                            bot_api_schedule_routine,
+                                            pkt_content,
+                                            0);
+                            break;
+
+                        case update_data:
+
+                            return_value = thpool_add_work(
+                                            api_config -> schedule_workers,
+                                            process_schedule_routine,
+                                            pkt_content,
+                                            0);
+                            break;
+
+                    }
+                    break;
+
+            }
 
             free(tmp_addr);
-
-
         }
     }
 }
