@@ -52,6 +52,8 @@ typedef struct {
     /* UDP for receiving or sending message from and to the modules */
     sudp_config udp_config;
 
+    void *db;
+
     /* The port number which the module use for receiving message from the api
        module */
     int module_dest_port;
@@ -84,6 +86,8 @@ typedef struct {
 
     int content_size;
 
+    void *db;
+
 } spkt_content;
 
 typedef spkt_content *ppkt_content;
@@ -98,6 +102,7 @@ typedef spkt_content *ppkt_content;
   Parameters:
 
      api_config - The pointer points to the api_config.
+     db - a pointer pointing to the connection to the database backend server.
      number_worker_thread - The number of worker thread will be use for
                             processing schedules
      module_dest_port - The port number of the module to which the api is sent.
@@ -108,8 +113,9 @@ typedef spkt_content *ppkt_content;
      ErrorCode
 
  */
-ErrorCode bot_api_initial(pbot_api_config api_config, int number_worker_thread,
-                          int module_dest_port, int api_recv_port );
+ErrorCode bot_api_initial(pbot_api_config api_config, void *db,
+                          int number_worker_thread, int module_dest_port,
+                          int api_recv_port );
 
 
 /*
@@ -139,14 +145,14 @@ ErrorCode bot_api_free(pbot_api_config api_config);
 
   Parameters:
 
-     _api_config - The pointer points to the api config.
+     _pkt_content - The pointer points to the node.
 
   Return value:
 
      None
 
  */
-void *bot_api_schedule_routine(void *_api_config);
+void *bot_api_schedule_routine(void *_pkt_content);
 
 
 /*
