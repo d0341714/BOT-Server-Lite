@@ -336,10 +336,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\BOT_API.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\LinkedList.c"
 				>
 			</File>
@@ -375,10 +371,6 @@
 			>
 			<File
 				RelativePath="..\..\..\src\BeDIS.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\BOT_API.h"
 				>
 			</File>
 			<File
