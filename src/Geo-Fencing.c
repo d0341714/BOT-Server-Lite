@@ -67,6 +67,12 @@ ErrorCode geo_fence_initial(pgeo_fence_config geo_fence_config,
         != WORK_SUCCESSFULLY)
         return E_WIFI_INIT_FAIL;
 
+
+    if (startThread( &geo_fence_config -> process_api_recv_thread,
+        (void *)process_api_recv, geo_fence_config) != WORK_SUCCESSFULLY){
+        return E_START_THREAD;
+    }
+
     return WORK_SUCCESSFULLY;
 
 }

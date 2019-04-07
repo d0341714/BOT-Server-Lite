@@ -71,6 +71,8 @@ typedef struct {
 
     bool is_running;
 
+    pthread_t process_api_recv_thread;
+
 } sgeo_fence_config;
 
 typedef sgeo_fence_config *pgeo_fence_config;
@@ -147,24 +149,6 @@ ErrorCode geo_fence_free(pgeo_fence_config geo_fence_config);
 
  */
 static void *process_geo_fence_routine(void *_pkt_content);
-
-
-/*
-  process_api_send:
-
-     This function is executed by worker threads when sending the msg to the BOT
-     server.
-
-  Parameters:
-
-     _pkt_content - The pointer points to the pkt content.
-
-  Return value:
-
-     None
-
- */
-static void *process_api_send(void *_pkt_content);
 
 
 /*
