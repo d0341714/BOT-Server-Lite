@@ -89,7 +89,7 @@ ErrorCode bot_api_free(pbot_api_config api_config){
 }
 
 
-void *bot_api_schedule_routine(void *_pkt_content){
+static void *bot_api_schedule_routine(void *_pkt_content){
 
     ppkt_content pkt_content = (ppkt_content)_pkt_content;
 
@@ -126,7 +126,7 @@ void *bot_api_schedule_routine(void *_pkt_content){
 }
 
 
-void *process_schedule_routine(void *_pkt_content){
+static void *process_schedule_routine(void *_pkt_content){
 
         ppkt_content pkt_content = (ppkt_content)_pkt_content;
 
@@ -164,7 +164,7 @@ void *process_schedule_routine(void *_pkt_content){
 }
 
 
-void *process_api_recv(void *_api_config){
+static void *process_api_recv(void *_api_config){
 
     int return_value;
 
