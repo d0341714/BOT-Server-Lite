@@ -290,6 +290,8 @@ int main(int argc, char **argv){
 
     SQL_close_database_connection(Server_db);
 
+    mp_destroy(&node_mempool);
+
     return WORK_SUCCESSFULLY;
 }
 
