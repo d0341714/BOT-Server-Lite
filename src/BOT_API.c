@@ -70,6 +70,11 @@ ErrorCode bot_api_initial(pbot_api_config api_config , void *db,
         != WORK_SUCCESSFULLY)
         return E_WIFI_INIT_FAIL;
 
+    if (startThread( &api_config -> process_api_recv_thread,
+        (void *)process_api_recv, api_config) != WORK_SUCCESSFULLY){
+        return E_START_THREAD;
+    }
+
     return WORK_SUCCESSFULLY;
 }
 
@@ -128,38 +133,38 @@ static void *bot_api_schedule_routine(void *_pkt_content){
 
 static void *process_schedule_routine(void *_pkt_content){
 
-        ppkt_content pkt_content = (ppkt_content)_pkt_content;
+    ppkt_content pkt_content = (ppkt_content)_pkt_content;
 
-        unsigned long int data_type_id;
-        char data_content[WIFI_MESSAGE_LENGTH];
-        char *current_data_pointer = NULL;
-        char *return_data;
+    unsigned long int data_type_id;
+    char data_content[WIFI_MESSAGE_LENGTH];
+    char *current_data_pointer = NULL;
+    char *return_data;
 
-        sscanf(&(pkt_content -> content[1]), "%lu;%s", data_type_id,
-                                                       data_content);
+    sscanf(&(pkt_content -> content[1]), "%lu;%s", data_type_id,
+                                                   data_content);
 
-        return_data = SQL_get_subscriber(pkt_content -> api_config -> db,
-                                         data_type_id);
+    return_data = SQL_get_subscriber(pkt_content -> api_config -> db,
+                                     data_type_id);
 
-        if(return_data != NULL && return_data[0] != DELIMITER_SEMICOLON){
-            printf ("Splitting return_data \"%s\":\n",return_data);
+    if(return_data != NULL && return_data[0] != DELIMITER_SEMICOLON){
+        printf ("Splitting return_data \"%s\":\n",return_data);
 
-            current_data_pointer = strtok(return_data, DELIMITER_SEMICOLON);
+        current_data_pointer = strtok(return_data, DELIMITER_SEMICOLON);
 
-            while(current_data_pointer != NULL){
-                printf ("Current Process IP: %s\n",current_data_pointer);
+        while(current_data_pointer != NULL){
+            printf ("Current Process IP: %s\n",current_data_pointer);
 
-                udp_addpkt(pkt_content -> api_config,
-                           current_data_pointer,
-                           &pkt_content -> content[1],
-                           pkt_content -> content_size -1);
+            udp_addpkt(pkt_content -> api_config,
+                       current_data_pointer,
+                       &pkt_content -> content[1],
+                       pkt_content -> content_size -1);
 
-                current_data_pointer = strtok (NULL, DELIMITER_SEMICOLON);
-            }
+            current_data_pointer = strtok (NULL, DELIMITER_SEMICOLON);
         }
+    }
 
-        mp_free(& pkt_content -> api_config -> pkt_content_mempool,
-                _pkt_content);
+    mp_free(& pkt_content -> api_config -> pkt_content_mempool,
+            _pkt_content);
 
 }
 

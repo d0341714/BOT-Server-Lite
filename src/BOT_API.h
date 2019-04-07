@@ -73,6 +73,8 @@ typedef struct {
 
     bool is_running;
 
+    pthread_t process_api_recv_thread;
+
 } sbot_api_config;
 
 typedef sbot_api_config *pbot_api_config;
@@ -170,24 +172,6 @@ static void *bot_api_schedule_routine(void *_pkt_content);
 
  */
 static void *process_schedule_routine(void *_pkt_content);
-
-
-/*
-  process_api_send:
-
-     This function is executed by worker threads when sending the msg to
-     modules.
-
-  Parameters:
-
-     _pkt_content - The pointer points to the node.
-
-  Return value:
-
-     None
-
- */
-static void *process_api_send(void *_pkt_content);
 
 
 /*
