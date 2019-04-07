@@ -121,8 +121,7 @@ ErrorCode bot_api_initial(pbot_api_config api_config, void *db,
 /*
   bot_api_free:
 
-     The function release sockets for sending and receiving and schedule lists
-     for scheduling.
+     The function release sockets for sending and receiving.
 
   Parameters:
 

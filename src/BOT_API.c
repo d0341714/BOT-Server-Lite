@@ -76,7 +76,15 @@ ErrorCode bot_api_initial(pbot_api_config api_config , void *db,
 
 ErrorCode bot_api_free(pbot_api_config api_config){
 
+    api_config -> is_running = false;
+
+    Sleep(WAITING_TIME);
+
     udp_release( &api_config -> udp_config);
+
+    thpool_destroy(&api_config -> schedule_workers);
+
+    mp_destroy(&api_config -> pkt_content_mempool);
 
 }
 
