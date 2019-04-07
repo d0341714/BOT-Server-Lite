@@ -86,3 +86,53 @@ ErrorCode geo_fence_free(pgeo_fence_config geo_fence_config){
 }
 
 
+
+
+static void *process_api_recv(void *_geo_fence_config){
+
+    int return_value;
+
+    sPkt temppkt;
+
+    char *tmp_addr;
+
+    ppkt_content pkt_content;
+
+    pgeo_fence_config geo_fence_config = (pgeo_fence_config)_geo_fence_config;
+
+    while(geo_fence_config -> is_running == true){
+
+        temppkt = udp_getrecv( &geo_fence_config -> udp_config);
+
+        if(temppkt.type == UDP){
+
+            tmp_addr = udp_hex_to_address(temppkt.address);
+
+            pkt_content = mp_alloc(&(geo_fence_config -> pkt_content_mempool));
+
+            memset(pkt_content, 0, strlen(pkt_content) * sizeof(char));
+
+            memcpy(pkt_content -> ip_address, tmp_addr, strlen(tmp_addr) *
+                   sizeof(char));
+
+            memcpy(pkt_content -> content, temppkt.content,
+                   temppkt.content_size);
+
+            pkt_content -> content_size = temppkt.content_size;
+
+            pkt_content -> geo_fence_config = geo_fence_config;
+
+            while(geo_fence_config -> worker_thread -> num_threads_working ==
+                  geo_fence_config -> worker_thread -> num_threads_alive){
+                Sleep(WAITING_TIME);
+            }
+
+            return_value = thpool_add_work(geo_fence_config -> worker_thread,
+                                           process_geo_fence_routine,
+                                           pkt_content,
+                                           0);
+
+            free(tmp_addr);
+        }
+    }
+}
