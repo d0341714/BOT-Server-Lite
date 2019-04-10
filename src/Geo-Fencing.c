@@ -150,6 +150,25 @@ static void *process_api_recv(void *_geo_fence_config){
         }
     }
 }
+
+
+static ErrorCode init_tracked_mac_list_head(
+                                  ptracked_mac_list_head tracked_mac_list_head){
+
+    init_entry(&tracked_mac_list_head -> mac_list_entry);
+
+    init_entry(tracked_mac_list_head -> uuid_list_head);
+
+}
+
+
+static ErrorCode init_uuid_list_node(puuid_list_node uuid_list_node){
+
+    init_entry(&uuid_list_node -> uuid_list_node);
+
+}
+
+
 static ptracked_mac_list_head is_in_mac_list(pgeo_fence_config geo_fence_config,
                                              char *mac_address){
 
