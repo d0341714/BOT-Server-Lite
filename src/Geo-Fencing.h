@@ -200,6 +200,25 @@ static void *process_api_recv(void *_geo_fence_config);
 
 
 /*
+  init_tracked_mac_list_head:
+
+     This function initialize tracked mac list head by intializing mac list
+     entry and lbeacon list head;
+
+  Parameters:
+
+     tracked_mac_list_head - The pointer points to the tracked mac list head.
+
+  Return value:
+
+     ErrorCode
+
+ */
+static ErrorCode init_tracked_mac_list_head(
+                                  ptracked_mac_list_head tracked_mac_list_head);
+
+
+/*
   init_uuid_list_node:
 
      This function initialize tracked uuid list node by initializing lbeacon
