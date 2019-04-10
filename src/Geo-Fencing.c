@@ -63,6 +63,14 @@ ErrorCode geo_fence_initial(pgeo_fence_config geo_fence_config,
                sizeof(spkt_content), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
         return E_MALLOC;
 
+    if(mp_init( &(geo_fence_config -> tracked_mac_list_head_mempool),
+      sizeof(stracked_mac_list_head), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
+        return E_MALLOC;
+
+    if(mp_init( &(geo_fence_config -> uuid_list_node_mempool),
+       sizeof(suuid_list_node), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
+        return E_MALLOC;
+
     if (udp_initial(&geo_fence_config -> udp_config, recv_port, api_recv_port)
         != WORK_SUCCESSFULLY)
         return E_WIFI_INIT_FAIL;

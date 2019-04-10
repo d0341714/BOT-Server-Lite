@@ -66,6 +66,10 @@ typedef struct {
 
     Memory_Pool pkt_content_mempool;
 
+    Memory_Pool tracked_mac_list_head_mempool;
+
+    Memory_Pool uuid_list_node_mempool;
+
     /* Number of schedule_worker allow to use */
     int number_worker_threads;
 
