@@ -104,6 +104,9 @@
 /* Maximum length of message to be sent over WiFi in bytes */
 #define WIFI_MESSAGE_LENGTH 4096
 
+/* Number of characters in a Bluetooth MAC address */
+#define LENGTH_OF_MAC_ADDRESS 18
+
 /* Maximum length of message to communicate with SQL wrapper API in bytes */
 #define SQL_TEMP_BUFFER_LENGTH 4096
 
