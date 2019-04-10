@@ -170,6 +170,25 @@ static void *process_api_recv(void *_geo_fence_config);
 
 
 /*
+  is_in_mac_list:
+
+     This function check whether the mac address is in the tracked mac list.
+
+  Parameters:
+
+     geo_fence_config - The pointer points to the geo fence config.
+     mac_address - The pointer points to the mac address.
+
+  Return value:
+
+     If it find the mac, it will return its pointer of the node or it will
+     return NULL.
+
+ */
+static ptracked_mac_list_head is_in_mac_list(pgeo_fence_config geo_fence_config,
+                                             char *mac_address);
+
+/*
   is_in_uuid_list:
 
      This function check whether the mac address is in the tracked mac list.
