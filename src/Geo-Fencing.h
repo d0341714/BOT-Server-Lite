@@ -93,6 +93,17 @@ typedef struct {
 typedef spkt_content *ppkt_content;
 
 
+typedef struct {
+
+    char mac_address[LENGTH_OF_MAC_ADDRESS];
+
+    List_Entry mac_list_entry;
+
+    List_Entry uuid_list_head;
+
+} stracked_mac_list_head;
+
+typedef stracked_mac_list_head *ptracked_mac_list_head;
 /*
   geo_fence_initial:
 
@@ -167,6 +178,24 @@ static void *process_geo_fence_routine(void *_pkt_content);
 
  */
 static void *process_api_recv(void *_geo_fence_config);
+
+
+/*
+  init_uuid_list_node:
+
+     This function initialize tracked uuid list node by initializing lbeacon
+     list node.
+
+  Parameters:
+
+     uuid_list_node - The pointer points to the uuid list node.
+
+  Return value:
+
+     ErrorCode
+
+ */
+static ErrorCode init_uuid_list_node(puuid_list_node uuid_list_node);
 
 
 /*
