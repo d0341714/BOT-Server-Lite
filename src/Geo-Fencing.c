@@ -142,3 +142,32 @@ static void *process_api_recv(void *_geo_fence_config){
         }
     }
 }
+static puuid_list_node is_in_uuid_list(
+                                   ptracked_mac_list_head tracked_mac_list_head,
+                                   char *uuid){
+
+    int return_value;
+
+    List_Entry *uuid_entry_pointer,  *next_uuid_entry_pointer;
+
+    puuid_list_node current_uuid_list_node;
+
+    list_for_each_safe(uuid_entry_pointer, next_uuid_entry_pointer,
+                       &tracked_mac_list_head -> uuid_list_head){
+
+        current_uuid_list_node = ListEntry(mac_entry_pointer,
+                                           suuid_list_node,
+                                           uuid_list_node);
+
+        return_value = strncmp(uuid,
+                               current_uuid_list_node -> uuid,
+                               UUID_LENGTH);
+
+        if (return_value == 0)
+            return current_uuid_list_node;
+
+    }
+
+    return NULL;
+
+}
