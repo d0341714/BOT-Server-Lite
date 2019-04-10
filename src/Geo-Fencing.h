@@ -104,6 +104,25 @@ typedef struct {
 } stracked_mac_list_head;
 
 typedef stracked_mac_list_head *ptracked_mac_list_head;
+
+
+typedef struct {
+
+    char uuid[UUID_LENGTH];
+
+    int rssi;
+
+    int first_time;
+
+    int last_time;
+
+    List_Entry uuid_list_node;
+
+} suuid_list_node;
+
+typedef suuid_list_node *puuid_list_node;
+
+
 /*
   geo_fence_initial:
 
