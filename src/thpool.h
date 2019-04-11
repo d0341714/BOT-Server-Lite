@@ -63,9 +63,7 @@
 
 /* The number of slots for the memory pool */
 #define SLOTS_FOR_MEM_POOL 100
-
-/* The number of slots for the memory pool */
-#define SIZE_FOR_MEM_POOL 100
+#define WAITING_TIME 1
 
 #define err(str) fprintf(stderr, str)
 
@@ -149,9 +147,13 @@ typedef struct thpool_{
 
     volatile int threads_keepalive;
 
-    /* The memory pool for the allocation of all variable in the thpool
-       including bsem and job */
-    Memory_Pool th_mempool;
+    /* Memory pools for the allocation of all variable in the thpool
+       including thread, bsem and job */
+    Memory_Pool thread_mempool;
+
+    Memory_Pool job_mempool;
+
+    Memory_Pool bsem_mempool;
 
 } thpool_;
 
@@ -261,7 +263,7 @@ int thpool_add_work(Threadpool threadpool, void (*function_p)(void *),
      None
 
  */
-void thpool_destroy(Threadpool);
+void thpool_destroy(thpool_ *thpool_p);
 
 
 /*
@@ -288,7 +290,7 @@ void thpool_destroy(Threadpool);
      The number of threads is working currently.
 
  */
-int thpool_num_threads_working(Threadpool);
+int thpool_num_threads_working(thpool_ *thpool_p);
 
 
 #endif

@@ -55,7 +55,7 @@
 #define MEMORY_POOL_SUCCESS 1
 #define MEMORY_POOL_ERROR 0
 #define MEMORY_POOL_MINIMUM_SIZE sizeof(void *)
-#define MAX_EXP_TIME 5
+#define MAX_EXP_TIME 10
 
 /* The structure of the memory pool */
 typedef struct {
