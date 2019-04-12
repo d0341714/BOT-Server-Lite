@@ -62,7 +62,7 @@
 
 
 /* The number of slots for the memory pool */
-#define SLOTS_FOR_MEM_POOL 100
+#define SLOTS_FOR_MEM_POOL 500
 #define WAITING_TIME 1
 
 #define err(str) fprintf(stderr, str)
