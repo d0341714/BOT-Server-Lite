@@ -170,7 +170,7 @@ void *udp_send_pkt(void *udpconfig){
             }
         }
         else{
-            Sleep(SEND_NULL_SLEEP);
+            Sleep(WAITING_TIME);
         }
 
     }
@@ -210,6 +210,7 @@ void *udp_recv_pkt(void *udpconfig){
 #ifdef debugging
             printf("No data received.\n");
 #endif
+            Sleep(WAITING_TIME);
         }
         else if(recv_len > 0){
 

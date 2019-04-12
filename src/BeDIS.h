@@ -133,7 +133,7 @@
 #define INTERVAL_FOR_BUSY_WAITING_CHECK_IN_SEC 3
 
 /* Timeout interval in ms */
-#define WAITING_TIME 500
+#define WAITING_TIME 5
 
 
 typedef enum _ErrorCode{

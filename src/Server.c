@@ -280,9 +280,9 @@ int main(int argc, char **argv){
             /* Update the last_polling_LBeacon_for_HR_time */
             last_polling_LBeacon_for_HR_time = get_system_time();
         }
-
-        Sleep(WAITING_TIME);
-
+        else{
+            Sleep(WAITING_TIME);
+        }
     }
 
     /* The program is going to be ended. Free the connection of Wifi */
@@ -613,6 +613,8 @@ void *CommUnit_routine(){
 
                     pthread_mutex_unlock( &current_head -> list_lock);
                     /* Go to check the next buffer list in the priority list */
+
+                    Sleep(WAITING_TIME);
                     continue;
                 }
                 else {
@@ -642,7 +644,6 @@ void *CommUnit_routine(){
             current_time = get_system_time();
             pthread_mutex_unlock( &priority_list_head.list_lock);
 
-			Sleep(WAITING_TIME);
         }
 
         while(thpool -> num_threads_working == thpool -> num_threads_alive){
@@ -666,6 +667,8 @@ void *CommUnit_routine(){
 
                 pthread_mutex_unlock( &current_head -> list_lock);
                 /* Go to check the next buffer list in the priority list */
+
+                Sleep(WAITING_TIME);
                 continue;
             }
             else {
@@ -695,8 +698,6 @@ void *CommUnit_routine(){
         init_time = get_system_time();
 
         pthread_mutex_unlock( &priority_list_head.list_lock);
-
-		Sleep(WAITING_TIME);
 
     } /* End while(ready_to_work == true) */
 
@@ -1027,7 +1028,7 @@ void *process_wifi_receive(){
                 if(test_times == TEST_MALLOC_MAX_NUMBER_TIMES)
                     break;
                 else if(test_times != 0)
-                    Sleep(1);
+                    Sleep(WAITING_TIME);
 
                 new_node = mp_alloc( &node_mempool);
                 test_times ++;
@@ -1159,6 +1160,9 @@ void *process_wifi_receive(){
         }
         else if(temppkt.type == NONE){
             /* If there is no packet received, Sleep a short time */
+            Sleep(WAITING_TIME);
+        }
+        else{
             Sleep(WAITING_TIME);
         }
     }
