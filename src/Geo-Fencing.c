@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190407
+     1.0, 20190415
 
   Abstract:
 
@@ -60,11 +60,11 @@ ErrorCode geo_fence_initial(pgeo_fence_config geo_fence_config,
     geo_fence_config -> worker_thread = thpool_init(number_worker_threads);
 
     if(mp_init( &(geo_fence_config -> pkt_content_mempool),
-               sizeof(spkt_content), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
+       sizeof(spkt_content), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
         return E_MALLOC;
 
     if(mp_init( &(geo_fence_config -> tracked_mac_list_head_mempool),
-      sizeof(stracked_mac_list_head), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
+       sizeof(stracked_mac_list_head), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
         return E_MALLOC;
 
     if(mp_init( &(geo_fence_config -> rssi_list_node_mempool),

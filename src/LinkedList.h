@@ -50,7 +50,6 @@
 #include <string.h>
 
 
-
 /* CONSTANTS */
 
 /*Macro for calculating the offset of two addresses*/

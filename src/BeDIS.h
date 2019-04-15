@@ -21,7 +21,7 @@
 
   Version:
 
-     2.0, 20190213
+     2.0, 20190415
 
   Abstract:
 
@@ -136,7 +136,7 @@
 #define INTERVAL_FOR_BUSY_WAITING_CHECK_IN_SEC 3
 
 /* Timeout interval in ms */
-#define WAITING_TIME 500
+#define WAITING_TIME 5
 
 
 typedef enum _ErrorCode{
@@ -304,7 +304,7 @@ unsigned int *uuid_str_to_data(char *uuid);
 /*
   twoc:
 
-  @todo
+     @todo
 
   Parameters:
 

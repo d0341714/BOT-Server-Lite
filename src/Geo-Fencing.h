@@ -370,6 +370,7 @@ static ErrorCode init_mac_prefix_node(pmac_prefix_node mac_prefix_node);
 static ErrorCode init_pgeo_fence_mac_prefix_list_node(
                 pgeo_fence_mac_prefix_list_node geo_fence_mac_prefix_list_node);
 
+
 /*
   is_in_mac_list:
 
