@@ -104,21 +104,42 @@ static void *bot_api_schedule_routine(void *_pkt_content){
     data_type = pkt_content -> content[0] & 0x0f;
 
     switch(data_type){
+
         case add_data_type:
+
+            SQL_update_api_data_type(pkt_content -> api_config -> db,
+                                     pkt_content -> ip_address,
+                                     data_type,
+                                     &(pkt_content -> content[1]),
+                                     pkt_content -> content_size - 1);
+
+            break;
+
         case del_data_type:
 
             SQL_update_api_data_type(pkt_content -> api_config -> db,
                                      pkt_content -> ip_address,
+                                     data_type,
                                      &(pkt_content -> content[1]),
                                      pkt_content -> content_size - 1);
 
             break;
 
         case add_subscriber:
+
+            SQL_update_api_subscription(pkt_content -> api_config -> db,
+                                        pkt_content -> ip_address,
+                                        data_type,
+                                        &(pkt_content -> content[1]),
+                                        pkt_content -> content_size - 1);
+
+            break;
+
         case del_subscriber:
 
             SQL_update_api_subscription(pkt_content -> api_config -> db,
                                         pkt_content -> ip_address,
+                                        data_type,
                                         &(pkt_content -> content[1]),
                                         pkt_content -> content_size - 1);
 
@@ -147,24 +168,25 @@ static void *process_schedule_routine(void *_pkt_content){
                                      data_type_id);
 
     if(return_data != NULL && return_data[0] != DELIMITER_SEMICOLON){
+
         printf ("Splitting return_data \"%s\":\n",return_data);
 
         current_data_pointer = strtok(return_data, DELIMITER_SEMICOLON);
 
         while(current_data_pointer != NULL){
+
             printf ("Current Process IP: %s\n",current_data_pointer);
 
             udp_addpkt(pkt_content -> api_config,
                        current_data_pointer,
-                       &pkt_content -> content[1],
-                       pkt_content -> content_size -1);
+                       pkt_content -> content,
+                       pkt_content -> content_size);
 
             current_data_pointer = strtok (NULL, DELIMITER_SEMICOLON);
         }
     }
 
-    mp_free(& pkt_content -> api_config -> pkt_content_mempool,
-            _pkt_content);
+    mp_free(& pkt_content -> api_config -> pkt_content_mempool, _pkt_content);
 
 }
 

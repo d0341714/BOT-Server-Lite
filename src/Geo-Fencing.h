@@ -169,6 +169,7 @@ typedef struct {
 
 typedef smac_prefix_node *pmac_prefix_node;
 
+
 typedef struct {
 
     List_Entry geo_fence_mac_prefix_list_entry;
@@ -178,6 +179,7 @@ typedef struct {
 } sgeo_fence_mac_prefix_list_node;
 
 typedef sgeo_fence_mac_prefix_list_node *pgeo_fence_mac_prefix_list_node;
+
 
 /*
   geo_fence_initial:
