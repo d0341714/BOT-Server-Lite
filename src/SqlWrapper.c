@@ -16,9 +16,9 @@
 
   File Description:
 
-     This file provides APIs for interacting with postgreSQL. This file contains 
+     This file provides APIs for interacting with postgreSQL. This file contains
      programs to connect and disconnect databases, insert, query, update and
-     delete data in the database and some APIs for the BeDIS system use including 
+     delete data in the database and some APIs for the BeDIS system use including
      updating device status and object tracking data maintainance and updates.
 
   Version:
@@ -44,7 +44,7 @@
 #include "SqlWrapper.h"
 
 
-static ErrorCode SQL_execute(void* db, char* sql_statement){
+static ErrorCode SQL_execute(void *db, char *sql_statement){
 
     PGconn *conn = (PGconn *) db;
     PGresult *res;
@@ -87,7 +87,7 @@ static ErrorCode SQL_begin_transaction(void* db){
 }
 
 
-static ErrorCode SQL_commit_transaction(void* db){
+static ErrorCode SQL_commit_transaction(void *db){
 
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql;
@@ -104,7 +104,7 @@ static ErrorCode SQL_commit_transaction(void* db){
 }
 
 
-static ErrorCode SQL_rollback_transaction(void* db){
+static ErrorCode SQL_rollback_transaction(void *db){
 
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql;
@@ -121,7 +121,7 @@ static ErrorCode SQL_rollback_transaction(void* db){
 }
 
 
-ErrorCode SQL_open_database_connection(char* conninfo, void** db){
+ErrorCode SQL_open_database_connection(char *conninfo, void **db){
 
     *db = (PGconn*) PQconnectdb(conninfo);
 
@@ -132,7 +132,7 @@ ErrorCode SQL_open_database_connection(char* conninfo, void** db){
 #ifdef debugging
         printf("Connection to database failed: %s", PQerrorMessage(*db));
 #endif
-    
+
         return E_SQL_OPEN_DATABASE;
     }
 
@@ -142,7 +142,7 @@ ErrorCode SQL_open_database_connection(char* conninfo, void** db){
 }
 
 
-ErrorCode SQL_close_database_connection(void* db){
+ErrorCode SQL_close_database_connection(void *db){
     PGconn *conn = (PGconn *) db;
     PQfinish(conn);
 
@@ -152,7 +152,7 @@ ErrorCode SQL_close_database_connection(void* db){
 }
 
 
-ErrorCode SQL_vacuum_database(void* db){
+ErrorCode SQL_vacuum_database(void *db){
     PGconn *conn = (PGconn *) db;
     char *table_name[4] = {"tracking_table",
                            "lbeacon_table",
@@ -181,7 +181,7 @@ ErrorCode SQL_vacuum_database(void* db){
 }
 
 
-ErrorCode SQL_retain_data(void* db, int retention_hours){
+ErrorCode SQL_retain_data(void *db, int retention_hours){
 
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
@@ -222,14 +222,14 @@ ErrorCode SQL_retain_data(void* db, int retention_hours){
 #ifdef debugging
         printf("SQL command = [%s]\n", sql);
 #endif
-        
+
         res = PQexec(conn, sql);
         if(PQresultStatus(res) != PGRES_TUPLES_OK){
-        
+
             PQclear(res);
             printf("SQL_execute failed: %s", PQerrorMessage(conn));
             return E_SQL_EXECUTE;
-        
+
         }
         PQclear(res);
     }
@@ -238,8 +238,8 @@ ErrorCode SQL_retain_data(void* db, int retention_hours){
 }
 
 
-ErrorCode SQL_update_gateway_registration_status(void* db,
-                                                 char* buf,
+ErrorCode SQL_update_gateway_registration_status(void *db,
+                                                 char *buf,
                                                  size_t buf_len){
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
@@ -304,9 +304,9 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
 }
 
 
-ErrorCode SQL_query_registered_gateways(void* db,
+ErrorCode SQL_query_registered_gateways(void *db,
                                         HealthStatus health_status,
-                                        char* output,
+                                        char *output,
                                         size_t output_len){
 
     PGconn *conn = (PGconn *) db;
@@ -317,7 +317,7 @@ ErrorCode SQL_query_registered_gateways(void* db,
     char *sql_template_query_all =
                          "SELECT ip_address, health_status FROM " \
                          "gateway_table;" ;
-    
+
     char *sql_template_query_health_status =
                          "SELECT ip_address, health_status FROM " \
                          "gateway_table WHERE " \
@@ -328,7 +328,7 @@ ErrorCode SQL_query_registered_gateways(void* db,
 
     /* Create SQL statement */
     memset(sql, 0, sizeof(sql));
-    
+
     if(MAX_STATUS == health_status ){
         sprintf(sql, sql_template_query_all);
     }else{
@@ -361,13 +361,13 @@ ErrorCode SQL_query_registered_gateways(void* db,
 
         memset(temp_buf, 0, sizeof(temp_buf));
         sprintf(temp_buf, "%s;%s;", PQgetvalue(res,i,0),PQgetvalue(res,i,1));
-        
+
         if(output_len < strlen(output) + strlen(temp_buf)){
 
 #ifdef debugging
             printf("String concatenation failed due to output buffer size\n");
 #endif
-            
+
             PQclear(res);
             return E_SQL_RESULT_EXCEED;
         }
@@ -382,10 +382,10 @@ ErrorCode SQL_query_registered_gateways(void* db,
 }
 
 
-ErrorCode SQL_update_lbeacon_registration_status(void* db,
-                                                 char* buf,
+ErrorCode SQL_update_lbeacon_registration_status(void *db,
+                                                 char *buf,
                                                  size_t buf_len){
-    
+
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *string_begin;
@@ -469,8 +469,8 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
 }
 
 
-ErrorCode SQL_update_gateway_health_status(void* db,
-                                           char* buf,
+ErrorCode SQL_update_gateway_health_status(void *db,
+                                           char *buf,
                                            size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
@@ -533,8 +533,8 @@ ErrorCode SQL_update_gateway_health_status(void* db,
 }
 
 
-ErrorCode SQL_update_lbeacon_health_status(void* db,
-                                           char* buf,
+ErrorCode SQL_update_lbeacon_health_status(void *db,
+                                           char *buf,
                                            size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
@@ -551,7 +551,7 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
                          "WHERE uuid = %s ;";
     char *uuid = NULL;
     char *health_status = NULL;
- 
+
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
@@ -571,7 +571,7 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
         uuid = string_end + 1;
         string_end = strstr(uuid, DELIMITER_SEMICOLON);
         *string_end = '\0';
-		
+
         gateway_ip = string_end + 1;
         string_end = strstr(gateway_ip, DELIMITER_SEMICOLON);
         *string_end = '\0';
@@ -593,7 +593,7 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
             SQL_rollback_transaction(db);
             return E_SQL_EXECUTE;
         }
-    
+
     }
 
     SQL_commit_transaction(db);
@@ -602,8 +602,8 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
 }
 
 
-ErrorCode SQL_update_object_tracking_data(void* db,
-                                          char* buf,
+ErrorCode SQL_update_object_tracking_data(void *db,
+                                          char *buf,
                                           size_t buf_len){
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
@@ -644,7 +644,7 @@ ErrorCode SQL_update_object_tracking_data(void* db,
 
     SQL_begin_transaction(db);
 
-    while(num_types--){
+    while(num_types --){
 
         object_type = string_end + 1;
         string_end = strstr(object_type, DELIMITER_SEMICOLON);
@@ -684,7 +684,7 @@ ErrorCode SQL_update_object_tracking_data(void* db,
                                     strlen(initial_timestamp_GMT)),
                     PQescapeLiteral(conn, final_timestamp_GMT,
                                     strlen(final_timestamp_GMT)));
-                   
+
             /* Execute SQL statement */
             ret_val = SQL_execute(db, sql);
 

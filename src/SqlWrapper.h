@@ -51,7 +51,7 @@
 /* db lock */
 pthread_mutex_t db_lock;
 
-/* 
+/*
   SQL_execute
 
      The execution function used by database operations
@@ -66,15 +66,15 @@ pthread_mutex_t db_lock;
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-static ErrorCode SQL_execute(void* db, char* sql_statement);
+static ErrorCode SQL_execute(void *db, char *sql_statement);
 
 
-/* 
+/*
   SQL_begin_transaction
 
-     Begins transaction makes the operations specified by the follows SQL 
-     database statement a transaction and holds a lock on the table until 
-     the transaction either is committed or rollbed back. Begin transaction 
+     Begins transaction makes the operations specified by the follows SQL
+     database statement a transaction and holds a lock on the table until
+     the transaction either is committed or rollbed back. Begin transaction
      makes the starting boundary of a transaction.
 
   Parameter:
@@ -86,13 +86,13 @@ static ErrorCode SQL_execute(void* db, char* sql_statement);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-static ErrorCode SQL_begin_transaction(void* db);
+static ErrorCode SQL_begin_transaction(void *db);
 
 
-/* 
+/*
   SQL_commit_transaction
 
-     Commits the transaction marked by a previous begin transaction. 
+     Commits the transaction marked by a previous begin transaction.
 
   Parameter:
 
@@ -103,10 +103,10 @@ static ErrorCode SQL_begin_transaction(void* db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-static ErrorCode SQL_commit_transaction(void* db);
+static ErrorCode SQL_commit_transaction(void *db);
 
 
-/* 
+/*
   SQL_rollback_transaction
 
      Rolls back the transaction marked by a previous begine transaction.
@@ -120,10 +120,10 @@ static ErrorCode SQL_commit_transaction(void* db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-static ErrorCode SQL_rollback_transaction(void* db);
+static ErrorCode SQL_rollback_transaction(void *db);
 
 
-/* 
+/*
   SQL_open_database_connection
 
      Opens a database connection to the database backend server
@@ -139,10 +139,10 @@ static ErrorCode SQL_rollback_transaction(void* db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_open_database_connection(char* db_filepath, void** db);
+ErrorCode SQL_open_database_connection(char *db_filepath, void **db);
 
 
-/* 
+/*
   SQL_close_database_connection
 
      Closes a database connection
@@ -156,13 +156,13 @@ ErrorCode SQL_open_database_connection(char* db_filepath, void** db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_close_database_connection(void* db);
+ErrorCode SQL_close_database_connection(void *db);
 
 
-/* 
+/*
   SQL_vacuum_database();
 
-     Identifies space occupied by deleted rows and catelogues to be garbage 
+     Identifies space occupied by deleted rows and catelogues to be garbage
      collected.
 
   Parameter:
@@ -174,13 +174,13 @@ ErrorCode SQL_close_database_connection(void* db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_vacuum_database(void* db);
+ErrorCode SQL_vacuum_database(void *db);
 
 
-/* 
+/*
   SQL_retain_data();
 
-     Deletes the rows and catelogues which are older than the specified number 
+     Deletes the rows and catelogues which are older than the specified number
      of hours ago.
 
   Parameter:
@@ -194,10 +194,10 @@ ErrorCode SQL_vacuum_database(void* db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_retain_data(void* db, int retention_hours);
+ErrorCode SQL_retain_data(void *db, int retention_hours);
 
 
-/* 
+/*
   SQL_update_gateway_registration_status
 
      Updates the input gateways as registered.
@@ -218,12 +218,12 @@ ErrorCode SQL_retain_data(void* db, int retention_hours);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_update_gateway_registration_status(void* db,
-                                                 char* buf,
+ErrorCode SQL_update_gateway_registration_status(void *db,
+                                                 char *buf,
                                                  size_t buf_len);
 
 
-/* 
+/*
   SQL_query_registered_gateways
 
      Returns all the gateways with the corresponding health_status
@@ -234,7 +234,7 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
 
      health_status - the health_status to be queried
 
-     output - pointer to the output buffer to receive the query resutls. The 
+     output - pointer to the output buffer to receive the query resutls. The
               result string is in the format below.
 
               length;gateway_ip_1;health_status_1;gateway_ip_2; \
@@ -247,13 +247,13 @@ ErrorCode SQL_update_gateway_registration_status(void* db,
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_query_registered_gateways(void* db,
+ErrorCode SQL_query_registered_gateways(void *db,
                                         HealthStatus health_status,
-                                        char* output,
+                                        char *output,
                                         size_t output_len);
 
 
-/* 
+/*
   SQL_update_lbeacon_registration_status
 
      Updates the status of the input lbeacons as registered.
@@ -262,7 +262,7 @@ ErrorCode SQL_query_registered_gateways(void* db,
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the 
+     buf - pointer to an input string with the format below to specify the
            registered gateways.
 
            length;gateway_ip;uuid_1;registered_timestamp_GMT;uuid_2;\
@@ -275,12 +275,12 @@ ErrorCode SQL_query_registered_gateways(void* db,
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_update_lbeacon_registration_status(void* db,
-                                                 char* buf,
+ErrorCode SQL_update_lbeacon_registration_status(void *db,
+                                                 char *buf,
                                                  size_t buf_len);
 
 
-/* 
+/*
   SQL_update_gateway_health_status
 
      Updates the health status of the input gateways
@@ -289,7 +289,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the 
+     buf - pointer to an input string with the format below to specify the
            health status of gateways
 
            length;gateway_ip_1;health_status;gateway_ip_2;health_status;
@@ -301,12 +301,12 @@ ErrorCode SQL_update_lbeacon_registration_status(void* db,
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_update_gateway_health_status(void* db,
-                                           char* buf,
+ErrorCode SQL_update_gateway_health_status(void *db,
+                                           char *buf,
                                            size_t buf_len);
 
 
-/* 
+/*
   SQL_update_lbeacon_health_status
 
      Updates the health status of the input lbeacons
@@ -315,7 +315,7 @@ ErrorCode SQL_update_gateway_health_status(void* db,
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the 
+     buf - pointer to an input string with the format below to specify the
            health status of gateways
 
            length;lbeacon_uuid_1;gateway_ip;health_status_1; \
@@ -328,12 +328,12 @@ ErrorCode SQL_update_gateway_health_status(void* db,
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_update_lbeacon_health_status(void* db,
-                                           char* buf,
+ErrorCode SQL_update_lbeacon_health_status(void *db,
+                                           char *buf,
                                            size_t buf_len);
 
 
-/* 
+/*
   SQL_update_object_tracking_data
 
      Updates data of tracked objects
@@ -342,7 +342,7 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the 
+     buf - pointer to an input string with the format below to specify the
            health status of gateways
 
            lbeacon_uuid;gateway_ip;object_type;object_number; \
@@ -358,8 +358,8 @@ ErrorCode SQL_update_lbeacon_health_status(void* db,
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_update_object_tracking_data(void* db,
-                                          char* buf,
+ErrorCode SQL_update_object_tracking_data(void *db,
+                                          char *buf,
                                           size_t buf_len);
 
 #endif
