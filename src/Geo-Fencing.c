@@ -67,14 +67,13 @@ ErrorCode geo_fence_initial(pgeo_fence_config geo_fence_config,
       sizeof(stracked_mac_list_head), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
         return E_MALLOC;
 
-    if(mp_init( &(geo_fence_config -> uuid_list_node_mempool),
-       sizeof(suuid_list_node), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
+    if(mp_init( &(geo_fence_config -> rssi_list_node_mempool),
+       sizeof(srssi_list_node), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
         return E_MALLOC;
 
     if (udp_initial(&geo_fence_config -> udp_config, recv_port, api_recv_port)
         != WORK_SUCCESSFULLY)
         return E_WIFI_INIT_FAIL;
-
 
     if (startThread( &geo_fence_config -> process_api_recv_thread,
         (void *)process_api_recv, geo_fence_config) != WORK_SUCCESSFULLY){
@@ -100,6 +99,110 @@ ErrorCode geo_fence_free(pgeo_fence_config geo_fence_config){
 }
 
 
+static void *process_geo_fence_routine(void *_pkt_content){
+
+    ppkt_content pkt_content = (ppkt_content)_pkt_content;
+
+    pgeo_fence_config geo_fence_config = pkt_content -> geo_fence_config;
+
+    ptracked_mac_list_head current_mac_list_head, tmp_mac_list_head;
+
+    prssi_list_node current_rssi_list_node, tmp_rssi_list_node;
+
+    char uuid[UUID_LENGTH];
+
+    char gateway_ip[NETWORK_ADDR_LENGTH];
+
+    int object_type;
+
+    int number_of_objects;
+
+    char tmp[WIFI_MESSAGE_LENGTH];
+
+    memset(tmp, 0, WIFI_MESSAGE_LENGTH);
+
+    memset(uuid, 0, UUID_LENGTH);
+
+    memset(gateway_ip, 0, NETWORK_ADDR_LENGTH);
+
+    sscanf(pkt_content->content, "%s;%s;%d;%d;%s", uuid, gateway_ip,
+                                 object_type, number_of_objects, tmp);
+
+    if (is_in_geo_fence(uuid) == NULL){
+        return;
+    }
+
+    do {
+
+        for(;number_of_objects > 0;number_of_objects --){
+
+            char tmp_data[WIFI_MESSAGE_LENGTH];
+
+            char mac_address[LENGTH_OF_MAC_ADDRESS];
+
+            int init_time,final_time, rssi;
+
+            memset(tmp_data, 0, WIFI_MESSAGE_LENGTH);
+
+            sscanf(tmp, "%s;%d;%d;%d;%s", mac_address, init_time, final_time,
+                                          rssi, tmp_data);
+
+            /* Filter Geo-Fencing */
+
+            if (is_mac_in_geo_fence()){
+
+            }
+
+            if (current_mac_list_head = is_in_mac_list(geo_fence_config,
+                                                       mac_address) == NULL){
+                if (rssi >= geo_fence_config -> decision_threshold){
+
+                    tmp_mac_list_head = mp_alloc(
+                                 &pkt_content -> tracked_mac_list_head_mempool);
+
+                    tmp_rssi_list_node = mp_alloc(
+                                        &pkt_content -> rssi_list_node_mempool);
+
+                    if(current_rssi_list_node = is_in_mac_list(current_mac_list_head, uuid) == NULL){
+
+
+
+
+                    }
+                    else{
+
+
+
+
+
+                    }
+
+                }
+
+            }
+            else{
+
+
+
+
+
+            }
+
+            memset(tmp, 0, WIFI_MESSAGE_LENGTH);
+
+            memcpy(tmp, tmp_data, strlen(tmp_data) * sizeof(char));
+
+        }
+
+        if (strlen(tmp) > 0){
+            sscanf(tmp, "%d;%d;%s", object_type, number_of_objects, tmp_data);
+
+            memset(tmp, 0, WIFI_MESSAGE_LENGTH);
+            memcpy(tmp, tmp_data, strlen(tmp_data) * sizeof(char));
+        }
+
+    } while(strlen(tmp) > 0);
+}
 
 
 static void *process_api_recv(void *_geo_fence_config){
@@ -157,14 +260,14 @@ static ErrorCode init_tracked_mac_list_head(
 
     init_entry(&tracked_mac_list_head -> mac_list_entry);
 
-    init_entry(tracked_mac_list_head -> uuid_list_head);
+    init_entry(tracked_mac_list_head -> rssi_list_head);
 
 }
 
 
-static ErrorCode init_uuid_list_node(puuid_list_node uuid_list_node){
+static ErrorCode init_rssi_list_node(prssi_list_node rssi_list_node){
 
-    init_entry(&uuid_list_node -> uuid_list_node);
+    init_entry(&rssi_list_node -> rssi_list_node);
 
 }
 
@@ -199,29 +302,29 @@ static ptracked_mac_list_head is_in_mac_list(pgeo_fence_config geo_fence_config,
 }
 
 
-static puuid_list_node is_in_uuid_list(
+static prssi_list_node is_in_rssi_list(
                                    ptracked_mac_list_head tracked_mac_list_head,
                                    char *uuid){
 
     int return_value;
 
-    List_Entry *uuid_entry_pointer,  *next_uuid_entry_pointer;
+    List_Entry *rssi_entry_pointer, *next_rssi_entry_pointer;
 
-    puuid_list_node current_uuid_list_node;
+    prssi_list_node current_rssi_list_node;
 
-    list_for_each_safe(uuid_entry_pointer, next_uuid_entry_pointer,
-                       &tracked_mac_list_head -> uuid_list_head){
+    list_for_each_safe(rssi_entry_pointer, next_rssi_entry_pointer,
+                       &tracked_mac_list_head -> rssi_list_head){
 
-        current_uuid_list_node = ListEntry(mac_entry_pointer,
-                                           suuid_list_node,
-                                           uuid_list_node);
+        current_rssi_list_node = ListEntry(rssi_entry_pointer,
+                                           srssi_list_node,
+                                           rssi_list_node);
 
         return_value = strncmp(uuid,
-                               current_uuid_list_node -> uuid,
+                               current_rssi_list_node -> uuid,
                                UUID_LENGTH);
 
         if (return_value == 0)
-            return current_uuid_list_node;
+            return current_rssi_list_node;
 
     }
 
