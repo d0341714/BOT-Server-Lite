@@ -49,13 +49,14 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <string.h>
 #include <windows.h>
 
 
 #define MEMORY_POOL_SUCCESS 1
 #define MEMORY_POOL_ERROR 0
 #define MEMORY_POOL_MINIMUM_SIZE sizeof(void *)
-#define MAX_EXP_TIME 5
+#define MAX_EXP_TIME 10
 
 /* The structure of the memory pool */
 typedef struct {
@@ -124,13 +125,12 @@ int mp_init(Memory_Pool *mp, size_t size, size_t slots);
   Parameters:
 
      mp - pointer to a specific memory pool
-     slots - the number of slots in the memory pool
 
   Return value:
 
      Status - the error code or the successful message
  */
-int mp_expand(Memory_Pool *mp, size_t slots);
+int mp_expand(Memory_Pool *mp);
 
 
 /*

@@ -71,7 +71,7 @@ bool is_isolated_node(List_Entry *node) {
 
 
 void insert_entry_list(List_Entry *new_node, List_Entry *prev,
-                              List_Entry *next) {
+                       List_Entry *next) {
 
     next->prev = new_node;
     new_node->next = next;

@@ -51,7 +51,7 @@
 
 
 #define UDP_SELECT_TIMEOUT 30000    //second
-#define SEND_NULL_SLEEP 30
+#define WAITING_TIME 5 //milliseconds
 
 /* When debugging is needed */
 //#define debugging
