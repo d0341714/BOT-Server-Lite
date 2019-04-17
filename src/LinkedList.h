@@ -192,6 +192,23 @@ void insert_list_tail(List_Entry *new_node, List_Entry *head);
 
 
 /*
+  concat_list:
+
+     This function concates two lists.
+
+  Parameters:
+
+     first_list_head: The head of list.
+     second_list_head: The head of list to be append to the first_list_head.
+
+  Return value:
+
+     None
+*/
+void concat_list(List_Entry *first_list_head, List_Entry *second_list_head);
+
+
+/*
   remove_entry_list:
 
      This function changes the links between the node and the node which

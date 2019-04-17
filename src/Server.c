@@ -167,7 +167,7 @@ int main(int argc, char **argv){
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
-    sort_priority_list( &priority_list_head);
+    sort_priority_list(&config, &priority_list_head);
 
     printf("Buffer lists initialized\n");
 
@@ -486,7 +486,7 @@ void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
 }
 
 
-void *sort_priority_list(GatewayConfig *config, BufferListHead *list_head){
+void *sort_priority_list(ServerConfig *config, BufferListHead *list_head){
 
     List_Entry *list_pointer,
                *next_list_pointer;

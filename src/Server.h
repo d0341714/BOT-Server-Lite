@@ -313,7 +313,7 @@ void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
 
      None
  */
-void *sort_priority_list(GatewayConfig *config, BufferListHead *list_head);
+void *sort_priority_list(ServerConfig *config, BufferListHead *list_head);
 
 
 /*
