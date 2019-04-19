@@ -183,8 +183,10 @@ typedef enum _ErrorCode{
     E_SQL_PARSE = 39,
     E_SQL_RESULT_EXCEED = 40,
     E_SQL_EXECUTE = 41,
+    E_API_INITIALLZATION =42,
+    E_API_FREE = 43,
 
-    MAX_ERROR_CODE = 42
+    MAX_ERROR_CODE = 44
 
 } ErrorCode;
 
@@ -240,9 +242,9 @@ typedef enum pkt_types {
     /* For api */
 
     /* Public */
-    add_data_type = 11,
-    del_data_type = 12,
-    update_data = 13,
+    add_topic = 11,
+    remove_topic = 12,
+    update_topic_data = 13,
 
     /* Subscription */
     add_subscriber = 14,

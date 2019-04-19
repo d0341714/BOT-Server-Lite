@@ -91,6 +91,7 @@ ErrorCode bot_api_free(pbot_api_config api_config){
 
     mp_destroy(&api_config -> pkt_content_mempool);
 
+    return WORK_SUCCESSFULLY;
 }
 
 
@@ -98,57 +99,125 @@ static void *bot_api_schedule_routine(void *_pkt_content){
 
     ppkt_content pkt_content = (ppkt_content)_pkt_content;
 
+    pbot_api_config api_config = pkt_content -> api_config;
+
+    int data_direction;
+
     int data_type;
 
+    int topic_id, subscriber_id;
+
+    int return_value;
+
+    /* read the pkt direction from higher 4 bits. */
+    data_direction = from_server;
     /* read the pkt type from lower lower 4 bits. */
     data_type = pkt_content -> content[0] & 0x0f;
 
     switch(data_type){
 
-        case add_data_type:
+        case add_topic:
 
-            SQL_update_api_data_type(pkt_content -> api_config -> db,
-                                     pkt_content -> ip_address,
-                                     data_type,
-                                     &(pkt_content -> content[1]),
-                                     pkt_content -> content_size - 1);
+            topic_id = SQL_update_api_topic(api_config -> db,
+                                            pkt_content -> ip_address,
+                                            &pkt_content -> content[1],
+                                            pkt_content -> content_size -1);
+
+            memset(pkt_content -> content, 0, WIFI_MESSAGE_LENGTH);
+
+            pkt_content -> content[0] = (data_direction & 0x0f ) << 4 +
+                                        data_type & 0x0f;
+
+            if(topic_id > 0)
+                sprintf(&pkt_content -> content[1], "Success;%d;", topic_id);
+            else
+                sprintf(&pkt_content -> content[1], "Fail;");
+
+            udp_addpkt(&api_config -> udp_config, pkt_content -> ip_address,
+                       pkt_content -> content, strlen(pkt_content -> content));
 
             break;
 
-        case del_data_type:
+        case remove_topic:
 
-            SQL_update_api_data_type(pkt_content -> api_config -> db,
-                                     pkt_content -> ip_address,
-                                     data_type,
-                                     &(pkt_content -> content[1]),
-                                     pkt_content -> content_size - 1);
+            return_value = SQL_remove_api_topic(api_config -> db,
+                                                pkt_content -> ip_address,
+                                                &pkt_content -> content[1],
+                                                pkt_content -> content_size -1);
+
+            memset(&pkt_content -> content, 0, WIFI_MESSAGE_LENGTH);
+
+            pkt_content -> content[0] = (data_direction & 0x0f ) << 4 +
+                                        data_type & 0x0f;
+
+            if(return_value == WORK_SUCCESSFULLY)
+                sprintf(&pkt_content -> content[1], "Success;");
+            else
+                sprintf(&pkt_content -> content[1], "Fail;");
+
+            udp_addpkt(&api_config -> udp_config, pkt_content -> ip_address,
+                       pkt_content -> content, strlen(pkt_content -> content));
 
             break;
 
         case add_subscriber:
 
-            SQL_update_api_subscription(pkt_content -> api_config -> db,
-                                        pkt_content -> ip_address,
-                                        data_type,
-                                        &(pkt_content -> content[1]),
-                                        pkt_content -> content_size - 1);
+            subscriber_id = SQL_update_api_subscription(
+                                                api_config -> db,
+                                                pkt_content -> ip_address,
+                                                pkt_content -> content,
+                                                pkt_content -> content_size);
+
+            memset(&pkt_content -> content, 0, WIFI_MESSAGE_LENGTH);
+
+            pkt_content -> content[0] = (data_direction & 0x0f ) << 4 +
+                                        data_type & 0x0f;
+
+            if(subscriber_id > 0)
+                sprintf(&pkt_content -> content[1], "Success;%d;", subscriber_id);
+            else
+                sprintf(&pkt_content -> content[1], "Fail;");
+
+            udp_addpkt(&api_config -> udp_config, pkt_content -> ip_address,
+                       pkt_content -> content, strlen(pkt_content -> content));
 
             break;
 
         case del_subscriber:
 
-            SQL_update_api_subscription(pkt_content -> api_config -> db,
-                                        pkt_content -> ip_address,
-                                        data_type,
-                                        &(pkt_content -> content[1]),
-                                        pkt_content -> content_size - 1);
+            return_value = SQL_remove_api_subscription(
+                                                api_config -> db,
+                                                pkt_content -> ip_address,
+                                                pkt_content -> content,
+                                                pkt_content -> content_size);
+
+            memset(&pkt_content -> content, 0, WIFI_MESSAGE_LENGTH);
+
+            pkt_content -> content[0] = (data_direction & 0x0f ) << 4 +
+                                        data_type & 0x0f;
+
+            if(return_value == WORK_SUCCESSFULLY)
+                sprintf(&pkt_content -> content[1], "Success;");
+            else
+                sprintf(&pkt_content -> content[1], "Fail;");
+
+            udp_addpkt(&api_config -> udp_config, pkt_content -> ip_address,
+                       pkt_content -> content, strlen(pkt_content -> content));
 
             break;
+
+        default:
+
+            mp_free( &pkt_content -> api_config -> pkt_content_mempool,
+                    _pkt_content);
+
+            return (void *)NULL;
 
     }
 
     mp_free( &pkt_content -> api_config -> pkt_content_mempool, _pkt_content);
 
+    return (void *)NULL;
 }
 
 
@@ -164,7 +233,7 @@ static void *process_schedule_routine(void *_pkt_content){
     sscanf(&(pkt_content -> content[1]), "%lu;%s", data_type_id,
                                                    data_content);
 
-    return_data = SQL_get_subscriber(pkt_content -> api_config -> db,
+    return_data = SQL_get_api_subscribers(pkt_content -> api_config -> db,
                                      data_type_id);
 
     if(return_data != NULL && return_data[0] != DELIMITER_SEMICOLON){
@@ -188,6 +257,7 @@ static void *process_schedule_routine(void *_pkt_content){
 
     mp_free(& pkt_content -> api_config -> pkt_content_mempool, _pkt_content);
 
+    return (void *)NULL;
 }
 
 
@@ -245,8 +315,8 @@ static void *process_api_recv(void *_api_config){
 
                     switch (pkt_type) {
 
-                        case add_data_type:
-                        case del_data_type:
+                        case add_topic:
+                        case remove_topic:
                         case add_subscriber:
                         case del_subscriber:
 
@@ -257,7 +327,7 @@ static void *process_api_recv(void *_api_config){
                                             0);
                             break;
 
-                        case update_data:
+                        case update_topic_data:
 
                             return_value = thpool_add_work(
                                             api_config -> schedule_workers,
@@ -274,4 +344,6 @@ static void *process_api_recv(void *_api_config){
             free(tmp_addr);
         }
     }
+
+    return (void *)NULL;
 }

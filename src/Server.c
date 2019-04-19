@@ -120,6 +120,22 @@ int main(int argc, char **argv){
 
     printf("Database connected\n");
 
+    return_value = bot_api_initial(&api_config, &Server_db, 20, 7777, 6666);
+
+    if(return_value != WORK_SUCCESSFULLY){
+
+        return E_API_INITIALLZATION;
+
+    }
+
+    return_value = bot_api_free(&api_config);
+
+    if(return_value != WORK_SUCCESSFULLY){
+
+        return E_API_FREE;
+
+    }
+
     printf("Initialize buffer lists\n");
 
     /* Initialize the address map*/
