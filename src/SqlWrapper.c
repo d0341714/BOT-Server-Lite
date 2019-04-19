@@ -606,6 +606,7 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
 ErrorCode SQL_update_object_tracking_data(void *db,
                                           char *buf,
                                           size_t buf_len){
+
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *string_end;
@@ -711,7 +712,7 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len){
     char *string_begin;
     char *string_end;
     char *topic_name;
-    char *ip_address;
+    char *ip_address = NULL;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     PGresult *res;
@@ -726,8 +727,6 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len){
 
     char *sql_topic_template = "SELECT id, name, ip_address FROM api_topic " \
                                "where name = %s;";
-
-    char *ip_address = NULL;
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -764,7 +763,7 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len){
     SQL_commit_transaction(db);
 
     memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_template,
+    sprintf(sql, sql_topic_template,
                 PQescapeLiteral(conn, topic_name, strlen(topic_name)));
 
     res = PQexec(conn, sql);
@@ -780,11 +779,13 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len){
 
     topic_id = PQgetvalue(res, 0, 0);
 
+    PQclear(res);
+
     return topic_id;
 }
 
 
-int SQL_remove_api_topic(void *db, char *buf, size_t buf_len){
+ErrorCode SQL_remove_api_topic(void *db, char *buf, size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
@@ -812,6 +813,198 @@ int SQL_remove_api_topic(void *db, char *buf, size_t buf_len){
     }
 
     SQL_commit_transaction(db);
+
+    return WORK_SUCCESSFULLY;
+
+}
+
+
+int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len){
+
+    PGconn *conn = (PGconn *) db;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    PGresult *res;
+    int topic_id;
+    char *topic_name, *string_begin, *string_end;
+
+    char *sql_template = "SELECT id, name, ip_address FROM "\
+                         "api_subscriber where name = %s;";
+
+    string_begin = string_end + 1;
+    string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+    *string_end = '\0';
+
+    topic_name = string_begin;
+
+    SQL_begin_transaction(db);
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template,
+                 topic_id,
+                 PQescapeLiteral(conn, topic_name, strlen(topic_name)));
+
+    res = PQexec(conn, sql);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+#ifdef debugging
+        printf("SQL_execute failed: %s", PQerrorMessage(conn));
+#endif
+        return E_SQL_EXECUTE;
+
+    }
+
+    topic_id = PQgetvalue(res, 0, 0);
+
+    PQclear(res);
+
+    return topic_id;
+
+}
+
+
+int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
+
+    PGconn *conn = (PGconn *) db;
+    char temp_buf[WIFI_MESSAGE_LENGTH];
+    char ip_address[NETWORK_ADDR_LENGTH];
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    PGresult *res;
+    int topic_id, subscriber_id;
+    char *sql_template = "INSERT INTO api_subscriber " \
+                         "(topic_id, " \
+                         "ip_address) " \
+                         "VALUES " \
+                         "(\'%d\', %s);";
+
+    char *sql_subscription_template = "SELECT id, name, ip_address FROM "\
+                                      "api_subscriber where topic_id = \'%d\' "\
+                                      "and ip_address = %s;";
+
+    memset(ip_address, 0, NETWORK_ADDR_LENGTH);
+
+    sscanf(buf, "%d;%s;", &topic_id, ip_address);
+
+    SQL_begin_transaction(db);
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_subscription_template,
+                 topic_id,
+                 PQescapeLiteral(conn, ip_address, strlen(ip_address)));
+
+    res = PQexec(conn, sql);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+
+        PQclear(res);
+
+        /* Create SQL statement */
+        memset(sql, 0, sizeof(sql));
+        sprintf(sql, sql_template,
+                topic_id,
+                PQescapeLiteral(conn, ip_address, strlen(ip_address)));
+
+        /* Execute SQL statement */
+        ret_val = SQL_execute(db, sql);
+
+        if(WORK_SUCCESSFULLY != ret_val){
+            SQL_rollback_transaction(db);
+            return -1;
+        }
+
+        SQL_commit_transaction(db);
+
+        memset(sql, 0, sizeof(sql));
+        sprintf(sql, sql_subscription_template,
+                     topic_id,
+                     PQescapeLiteral(conn, ip_address, strlen(ip_address)));
+
+        res = PQexec(conn, sql);
+
+    }
+
+    subscriber_id = PQgetvalue(res, 0, 0);
+
+    PQclear(res);
+
+    return subscriber_id;
+
+}
+
+
+ErrorCode SQL_remove_api_subscription(void *db, char *buf, size_t buf_len){
+
+    PGconn *conn = (PGconn *) db;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    PGresult *res;
+    int subscriber_id;
+    char *sql_template = "DELETR FROM api_subscriber where id = \'%d\';";
+
+    sscanf(buf, "%d;", &subscriber_id);
+
+    memset(sql, 0, SQL_TEMP_BUFFER_LENGTH);
+
+    SQL_begin_transaction(db);
+
+    /* Create SQL statement */
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template, subscriber_id);
+
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db, sql);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        SQL_rollback_transaction(db);
+        return E_SQL_EXECUTE;
+    }
+
+    SQL_commit_transaction(db);
+
+    return WORK_SUCCESSFULLY;
+
+}
+
+
+ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
+
+    PGconn *conn = (PGconn *) db;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    PGresult *res;
+    int topic_id, rows, i;
+
+    char *sql_template = "SELECT id, topic_id, ip_address FROM "\
+                         "api_subscriber where topic_id = \'%d\';";
+
+    sscanf(buf, "%d;", &topic_id);
+
+    SQL_begin_transaction(db);
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template, topic_id);
+
+    res = PQexec(conn, sql);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+#ifdef debugging
+        printf("SQL_execute failed: %s", PQerrorMessage(conn));
+#endif
+        return E_SQL_EXECUTE;
+
+    }
+
+    rows = PQntuples(res);
+
+    memset(buf, 0, buf_len);
+
+    for(i=0;i < rows;i++){
+        sprintf(buf, "%s;%s;", buf, PQgetvalue(res, i, 2));
+    }
+
+    PQclear(res);
 
     return WORK_SUCCESSFULLY;
 

@@ -410,7 +410,31 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len);
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
-int SQL_remove_api_topic(void *db, char *buf, size_t buf_len);
+ErrorCode SQL_remove_api_topic(void *db, char *buf, size_t buf_len);
+
+
+/*
+  SQL_get_api_topic_id
+
+     This function uses name to get the id of the topic.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     buf - pointer to an input string with the format below to specify the
+           health status of gateways
+
+           topic_name;
+
+     buf_len - Length in number of bytes of buf input string
+
+  Return Value:
+
+     int - If the topic update successfully, it will return it's id of the
+           topic. If failed, it will return -1.
+*/
+int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len);
 
 
 /*
@@ -426,14 +450,14 @@ int SQL_remove_api_topic(void *db, char *buf, size_t buf_len);
      buf - pointer to an input string with the format below to specify the
            health status of gateways
 
-           subscriber_name;ip_address;
+           topic_id;ip_address;
 
      buf_len - Length in number of bytes of buf input string
 
   Return Value:
 
      int - If the topic update successfully, it will return it's id of the
-           topic. If failed, it will return -1.
+           subscriber. If failed, it will return -1.
 */
 int SQL_update_api_subscription(void *db, char *buf, size_t buf_len);
 
@@ -460,7 +484,31 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len);
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
-int SQL_remove_api_subscription(void *db, char *buf, size_t buf_len);
+ErrorCode SQL_remove_api_subscription(void *db, char *buf, size_t buf_len);
+
+
+/*
+  SQL_get_api_subscribers
+
+     This function uses topic id to get subscribers.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     buf - pointer to an input string with the format below to specify the
+           health status of gateways
+
+           topic_id;
+
+     buf_len - Length in number of bytes of buf input string
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len);
 
 
 #endif
