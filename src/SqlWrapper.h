@@ -356,10 +356,111 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
   Return Value:
 
      ErrorCode - indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY
+                 is WORK_SUCCESSFULLY.
 */
 ErrorCode SQL_update_object_tracking_data(void *db,
                                           char *buf,
                                           size_t buf_len);
+
+
+/*
+  SQL_update_api_topic
+
+     Updates the topic for the BOT system to maintain and check whether the
+     provider is still alive.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     buf - pointer to an input string with the format below to specify the
+           health status of gateways
+
+           topic_name;ip_address;
+
+     buf_len - Length in number of bytes of buf input string
+
+  Return Value:
+
+     int - If the topic update successfully, it will return it's id of the
+           topic. If failed, it will return -1.
+*/
+int SQL_update_api_topic(void *db, char *buf, size_t buf_len);
+
+
+/*
+  SQL_remove_api_topic
+
+     Remove the topic when the provider not alive or the provider send the
+     request to remove the topic.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     buf - pointer to an input string with the format below to specify the
+           health status of gateways
+
+           topic_id;
+
+     buf_len - Length in number of bytes of buf input string
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+int SQL_remove_api_topic(void *db, char *buf, size_t buf_len);
+
+
+/*
+  SQL_update_api_subscription
+
+     Updates the subscriber for the BOT system to maintain and check where the
+     message needs to send when the topic update.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     buf - pointer to an input string with the format below to specify the
+           health status of gateways
+
+           subscriber_name;ip_address;
+
+     buf_len - Length in number of bytes of buf input string
+
+  Return Value:
+
+     int - If the topic update successfully, it will return it's id of the
+           topic. If failed, it will return -1.
+*/
+int SQL_update_api_subscription(void *db, char *buf, size_t buf_len);
+
+
+/*
+  SQL_remove_api_subscription
+
+     Remove the subscriber when the subscriber do not want get the message when
+     the topic update.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     buf - pointer to an input string with the format below to specify the
+           health status of gateways
+
+           subscriber_id;
+
+     buf_len - Length in number of bytes of buf input string
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+int SQL_remove_api_subscription(void *db, char *buf, size_t buf_len);
+
 
 #endif

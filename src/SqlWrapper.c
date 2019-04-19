@@ -582,6 +582,7 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
+
         sprintf(sql, sql_template,
                 PQescapeLiteral(conn, health_status, strlen(health_status)),
                 PQescapeLiteral(conn, uuid, strlen(uuid)));
@@ -700,4 +701,118 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
+}
+
+
+int SQL_update_api_topic(void *db, char *buf, size_t buf_len){
+
+    PGconn *conn = (PGconn *) db;
+    char temp_buf[WIFI_MESSAGE_LENGTH];
+    char *string_begin;
+    char *string_end;
+    char *topic_name;
+    char *ip_address;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    PGresult *res;
+    int topic_id;
+    char *sql_template = "INSERT INTO api_topic " \
+                         "(name, " \
+                         "ip_address) " \
+                         "VALUES " \
+                         "(%s, %s) " \
+                         "ON CONFLICT (name) " \
+                         "DO UPDATE SET ip_address = %s;";
+
+    char *sql_topic_template = "SELECT id, name, ip_address FROM api_topic " \
+                               "where name = %s;";
+
+    char *ip_address = NULL;
+
+    memset(temp_buf, 0, sizeof(temp_buf));
+    memcpy(temp_buf, buf, buf_len);
+
+    string_begin = temp_buf;
+    string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+    *string_end = '\0';
+
+    topic_name = string_begin;
+
+    string_begin = string_end + 1;
+    string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+    *string_end = '\0';
+
+    ip_address = string_begin;
+
+    SQL_begin_transaction(db);
+
+    /* Create SQL statement */
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template,
+                PQescapeLiteral(conn, topic_name, strlen(topic_name)),
+                PQescapeLiteral(conn, ip_address, strlen(ip_address)),
+                PQescapeLiteral(conn, ip_address, strlen(ip_address)));
+
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db, sql);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        SQL_rollback_transaction(db);
+        return -1;
+    }
+
+    SQL_commit_transaction(db);
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template,
+                PQescapeLiteral(conn, topic_name, strlen(topic_name)));
+
+    res = PQexec(conn, sql);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+#ifdef debugging
+        printf("SQL_execute failed: %s", PQerrorMessage(conn));
+#endif
+        return E_SQL_EXECUTE;
+
+    }
+
+    topic_id = PQgetvalue(res, 0, 0);
+
+    return topic_id;
+}
+
+
+int SQL_remove_api_topic(void *db, char *buf, size_t buf_len){
+
+    PGconn *conn = (PGconn *) db;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    PGresult *res;
+    int topic_id;
+    char *sql_template = "DELETR FROM api_topic where id = \'%d\';";
+
+    sscanf(buf, "%d;", &topic_id);
+
+    memset(sql, 0, SQL_TEMP_BUFFER_LENGTH);
+
+    SQL_begin_transaction(db);
+
+    /* Create SQL statement */
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template, topic_id);
+
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db, sql);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        SQL_rollback_transaction(db);
+        return E_SQL_EXECUTE;
+    }
+
+    SQL_commit_transaction(db);
+
+    return WORK_SUCCESSFULLY;
+
 }
