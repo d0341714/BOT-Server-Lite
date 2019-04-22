@@ -728,7 +728,7 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len){
     char *sql_topic_template = "SELECT id, name, ip_address FROM api_topic " \
                                "where name = %s;";
 
-    memset(temp_buf, 0, sizeof(temp_buf));
+    memset(temp_buf, 0, WIFI_MESSAGE_LENGTH);
     memcpy(temp_buf, buf, buf_len);
 
     string_begin = temp_buf;
@@ -792,7 +792,7 @@ ErrorCode SQL_remove_api_topic(void *db, char *buf, size_t buf_len){
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     PGresult *res;
     int topic_id;
-    char *sql_template = "DELETR FROM api_topic where id = \'%d\';";
+    char *sql_template = "DELETE FROM api_topic where id = \'%d\' ;";
 
     sscanf(buf, "%d;", &topic_id);
 
@@ -825,11 +825,11 @@ int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len){
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     PGresult *res;
-    int topic_id;
+    int topic_id, rows;
     char *topic_name, *string_begin, *string_end;
 
     char *sql_template = "SELECT id, name, ip_address FROM "\
-                         "api_subscriber where name = %s;";
+                         "api_subscriber where name = %s ;";
 
     string_begin = string_end + 1;
     string_end = strstr(string_begin, DELIMITER_SEMICOLON);
@@ -841,7 +841,6 @@ int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len){
 
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_template,
-                 topic_id,
                  PQescapeLiteral(conn, topic_name, strlen(topic_name)));
 
     res = PQexec(conn, sql);
@@ -855,7 +854,12 @@ int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len){
 
     }
 
-    topic_id = PQgetvalue(res, 0, 0);
+    rows = PQntuples(res);
+
+    if(rows == 0)
+        topic_id = -1;
+    else
+        topic_id = PQgetvalue(res, 0, 0);
 
     PQclear(res);
 
@@ -868,24 +872,39 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char ip_address[NETWORK_ADDR_LENGTH];
+    char *string_begin;
+    char *string_end;
+    char *ip_address, *topic_id_char;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     PGresult *res;
-    int topic_id, subscriber_id;
+    int topic_id, subscriber_id, rows;
     char *sql_template = "INSERT INTO api_subscriber " \
                          "(topic_id, " \
                          "ip_address) " \
                          "VALUES " \
-                         "(\'%d\', %s);";
+                         "(\'%d\', %s) ;";
 
-    char *sql_subscription_template = "SELECT id, name, ip_address FROM "\
+    char *sql_subscription_template = "SELECT id, topic_id, ip_address FROM "\
                                       "api_subscriber where topic_id = \'%d\' "\
-                                      "and ip_address = %s;";
+                                      "and ip_address = %s ;";
 
-    memset(ip_address, 0, NETWORK_ADDR_LENGTH);
+    memset(temp_buf, 0, WIFI_MESSAGE_LENGTH);
 
-    sscanf(buf, "%d;%s;", &topic_id, ip_address);
+    memcpy(temp_buf, buf, buf_len);
+
+    string_begin = temp_buf;
+    string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+    *string_end = '\0';
+
+    topic_id_char = string_begin;
+    sscanf(topic_id_char, "%d", &topic_id);
+
+    string_begin = string_end + 1;
+    string_end = strstr(string_begin, DELIMITER_SEMICOLON);
+    *string_end = '\0';
+
+    ip_address = string_begin;
 
     SQL_begin_transaction(db);
 
@@ -898,8 +917,15 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
 
+        SQL_rollback_transaction(db);
+
         PQclear(res);
 
+    }
+
+    if(PQntuples(res) == 0){
+
+        printf("In\n");
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_template,
@@ -941,7 +967,7 @@ ErrorCode SQL_remove_api_subscription(void *db, char *buf, size_t buf_len){
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     PGresult *res;
     int subscriber_id;
-    char *sql_template = "DELETR FROM api_subscriber where id = \'%d\';";
+    char *sql_template = "DELETE FROM api_subscriber where id = \'%d\' ;";
 
     sscanf(buf, "%d;", &subscriber_id);
 
@@ -976,7 +1002,7 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
     int topic_id, rows, i;
 
     char *sql_template = "SELECT id, topic_id, ip_address FROM "\
-                         "api_subscriber where topic_id = \'%d\';";
+                         "api_subscriber where topic_id = \'%d\' ;";
 
     sscanf(buf, "%d;", &topic_id);
 
@@ -1001,7 +1027,10 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
     memset(buf, 0, buf_len);
 
     for(i=0;i < rows;i++){
-        sprintf(buf, "%s;%s;", buf, PQgetvalue(res, i, 2));
+        if(strlen(buf) > 0)
+            sprintf(buf, "%s;%s;", buf, PQgetvalue(res, i, 2));
+        else
+            sprintf(buf, "%s;", PQgetvalue(res, i, 2));
     }
 
     PQclear(res);

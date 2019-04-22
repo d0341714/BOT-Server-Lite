@@ -386,10 +386,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\resource.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\src\Server.h"
 				>
 			</File>
