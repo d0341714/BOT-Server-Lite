@@ -1004,7 +1004,7 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
     char *sql_template = "SELECT id, topic_id, ip_address FROM "\
                          "api_subscriber where topic_id = \'%d\' ;";
 
-    sscanf(buf, "%d;", &topic_id);
+    topic_id = SQL_get_api_topic_id(db, buf, buf_len);
 
     SQL_begin_transaction(db);
 
