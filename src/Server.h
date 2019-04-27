@@ -258,6 +258,10 @@ bool initialization_failed;
 int last_polling_LBeacon_for_HR_time;
 int last_polling_object_tracking_time;
 
+/* API Topic id */
+int geo_fence_data_topic_id;
+int tracked_object_data_topic_id;
+
 /*
   get_config:
 

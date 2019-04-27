@@ -55,7 +55,8 @@ int main(int argc, char **argv){
     int send_pkt_type;
 
     /* The msg for sending commend */
-    char command_msg[MINIMUM_WIFI_MESSAGE_LENGTH];
+    char command_msg[MINIMUM_WIFI_MESSAGE_LENGTH],
+         content[WIFI_MESSAGE_LENGTH];
 
     /* The command for opening database */
     char database_argument[SQL_TEMP_BUFFER_LENGTH];
@@ -68,15 +69,15 @@ int main(int argc, char **argv){
     /* The thread to listen for messages from Wi-Fi interface */
     pthread_t wifi_listener;
 
-    /* All global flags */
+    /* Initialize flags */
     NSI_initialization_complete      = false;
     CommUnit_initialization_complete = false;
+    initialization_failed            = false;
+    ready_to_work                    = true;
 
-    /* Initialize flags */
-
-    initialization_failed = false;
-
-    ready_to_work = true;
+    /* Initialize topic id */
+    geo_fence_data_topic_id          = -1;
+    tracked_object_data_topic_id     = -1;
 
 #ifdef debugging
     printf("Start Server\n");
@@ -172,8 +173,6 @@ int main(int argc, char **argv){
     insert_list_tail( &API_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
-
-
     sort_priority_list(&config, &priority_list_head);
 
     printf("Buffer lists initialized\n");
@@ -213,6 +212,7 @@ int main(int argc, char **argv){
         return return_value;
     }
 
+
     printf("Start Communication\n");
 
     /* The while loop waiting for NSI and CommUnit to be ready */
@@ -239,6 +239,32 @@ int main(int argc, char **argv){
     while(ready_to_work == true){
 
         current_time = get_system_time();
+
+        while(geo_fence_data_topic_id == -1 ||
+              tracked_object_data_topic_id == -1){
+
+            if(geo_fence_data_topic_id == -1){
+                memset(content, 0, WIFI_MESSAGE_LENGTH);
+                sprintf(content, "%s;%s;", GEO_FENCE_TOPIC,
+                                           config.server_ip);
+
+                geo_fence_data_topic_id =
+                      SQL_update_api_topic(Server_db, content, strlen(content));
+
+            }
+
+            if(tracked_object_data_topic_id == -1){
+                memset(content, 0, WIFI_MESSAGE_LENGTH);
+                sprintf(content, "%s;%s;", TRACKED_OBJECT_DATA_TOPIC,
+                        config.server_ip);
+
+                tracked_object_data_topic_id =
+                      SQL_update_api_topic(Server_db, content, strlen(content));
+
+            }
+
+            Sleep(1000); // 1 sec
+        }
 
         /* If it is the time to poll health reports from LBeacons, get a
            thread to do this work */
@@ -1381,7 +1407,7 @@ void *process_wifi_receive(){
                             case update_topic_data:
                             case request_data:
 #ifdef debugging
-                                printf("Get message from the module\n");
+                                printf("Get api message from the module\n");
 #endif
                                 pthread_mutex_lock(&API_receive_buffer_list_head
                                                    .list_lock);
