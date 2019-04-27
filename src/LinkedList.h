@@ -78,8 +78,10 @@
 /*Struct for the head of a list or doubly linked list entry used in link a
   node in to a list */
 typedef struct List_Entry {
+
     struct List_Entry *next;
     struct List_Entry *prev;
+    bool is_head;
 
 }List_Entry;
 

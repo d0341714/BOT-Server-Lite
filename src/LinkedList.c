@@ -55,6 +55,7 @@ void init_entry(List_Entry *entry) {
 
     entry->next = entry;
     entry->prev = entry;
+    entry->is_head = false;
 }
 
 
