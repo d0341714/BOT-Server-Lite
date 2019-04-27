@@ -138,6 +138,9 @@
 /* Timeout interval in ms */
 #define WAITING_TIME 5
 
+#define GEO_FENCE_TOPIC "GEO_FENCE"
+#define TRACKED_OBJECT_DATA_TOPIC "TRACKED_OBJECT_DATA"
+
 
 typedef enum _ErrorCode{
 
@@ -185,8 +188,9 @@ typedef enum _ErrorCode{
     E_SQL_EXECUTE = 41,
     E_API_INITIALLZATION =42,
     E_API_FREE = 43,
+    E_MODULE_INITIALIZATION = 44,
 
-    MAX_ERROR_CODE = 44
+    MAX_ERROR_CODE = 45
 
 } ErrorCode;
 
@@ -248,7 +252,8 @@ typedef enum pkt_types {
 
     /* Subscription */
     add_subscriber = 14,
-    del_subscriber = 15
+    del_subscriber = 15,
+    request_data = 8
 
 
 } PktType;
