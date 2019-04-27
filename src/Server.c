@@ -862,18 +862,26 @@ void *process_api_routine(void *_buffer_node){
     /* read the pkt type from lower lower 4 bits. */
     data_type = current_node -> content[0] & 0x0f;
 
+    memset(data_content, 0, WIFI_MESSAGE_LENGTH);
+
+    memcpy(data_content, &(current_node -> content[1]),
+            current_node -> content_size - 1);
+
     switch(data_type){
 
         case add_topic:
 
-            printf("IP: %s\nContent: %s\nSize: %d\n", current_node->net_address, &current_node -> content[1], current_node -> content_size -1);
+            current_data_pointer = strtok(data_content, DELIMITER_SEMICOLON);
+
+            printf("IP: %s\nTopic: %s\nContent: %s\nSize: %d\n",
+                                            current_node -> net_address,
+                                            current_data_pointer,
+                                            &current_node -> content[1],
+                                            current_node -> content_size -1);
 
             topic_id = SQL_update_api_topic(Server_db,
                                             &current_node -> content[1],
                                             current_node -> content_size -1);
-
-            printf("IP: %s\nContent: %s\nSize: %d\n", current_node->net_address, current_node->content, current_node->content_size-1);
-
 
             memset(current_node -> content, 0, WIFI_MESSAGE_LENGTH);
 
@@ -881,20 +889,27 @@ void *process_api_routine(void *_buffer_node){
                                          data_type & 0x0f;
 
             if(topic_id > 0)
-                sprintf(&current_node -> content[1], "Success;%d;", topic_id);
+                sprintf(&current_node -> content[1], "%s;Success;%d;",
+                                                     current_data_pointer,
+                                                     topic_id);
             else
-                sprintf(&current_node -> content[1], "Fail;");
+                sprintf(&current_node -> content[1], "%s;Fail;",
+                                                     current_data_pointer);
 
-            udp_addpkt(&udp_config, current_node -> net_address,
-                       current_node -> content, strlen(current_node -> content));
+            udp_addpkt(&udp_config,
+                       current_node -> net_address,
+                       current_node -> content,
+                       strlen(current_node -> content));
 
             break;
 
         case remove_topic:
 
+            current_data_pointer = strtok(data_content, DELIMITER_SEMICOLON);
+
             return_value = SQL_remove_api_topic(Server_db,
-                                                &current_node -> content[1],
-                                                current_node -> content_size -1);
+                                            &current_node -> content[1],
+                                            current_node -> content_size -1);
 
             memset(&current_node -> content, 0, WIFI_MESSAGE_LENGTH);
 
@@ -902,66 +917,86 @@ void *process_api_routine(void *_buffer_node){
                                          data_type & 0x0f;
 
             if(return_value == WORK_SUCCESSFULLY)
-                sprintf(&current_node -> content[1], "Success;");
+                sprintf(&current_node -> content[1], "%s;Success;",
+                                                     current_data_pointer);
             else
-                sprintf(&current_node -> content[1], "Fail;");
+                sprintf(&current_node -> content[1], "%s;Fail;",
+                                                     current_data_pointer);
 
-            udp_addpkt(&udp_config, current_node -> net_address,
-                       current_node -> content, strlen(current_node -> content));
+            udp_addpkt(&udp_config,
+                       current_node -> net_address,
+                       current_node -> content,
+                       strlen(current_node -> content));
 
             break;
 
         case add_subscriber:
 
-            subscriber_id = SQL_update_api_subscription(
-                                                Server_db,
-                                                &current_node -> content[1],
-                                                current_node -> content_size - 1);
+            current_data_pointer = strtok(data_content, DELIMITER_SEMICOLON);
 
-            memset(&current_node -> content, 0, WIFI_MESSAGE_LENGTH);
+            subscriber_id = SQL_update_api_subscription(
+                                            Server_db,
+                                            &current_node -> content[1],
+                                            current_node -> content_size - 1);
+
+            memset(current_node -> content, 0, WIFI_MESSAGE_LENGTH);
 
             current_node -> content[0] = (data_direction & 0x0f ) << 4 +
                                          data_type & 0x0f;
 
             if(subscriber_id > 0)
-                sprintf(&current_node -> content[1], "Success;%d;", subscriber_id);
+                sprintf(&current_node -> content[1], "%s;Success;%d;",
+                        current_data_pointer, subscriber_id);
             else
-                sprintf(&current_node -> content[1], "Fail;");
+                sprintf(&current_node -> content[1], "%s;Fail;",
+                        current_data_pointer);
 
-            udp_addpkt(&udp_config, current_node -> net_address,
-                       current_node -> content, strlen(current_node -> content));
+            udp_addpkt(&udp_config,
+                       current_node -> net_address,
+                       current_node -> content,
+                       strlen(current_node -> content));
 
             break;
 
         case del_subscriber:
 
-            return_value = SQL_remove_api_subscription(
-                                                Server_db,
-                                                &current_node -> content[1],
-                                                current_node -> content_size -1);
+            current_data_pointer = strtok(data_content, DELIMITER_SEMICOLON);
 
-            memset(&current_node -> content, 0, WIFI_MESSAGE_LENGTH);
+            return_value = SQL_remove_api_subscription(
+                                            Server_db,
+                                            &current_node -> content[1],
+                                            current_node -> content_size -1);
+
+            memset(current_node -> content, 0, WIFI_MESSAGE_LENGTH);
 
             current_node -> content[0] = (data_direction & 0x0f ) << 4 +
                                          data_type & 0x0f;
 
             if(return_value == WORK_SUCCESSFULLY)
-                sprintf(&current_node -> content[1], "Success;");
+                sprintf(&current_node -> content[1], "%s;Success;",
+                                                     current_data_pointer);
             else
-                sprintf(&current_node -> content[1], "Fail;");
+                sprintf(&current_node -> content[1], "%s;Fail;",
+                                                     current_data_pointer);
 
-            udp_addpkt(&udp_config, current_node -> net_address,
-                       current_node -> content, strlen(current_node -> content));
+            udp_addpkt(&udp_config,
+                       current_node -> net_address,
+                       current_node -> content,
+                       strlen(current_node -> content));
 
             break;
 
         case update_topic_data:
 
-            return_value = SQL_get_api_subscribers(Server_db, &(current_node -> content[1]), current_node -> content_size - 1);
+            return_value = SQL_get_api_subscribers(
+                                            Server_db,
+                                            data_content,
+                                            strlen(data_content));
 
-            if((return_value == WORK_SUCCESSFULLY) && (strlen(&(current_node -> content[1])) > 0)){
+            if((return_value == WORK_SUCCESSFULLY) &&
+               (strlen(data_content) > 0)){
 
-                return_data = &(current_node -> content[1]);
+                return_data = data_content;
 
                 printf ("Splitting return_data \"%s\":\n",return_data);
 
@@ -971,10 +1006,10 @@ void *process_api_routine(void *_buffer_node){
 
                     printf ("Current Process IP: %s\n",current_data_pointer);
 
-                        udp_addpkt(&udp_config,
-                            current_data_pointer,
-                            current_node -> content,
-                            current_node -> content_size);
+                    udp_addpkt(&udp_config,
+                               current_data_pointer,
+                               current_node -> content,
+                               current_node -> content_size);
 
                     current_data_pointer = strtok (NULL, DELIMITER_SEMICOLON);
                 }
@@ -983,11 +1018,11 @@ void *process_api_routine(void *_buffer_node){
 
             break;
 
-        default:
+//        case request_data:
 
-            mp_free( &node_mempool, current_node);
 
-            return (void *)NULL;
+
+//            break;
 
     }
 
@@ -1252,9 +1287,9 @@ void *process_wifi_receive(){
                         switch (pkt_type) {
 
                             case request_to_join:
-//#ifdef debugging
+#ifdef debugging
                                 printf("Get Join request from Gateway.\n");
-//#endif
+#endif
                                 pthread_mutex_lock(&NSI_receive_buffer_list_head
                                                    .list_lock);
                                 insert_list_tail(&new_node -> buffer_entry,
@@ -1265,10 +1300,10 @@ void *process_wifi_receive(){
                                 break;
 
                             case tracked_object_data:
-//#ifdef debugging
+#ifdef debugging
                                 printf("Get Tracked Object Data from Gateway\n")
                                 ;
-//#endif
+#endif
                                 pthread_mutex_lock(
                                    &Gateway_receive_buffer_list_head.list_lock);
                                 insert_list_tail( &new_node -> buffer_entry,
@@ -1278,9 +1313,9 @@ void *process_wifi_receive(){
                                 break;
 
                             case health_report:
-//#ifdef debugging
+#ifdef debugging
                                 printf("Get Health Report from Gateway\n");
-//#endif
+#endif
                                 pthread_mutex_lock(&BHM_receive_buffer_list_head
                                                    .list_lock);
                                 insert_list_tail( &new_node -> buffer_entry,
@@ -1300,10 +1335,10 @@ void *process_wifi_receive(){
                         switch (pkt_type) {
 
                             case tracked_object_data:
-//#ifdef debugging
+#ifdef debugging
                                 printf("Get Tracked Object Data from LBeacon\n")
                                 ;
-//#endif
+#endif
                                 pthread_mutex_lock(
                                    &LBeacon_receive_buffer_list_head.list_lock);
                                 insert_list_tail( &new_node -> buffer_entry,
@@ -1313,9 +1348,9 @@ void *process_wifi_receive(){
                                 break;
 
                             case health_report:
-//#ifdef debugging
+#ifdef debugging
                                 printf("Get Health Report from LBeacon\n");
-//#endif
+#endif
                                 pthread_mutex_lock(&BHM_receive_buffer_list_head
                                                    .list_lock);
                                 insert_list_tail( &new_node -> buffer_entry,
@@ -1332,7 +1367,10 @@ void *process_wifi_receive(){
 
                     case from_modules:
 
-                        printf("IP: %s\nContent: %s\nSize: %d\n", new_node->net_address, new_node->content, new_node->content_size);
+                        printf("IP: %s\nContent: %s\nSize: %d\n",
+                                                        new_node->net_address,
+                                                        new_node->content,
+                                                        new_node->content_size);
 
                         switch (pkt_type) {
 
@@ -1341,9 +1379,10 @@ void *process_wifi_receive(){
                             case add_subscriber:
                             case del_subscriber:
                             case update_topic_data:
-
+                            case request_data:
+#ifdef debugging
                                 printf("Get message from the module\n");
-
+#endif
                                 pthread_mutex_lock(&API_receive_buffer_list_head
                                                    .list_lock);
                                 insert_list_tail( &new_node -> buffer_entry,
