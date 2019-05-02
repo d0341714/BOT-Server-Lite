@@ -247,7 +247,7 @@ int main(int argc, char **argv){
 
         /* If it is the time to poll health reports from LBeacons, get a
            thread to do this work */
-        if(current_time - last_polling_object_tracking_time >
+        if(current_time - last_polling_object_tracking_time >=
            config.period_between_RFTOD){
 
             /* Pull object tracking object data */
@@ -273,7 +273,7 @@ int main(int argc, char **argv){
 
             did_work = true;
         }
-        else if(current_time - last_polling_LBeacon_for_HR_time >
+        else if(current_time - last_polling_LBeacon_for_HR_time >=
                 config.period_between_RFHR){
 
             /* Polling for health reports. */
@@ -511,8 +511,8 @@ void *sort_priority_list(ServerConfig *config, BufferListHead *list_head){
     List_Entry *list_pointer,
                *next_list_pointer;
 
-    List_Entry critical_priority_entry, high_priority_entry,
-               normal_priority_entry, low_priority_entry;
+    List_Entry critical_priority_head, high_priority_head,
+               normal_priority_head, low_priority_head;
 
     BufferListHead *current_head, *next_head;
 
