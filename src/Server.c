@@ -51,6 +51,9 @@ int main(int argc, char **argv){
 
     int return_value;
 
+    /* The flag is to know if any routines are processed in this while loop */
+    bool did_work;
+
     /* The pkt type to be send */
     int send_pkt_type;
 
@@ -119,22 +122,6 @@ int main(int argc, char **argv){
     SQL_open_database_connection(database_argument, &Server_db);
 
     printf("Database connected\n");
-
-    return_value = bot_api_initial(&api_config, &Server_db, 20, 7777, 6666);
-
-    if(return_value != WORK_SUCCESSFULLY){
-
-        return E_API_INITIALLZATION;
-
-    }
-
-    return_value = bot_api_free(&api_config);
-
-    if(return_value != WORK_SUCCESSFULLY){
-
-        return E_API_FREE;
-
-    }
 
     printf("Initialize buffer lists\n");
 
@@ -247,6 +234,8 @@ int main(int argc, char **argv){
     /* The while loop that keeps the program running */
     while(ready_to_work == true){
 
+        did_work = false;
+
         current_time = get_system_time();
 
         /* If it is the time to poll health reports from LBeacons, get a
@@ -264,6 +253,7 @@ int main(int argc, char **argv){
             command_msg[0] = (char)send_pkt_type;
 
 //#ifdef debugging
+            display_time();
             printf("Send Request for Tracked Object Data\n");
 //#endif
 
@@ -273,6 +263,8 @@ int main(int argc, char **argv){
 
             /* Update the last_polling_object_tracking_time */
             last_polling_object_tracking_time = current_time;
+
+            did_work = true;
         }
         else if(current_time - last_polling_LBeacon_for_HR_time >
                 config.period_between_RFHR){
@@ -286,19 +278,24 @@ int main(int argc, char **argv){
             command_msg[0] = (char)send_pkt_type;
 
 //#ifdef debugging
+            display_time();
             printf("Send Request for Health Report\n");
 //#endif
 
             /* broadcast to LBeacons */
             Gateway_Broadcast(&Gateway_address_map, command_msg,
-                             MINIMUM_WIFI_MESSAGE_LENGTH);
+                              MINIMUM_WIFI_MESSAGE_LENGTH);
 
             /* Update the last_polling_LBeacon_for_HR_time */
             last_polling_LBeacon_for_HR_time = get_system_time();
+
+            did_work = true;
         }
-        else{
+
+        if(did_work == false){
             Sleep(WAITING_TIME);
         }
+
     }
 
     /* The program is going to be ended. Free the connection of Wifi */
@@ -584,6 +581,9 @@ void *CommUnit_routine(){
 
     int return_error_value;
 
+    /* The flag is to know if buffer nodes are processed in this while loop */
+    bool did_work;
+
     /* The pointer point to the current priority buffer list entry */
     List_Entry *current_entry, *list_entry;
 
@@ -616,16 +616,14 @@ void *CommUnit_routine(){
     /* When there is no dead thead, do the work. */
     while(ready_to_work == true){
 
+        did_work = false;
+
         current_time = get_system_time();
 
         /* In the normal situation, the scanning starts from the high priority
            to lower priority. When the timer expired for MAX_STARVATION_TIME,
            reverse the scanning process */
         while(current_time - init_time < MAX_STARVATION_TIME){
-
-            while(thpool -> num_threads_working == thpool -> num_threads_alive){
-                Sleep(WAITING_TIME);
-            }
 
             /* Scan the priority_list to get the buffer list with the highest
                priority among all lists that are not empty. */
@@ -668,6 +666,7 @@ void *CommUnit_routine(){
                                                          current_head ->
                                                          priority_nice);
 
+                    did_work = true;
                     break;
                 }
             }
@@ -675,10 +674,6 @@ void *CommUnit_routine(){
             current_time = get_system_time();
             pthread_mutex_unlock( &priority_list_head.list_lock);
 
-        }
-
-        while(thpool -> num_threads_working == thpool -> num_threads_alive){
-            Sleep(WAITING_TIME);
         }
 
         /* Scan the priority list in reverse order to prevent starving the
@@ -721,6 +716,7 @@ void *CommUnit_routine(){
                                                      current_head ->
                                                      priority_nice);
 
+                did_work = true;
                 break;
             }
         }
@@ -732,6 +728,9 @@ void *CommUnit_routine(){
 
     } /* End while(ready_to_work == true) */
 
+    if(did_work == false){
+        Sleep(WAITING_TIME);
+    }
 
     /* Destroy the thread pool */
     thpool_destroy(thpool);
@@ -1098,6 +1097,7 @@ void *process_wifi_receive(){
 
                 /* Insert the node to the specified buffer, and release
                    list_lock. */
+
                 switch (pkt_direction) {
 
                     case from_gateway:
@@ -1106,6 +1106,7 @@ void *process_wifi_receive(){
 
                             case request_to_join:
 //#ifdef debugging
+								display_time();
                                 printf("Get Join request from Gateway.\n");
 //#endif
                                 pthread_mutex_lock(&NSI_receive_buffer_list_head
@@ -1119,6 +1120,7 @@ void *process_wifi_receive(){
 
                             case tracked_object_data:
 //#ifdef debugging
+								display_time();
                                 printf("Get Tracked Object Data from Gateway\n")
                                 ;
 //#endif
@@ -1132,6 +1134,7 @@ void *process_wifi_receive(){
 
                             case health_report:
 //#ifdef debugging
+								display_time();
                                 printf("Get Health Report from Gateway\n");
 //#endif
                                 pthread_mutex_lock(&BHM_receive_buffer_list_head
@@ -1154,6 +1157,7 @@ void *process_wifi_receive(){
 
                             case tracked_object_data:
 //#ifdef debugging
+								display_time();
                                 printf("Get Tracked Object Data from LBeacon\n")
                                 ;
 //#endif
@@ -1167,6 +1171,7 @@ void *process_wifi_receive(){
 
                             case health_report:
 //#ifdef debugging
+								display_time();
                                 printf("Get Health Report from LBeacon\n");
 //#endif
                                 pthread_mutex_lock(&BHM_receive_buffer_list_head
@@ -1183,15 +1188,41 @@ void *process_wifi_receive(){
                         }
                         break;
 
+					case from_modules:
+
+						printf("IP: %s\nContent: %s\nSize: %d\n", new_node->net_address, new_node->content, new_node->content_size);
+
+						switch (pkt_type) {
+
+							case add_topic:
+							case remove_topic:
+							case add_subscriber:
+							case del_subscriber:
+							case update_topic_data:
+
+								display_time();
+								printf("Get message from the module\n");
+
+								pthread_mutex_lock(&API_receive_buffer_list_head
+                                                   .list_lock);
+                                insert_list_tail( &new_node -> buffer_entry,
+                                       &API_receive_buffer_list_head.list_head);
+                                pthread_mutex_unlock(
+                                       &API_receive_buffer_list_head.list_lock);
+
+								break;
+
+							default:
+								mp_free( &node_mempool, new_node);
+                                break;
+						}
+						break;
+
                     default:
                         mp_free( &node_mempool, new_node);
                         break;
                 }
             }
-        }
-        else if(temppkt.type == NONE){
-            /* If there is no packet received, Sleep a short time */
-            Sleep(WAITING_TIME);
         }
         else{
             Sleep(WAITING_TIME);

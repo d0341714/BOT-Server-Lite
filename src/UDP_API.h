@@ -50,7 +50,7 @@
 #include "pkt_Queue.h"
 
 
-#define UDP_SELECT_TIMEOUT 30000    //second
+#define UDP_SELECT_TIMEOUT 60    //second
 #define WAITING_TIME 5 //milliseconds
 
 /* When debugging is needed */

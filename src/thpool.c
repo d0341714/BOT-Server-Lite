@@ -68,6 +68,9 @@ struct thpool_ *thpool_init(int num_threads){
         return NULL;
     }
 
+    thpool_p->num_threads_alive   = 0;
+    thpool_p->num_threads_working = 0;
+
     thpool_p->threads_keepalive = 1;
 
     /* Initialize the memory pool */
@@ -82,9 +85,6 @@ struct thpool_ *thpool_init(int num_threads){
     if(mp_init(&thpool_p->bsem_mempool, sizeof(bsem),
        num_threads * SLOTS_FOR_MEM_POOL_PER_THREAD) != MEMORY_POOL_SUCCESS)
         return NULL;
-
-    thpool_p->num_threads_alive   = 0;
-    thpool_p->num_threads_working = 0;
 
     /* Initialise the job queue */
     if (jobqueue_init(thpool_p, &thpool_p -> jobqueue) == -1){

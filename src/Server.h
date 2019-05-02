@@ -50,7 +50,6 @@
 
 #include "BeDIS.h"
 #include "SqlWrapper.h"
-#include "BOT_API.h"
 
 /* When debugging is needed */
 #define debugging
@@ -202,8 +201,6 @@ typedef struct {
 /* A Server config struct for storing config parameters from the config file */
 ServerConfig config;
 
-sbot_api_config api_config;
-
 /* A pointer point to db cursor */
 void *Server_db;
 
@@ -212,6 +209,8 @@ sudp_config udp_config;
 
 /* mempool from which buffer node structure are allocated */
 Memory_Pool node_mempool;
+
+Memory_Pool pkt_content_mempool;
 
 /* An array of address maps */
 AddressMapArray Gateway_address_map;
