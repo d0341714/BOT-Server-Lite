@@ -170,6 +170,13 @@ int main(int argc, char **argv){
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
+    init_buffer( &API_receive_buffer_list_head,
+                (void *) process_api_routine, config.normal_priority);
+    insert_list_tail( &API_receive_buffer_list_head.priority_list_entry,
+                      &priority_list_head.priority_list_entry);
+
+
+
     sort_priority_list(&config, &priority_list_head);
 
     printf("Buffer lists initialized\n");
@@ -604,6 +611,8 @@ void *CommUnit_routine(){
        according to the data stored in the config file. */
     thpool = thpool_init(config.number_worker_threads);
 
+    printf("workers:%d\n", thpool_num_threads_working(thpool));
+
     current_time = get_system_time();
 
     /* Set the initial time. */
@@ -851,6 +860,167 @@ void *Gateway_routine(void *_buffer_node){
 }
 
 
+void *process_api_routine(void *_buffer_node){
+
+    BufferNode *current_node = (BufferNode *)_buffer_node;
+
+    int data_direction;
+
+    int data_type;
+
+    int topic_id, subscriber_id;
+
+    int return_value;
+
+    unsigned long int data_type_id;
+
+    char data_content[WIFI_MESSAGE_LENGTH];
+
+    char *current_data_pointer = NULL;
+
+    char *return_data;
+
+    /* read the pkt direction from higher 4 bits. */
+    data_direction = from_server;
+    /* read the pkt type from lower lower 4 bits. */
+    data_type = current_node -> content[0] & 0x0f;
+
+    switch(data_type){
+
+        case add_topic:
+
+            printf("IP: %s\nContent: %s\nSize: %d\n", current_node->net_address, &current_node -> content[1], current_node -> content_size -1);
+
+            topic_id = SQL_update_api_topic(Server_db,
+                                            &current_node -> content[1],
+                                            current_node -> content_size -1);
+
+            printf("IP: %s\nContent: %s\nSize: %d\n", current_node->net_address, current_node->content, current_node->content_size-1);
+
+
+            memset(current_node -> content, 0, WIFI_MESSAGE_LENGTH);
+
+            current_node -> content[0] = (data_direction & 0x0f ) << 4 +
+                                         data_type & 0x0f;
+
+            if(topic_id > 0)
+                sprintf(&current_node -> content[1], "Success;%d;", topic_id);
+            else
+                sprintf(&current_node -> content[1], "Fail;");
+
+            udp_addpkt(&udp_config, current_node -> net_address,
+                       current_node -> content, strlen(current_node -> content));
+
+            break;
+
+        case remove_topic:
+
+            return_value = SQL_remove_api_topic(Server_db,
+                                                &current_node -> content[1],
+                                                current_node -> content_size -1);
+
+            memset(&current_node -> content, 0, WIFI_MESSAGE_LENGTH);
+
+            current_node -> content[0] = (data_direction & 0x0f ) << 4 +
+                                         data_type & 0x0f;
+
+            if(return_value == WORK_SUCCESSFULLY)
+                sprintf(&current_node -> content[1], "Success;");
+            else
+                sprintf(&current_node -> content[1], "Fail;");
+
+            udp_addpkt(&udp_config, current_node -> net_address,
+                       current_node -> content, strlen(current_node -> content));
+
+            break;
+
+        case add_subscriber:
+
+            subscriber_id = SQL_update_api_subscription(
+                                                Server_db,
+                                                &current_node -> content[1],
+                                                current_node -> content_size - 1);
+
+            memset(&current_node -> content, 0, WIFI_MESSAGE_LENGTH);
+
+            current_node -> content[0] = (data_direction & 0x0f ) << 4 +
+                                         data_type & 0x0f;
+
+            if(subscriber_id > 0)
+                sprintf(&current_node -> content[1], "Success;%d;", subscriber_id);
+            else
+                sprintf(&current_node -> content[1], "Fail;");
+
+            udp_addpkt(&udp_config, current_node -> net_address,
+                       current_node -> content, strlen(current_node -> content));
+
+            break;
+
+        case del_subscriber:
+
+            return_value = SQL_remove_api_subscription(
+                                                Server_db,
+                                                &current_node -> content[1],
+                                                current_node -> content_size -1);
+
+            memset(&current_node -> content, 0, WIFI_MESSAGE_LENGTH);
+
+            current_node -> content[0] = (data_direction & 0x0f ) << 4 +
+                                         data_type & 0x0f;
+
+            if(return_value == WORK_SUCCESSFULLY)
+                sprintf(&current_node -> content[1], "Success;");
+            else
+                sprintf(&current_node -> content[1], "Fail;");
+
+            udp_addpkt(&udp_config, current_node -> net_address,
+                       current_node -> content, strlen(current_node -> content));
+
+            break;
+
+        case update_topic_data:
+
+            return_value = SQL_get_api_subscribers(Server_db, &(current_node -> content[1]), current_node -> content_size - 1);
+
+            if((return_value == WORK_SUCCESSFULLY) && (strlen(&(current_node -> content[1])) > 0)){
+
+                return_data = &(current_node -> content[1]);
+
+                printf ("Splitting return_data \"%s\":\n",return_data);
+
+                current_data_pointer = strtok(return_data, DELIMITER_SEMICOLON);
+
+                while(current_data_pointer != NULL){
+
+                    printf ("Current Process IP: %s\n",current_data_pointer);
+
+                        udp_addpkt(&udp_config,
+                            current_data_pointer,
+                            current_node -> content,
+                            current_node -> content_size);
+
+                    current_data_pointer = strtok (NULL, DELIMITER_SEMICOLON);
+                }
+
+            }
+
+            break;
+
+        default:
+
+            mp_free( &node_mempool, current_node);
+
+            return (void *)NULL;
+
+    }
+
+    mp_free( &node_mempool, current_node);
+
+    return (void *)NULL;
+
+}
+
+
 void init_Address_Map(AddressMapArray *address_map){
 
     int n;
@@ -1013,7 +1183,7 @@ void *process_wifi_send(void *_buffer_node){
     printf("Start Send pkt\naddress [%s]\nmsg [%s]\nsize [%d]\n",
                                                     current_node->net_address,
                                                     current_node->content,
-													current_node->content_size);
+                                                    current_node->content_size);
 #endif
 
     /* Add the content of tje buffer node to the UDP to be sent to the
@@ -1073,7 +1243,7 @@ void *process_wifi_receive(){
             }
             else{
 
-				memset(new_node, 0, sizeof(BufferNode));
+                memset(new_node, 0, sizeof(BufferNode));
 
                 /* Initialize the entry of the buffer node */
                 init_entry( &new_node -> buffer_entry);
@@ -1210,13 +1380,13 @@ void *process_wifi_receive(){
                                 pthread_mutex_unlock(
                                        &API_receive_buffer_list_head.list_lock);
 
-								break;
-
-							default:
-								mp_free( &node_mempool, new_node);
                                 break;
-						}
-						break;
+
+                            default:
+                                mp_free( &node_mempool, new_node);
+                                break;
+                        }
+                        break;
 
                     default:
                         mp_free( &node_mempool, new_node);

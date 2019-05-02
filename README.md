@@ -1,6 +1,6 @@
 # BOT-Server
 
-BOT-Server is used for managing Gateways and LBeacons in a Star Network for the purposes of maintening and monitoring the health of the Gateways and LBeacons and tracking objects.
+BOT-Server is used for managing Gateways and LBeacons in a Star Network for the purposes of maintaining and monitoring the health of the Gateways and LBeacons and tracking objects.
 
 ## Preparation
 * Windows OS

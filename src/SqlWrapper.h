@@ -319,7 +319,7 @@ ErrorCode SQL_update_gateway_health_status(void *db,
            health status of gateways
 
            length;lbeacon_uuid_1;gateway_ip;health_status_1; \
-		   lbeacon_uuid_2;gateway_ip;health_status_2;
+           lbeacon_uuid_2;gateway_ip;health_status_2;
 
      buf_len - Length in number of bytes of buf input string
 

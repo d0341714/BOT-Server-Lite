@@ -237,6 +237,9 @@ BufferListHead BHM_send_buffer_list_head;
 /* The head of a list of buffers holding health reports from LBeacons */
 BufferListHead BHM_receive_buffer_list_head;
 
+/* The head of a list of buffers holding message from modulse */
+BufferListHead API_receive_buffer_list_head;
+
 /* The head of a list of buffers for buffer list head in priority order. */
 BufferListHead priority_list_head;
 
@@ -409,6 +412,24 @@ void *Gateway_routine(void *_buffer_node);
 
 
 /*
+  process_api_routine:
+
+     This function is executed by worker threads when processing
+     the buffer node in the API receive buffer list.
+
+  Parameters:
+
+     _buffer_list_head - A pointer points to the buffer list head.
+
+  Return value:
+
+     None
+
+ */
+void *process_api_routine(void *_buffer_node);
+
+
+/*
   init_Address_Map:
 
      This function initialize the head of the AddressMap.
@@ -549,5 +570,6 @@ void *process_wifi_send(void *_buffer_node);
      None
  */
 void *process_wifi_receive();
+
 
 #endif
