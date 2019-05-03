@@ -627,7 +627,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                          "%d);";
     char *lbeacon_uuid = NULL;
     char *lbeacon_ip = NULL;
-    char *lbeacon_datetime = NULL;
+    char *lbeacon_timestamp = NULL;
     char *object_type = NULL;
     char *object_number = NULL;
     int numbers = 0;
@@ -644,8 +644,8 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     string_end = strstr(lbeacon_uuid, DELIMITER_SEMICOLON);
     *string_end = '\0';
 
-    lbeacon_datetime = string_end + 1;
-    string_end = strstr(lbeacon_datetime, DELIMITER_SEMICOLON);
+    lbeacon_timestamp = string_end + 1;
+    string_end = strstr(lbeacon_timestamp, DELIMITER_SEMICOLON);
     *string_end = '\0';
 
     lbeacon_ip = string_end + 1;
@@ -694,7 +694,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                                     strlen(initial_timestamp_GMT)),
                     PQescapeLiteral(conn, final_timestamp_GMT,
                                     strlen(final_timestamp_GMT)),
-                    current_time - atoi(lbeacon_datetime));
+                    current_time - atoi(lbeacon_timestamp));
                     
 
             /* Execute SQL statement */
