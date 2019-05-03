@@ -618,13 +618,16 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                          "lbeacon_uuid, " \
                          "rssi, " \
                          "initial_timestamp, " \
-                         "final_timestamp) " \
+                         "final_timestamp, " \
+                         "server_time_offset) " \
                          "VALUES " \
                          "(%s, %s, %s, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
-                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval);";
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
+                         "%d);";
     char *lbeacon_uuid = NULL;
-    char *gateway_ip = NULL;
+    char *lbeacon_ip = NULL;
+    char *lbeacon_datetime = NULL;
     char *object_type = NULL;
     char *object_number = NULL;
     int numbers = 0;
@@ -632,6 +635,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     char *initial_timestamp_GMT = NULL;
     char *final_timestamp_GMT = NULL;
     char *rssi = NULL;
+    int current_time = get_system_time();
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -640,8 +644,12 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     string_end = strstr(lbeacon_uuid, DELIMITER_SEMICOLON);
     *string_end = '\0';
 
-    gateway_ip = string_end + 1;
-    string_end = strstr(gateway_ip, DELIMITER_SEMICOLON);
+    lbeacon_datetime = string_end + 1;
+    string_end = strstr(lbeacon_datetime, DELIMITER_SEMICOLON);
+    *string_end = '\0';
+
+    lbeacon_ip = string_end + 1;
+    string_end = strstr(lbeacon_ip, DELIMITER_SEMICOLON);
     *string_end = '\0';
 
     SQL_begin_transaction(db);
@@ -685,7 +693,9 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                     PQescapeLiteral(conn, initial_timestamp_GMT,
                                     strlen(initial_timestamp_GMT)),
                     PQescapeLiteral(conn, final_timestamp_GMT,
-                                    strlen(final_timestamp_GMT)));
+                                    strlen(final_timestamp_GMT)),
+                    current_time - atoi(lbeacon_datetime));
+                    
 
             /* Execute SQL statement */
             ret_val = SQL_execute(db, sql);
