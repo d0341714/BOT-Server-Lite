@@ -401,7 +401,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
                          "registered_timestamp, " \
                          "last_report_timestamp) " \
                          "VALUES " \
-                         "(%s, \'%d\', %s, " \
+                         "(%s, %s, \'%d\', %s, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
                          "NOW()) " \
                          "ON CONFLICT (uuid) " \
