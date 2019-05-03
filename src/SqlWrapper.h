@@ -265,8 +265,9 @@ ErrorCode SQL_query_registered_gateways(void *db,
      buf - pointer to an input string with the format below to specify the
            registered gateways.
 
-           length;gateway_ip;uuid_1;registered_timestamp_GMT;uuid_2;\
-           reigstered_timestamp_GMT;
+           length;gateway_ip;lbeacon_uuid_1;lbeacon_registered_timestamp_GMT; \
+           lbeacon_ip_1;lbeacon_uuid_2;lbeacon_reigstered_timestamp_GMT; \
+           lbeacon_ip_2;
 
      buf_len - Length in number of bytes of buf input string
 

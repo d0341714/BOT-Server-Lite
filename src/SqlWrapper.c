@@ -395,6 +395,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "INSERT INTO lbeacon_table " \
                          "(uuid, " \
+                         "ip_address, " \
                          "health_status, " \
                          "gateway_ip_address, " \
                          "registered_timestamp, " \
@@ -404,10 +405,12 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
                          "NOW()) " \
                          "ON CONFLICT (uuid) " \
-                         "DO UPDATE SET health_status = \'%d\', " \
+                         "DO UPDATE SET ip_address = %s, " \
+                         "health_status = \'%d\', " \
                          "gateway_ip_address = %s, " \
                          "last_report_timestamp = NOW() ;";
     char *uuid = NULL;
+    char *lbeacon_ip = NULL;
     HealthStatus health_status = S_NORMAL_STATUS;
     char *gateway_ip = NULL;
     char *registered_timestamp_GMT = NULL;
@@ -442,14 +445,20 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
         string_end = strstr(registered_timestamp_GMT, DELIMITER_SEMICOLON);
         *string_end = '\0';
 
+        lbeacon_ip = string_end + 1;
+        string_end = strstr(lbeacon_ip, DELIMITER_SEMICOLON);
+        *string_end = '\0';
+
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_template,
                 PQescapeLiteral(conn, uuid, strlen(uuid)),
+                PQescapeLiteral(conn, lbeacon_ip, strlen(lbeacon_ip)),
                 health_status,
                 PQescapeLiteral(conn, gateway_ip, strlen(gateway_ip)),
                 PQescapeLiteral(conn, registered_timestamp_GMT,
                                 strlen(registered_timestamp_GMT)),
+                PQescapeLiteral(conn, lbeacon_ip, strlen(lbeacon_ip)),
                 health_status,
                 PQescapeLiteral(conn, gateway_ip, strlen(gateway_ip)));
 
