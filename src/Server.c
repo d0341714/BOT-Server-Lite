@@ -61,7 +61,7 @@ int main(int argc, char **argv){
     /* The command for opening database */
     char database_argument[SQL_TEMP_BUFFER_LENGTH];
 
-    int current_time;
+    int current_time, content_size;
 
     /* The main thread of the communication Unit */
     pthread_t CommUnit_thread;
@@ -927,6 +927,8 @@ void *process_api_routine(void *_buffer_node){
                        current_node -> content,
                        strlen(current_node -> content));
 
+            }
+
             break;
 
         case remove_topic:
@@ -981,6 +983,21 @@ void *process_api_routine(void *_buffer_node){
                        current_node -> net_address,
                        current_node -> content,
                        strlen(current_node -> content));
+
+            if(strncmp(current_data_pointer, GEO_FENCE_TOPIC,
+                       strlen(GEO_FENCE_TOPIC)) == 0){
+
+                memset(current_node -> content, 0, WIFI_MESSAGE_LENGTH);
+
+                SQL_get_geo_fence(Server_db, &current_node -> content[1],
+                                  &current_node -> content_size);
+
+                sprintf(&buf[1], "%s;%s", GEO_FENCE_TOPIC, &buf[1]);
+
+				udp_addpkt(&udp_config,
+						   current_node -> net_address,
+						   current_node -> content,
+						   strlen(current_node -> content));
 
             break;
 

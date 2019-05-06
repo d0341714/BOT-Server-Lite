@@ -70,12 +70,15 @@
 /* Parameter that marks the start of the config file */
 #define DELIMITER "="
 
-/* Parameter that marks the start of fracton part of float number */
+/* Parameter that marks the start of fraction part of float number */
 #define FRACTION_DOT "."
 
 /* Parameter that marks the separator of differnt records communicated with
    SQL wrapper API */
 #define DELIMITER_SEMICOLON ";"
+
+/* Parameter that marks the separate of different records */
+#define DELIMITER_COMMA ","
 
 /* Maximum number of characters in each line of config file */
 #define CONFIG_BUFFER_SIZE 64

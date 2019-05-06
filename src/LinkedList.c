@@ -122,6 +122,7 @@ void remove_list_node(List_Entry *removed_node_ptrs) {
 
     removed_node_ptrs->prev = removed_node_ptrs;
     removed_node_ptrs->next = removed_node_ptrs;
+    removed_node_ptrs->is_head = false;
 }
 
 

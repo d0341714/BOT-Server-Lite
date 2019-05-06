@@ -342,8 +342,7 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the
-           health status of gateways
+     buf - pointer to an input string with the format below.
 
            lbeacon_uuid;gateway_ip;object_type;object_number; \
            object_mac_address_1;initial_timestamp_GMT_1; \
@@ -373,8 +372,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the
-           health status of gateways
+     buf - pointer to an input string with the format below.
 
            topic_name;ip_address;
 
@@ -398,8 +396,7 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len);
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the
-           health status of gateways
+     buf - pointer to an input string with the format below.
 
            topic_id;
 
@@ -422,8 +419,7 @@ ErrorCode SQL_remove_api_topic(void *db, char *buf, size_t buf_len);
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the
-           health status of gateways
+     buf - pointer to an input string with the format below.
 
            topic_name;
 
@@ -447,8 +443,7 @@ int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len);
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the
-           health status of gateways
+     buf - pointer to an input string with the format below.
 
            topic_id;ip_address;
 
@@ -472,8 +467,7 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len);
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the
-           health status of gateways
+     buf - pointer to an input string with the format below.
 
            subscriber_id;
 
@@ -496,8 +490,7 @@ ErrorCode SQL_remove_api_subscription(void *db, char *buf, size_t buf_len);
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the
-           health status of gateways
+     buf - pointer to an input string with the format below.
 
            topic_id;
 
@@ -508,7 +501,33 @@ ErrorCode SQL_remove_api_subscription(void *db, char *buf, size_t buf_len);
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
-ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len);
+ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len);
+
+
+/*
+  SQL_get_api_subscribers
+
+     This function get geo fence table.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     buf - pointer to an array to receive the returned geo fence information.
+           The returned message format is below.
+
+            number_of_geo_fence;id;name;number_of_perimeters,perimeters_lbeacon1
+            ,throshold1, ...;number_of_fence,fence_lbeacon1,throshold1,...;
+            number_of_mac_prefix,mac_prefix1,...;
+
+     buf_len - Length in number of bytes of buf
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len);
 
 
 #endif

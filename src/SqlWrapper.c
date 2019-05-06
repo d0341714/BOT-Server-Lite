@@ -994,7 +994,7 @@ ErrorCode SQL_remove_api_subscription(void *db, char *buf, size_t buf_len){
 }
 
 
-ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
+ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
 
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
@@ -1004,7 +1004,7 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
     char *sql_template = "SELECT id, topic_id, ip_address FROM "\
                          "api_subscriber where topic_id = \'%d\' ;";
 
-    topic_id = SQL_get_api_topic_id(db, buf, buf_len);
+    topic_id = SQL_get_api_topic_id(db, buf, *buf_len);
 
     SQL_begin_transaction(db);
 
@@ -1024,7 +1024,7 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
 
     rows = PQntuples(res);
 
-    memset(buf, 0, buf_len);
+    memset(buf, 0, *buf_len);
 
     for(i=0;i < rows;i++){
         if(strlen(buf) > 0)
@@ -1032,6 +1032,60 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
         else
             sprintf(buf, "%s;", PQgetvalue(res, i, 2));
     }
+
+    *buf_len = strlen(buf);
+
+    PQclear(res);
+
+    return WORK_SUCCESSFULLY;
+
+}
+
+
+ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len){
+
+    PGconn *conn = (PGconn *) db;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    PGresult *res;
+    int rows, i;
+
+    char *sql_template = "SELECT id, name, perimeter, fence, mac_prefix FROM"\
+                         " geo_fence;";
+
+    SQL_begin_transaction(db);
+
+    memset(sql, 0, SQL_TEMP_BUFFER_LENGTH);
+	memset(buf, 0, WIFI_MESSAGE_LENGTH);
+
+	sprintf(sql, sql_template);
+
+    res = PQexec(conn, sql);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+#ifdef debugging
+        printf("SQL_execute failed: %s\n", PQerrorMessage(conn));
+#endif
+        return E_SQL_EXECUTE;
+
+    }
+
+    rows = PQntuples(res);
+
+    for(i=0;i < rows;i++){
+        if(strlen(buf) > 0)
+            sprintf(buf, "%s;%s;%s;%s;%s;%s;",
+                    buf                  , PQgetvalue(res, i, 0),
+                    PQgetvalue(res, i, 1), PQgetvalue(res, i, 2),
+                    PQgetvalue(res, i, 3), PQgetvalue(res, i, 4));
+        else
+            sprintf(buf, "%d;%s;%s;%s;%s;%s;",
+                    rows                 , PQgetvalue(res, i, 0),
+                    PQgetvalue(res, i, 1), PQgetvalue(res, i, 2),
+                    PQgetvalue(res, i, 3), PQgetvalue(res, i, 4));
+    }
+
+    *buf_len = strlen(buf);
 
     PQclear(res);
 

@@ -48,6 +48,10 @@
 
 typedef struct {
 
+    bool is_running;
+
+    /* The RSSI to determine whether the object is too close to the LBeacon in
+       the perimeter or the LBeacon in the fence. */
     int decision_threshold;
 
     /* UDP for receiving or sending message from and to the BOT server */
@@ -60,6 +64,10 @@ typedef struct {
        modules such as Geo-Fencing. */
     int api_recv_port;
 
+    char server_ip[NETWORK_ADDR_LENGTH];
+
+    char geo_fence_ip[NETWORK_ADDR_LENGTH];
+
     /* Worker threads for processing data from the BOT server by assign a
        worker thread. */
     Threadpool worker_thread;
@@ -70,12 +78,26 @@ typedef struct {
 
     Memory_Pool rssi_list_node_mempool;
 
+    Memory_Pool geo_fence_list_node_mempool;
+
+    Memory_Pool uuid_list_node_mempool;
+
+    Memory_Pool mac_prefix_list_node_mempool;
+
+    Memory_Pool geo_fence_mac_prefix_list_node_mempool;
+
     /* Number of schedule_worker allow to use */
     int number_worker_threads;
 
-    bool is_running;
+    int geo_fence_data_subscribe_id;
+
+    int tracked_object_data_subscribe_id;
 
     pthread_t process_api_recv_thread;
+
+    sgeo_fence_list_node geo_fence_list_head;
+
+    pthread_mutex_t geo_fence_list_lock;
 
 } sgeo_fence_config;
 
@@ -99,15 +121,62 @@ typedef spkt_content *ppkt_content;
 
 typedef struct {
 
+    int id;
+
+    char name[WIFI_MESSAGE_LENGTH];
+
+    pthread_mutex_t list_lock;
+
+    List_Entry perimeters_uuid_list_head;
+
+    List_Entry fence_uuid_list_head;
+
+    List_Entry mac_prefix_list_head;
+
+    List_Entry geo_fence_list_entry;
+
+} sgeo_fence_list_node;
+
+typedef sgeo_fence_list_node *pgeo_fence_list_node;
+
+
+typedef struct {
+
+    char uuid[UUID_LENGTH];
+
+    int threshold;
+
+    List_Entry uuid_list_entry;
+
+} suuid_list_node;
+
+typedef suuid_list_node *puuid_list_node;
+
+
+typedef struct {
+
     char mac_address[LENGTH_OF_MAC_ADDRESS];
 
+    /* The entry of the mac list */
     List_Entry mac_list_entry;
 
-    List_Entry rssi_list_head;
+    /* The entry of the rssi list */
+    List_Entry rssi_list_entry;
 
-} stracked_mac_list_head;
+} stracked_mac_list_node;
 
-typedef stracked_mac_list_head *ptracked_mac_list_head;
+typedef stracked_mac_list_node *ptracked_mac_list_node;
+
+
+typedef struct {
+
+    char mac_prefix[LENGTH_OF_MAC_ADDRESS];
+
+    List_Entry mac_prefix_list_entry;
+
+} smac_prefix_list_node;
+
+typedef smac_prefix_list_node *pmac_prefix_list_node;
 
 
 typedef struct {
@@ -120,7 +189,7 @@ typedef struct {
 
     int last_time;
 
-    List_Entry rssi_list_node;
+    List_Entry rssi_list_entry;
 
 } srssi_list_node;
 
@@ -129,52 +198,9 @@ typedef srssi_list_node *prssi_list_node;
 
 typedef struct {
 
-    int id;
-
-    List_Entry perimeters_uuid_list_entry;
-
-    List_Entry fence_uuid_list_entry;
-
-    List_Entry mac_prefix_list_entry;
-
-    List_Entry geo_fence_entry;
-
-} sgeo_fence_list_node;
-
-typedef sgeo_fence_list_node *pgeo_fence_list_node;
-
-
-typedef struct {
-
-    char uuid[UUID_LENGTH];
-
-    List_Entry uuid_list_entry;
-
-    List_Entry geo_fence_uuid_list_entry;
-
-} suuid_list_node;
-
-typedef suuid_list_node *puuid_list_node;
-
-
-typedef struct {
-
-    char mac_address[LENGTH_OF_MAC_ADDRESS];
-
-    List_Entry mac_prefix_list_entry;
-
     List_Entry geo_fence_mac_prefix_list_entry;
 
-} smac_prefix_node;
-
-typedef smac_prefix_node *pmac_prefix_node;
-
-
-typedef struct {
-
-    List_Entry geo_fence_mac_prefix_list_entry;
-
-    List_Entry geo_fence_mac_prefix_list_node_entry;
+    List_Entry geo_fence_mac_prefix_list_node;
 
 } sgeo_fence_mac_prefix_list_node;
 
@@ -182,45 +208,31 @@ typedef sgeo_fence_mac_prefix_list_node *pgeo_fence_mac_prefix_list_node;
 
 
 /*
-  geo_fence_initial:
+  geo_fence_routine:
 
-     This function initialize API and sockets in Geo-Fence system.
+     The function is executed by the main thread. Initialize API and sockets for
+     Geo-Fence system.
      * Sockets including UDP sender and receiver.
 
   Parameters:
 
-     geo_fence_config - The pointer points to the geo_fence_config.
-     number_worker_threads - The number of worker thread allow to use.
-     recv_port - The port number to which the api is sent.
-     api_recv_port - The port number of the api for receiving data from modules.
-     decision_threshold - The rssi to decide whether the mac address is in a
-                          LBeacon.
+     _geo_fence_config - The pointer points to the geo_fence_config.
+
+     * Need to set the following member of the geo_fence_config before starting
+       the thread.
+            number_worker_threads
+            geo_fence_ip
+            server_ip
+            recv_port
+            api_recv_port
+            decision_threshold
 
   Return value:
 
-     ErrorCode
+     NULL
 
  */
-ErrorCode geo_fence_initial(pgeo_fence_config geo_fence_config,
-                            int number_worker_threads, int recv_port,
-                            int api_recv_port, int decision_threshold);
-
-
-/*
-  geo_fence_free:
-
-     The function release sockets for sending and receiving.
-
-  Parameters:
-
-     geo_fence_config - The pointer points to the geo fence config.
-
-  Return value:
-
-     ErrorCode
-
- */
-ErrorCode geo_fence_free(pgeo_fence_config geo_fence_config);
+void *geo_fence_routine(void *_geo_fence_config);
 
 
 /*
@@ -242,6 +254,24 @@ static void *process_geo_fence_routine(void *_pkt_content);
 
 
 /*
+  update_geo_fence:
+
+     This function is executed by worker threads when receiveing update from the
+     bot server.
+
+  Parameters:
+
+     _pkt_content - The pointer points to the pkt content.
+
+  Return value:
+
+     None
+
+ */
+static void *update_geo_fence(void *_pkt_content);
+
+
+/*
   process_api_recv:
 
      This function is executed by worker threads when receiving msgs from the
@@ -260,9 +290,51 @@ static void *process_api_recv(void *_geo_fence_config);
 
 
 /*
-  init_tracked_mac_list_head:
+  init_geo_fence_list_node:
 
-     This function initialize tracked mac list head by initializing mac list
+     This function initialize the geo fence list node by initializing perimeters
+     uuid list entry, fence uuid list entry, mac prefix list entry and geo fence
+     entry.
+
+  Parameters:
+
+     geo_fence_list_node - The pointer points to the geo fence list node.
+
+  Return value:
+
+     ErrorCode
+
+ */
+static ErrorCode init_geo_fence_list_node(
+                                      pgeo_fence_list_node geo_fence_list_node);
+
+
+/*
+  free_geo_fence_list_node:
+
+     This function free the geo fence list node by initializing perimeters
+     uuid list entry, fence uuid list entry, mac prefix list entry and geo fence
+     entry.
+
+  Parameters:
+
+     geo_fence_list_node - The pointer points to the geo fence list node.
+     geo_fence_config - The pointer points to the geo fence config.
+
+  Return value:
+
+     ErrorCode
+
+ */
+static ErrorCode free_geo_fence_list_node(
+                                      pgeo_fence_list_node geo_fence_list_node,
+                                      pgeo_fence_config geo_fence_config);
+
+
+/*
+  init_tracked_mac_list_node:
+
+     This function initialize the tracked mac list head by initializing mac list
      entry and lbeacon list head;
 
   Parameters:
@@ -274,7 +346,26 @@ static void *process_api_recv(void *_geo_fence_config);
      ErrorCode
 
  */
-static ErrorCode init_tracked_mac_list_head(
+static ErrorCode init_tracked_mac_list_node(
+                                  ptracked_mac_list_head tracked_mac_list_head);
+
+
+/*
+  free_tracked_mac_list_node:
+
+     This function free the tracked mac list head by initializing mac list
+     entry and lbeacon list head;
+
+  Parameters:
+
+     tracked_mac_list_head - The pointer points to the tracked mac list head.
+
+  Return value:
+
+     ErrorCode
+
+ */
+static ErrorCode free_tracked_mac_list_node(
                                   ptracked_mac_list_head tracked_mac_list_head);
 
 
@@ -296,23 +387,20 @@ static ErrorCode init_rssi_list_node(prssi_list_node rssi_list_node);
 
 
 /*
-  init_geo_fence_list_node:
+  free_rssi_list_node:
 
-     This function initialize geo fence list node by initializing perimeters
-     uuid list entry, fence uuid list entry, mac prefix list entry and geo fence
-     entry.
+     This function free the rssi list node by initializing rssi list node.
 
   Parameters:
 
-     geo_fence_list_node - The pointer points to the geo fence list node.
+     rssi_list_node - The pointer points to the rssi list node.
 
   Return value:
 
      ErrorCode
 
  */
-static ErrorCode init_geo_fence_list_node(
-                                      pgeo_fence_list_node geo_fence_list_node);
+static ErrorCode free_rssi_list_node(prssi_list_node rssi_list_node);
 
 
 /*
@@ -334,6 +422,24 @@ static ErrorCode init_uuid_list_node(puuid_list_node uuid_list_node);
 
 
 /*
+  free_uuid_list_node:
+
+     This function free the uuid list node by initializing uuid list entry and
+     geo fence uuid list entry.
+
+  Parameters:
+
+     uuid_list_node - The pointer points to the uuid list node.
+
+  Return value:
+
+     ErrorCode
+
+ */
+static ErrorCode free_uuid_list_node(puuid_list_node uuid_list_node);
+
+
+/*
   init_mac_prefix_node:
 
      This function initialize mac prefix node by initializing mac prefix list
@@ -349,6 +455,24 @@ static ErrorCode init_uuid_list_node(puuid_list_node uuid_list_node);
 
  */
 static ErrorCode init_mac_prefix_node(pmac_prefix_node mac_prefix_node);
+
+
+/*
+  free_mac_prefix_node:
+
+     This function free the mac prefix node by initializing mac prefix list
+     entry and geo fence mac prefix list node.
+
+  Parameters:
+
+     geo_fence_list_node - The pointer points to the geo fence list node.
+
+  Return value:
+
+     ErrorCode
+
+ */
+static ErrorCode free_mac_prefix_node(pmac_prefix_node mac_prefix_node);
 
 
 /*
@@ -369,6 +493,64 @@ static ErrorCode init_mac_prefix_node(pmac_prefix_node mac_prefix_node);
  */
 static ErrorCode init_pgeo_fence_mac_prefix_list_node(
                 pgeo_fence_mac_prefix_list_node geo_fence_mac_prefix_list_node);
+
+
+/*
+  free_geo_fence_mac_prefix_list_node:
+
+     This function free the geo fence mac prefix list node by initializing geo
+     fence mac prefix list entry and geo fence mac prefix list node entry.
+
+  Parameters:
+
+     geo_fence_mac_prefix_list_node - The pointer points to the geo fence list
+                                      node.
+
+  Return value:
+
+     ErrorCode
+
+ */
+static ErrorCode free_pgeo_fence_mac_prefix_list_node(
+                pgeo_fence_mac_prefix_list_node geo_fence_mac_prefix_list_node);
+
+
+/*
+  is_in_geo_fence:
+
+     This function check whether the geo fence is in the geo fence list.
+
+  Parameters:
+
+     geo_fence_list - The pointer points to the geo fence list.
+     geo_fence_id   - The id of the geo fence.
+
+  Return value:
+
+     If it find the geo_fence, it will return its pointer of the node or it will
+     return NULL.
+
+ */
+static pgeo_fence_list_node is_in_geo_fence_list(
+                         pgeo_fence_list_node geo_fence_list, int geo_fence_id);
+
+
+/*
+  is_in_geo_fence:
+
+     This function check whether the uuid is in the uuid list.
+
+  Parameters:
+
+     uuid - The pointer points to the uuid.
+
+  Return value:
+
+     If it find the uuid, it will return its pointer of the node or it will
+     return NULL.
+
+ */
+static puuid_list_node is_in_geo_fence(char *uuid);
 
 
 /*
