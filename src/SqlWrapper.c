@@ -769,17 +769,20 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len){
     res = PQexec(conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        SQL_rollback_transaction(db);
         PQclear(res);
 #ifdef debugging
         printf("SQL_execute failed: %s", PQerrorMessage(conn));
 #endif
-        return E_SQL_EXECUTE;
+        return -1;
 
     }
 
-    topic_id = PQgetvalue(res, 0, 0);
+    sscanf(PQgetvalue(res, 0, 0), "%d", &topic_id);
 
     PQclear(res);
+
+    SQL_commit_transaction(db);
 
     return topic_id;
 }
@@ -846,11 +849,12 @@ int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len){
     res = PQexec(conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        SQL_rollback_transaction(db);
         PQclear(res);
 #ifdef debugging
         printf("SQL_execute failed: %s", PQerrorMessage(conn));
 #endif
-        return E_SQL_EXECUTE;
+        return -1;
 
     }
 
@@ -859,9 +863,11 @@ int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len){
     if(rows == 0)
         topic_id = -1;
     else
-        topic_id = PQgetvalue(res, 0, 0);
+        sscanf(PQgetvalue(res, 0, 0), "%d", &topic_id);
 
     PQclear(res);
+
+    SQL_commit_transaction(db);
 
     return topic_id;
 
@@ -942,6 +948,8 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 
         SQL_commit_transaction(db);
 
+        SQL_begin_transaction(db);
+
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_subscription_template,
                      topic_id,
@@ -951,9 +959,11 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 
     }
 
-    subscriber_id = PQgetvalue(res, 0, 0);
+    sscanf(PQgetvalue(res, 0, 0), "%d", &subscriber_id);
 
     PQclear(res);
+
+    SQL_commit_transaction(db);
 
     return subscriber_id;
 
@@ -1014,6 +1024,7 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
     res = PQexec(conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        SQL_rollback_transaction(db);
         PQclear(res);
 #ifdef debugging
         printf("SQL_execute failed: %s", PQerrorMessage(conn));
@@ -1037,6 +1048,8 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
 
     PQclear(res);
 
+    SQL_commit_transaction(db);
+
     return WORK_SUCCESSFULLY;
 
 }
@@ -1055,13 +1068,14 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len){
     SQL_begin_transaction(db);
 
     memset(sql, 0, SQL_TEMP_BUFFER_LENGTH);
-	memset(buf, 0, WIFI_MESSAGE_LENGTH);
+    memset(buf, 0, WIFI_MESSAGE_LENGTH);
 
-	sprintf(sql, sql_template);
+    sprintf(sql, sql_template);
 
     res = PQexec(conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        SQL_rollback_transaction(db);
         PQclear(res);
 #ifdef debugging
         printf("SQL_execute failed: %s\n", PQerrorMessage(conn));
@@ -1088,6 +1102,8 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len){
     *buf_len = strlen(buf);
 
     PQclear(res);
+
+    SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 

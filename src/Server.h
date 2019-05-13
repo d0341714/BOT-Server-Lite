@@ -50,6 +50,7 @@
 
 #include "BeDIS.h"
 #include "SqlWrapper.h"
+#include "Geo-Fencing.h"
 
 /* When debugging is needed */
 #define debugging
@@ -209,6 +210,8 @@ sudp_config udp_config;
 
 /* mempool from which buffer node structure are allocated */
 Memory_Pool node_mempool;
+
+sgeo_fence_config geo_fence_config;
 
 /* An array of address maps */
 AddressMapArray Gateway_address_map;

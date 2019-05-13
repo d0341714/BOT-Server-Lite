@@ -48,6 +48,66 @@
 
 typedef struct {
 
+    int id;
+
+    char name[WIFI_MESSAGE_LENGTH];
+
+    pthread_mutex_t list_lock;
+
+    List_Entry perimeters_uuid_list_head;
+
+    List_Entry fence_uuid_list_head;
+
+    List_Entry mac_prefix_list_head;
+
+    List_Entry geo_fence_list_entry;
+
+} sgeo_fence_list_node;
+
+typedef sgeo_fence_list_node *pgeo_fence_list_node;
+
+
+typedef struct {
+
+    char uuid[UUID_LENGTH];
+
+    int threshold;
+
+    List_Entry uuid_list_entry;
+
+} suuid_list_node;
+
+typedef suuid_list_node *puuid_list_node;
+
+
+typedef struct {
+
+    char mac_address[LENGTH_OF_MAC_ADDRESS];
+
+    /* The entry of the mac list */
+    List_Entry mac_list_entry;
+
+    /* The entry of the rssi list */
+    List_Entry rssi_list_entry;
+
+} stracked_mac_list_node;
+
+typedef stracked_mac_list_node *ptracked_mac_list_node;
+
+
+typedef struct {
+
+    char mac_prefix[LENGTH_OF_MAC_ADDRESS];
+
+    List_Entry mac_prefix_list_entry;
+
+} smac_prefix_list_node;
+
+typedef smac_prefix_list_node *pmac_prefix_list_node;
+
+
+typedef struct {
+
     bool is_running;
 
     /* The RSSI to determine whether the object is too close to the LBeacon in
@@ -119,94 +179,6 @@ typedef struct {
 typedef spkt_content *ppkt_content;
 
 
-typedef struct {
-
-    int id;
-
-    char name[WIFI_MESSAGE_LENGTH];
-
-    pthread_mutex_t list_lock;
-
-    List_Entry perimeters_uuid_list_head;
-
-    List_Entry fence_uuid_list_head;
-
-    List_Entry mac_prefix_list_head;
-
-    List_Entry geo_fence_list_entry;
-
-} sgeo_fence_list_node;
-
-typedef sgeo_fence_list_node *pgeo_fence_list_node;
-
-
-typedef struct {
-
-    char uuid[UUID_LENGTH];
-
-    int threshold;
-
-    List_Entry uuid_list_entry;
-
-} suuid_list_node;
-
-typedef suuid_list_node *puuid_list_node;
-
-
-typedef struct {
-
-    char mac_address[LENGTH_OF_MAC_ADDRESS];
-
-    /* The entry of the mac list */
-    List_Entry mac_list_entry;
-
-    /* The entry of the rssi list */
-    List_Entry rssi_list_entry;
-
-} stracked_mac_list_node;
-
-typedef stracked_mac_list_node *ptracked_mac_list_node;
-
-
-typedef struct {
-
-    char mac_prefix[LENGTH_OF_MAC_ADDRESS];
-
-    List_Entry mac_prefix_list_entry;
-
-} smac_prefix_list_node;
-
-typedef smac_prefix_list_node *pmac_prefix_list_node;
-
-
-typedef struct {
-
-    char uuid[UUID_LENGTH];
-
-    int rssi;
-
-    int first_time;
-
-    int last_time;
-
-    List_Entry rssi_list_entry;
-
-} srssi_list_node;
-
-typedef srssi_list_node *prssi_list_node;
-
-
-typedef struct {
-
-    List_Entry geo_fence_mac_prefix_list_entry;
-
-    List_Entry geo_fence_mac_prefix_list_node;
-
-} sgeo_fence_mac_prefix_list_node;
-
-typedef sgeo_fence_mac_prefix_list_node *pgeo_fence_mac_prefix_list_node;
-
-
 /*
   geo_fence_routine:
 
@@ -251,6 +223,24 @@ void *geo_fence_routine(void *_geo_fence_config);
 
  */
 static void *process_geo_fence_routine(void *_pkt_content);
+
+
+/*
+  check_tracking_object_data_routine:
+
+     This function is executed by worker threads when processing filtering of
+     invalid mac addresses.
+
+  Parameters:
+
+     _pkt_content - The pointer points to the pkt content.
+
+  Return value:
+
+     None
+
+ */
+static void *check_tracking_object_data_routine(void *_pkt_content);
 
 
 /*
@@ -346,8 +336,7 @@ static ErrorCode free_geo_fence_list_node(
      ErrorCode
 
  */
-static ErrorCode init_tracked_mac_list_node(
-                                  ptracked_mac_list_head tracked_mac_list_head);
+static ErrorCode init_tracked_mac_list_node(ptracked_mac_list_node tracked_mac_list_head);
 
 
 /*
@@ -366,41 +355,7 @@ static ErrorCode init_tracked_mac_list_node(
 
  */
 static ErrorCode free_tracked_mac_list_node(
-                                  ptracked_mac_list_head tracked_mac_list_head);
-
-
-/*
-  init_rssi_list_node:
-
-     This function initialize rssi list node by initializing rssi list node.
-
-  Parameters:
-
-     rssi_list_node - The pointer points to the rssi list node.
-
-  Return value:
-
-     ErrorCode
-
- */
-static ErrorCode init_rssi_list_node(prssi_list_node rssi_list_node);
-
-
-/*
-  free_rssi_list_node:
-
-     This function free the rssi list node by initializing rssi list node.
-
-  Parameters:
-
-     rssi_list_node - The pointer points to the rssi list node.
-
-  Return value:
-
-     ErrorCode
-
- */
-static ErrorCode free_rssi_list_node(prssi_list_node rssi_list_node);
+                                  ptracked_mac_list_node tracked_mac_list_head);
 
 
 /*
@@ -454,7 +409,7 @@ static ErrorCode free_uuid_list_node(puuid_list_node uuid_list_node);
      ErrorCode
 
  */
-static ErrorCode init_mac_prefix_node(pmac_prefix_node mac_prefix_node);
+static ErrorCode init_mac_prefix_node(pmac_prefix_list_node mac_prefix_node);
 
 
 /*
@@ -472,126 +427,7 @@ static ErrorCode init_mac_prefix_node(pmac_prefix_node mac_prefix_node);
      ErrorCode
 
  */
-static ErrorCode free_mac_prefix_node(pmac_prefix_node mac_prefix_node);
-
-
-/*
-  init_geo_fence_mac_prefix_list_node:
-
-     This function initialize geo fence mac prefix list node by initializing geo
-     fence mac prefix list entry and geo fence mac prefix list node entry.
-
-  Parameters:
-
-     geo_fence_mac_prefix_list_node - The pointer points to the geo fence list
-                                      node.
-
-  Return value:
-
-     ErrorCode
-
- */
-static ErrorCode init_pgeo_fence_mac_prefix_list_node(
-                pgeo_fence_mac_prefix_list_node geo_fence_mac_prefix_list_node);
-
-
-/*
-  free_geo_fence_mac_prefix_list_node:
-
-     This function free the geo fence mac prefix list node by initializing geo
-     fence mac prefix list entry and geo fence mac prefix list node entry.
-
-  Parameters:
-
-     geo_fence_mac_prefix_list_node - The pointer points to the geo fence list
-                                      node.
-
-  Return value:
-
-     ErrorCode
-
- */
-static ErrorCode free_pgeo_fence_mac_prefix_list_node(
-                pgeo_fence_mac_prefix_list_node geo_fence_mac_prefix_list_node);
-
-
-/*
-  is_in_geo_fence:
-
-     This function check whether the geo fence is in the geo fence list.
-
-  Parameters:
-
-     geo_fence_list - The pointer points to the geo fence list.
-     geo_fence_id   - The id of the geo fence.
-
-  Return value:
-
-     If it find the geo_fence, it will return its pointer of the node or it will
-     return NULL.
-
- */
-static pgeo_fence_list_node is_in_geo_fence_list(
-                         pgeo_fence_list_node geo_fence_list, int geo_fence_id);
-
-
-/*
-  is_in_geo_fence:
-
-     This function check whether the uuid is in the uuid list.
-
-  Parameters:
-
-     uuid - The pointer points to the uuid.
-
-  Return value:
-
-     If it find the uuid, it will return its pointer of the node or it will
-     return NULL.
-
- */
-static puuid_list_node is_in_geo_fence(char *uuid);
-
-
-/*
-  is_in_mac_list:
-
-     This function check whether the mac address is in the tracked mac list.
-
-  Parameters:
-
-     geo_fence_config - The pointer points to the geo fence config.
-     mac_address - The pointer points to the mac address.
-
-  Return value:
-
-     If it find the mac, it will return its pointer of the node or it will
-     return NULL.
-
- */
-static ptracked_mac_list_head is_in_mac_list(pgeo_fence_config geo_fence_config,
-                                             char *mac_address);
-
-
-/*
-  is_in_rssi_list:
-
-     This function check whether the uuid is in the rssi list.
-
-  Parameters:
-
-     tracked_mac_list_head - The pointer points to the tracked mac list head.
-     uuid - The pointer points to the uuid.
-
-  Return value:
-
-     If it find the uuid, it will return its pointer of the node or it will
-     return NULL.
-
- */
-static prssi_list_node is_in_rssi_list(
-                                   ptracked_mac_list_head tracked_mac_list_head,
-                                   char *uuid);
+static ErrorCode free_mac_prefix_node(pmac_prefix_list_node mac_prefix_node);
 
 
 #endif
