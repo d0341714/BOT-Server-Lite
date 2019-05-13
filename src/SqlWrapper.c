@@ -626,11 +626,12 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                          "(object_mac_address, " \
                          "lbeacon_uuid, " \
                          "rssi, " \
+                         "push_button, " \
                          "initial_timestamp, " \
                          "final_timestamp, " \
                          "server_time_offset) " \
                          "VALUES " \
-                         "(%s, %s, %s, " \
+                         "(%s, %s, %s, %s, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
                          "%d);";
@@ -644,6 +645,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     char *initial_timestamp_GMT = NULL;
     char *final_timestamp_GMT = NULL;
     char *rssi = NULL;
+    char *push_button = NULL;
     int current_time = get_system_time();
 
     memset(temp_buf, 0, sizeof(temp_buf));
@@ -692,6 +694,10 @@ ErrorCode SQL_update_object_tracking_data(void *db,
             string_end = strstr(rssi, DELIMITER_SEMICOLON);
             *string_end = '\0';
 
+            push_button = string_end + 1;
+            string_end = strstr(push_button, DELIMITER_SEMICOLON);
+            *string_end = '\0';
+
             /* Create SQL statement */
             memset(sql, 0, sizeof(sql));
             sprintf(sql, sql_template,
@@ -699,6 +705,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                                     strlen(object_mac_address)),
                     PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid)),
                     PQescapeLiteral(conn, rssi, strlen(rssi)),
+                    PQescapeLiteral(conn, push_button, strlen(push_button)),
                     PQescapeLiteral(conn, initial_timestamp_GMT,
                                     strlen(initial_timestamp_GMT)),
                     PQescapeLiteral(conn, final_timestamp_GMT,

@@ -348,9 +348,9 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
 
            lbeacon_uuid;lbeacon_datetime,lbeaacon_ip;object_type; \
            object_number;object_mac_address_1;initial_timestamp_GMT_1; \
-           final_timestamp_GMT_1;rssi_1;object_type;object_number; \
-           object_mac_address_2;initial_timestamp_GMT_2; \
-           final_timestamp_GMT_2;rssi_2;
+           final_timestamp_GMT_1;rssi_1;push_button_1;object_type; \
+           object_number;object_mac_address_2;initial_timestamp_GMT_2; \
+           final_timestamp_GMT_2;rssi_2;push_button_2;
 
      buf_len - Length in number of bytes of buf input string
 
