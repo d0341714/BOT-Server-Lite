@@ -51,6 +51,9 @@ int main(int argc, char **argv){
 
     int return_value;
 
+    /* The flag is to know if any routines are processed in this while loop */
+    bool did_work;
+
     /* The pkt type to be send */
     int send_pkt_type;
 
@@ -261,7 +264,7 @@ int main(int argc, char **argv){
     geo_fence_config.recv_port = config.send_port;
     geo_fence_config.api_recv_port = config.recv_port;
     return_value = startThread( &GeoFence_thread, geo_fence_routine, &geo_fence_config);
-    
+
 
     last_polling_object_tracking_time = 0;
     last_polling_LBeacon_for_HR_time = 0;
@@ -269,11 +272,13 @@ int main(int argc, char **argv){
     /* The while loop that keeps the program running */
     while(ready_to_work == true){
 
+        did_work = false;
+
         current_time = get_system_time();
 
         /* If it is the time to poll health reports from LBeacons, get a
            thread to do this work */
-        if(current_time - last_polling_object_tracking_time >
+        if(current_time - last_polling_object_tracking_time >=
            config.period_between_RFTOD){
 
             /* Pull object tracking object data */
@@ -286,6 +291,7 @@ int main(int argc, char **argv){
             command_msg[0] = (char)send_pkt_type;
 
 //#ifdef debugging
+            display_time();
             printf("Send Request for Tracked Object Data\n");
 //#endif
 
@@ -295,8 +301,10 @@ int main(int argc, char **argv){
 
             /* Update the last_polling_object_tracking_time */
             last_polling_object_tracking_time = current_time;
+
+            did_work = true;
         }
-        else if(current_time - last_polling_LBeacon_for_HR_time >
+        else if(current_time - last_polling_LBeacon_for_HR_time >=
                 config.period_between_RFHR){
 
             /* Polling for health reports. */
@@ -308,6 +316,7 @@ int main(int argc, char **argv){
             command_msg[0] = (char)send_pkt_type;
 
 //#ifdef debugging
+            display_time();
             printf("Send Request for Health Report\n");
 //#endif
 
@@ -317,10 +326,14 @@ int main(int argc, char **argv){
 
             /* Update the last_polling_LBeacon_for_HR_time */
             last_polling_LBeacon_for_HR_time = get_system_time();
+
+            did_work = true;
         }
-        else{
+
+        if(did_work == false){
             Sleep(WAITING_TIME);
         }
+
     }
 
     /* The program is going to be ended. Free the connection of Wifi */
@@ -529,15 +542,15 @@ void *sort_priority_list(ServerConfig *config, BufferListHead *list_head){
     List_Entry *list_pointer,
                *next_list_pointer;
 
-    List_Entry critical_priority_entry, high_priority_entry,
-               normal_priority_entry, low_priority_entry;
+    List_Entry critical_priority_head, high_priority_head,
+               normal_priority_head, low_priority_head;
 
     BufferListHead *current_head, *next_head;
 
-    init_entry( &critical_priority_entry);
-    init_entry( &high_priority_entry);
-    init_entry( &normal_priority_entry);
-    init_entry( &low_priority_entry);
+    init_entry( &critical_priority_head);
+    init_entry( &high_priority_head);
+    init_entry( &normal_priority_head);
+    init_entry( &low_priority_head);
 
     pthread_mutex_lock( &list_head -> list_lock);
 
@@ -551,42 +564,42 @@ void *sort_priority_list(ServerConfig *config, BufferListHead *list_head){
 
         if(current_head -> priority_nice == config -> critical_priority)
 
-            insert_list_tail( list_pointer, &critical_priority_entry);
+            insert_list_tail( list_pointer, &critical_priority_head);
 
         else if(current_head -> priority_nice == config -> high_priority)
 
-            insert_list_tail( list_pointer, &high_priority_entry);
+            insert_list_tail( list_pointer, &high_priority_head);
 
         else if(current_head -> priority_nice == config -> normal_priority)
 
-            insert_list_tail( list_pointer, &normal_priority_entry);
+            insert_list_tail( list_pointer, &normal_priority_head);
 
         else if(current_head -> priority_nice == config -> low_priority)
 
-            insert_list_tail( list_pointer, &low_priority_entry);
+            insert_list_tail( list_pointer, &low_priority_head);
 
     }
 
-    if(is_entry_list_empty(&critical_priority_entry) == false){
-        list_pointer = critical_priority_entry.next;
+    if(is_entry_list_empty(&critical_priority_head) == false){
+        list_pointer = critical_priority_head.next;
         remove_list_node(list_pointer -> prev);
         concat_list( &list_head -> priority_list_entry, list_pointer);
     }
 
-    if(is_entry_list_empty(&high_priority_entry) == false){
-        list_pointer = high_priority_entry.next;
+    if(is_entry_list_empty(&high_priority_head) == false){
+        list_pointer = high_priority_head.next;
         remove_list_node(list_pointer -> prev);
         concat_list( &list_head -> priority_list_entry, list_pointer);
     }
 
-    if(is_entry_list_empty(&normal_priority_entry) == false){
-        list_pointer = normal_priority_entry.next;
+    if(is_entry_list_empty(&normal_priority_head) == false){
+        list_pointer = normal_priority_head.next;
         remove_list_node(list_pointer -> prev);
         concat_list( &list_head -> priority_list_entry, list_pointer);
     }
 
-    if(is_entry_list_empty(&low_priority_entry) == false){
-        list_pointer = low_priority_entry.next;
+    if(is_entry_list_empty(&low_priority_head) == false){
+        list_pointer = low_priority_head.next;
         remove_list_node(list_pointer -> prev);
         concat_list( &list_head -> priority_list_entry, list_pointer);
     }
@@ -598,6 +611,7 @@ void *sort_priority_list(ServerConfig *config, BufferListHead *list_head){
 
 }
 
+
 void *CommUnit_routine(){
 
     /* The last reset time */
@@ -608,6 +622,9 @@ void *CommUnit_routine(){
     Threadpool thpool;
 
     int return_error_value;
+
+    /* The flag is to know if buffer nodes are processed in this while loop */
+    bool did_work;
 
     /* The pointer point to the current priority buffer list entry */
     List_Entry *current_entry, *list_entry;
@@ -640,6 +657,8 @@ void *CommUnit_routine(){
 
     /* When there is no dead thead, do the work. */
     while(ready_to_work == true){
+
+        did_work = false;
 
         current_time = get_system_time();
 
@@ -689,6 +708,7 @@ void *CommUnit_routine(){
                                                          current_head ->
                                                          priority_nice);
 
+                    did_work = true;
                     break;
                 }
             }
@@ -738,6 +758,7 @@ void *CommUnit_routine(){
                                                      current_head ->
                                                      priority_nice);
 
+                did_work = true;
                 break;
             }
         }
@@ -749,6 +770,9 @@ void *CommUnit_routine(){
 
     } /* End while(ready_to_work == true) */
 
+    if(did_work == false){
+        Sleep(WAITING_TIME);
+    }
 
     /* Destroy the thread pool */
     thpool_destroy(thpool);
@@ -944,7 +968,7 @@ void *process_api_routine(void *_buffer_node){
                        current_node -> content,
                        strlen(current_node -> content));
 
-            
+
             if(strncmp(current_data_pointer, GEO_FENCE_TOPIC,
                        strlen(GEO_FENCE_TOPIC)) == 0){
 
@@ -1349,6 +1373,7 @@ void *process_wifi_receive(){
 
                             case request_to_join:
 #ifdef debugging
+                                display_time();
                                 printf("Get Join request from Gateway.\n");
 #endif
                                 pthread_mutex_lock(&NSI_receive_buffer_list_head
@@ -1362,6 +1387,7 @@ void *process_wifi_receive(){
 
                             case tracked_object_data:
 #ifdef debugging
+                                display_time();
                                 printf("Get Tracked Object Data from Gateway\n")
                                 ;
 #endif
@@ -1375,6 +1401,7 @@ void *process_wifi_receive(){
 
                             case health_report:
 #ifdef debugging
+                                display_time();
                                 printf("Get Health Report from Gateway\n");
 #endif
                                 pthread_mutex_lock(&BHM_receive_buffer_list_head
@@ -1397,6 +1424,7 @@ void *process_wifi_receive(){
 
                             case tracked_object_data:
 #ifdef debugging
+                                display_time();
                                 printf("Get Tracked Object Data from LBeacon\n")
                                 ;
 #endif
@@ -1410,6 +1438,7 @@ void *process_wifi_receive(){
 
                             case health_report:
 #ifdef debugging
+                                display_time();
                                 printf("Get Health Report from LBeacon\n");
 #endif
                                 pthread_mutex_lock(&BHM_receive_buffer_list_head
@@ -1442,6 +1471,7 @@ void *process_wifi_receive(){
                             case update_topic_data:
                             case request_data:
 #ifdef debugging
+                                display_time();
                                 printf("Get api message from the module\n");
 #endif
                                 pthread_mutex_lock(&API_receive_buffer_list_head
@@ -1464,10 +1494,6 @@ void *process_wifi_receive(){
                         break;
                 }
             }
-        }
-        else if(temppkt.type == NONE){
-            /* If there is no packet received, Sleep a short time */
-            Sleep(WAITING_TIME);
         }
         else{
             Sleep(WAITING_TIME);

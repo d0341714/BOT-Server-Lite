@@ -395,19 +395,22 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "INSERT INTO lbeacon_table " \
                          "(uuid, " \
+                         "ip_address, " \
                          "health_status, " \
                          "gateway_ip_address, " \
                          "registered_timestamp, " \
                          "last_report_timestamp) " \
                          "VALUES " \
-                         "(%s, \'%d\', %s, " \
+                         "(%s, %s, \'%d\', %s, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
                          "NOW()) " \
                          "ON CONFLICT (uuid) " \
-                         "DO UPDATE SET health_status = \'%d\', " \
+                         "DO UPDATE SET ip_address = %s, " \
+                         "health_status = \'%d\', " \
                          "gateway_ip_address = %s, " \
                          "last_report_timestamp = NOW() ;";
     char *uuid = NULL;
+    char *lbeacon_ip = NULL;
     HealthStatus health_status = S_NORMAL_STATUS;
     char *gateway_ip = NULL;
     char *registered_timestamp_GMT = NULL;
@@ -442,14 +445,20 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
         string_end = strstr(registered_timestamp_GMT, DELIMITER_SEMICOLON);
         *string_end = '\0';
 
+        lbeacon_ip = string_end + 1;
+        string_end = strstr(lbeacon_ip, DELIMITER_SEMICOLON);
+        *string_end = '\0';
+
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_template,
                 PQescapeLiteral(conn, uuid, strlen(uuid)),
+                PQescapeLiteral(conn, lbeacon_ip, strlen(lbeacon_ip)),
                 health_status,
                 PQescapeLiteral(conn, gateway_ip, strlen(gateway_ip)),
                 PQescapeLiteral(conn, registered_timestamp_GMT,
                                 strlen(registered_timestamp_GMT)),
+                PQescapeLiteral(conn, lbeacon_ip, strlen(lbeacon_ip)),
                 health_status,
                 PQescapeLiteral(conn, gateway_ip, strlen(gateway_ip)));
 
@@ -618,13 +627,16 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                          "lbeacon_uuid, " \
                          "rssi, " \
                          "initial_timestamp, " \
-                         "final_timestamp) " \
+                         "final_timestamp, " \
+                         "server_time_offset) " \
                          "VALUES " \
                          "(%s, %s, %s, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
-                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval);";
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
+                         "%d);";
     char *lbeacon_uuid = NULL;
-    char *gateway_ip = NULL;
+    char *lbeacon_ip = NULL;
+    char *lbeacon_timestamp = NULL;
     char *object_type = NULL;
     char *object_number = NULL;
     int numbers = 0;
@@ -632,6 +644,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     char *initial_timestamp_GMT = NULL;
     char *final_timestamp_GMT = NULL;
     char *rssi = NULL;
+    int current_time = get_system_time();
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -640,8 +653,12 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     string_end = strstr(lbeacon_uuid, DELIMITER_SEMICOLON);
     *string_end = '\0';
 
-    gateway_ip = string_end + 1;
-    string_end = strstr(gateway_ip, DELIMITER_SEMICOLON);
+    lbeacon_timestamp = string_end + 1;
+    string_end = strstr(lbeacon_timestamp, DELIMITER_SEMICOLON);
+    *string_end = '\0';
+
+    lbeacon_ip = string_end + 1;
+    string_end = strstr(lbeacon_ip, DELIMITER_SEMICOLON);
     *string_end = '\0';
 
     SQL_begin_transaction(db);
@@ -685,7 +702,9 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                     PQescapeLiteral(conn, initial_timestamp_GMT,
                                     strlen(initial_timestamp_GMT)),
                     PQescapeLiteral(conn, final_timestamp_GMT,
-                                    strlen(final_timestamp_GMT)));
+                                    strlen(final_timestamp_GMT)),
+                    current_time - atoi(lbeacon_timestamp));
+                    
 
             /* Execute SQL statement */
             ret_val = SQL_execute(db, sql);

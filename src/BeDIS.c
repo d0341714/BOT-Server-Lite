@@ -131,3 +131,21 @@ int get_system_time(){
 
     return system_time;
 }
+
+int display_time(void){
+
+    // variables to store date and time components
+    int hours, minutes, seconds, day, month, year;
+
+    // time_t is arithmetic time type
+    time_t now;
+
+    // Obtain current time
+    // time() returns the current time of the system as a time_t value
+    time(&now);
+
+    // Convert to local time format and print to stdout
+    printf("%s", ctime(&now));
+
+    return 0;
+}
