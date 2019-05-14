@@ -21,7 +21,7 @@
 
   Version:
 
-     2.0, 20190415
+     2.0, 20190514
 
   Abstract:
 
@@ -250,8 +250,8 @@ typedef enum pkt_types {
     /* For api */
 
     /* Public */
-    add_topic = 11,
-    remove_topic = 12,
+    add_data_owner = 11,
+    remove_data_owner = 12,
     update_topic_data = 13,
 
     /* Subscription */
