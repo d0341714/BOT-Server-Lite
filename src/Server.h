@@ -116,10 +116,13 @@ typedef struct {
     /* A port that the database is listening on for the Server to send to */
     int database_port;
 
+	/* The name of the database */
     char database_name[MAXIMUM_DATABASE_INFO];
 
+	/* The account for accessing to the database */
     char database_account[MAXIMUM_DATABASE_INFO];
 
+	/* The password for accessing to the database */
     char database_password[MAXIMUM_DATABASE_INFO];
 
     /* Priority levels at which buffer lists are processed by the worker threads
@@ -261,7 +264,7 @@ bool initialization_failed;
 int last_polling_LBeacon_for_HR_time;
 int last_polling_object_tracking_time;
 
-/* API Topic id */
+/* API data owner id */
 int geo_fence_data_topic_id;
 int tracked_object_data_topic_id;
 
@@ -529,7 +532,7 @@ ErrorCode Wifi_init(char *IPaddress);
 /*
   Wifi_free:
 
-     When called, this function frees the queue of the Wi-Fi pkts and sockets.
+     This function frees the queue of the Wi-Fi pkts and sockets.
 
   Parameters:
 

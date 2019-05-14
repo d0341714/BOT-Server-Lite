@@ -22,7 +22,7 @@
 
   Version:
 
-     1.0, 20190307
+     1.0, 20190514
 
   Abstract:
 
@@ -72,6 +72,7 @@ int main(int argc, char **argv){
     /* The thread to listen for messages from Wi-Fi interface */
     pthread_t wifi_listener;
 
+	/* The  thread to process the geo fence routine */
     pthread_t GeoFence_thread;
 
     /* Initialize flags */
@@ -80,7 +81,7 @@ int main(int argc, char **argv){
     initialization_failed            = false;
     ready_to_work                    = true;
 
-    /* Initialize topic id */
+    /* Initialize data owner id */
     geo_fence_data_topic_id          = -1;
     tracked_object_data_topic_id     = -1;
 
@@ -95,19 +96,23 @@ int main(int argc, char **argv){
         return E_OPEN_FILE;
     }
 
+#ifdef debugging
     printf("Mempool Initializing\n");
+#endif
 
     /* Initialize the memory pool */
-    printf("Buffer Node [%d]\n", sizeof(BufferNode));
     if(mp_init( &node_mempool, sizeof(BufferNode), SLOTS_IN_MEM_POOL)
        != MEMORY_POOL_SUCCESS){
 
         return E_MALLOC;
     }
-
+#ifdef debugging
     printf("Mempool Initialized\n");
+#endif
 
+#ifdef debugging
     printf("Start connect to Database\n");
+#endif
 
     /* Open DB */
 
@@ -124,9 +129,13 @@ int main(int argc, char **argv){
 
     SQL_open_database_connection(database_argument, &Server_db);
 
+#ifdef debugging
     printf("Database connected\n");
+#endif
 
+#ifdef debugging
     printf("Initialize buffer lists\n");
+#endif
 
     /* Initialize the address map*/
     init_Address_Map( &Gateway_address_map);
@@ -179,17 +188,24 @@ int main(int argc, char **argv){
                       &priority_list_head.priority_list_entry);
 
     sort_priority_list(&config, &priority_list_head);
-
+#ifdef debugging
     printf("Buffer lists initialized\n");
+#endif
 
+#ifdef debugging
     printf("Initialize sockets\n");
+#endif
 
     /* Initialize the Wifi connection */
     if(return_value = Wifi_init(config.server_ip) != WORK_SUCCESSFULLY){
         /* Error handling and return */
         initialization_failed = true;
+
+#ifdef debugging
         printf("Fail to initialize sockets\n");
-        return E_WIFI_INIT_FAIL;
+#endif
+
+		return E_WIFI_INIT_FAIL;
     }
 
     return_value = startThread( &wifi_listener, (void *)process_wifi_receive,
@@ -201,13 +217,19 @@ int main(int argc, char **argv){
         return E_WIFI_INIT_FAIL;
     }
 
+#ifdef debugging
     printf("Sockets initialized\n");
+#endif
 
     NSI_initialization_complete = true;
 
+#ifdef debugging
     printf("Network Setup and Initialize success\n");
+#endif
 
+#ifdef debugging
     printf("Initialize Communication Unit\n");
+#endif
 
     /* Create the main thread of Communication Unit  */
     return_value = startThread( &CommUnit_thread, CommUnit_routine, NULL);
@@ -217,8 +239,9 @@ int main(int argc, char **argv){
         return return_value;
     }
 
-
+#ifdef debugging
     printf("Start Communication\n");
+#endif
 
     /* The while loop waiting for NSI and CommUnit to be ready */
     while(NSI_initialization_complete == false ||
@@ -290,10 +313,10 @@ int main(int argc, char **argv){
 
             command_msg[0] = (char)send_pkt_type;
 
-//#ifdef debugging
+#ifdef debugging
             display_time();
             printf("Send Request for Tracked Object Data\n");
-//#endif
+#endif
 
             /* broadcast to LBeacons */
             Gateway_Broadcast(&Gateway_address_map, command_msg,
@@ -315,10 +338,10 @@ int main(int argc, char **argv){
 
             command_msg[0] = (char)send_pkt_type;
 
-//#ifdef debugging
+#ifdef debugging
             display_time();
             printf("Send Request for Health Report\n");
-//#endif
+#endif
 
             /* broadcast to LBeacons */
             Gateway_Broadcast(&Gateway_address_map, command_msg,
@@ -351,8 +374,12 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
 
     FILE *file = fopen(file_name, "r");
     if (file == NULL) {
-        printf("Load config fail\n");
-        return E_OPEN_FILE;
+
+#ifdef debugging
+		printf("Load config fail\n");
+#endif
+
+		return E_OPEN_FILE;
     }
     else {
 
@@ -372,7 +399,10 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
             config_message_size = strlen(config_message);
 
         memcpy(config->server_ip, config_message, config_message_size);
+
+#ifdef debugging
         printf("Server IP [%s]\n", config->server_ip);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -384,59 +414,83 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
             config_message_size = strlen(config_message);
 
         memcpy(config->db_ip, config_message, config_message_size);
-        printf("Database IP [%s]\n", config->db_ip);
+
+#ifdef debugging
+		printf("Database IP [%s]\n", config->db_ip);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->allowed_number_nodes = atoi(config_message);
-        printf("Allow Number of Nodes [%d]\n", config->allowed_number_nodes);
+
+#ifdef debugging
+		printf("Allow Number of Nodes [%d]\n", config->allowed_number_nodes);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->period_between_RFHR = atoi(config_message);
-        printf("Periods between request for health report [%d]\n",
+
+#ifdef debugging
+		printf("Periods between request for health report [%d]\n",
                config->period_between_RFHR);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->period_between_RFTOD = atoi(config_message);
-        printf("Periods between request for tracked object data [%d]\n",
+
+#ifdef debugging
+		printf("Periods between request for tracked object data [%d]\n",
                 config->period_between_RFTOD);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->number_worker_threads = atoi(config_message);
-        printf("Number of worker threads [%d]\n",
+
+#ifdef debugging
+		printf("Number of worker threads [%d]\n",
                config->number_worker_threads);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->send_port = atoi(config_message);
-        printf("The destination port when sending [%d]\n", config->send_port);
+
+#ifdef debugging
+		printf("The destination port when sending [%d]\n", config->send_port);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->recv_port = atoi(config_message);
-        printf("The received port [%d]\n", config->recv_port);
+
+#ifdef debugging
+		printf("The received port [%d]\n", config->recv_port);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->database_port = atoi(config_message);
-        printf("The database port [%d]\n", config->database_port);
+
+#ifdef debugging
+		printf("The database port [%d]\n", config->database_port);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -488,30 +542,42 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->critical_priority = atoi(config_message);
+
+#ifdef debugging
         printf("The nice of critical priority is [%d]\n",
                config->critical_priority);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->high_priority = atoi(config_message);
-        printf("The nice of high priority is [%d]\n", config->high_priority);
+
+#ifdef debugging
+		printf("The nice of high priority is [%d]\n", config->high_priority);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->normal_priority = atoi(config_message);
-        printf("The nice of normal priority is [%d]\n",
+
+#ifdef debugging
+		printf("The nice of normal priority is [%d]\n",
                config->normal_priority);
+#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
         config->low_priority = atoi(config_message);
+
+#ifdef debugging
         printf("The nice of low priority is [%d]\n", config->low_priority);
+#endif
 
         fclose(file);
 
@@ -825,7 +891,9 @@ void *NSI_routine(void *_buffer_node){
 
     pthread_mutex_unlock( &NSI_send_buffer_list_head.list_lock);
 
+#ifdef debugging
     printf("%s join success\n", current_node -> net_address);
+#endif
 
     return (void *)NULL;
 }
@@ -904,7 +972,7 @@ void *process_api_routine(void *_buffer_node){
 
     int data_type;
 
-    int topic_id, subscriber_id;
+    int data_owner_id, subscriber_id;
 
     int return_value;
 
@@ -914,9 +982,8 @@ void *process_api_routine(void *_buffer_node){
 
     char data_content[WIFI_MESSAGE_LENGTH];
 
-    char *current_data_pointer = NULL, *saved_data_pointer = NULL;
-
-    char *return_data;
+    char *saved_data_pointer = NULL, 
+		 *return_data, *topic_name, *current_process_ip;
 
     /* read the pkt direction from higher 4 bits. */
     data_direction = from_server;
@@ -930,38 +997,46 @@ void *process_api_routine(void *_buffer_node){
 
     switch(data_type){
 
-        case add_topic:
+        case add_data_owner:
 
-            printf("Start add_topic\n");
+#ifdef debugging
+            printf("Start add_data_owner\n");
+#endif
 
-            current_data_pointer = strtok_s(data_content, DELIMITER_SEMICOLON, &saved_data_pointer);
+            topic_name = strtok_s(data_content, DELIMITER_SEMICOLON, &saved_data_pointer);
 
-            printf("IP: %s\nTopic: %s\nContent: %s\nSize: %d\n",
+#ifdef debugging
+            printf("IP: %s\nName: %s\nContent: %s\nSize: %d\n",
                                             current_node -> net_address,
-                                            current_data_pointer,
+                                            topic_name,
+                                            &current_node -> content[1],
+                                            current_node -> content_size -1);
+#endif
+
+            data_owner_id = SQL_update_api_topic(Server_db,
                                             &current_node -> content[1],
                                             current_node -> content_size -1);
 
-            topic_id = SQL_update_api_topic(Server_db,
-                                            &current_node -> content[1],
-                                            current_node -> content_size -1);
-
-            printf("Topic id: %d\n", topic_id);
+#ifdef debugging
+            printf("Data Owner id: %d\n", data_owner_id);
+#endif
 
             memset(current_node -> content, 0, WIFI_MESSAGE_LENGTH);
 
             current_node -> content[0] = ((data_direction & 0x0f ) << 4) +
                                          (data_type & 0x0f);
 
+#ifdef debugging
             printf("Before strlen: %d\n", strlen(&current_node -> content));
+#endif
 
-            if(topic_id > 0)
+            if(data_owner_id > 0)
                 sprintf(&current_node -> content[1], "%s;Success;%d;",
-                                                     current_data_pointer,
-                                                     topic_id);
+                                                     topic_name,
+                                                     data_owner_id);
             else
                 sprintf(&current_node -> content[1], "%s;Fail;",
-                                                     current_data_pointer);
+                                                     topic_name);
 
             udp_addpkt(&udp_config,
                        current_node -> net_address,
@@ -970,9 +1045,9 @@ void *process_api_routine(void *_buffer_node){
 
             break;
 
-        case remove_topic:
+        case remove_data_owner:
 
-            current_data_pointer = strtok_s(data_content, DELIMITER_SEMICOLON, &saved_data_pointer);
+            topic_name = strtok_s(data_content, DELIMITER_SEMICOLON, &saved_data_pointer);
 
             return_value = SQL_remove_api_topic(Server_db,
                                             &current_node -> content[1],
@@ -985,10 +1060,10 @@ void *process_api_routine(void *_buffer_node){
 
             if(return_value == WORK_SUCCESSFULLY)
                 sprintf(&current_node -> content[1], "%s;Success;",
-                                                     current_data_pointer);
+                                                     topic_name);
             else
                 sprintf(&current_node -> content[1], "%s;Fail;",
-                                                     current_data_pointer);
+                                                     topic_name);
 
             udp_addpkt(&udp_config,
                        current_node -> net_address,
@@ -999,7 +1074,7 @@ void *process_api_routine(void *_buffer_node){
 
         case add_subscriber:
 
-            current_data_pointer = strtok_s(data_content, DELIMITER_SEMICOLON, &saved_data_pointer);
+            topic_name = strtok_s(data_content, DELIMITER_SEMICOLON, &saved_data_pointer);
 
             subscriber_id = SQL_update_api_subscription(
                                             Server_db,
@@ -1013,17 +1088,17 @@ void *process_api_routine(void *_buffer_node){
 
             if(subscriber_id > 0)
                 sprintf(&current_node -> content[1], "%s;Success;%d;",
-                        current_data_pointer, subscriber_id);
+                        topic_name, subscriber_id);
             else
                 sprintf(&current_node -> content[1], "%s;Fail;",
-                        current_data_pointer);
+                        topic_name);
 
             udp_addpkt(&udp_config,
                        current_node -> net_address,
                        current_node -> content,
                        strlen(current_node -> content));
 
-			if(strncmp(current_data_pointer, GEO_FENCE_TOPIC,
+			if(strncmp(topic_name, GEO_FENCE_TOPIC,
                        strlen(GEO_FENCE_TOPIC)) == 0){
 
                 current_node -> content[0] = (update_topic_data & 0x0f) + ((from_server << 4) & 0xf0);
@@ -1035,9 +1110,11 @@ void *process_api_routine(void *_buffer_node){
 
                 sprintf(&current_node -> content[1], "%s;%s", GEO_FENCE_TOPIC, &data_content);
 
+#ifdef debugging
                 printf("returned Geo_Fence data: %s\nIP: %s\n", &current_node -> content[1], current_node -> net_address);
+#endif
 
-                udp_addpkt( &udp_config,
+				udp_addpkt( &udp_config,
                            current_node -> net_address,
                            current_node -> content,
                            strlen(current_node -> content));
@@ -1048,7 +1125,7 @@ void *process_api_routine(void *_buffer_node){
 
         case del_subscriber:
 
-            current_data_pointer = strtok_s(data_content, DELIMITER_SEMICOLON, &saved_data_pointer);
+            topic_name = strtok_s(data_content, DELIMITER_SEMICOLON, &saved_data_pointer);
 
             return_value = SQL_remove_api_subscription(
                                             Server_db,
@@ -1062,10 +1139,10 @@ void *process_api_routine(void *_buffer_node){
 
             if(return_value == WORK_SUCCESSFULLY)
                 sprintf(&current_node -> content[1], "%s;Success;",
-                                                     current_data_pointer);
+                                                     topic_name);
             else
                 sprintf(&current_node -> content[1], "%s;Fail;",
-                                                     current_data_pointer);
+                                                     topic_name);
 
             udp_addpkt(&udp_config,
                        current_node -> net_address,
@@ -1086,20 +1163,20 @@ void *process_api_routine(void *_buffer_node){
 
                 return_data = data_content;
 
-                printf ("Splitting return_data \"%s\":\n",return_data);
+                current_process_ip = strtok_s(return_data, DELIMITER_SEMICOLON, &saved_data_pointer);
 
-                current_data_pointer = strtok_s(return_data, DELIMITER_SEMICOLON, &saved_data_pointer);
+                while(current_process_ip != NULL){
 
-                while(current_data_pointer != NULL){
-
-                    printf ("Current Process IP: %s\n",current_data_pointer);
+#ifdef debugging
+                    printf ("Current Process IP: %s\n",current_process_ip);
+#endif
 
                     udp_addpkt(&udp_config,
-                               current_data_pointer,
+                               current_process_ip,
                                current_node -> content,
                                current_node -> content_size);
 
-                    current_data_pointer = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_data_pointer);
+                    current_process_ip = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_data_pointer);
                 }
 
             }
@@ -1453,16 +1530,16 @@ void *process_wifi_receive(){
                         break;
 
                     case from_modules:
-
+#ifdef debugging
                         printf("IP: %s\nContent: %s\nSize: %d\n",
                                                         new_node->net_address,
                                                         new_node->content,
                                                         new_node->content_size);
-
+#endif
                         switch (pkt_type) {
 
-                            case add_topic:
-                            case remove_topic:
+                            case add_data_owner:
+                            case remove_data_owner:
                             case add_subscriber:
                             case del_subscriber:
                             case update_topic_data:
