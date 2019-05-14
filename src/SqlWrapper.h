@@ -345,7 +345,7 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
 
      buf - pointer to an input string with the format below.
 
-           lbeacon_uuid;lbeacon_datetime,lbeaacon_ip;object_type; \
+           lbeacon_uuid;lbeacon_datetime;lbeacon_ip;object_type; \
            object_number;object_mac_address_1;initial_timestamp_GMT_1; \
            final_timestamp_GMT_1;rssi_1;object_type;object_number; \
            object_mac_address_2;initial_timestamp_GMT_2; \

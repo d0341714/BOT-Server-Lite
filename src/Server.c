@@ -968,28 +968,6 @@ void *process_api_routine(void *_buffer_node){
                        current_node -> content,
                        strlen(current_node -> content));
 
-
-            if(strncmp(current_data_pointer, GEO_FENCE_TOPIC,
-                       strlen(GEO_FENCE_TOPIC)) == 0){
-
-                current_node -> content[0] = (update_topic_data & 0x0f) + ((from_server << 4) & 0xf0);
-
-                memset(data_content, 0, WIFI_MESSAGE_LENGTH);
-
-                SQL_get_geo_fence(Server_db, &data_content,
-                                   &data_length);
-
-                sprintf(&current_node -> content[1], "%s;%s", GEO_FENCE_TOPIC, &data_content);
-
-                printf("returned Geo_Fence data: %s\nIP: %s\n", &current_node -> content[1], current_node -> net_address);
-
-                udp_addpkt( &udp_config,
-                           current_node -> net_address,
-                           current_node -> content,
-                           strlen(current_node -> content));
-
-            }
-
             break;
 
         case remove_topic:
@@ -1044,6 +1022,27 @@ void *process_api_routine(void *_buffer_node){
                        current_node -> net_address,
                        current_node -> content,
                        strlen(current_node -> content));
+
+			if(strncmp(current_data_pointer, GEO_FENCE_TOPIC,
+                       strlen(GEO_FENCE_TOPIC)) == 0){
+
+                current_node -> content[0] = (update_topic_data & 0x0f) + ((from_server << 4) & 0xf0);
+
+                memset(data_content, 0, WIFI_MESSAGE_LENGTH);
+
+                SQL_get_geo_fence(Server_db, &data_content,
+                                   &data_length);
+
+                sprintf(&current_node -> content[1], "%s;%s", GEO_FENCE_TOPIC, &data_content);
+
+                printf("returned Geo_Fence data: %s\nIP: %s\n", &current_node -> content[1], current_node -> net_address);
+
+                udp_addpkt( &udp_config,
+                           current_node -> net_address,
+                           current_node -> content,
+                           strlen(current_node -> content));
+
+            }
 
             break;
 
@@ -1110,8 +1109,6 @@ void *process_api_routine(void *_buffer_node){
     }
 
     mp_free( &node_mempool, current_node);
-
-    printf("[processing_api_routine] END\n");
 
     return (void *)NULL;
 

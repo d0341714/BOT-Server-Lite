@@ -235,9 +235,11 @@ static void *process_geo_fence_routine(void *_pkt_content){
                         pkt_content,
                         0);
     }
-    else if(topic_name != NULL && strncmp(topic_name, GEO_FENCE_TOPIC, strlen(GEO_FENCE_TOPIC)) == 0){
+    else if(topic_name != NULL && strncmp(topic_name, TRACKED_OBJECT_DATA_TOPIC, strlen(TRACKED_OBJECT_DATA_TOPIC)) == 0){
         
         uuid = strtok_s( NULL, DELIMITER_SEMICOLON, &save_ptr);
+
+		printf("[GeoFence] Current processing UUID: %s\n", uuid);
 
         current_list_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
@@ -260,7 +262,13 @@ static void *process_geo_fence_routine(void *_pkt_content){
 
                     sprintf(pkt_content_to_process->content, "%d;%s;%d;%s", current_list_ptr->id, "F", current_uuid_list_ptr->threshold, &pkt_content->content[1]);
 
+					printf("[GeoFence] Content: %s\n", pkt_content_to_process->content);
+
                     pkt_content_to_process -> content_size = strlen(pkt_content_to_process->content);
+
+					printf("[GeoFence] Size: %d\n", pkt_content_to_process -> content_size);
+
+					pkt_content_to_process ->geo_fence_config = geo_fence_config;
 
                     memcpy(pkt_content_to_process->ip_address, pkt_content->ip_address, NETWORK_ADDR_LENGTH);
 
@@ -286,7 +294,13 @@ static void *process_geo_fence_routine(void *_pkt_content){
 
                     sprintf(pkt_content_to_process->content, "%d;%s;%d;%s", current_list_ptr->id, "P", current_uuid_list_ptr->threshold, &pkt_content->content[1]);
 
+                    printf("[GeoFence] Content: %s\n", pkt_content_to_process->content);
+
                     pkt_content_to_process -> content_size = strlen(pkt_content_to_process->content);
+
+					printf("[GeoFence] Size: %d\n", pkt_content_to_process -> content_size);
+
+					pkt_content_to_process ->geo_fence_config = geo_fence_config;
 
                     memcpy(pkt_content_to_process->ip_address, pkt_content->ip_address, NETWORK_ADDR_LENGTH);
 
@@ -316,11 +330,13 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
     
     pgeo_fence_config geo_fence_config = pkt_content -> geo_fence_config;
 
-    List_Entry *current_list_entry;
+    List_Entry *current_list_entry, *current_mac_list_entry;
 
     sgeo_fence_list_node *current_list_ptr, *geo_fence_list_ptr;
 
-    char *current_ptr, *saved_ptr, *lbeacon_type, *mac_address;
+	smac_prefix_list_node *current_mac_prefix_list_ptr;
+
+    char *current_ptr, *saved_ptr, *uuid, *lbeacon_ip, *lbeacon_type, *mac_address;
 
     char content_for_processing[WIFI_MESSAGE_LENGTH];
 
@@ -338,11 +354,17 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
     
     sscanf(current_ptr, "%d", &geo_fence_id);
 
+	printf("[GeoFence] Geo Fence ID: %d\n[GeoFence] Length: %d\n", geo_fence_id, get_list_length(&geo_fence_config->geo_fence_list_head.geo_fence_list_entry));
+
     list_for_each(current_list_entry, &geo_fence_config->geo_fence_list_head.geo_fence_list_entry){
-        
+
+		printf("[GeoFence] current_list_entry\n");
+      
         geo_fence_list_ptr = ListEntry(current_list_entry, sgeo_fence_list_node, geo_fence_list_entry);
         
-        if(current_list_ptr->id == geo_fence_id){
+		printf("[GeoFence] current_list_ptr->id: %d\n", geo_fence_list_ptr->id);
+
+		if(current_list_ptr->id == geo_fence_id){
 
             geo_fence_list_ptr = current_list_ptr;
 
@@ -351,15 +373,36 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
     
     }
 
+	printf("[GeoFence] Exit\n");
+
     if(geo_fence_list_ptr == NULL){
+		printf("[GeoFence] Exit\n");
         return (void *)NULL;
     }
 
+	printf("[GeoFence] Start detect mac address\n");
+
     lbeacon_type = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+
+	printf("[GeoFence] LBeacon Fence Type: %s\n", lbeacon_type);
 
     current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
     sscanf(current_ptr, "%d", &threshold);
+
+	printf("[GeoFence] Threshold: %d\n", threshold);
+
+	current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+
+	uuid = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+
+	printf("[GeoFence] UUID: %s\n", uuid);
+
+	current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+
+	lbeacon_ip = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+
+	printf("[GeoFence] LBeacon IP: %s\n", lbeacon_ip);
 
     // Start processing received tracked object data
     
@@ -369,32 +412,48 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
 
         sscanf(current_ptr, "%d", &object_type);
 
+		printf("[GeoFence] Object Type: %d\n", object_type);
+
         current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
         sscanf(current_ptr, "%d", &number_of_objects);
 
-        do{
+		printf("[GeoFence] Number of Objects: %d\n", number_of_objects);
+
+        while(number_of_objects --){
 
             mac_address = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
-            current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+			current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
             current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
             current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
-            sscanf(current_ptr, "%d", &rssi);
+			sscanf(current_ptr, "%d", &rssi);
 
-            if(rssi >= threshold){
+			list_for_each(current_mac_list_entry, &geo_fence_list_ptr ->mac_prefix_list_head){
 
-                
+				printf("[GeoFence] In Mac Prefix\n");
+				current_mac_prefix_list_ptr = ListEntry(current_mac_list_entry, smac_prefix_list_node, mac_prefix_list_entry);
 
+				if((strncmp(mac_address, current_mac_prefix_list_ptr->mac_prefix, strlen(current_mac_prefix_list_ptr->mac_prefix)) == 0) && rssi >= threshold){
+					
+					printf("[GeoFence-Alert] %s %s %s %d\n", uuid, lbeacon_ip, mac_address, rssi);
 
-            }
+				}
+				printf("[GeoFence] End number_of_objects\n");
+			}
 
-        }while(number_of_objects --);
+			printf("[GeoFence] End number_of_objects\n[GeoFence] number_of_objects: %d\n", number_of_objects);
 
-    }while(object_type != max_type);
+        }
+
+		printf("[GeoFence] End number_of_objects\n");
+
+    }while(object_type != (max_type-1));
+
+	return (void *)NULL;
 
 }
 
@@ -502,6 +561,10 @@ static void *update_geo_fence(void *_pkt_content){
 
         perimeters = strtok_s(NULL, DELIMITER_SEMICOLON,
                               &saveptr);
+
+		geo_fence_list_node->id = geo_fence_id;
+
+		memcpy(geo_fence_list_node->name, name, strlen(name) * sizeof(char));
 
         printf("[GeoFence] Perimeters: [%s]\n", perimeters);
 
@@ -625,16 +688,28 @@ static void *update_geo_fence(void *_pkt_content){
             insert_list_tail( &mac_prefix_node -> mac_prefix_list_entry,
                               &geo_fence_list_node -> mac_prefix_list_head);
 
+			printf("[GeoFence] MAC_Prefix: %s\n", mac_prefix_node -> mac_prefix);
+
         }
+
+		printf("[GeoFence] Before Inserted\n");
 
         insert_list_tail( &geo_fence_list_node -> geo_fence_list_entry,
                           &geo_fence_list_head -> geo_fence_list_entry);
 
+		printf("[GeoFence] Inserted\n");
+
     }
+
+	printf("[GeoFence] Before Unlock\n");
 
     pthread_mutex_unlock( &geo_fence_config -> geo_fence_list_lock);
 
+	printf("[GeoFence] Unlock\n");
+
     mp_free( &geo_fence_config->pkt_content_mempool, pkt_content);
+
+	printf("[GeoFence] Last Line\n");
 
     return (void *)NULL;
 }
@@ -761,8 +836,12 @@ static void *process_api_recv(void *_geo_fence_config){
 
                         case update_topic_data:
 
+							printf("[GeoFence] pkt content for update data: [%s]\n", tmp_content);
+
                             topic = strtok_s( &tmp_content[1],
                                                      DELIMITER_SEMICOLON, &saved_ptr);
+
+							printf("[GeoFence] Topic: %s\n", topic);
 
                             tmp_addr = udp_hex_to_address(temppkt.address);
 
