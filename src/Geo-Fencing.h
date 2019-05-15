@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190415
+     1.0, 20190514
 
   Abstract:
 
@@ -44,6 +44,9 @@
 #define GEO_FENCING_H
 
 #include "BeDIS.h"
+
+/* When debugging is needed */
+//#define debugging
 
 
 typedef struct {
@@ -183,7 +186,7 @@ typedef spkt_content *ppkt_content;
   geo_fence_routine:
 
      The function is executed by the main thread. Initialize API and sockets for
-     Geo-Fence system.
+     the Geo-Fence system.
      * Sockets including UDP sender and receiver.
 
   Parameters:
@@ -336,7 +339,8 @@ static ErrorCode free_geo_fence_list_node(
      ErrorCode
 
  */
-static ErrorCode init_tracked_mac_list_node(ptracked_mac_list_node tracked_mac_list_head);
+static ErrorCode init_tracked_mac_list_node(ptracked_mac_list_node
+                                                         tracked_mac_list_head);
 
 
 /*

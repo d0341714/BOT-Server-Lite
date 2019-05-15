@@ -53,7 +53,7 @@
 #include "Geo-Fencing.h"
 
 /* When debugging is needed */
-#define debugging
+//#define debugging
 
 /* Server config file location and the config file definition. */
 
@@ -116,13 +116,13 @@ typedef struct {
     /* A port that the database is listening on for the Server to send to */
     int database_port;
 
-	/* The name of the database */
+    /* The name of the database */
     char database_name[MAXIMUM_DATABASE_INFO];
 
-	/* The account for accessing to the database */
+    /* The account for accessing to the database */
     char database_account[MAXIMUM_DATABASE_INFO];
 
-	/* The password for accessing to the database */
+    /* The password for accessing to the database */
     char database_password[MAXIMUM_DATABASE_INFO];
 
     /* Priority levels at which buffer lists are processed by the worker threads

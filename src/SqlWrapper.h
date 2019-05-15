@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190415
+     1.0, 20190514
 
   Abstract:
 
@@ -46,7 +46,7 @@
 #include <libpq-fe.h>
 
 /* When debugging is needed */
-#define debugging
+//#define debugging
 
 /* db lock */
 pthread_mutex_t db_lock;
@@ -364,9 +364,9 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
 
 /*
-  SQL_update_api_topic
+  SQL_update_api_data_owner
 
-     Updates the topic for the BOT system to maintain and check whether the
+     Updates the data owner for the BOT system to maintain and check whether the
      provider is still alive.
 
   Parameter:
@@ -381,16 +381,16 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
   Return Value:
 
-     int - If the topic update successfully, it will return it's id of the
-           topic. If failed, it will return -1.
+     int - If the data owner update successfully, it will return it's id in the
+           database. If failed, it will return -1.
 */
-int SQL_update_api_topic(void *db, char *buf, size_t buf_len);
+int SQL_update_api_data_owner(void *db, char *buf, size_t buf_len);
 
 
 /*
-  SQL_remove_api_topic
+  SQL_remove_api_data_owner
 
-     Remove the topic when the provider not alive or the provider send the
+     Remove the data owner when the provider not alive or the provider send the
      request to remove the topic.
 
   Parameter:
@@ -408,13 +408,13 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len);
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
-ErrorCode SQL_remove_api_topic(void *db, char *buf, size_t buf_len);
+ErrorCode SQL_remove_api_data_owner(void *db, char *buf, size_t buf_len);
 
 
 /*
-  SQL_get_api_topic_id
+  SQL_get_api_data_owner_id
 
-     This function uses name to get the id of the topic.
+     This function uses name to get the id of the data in the database.
 
   Parameter:
 
@@ -428,17 +428,17 @@ ErrorCode SQL_remove_api_topic(void *db, char *buf, size_t buf_len);
 
   Return Value:
 
-     int - If the topic update successfully, it will return it's id of the
-           topic. If failed, it will return -1.
+     int - If the function executed successfully, it will return it's id of the
+           data owner. If failed, it will return -1.
 */
-int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len);
+int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len);
 
 
 /*
   SQL_update_api_subscription
 
      Updates the subscriber for the BOT system to maintain and check where the
-     message needs to send when the topic update.
+     message needs to send when the data update.
 
   Parameter:
 
@@ -462,7 +462,7 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len);
   SQL_remove_api_subscription
 
      Remove the subscriber when the subscriber do not want get the message when
-     the topic update.
+     the data update.
 
   Parameter:
 
@@ -485,17 +485,19 @@ ErrorCode SQL_remove_api_subscription(void *db, char *buf, size_t buf_len);
 /*
   SQL_get_api_subscribers
 
-     This function uses topic id to get subscribers.
+     This function uses data owner id to get subscribers.
 
   Parameter:
 
      db - a pointer pointing to the connection to the database backend server
 
-     buf - pointer to an input string with the format below.
+     buf - The pointer points to an input string with the format below. After
+           collecting the ip address of subscribers, it will use for storing the
+           string of the list of the ip address
 
-           topic_id;
+           data_owner_id;
 
-     buf_len - Length in number of bytes of buf input string
+     buf_len - Length in number of bytes of the buf string
 
   Return Value:
 

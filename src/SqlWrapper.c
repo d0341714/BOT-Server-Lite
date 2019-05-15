@@ -18,8 +18,9 @@
 
      This file provides APIs for interacting with postgreSQL. This file contains
      programs to connect and disconnect databases, insert, query, update and
-     delete data in the database and some APIs for the BeDIS system use including
-     updating device status and object tracking data maintainance and updates.
+     delete data in the database and some APIs for the BeDIS system use
+     including updating device status and object tracking data maintainance and
+     updates.
 
   Version:
 
@@ -711,7 +712,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                     PQescapeLiteral(conn, final_timestamp_GMT,
                                     strlen(final_timestamp_GMT)),
                     current_time - atoi(lbeacon_timestamp));
-                    
+
 
             /* Execute SQL statement */
             ret_val = SQL_execute(db, sql);
@@ -731,28 +732,28 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 }
 
 
-int SQL_update_api_topic(void *db, char *buf, size_t buf_len){
+int SQL_update_api_data_owner(void *db, char *buf, size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char *string_begin;
-    char *string_end;
-    char *topic_name;
+    char *string_begin, *string_end;
+    char *topic_name = NULL;
     char *ip_address = NULL;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     PGresult *res;
     int topic_id;
-    char *sql_template = "INSERT INTO api_topic " \
-                         "(name, " \
-                         "ip_address) " \
-                         "VALUES " \
-                         "(%s, %s) " \
-                         "ON CONFLICT (name) " \
-                         "DO UPDATE SET ip_address = %s;";
+    char *sql_insert_template = "INSERT INTO api_data_owner " \
+                                "(name, " \
+                                "ip_address) " \
+                                "VALUES " \
+                                "(%s, %s) " \
+                                "ON CONFLICT (name) " \
+                                "DO UPDATE SET ip_address = %s;";
 
-    char *sql_topic_template = "SELECT id, name, ip_address FROM api_topic " \
-                               "where name = %s;";
+    char *sql_select_template = "SELECT id, name, ip_address FROM " \
+                                "api_data_owner " \
+                                "where name = %s;";
 
     memset(temp_buf, 0, WIFI_MESSAGE_LENGTH);
     memcpy(temp_buf, buf, buf_len);
@@ -773,7 +774,7 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len){
 
     /* Create SQL statement */
     memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_template,
+    sprintf(sql, sql_insert_template,
                 PQescapeLiteral(conn, topic_name, strlen(topic_name)),
                 PQescapeLiteral(conn, ip_address, strlen(ip_address)),
                 PQescapeLiteral(conn, ip_address, strlen(ip_address)));
@@ -783,14 +784,17 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len){
 
     if(WORK_SUCCESSFULLY != ret_val){
         SQL_rollback_transaction(db);
+#ifdef debugging
+        printf("SQL_execute failed: %s", PQerrorMessage(conn));
+#endif
         return -1;
     }
 
     SQL_commit_transaction(db);
 
     memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_topic_template,
-                PQescapeLiteral(conn, topic_name, strlen(topic_name)));
+    sprintf(sql, sql_select_template,
+                 PQescapeLiteral(conn, topic_name, strlen(topic_name)));
 
     res = PQexec(conn, sql);
 
@@ -814,14 +818,15 @@ int SQL_update_api_topic(void *db, char *buf, size_t buf_len){
 }
 
 
-ErrorCode SQL_remove_api_topic(void *db, char *buf, size_t buf_len){
+ErrorCode SQL_remove_api_data_owner(void *db, char *buf, size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     PGresult *res;
     int topic_id;
-    char *sql_template = "DELETE FROM api_topic where id = \'%d\' ;";
+    char *sql_delete_template = "DELETE FROM api_data_owner where id = \'%d\' ;"
+    ;
 
     sscanf(buf, "%d;", &topic_id);
 
@@ -831,13 +836,16 @@ ErrorCode SQL_remove_api_topic(void *db, char *buf, size_t buf_len){
 
     /* Create SQL statement */
     memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_template, topic_id);
+    sprintf(sql, sql_delete_template, topic_id);
 
     /* Execute SQL statement */
     ret_val = SQL_execute(db, sql);
 
     if(WORK_SUCCESSFULLY != ret_val){
         SQL_rollback_transaction(db);
+#ifdef debugging
+        printf("SQL_execute failed: %s", PQerrorMessage(conn));
+#endif
         return E_SQL_EXECUTE;
     }
 
@@ -848,7 +856,7 @@ ErrorCode SQL_remove_api_topic(void *db, char *buf, size_t buf_len){
 }
 
 
-int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len){
+int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
@@ -857,8 +865,8 @@ int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len){
     int topic_id, rows;
     char *topic_name, *string_begin, *string_end;
 
-    char *sql_template = "SELECT id, name, ip_address FROM "\
-                         "api_subscriber where name = %s ;";
+    char *sql_select_template = "SELECT id, name, ip_address FROM "\
+                                "api_subscriber where name = %s ;";
 
     string_begin = string_end + 1;
     string_end = strstr(string_begin, DELIMITER_SEMICOLON);
@@ -869,7 +877,7 @@ int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len){
     SQL_begin_transaction(db);
 
     memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_template,
+    sprintf(sql, sql_select_template,
                  PQescapeLiteral(conn, topic_name, strlen(topic_name)));
 
     res = PQexec(conn, sql);
@@ -877,6 +885,7 @@ int SQL_get_api_topic_id(void *db, char *buf, size_t buf_len){
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
         SQL_rollback_transaction(db);
         PQclear(res);
+
 #ifdef debugging
         printf("SQL_execute failed: %s", PQerrorMessage(conn));
 #endif
@@ -904,18 +913,17 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char *string_begin;
-    char *string_end;
+    char *string_begin, *string_end;
     char *ip_address, *topic_id_char;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     PGresult *res;
     int topic_id, subscriber_id, rows;
-    char *sql_template = "INSERT INTO api_subscriber " \
-                         "(topic_id, " \
-                         "ip_address) " \
-                         "VALUES " \
-                         "(\'%d\', %s) ;";
+    char *sql_insert_template = "INSERT INTO api_subscriber " \
+                                "(topic_id, " \
+                                "ip_address) " \
+                                "VALUES " \
+                                "(\'%d\', %s) ;";
 
     char *sql_subscription_template = "SELECT id, topic_id, ip_address FROM "\
                                       "api_subscriber where topic_id = \'%d\' "\
@@ -951,17 +959,19 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 
         SQL_rollback_transaction(db);
 
+#ifdef debugging
+        printf("SQL_execute failed: %s", PQerrorMessage(conn));
+#endif
+
         PQclear(res);
 
     }
 
     if(PQntuples(res) == 0){
 
-        printf("In\n");
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
-        sprintf(sql, sql_template,
-                topic_id,
+        sprintf(sql, sql_insert_template, topic_id,
                 PQescapeLiteral(conn, ip_address, strlen(ip_address)));
 
         /* Execute SQL statement */
@@ -969,6 +979,11 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 
         if(WORK_SUCCESSFULLY != ret_val){
             SQL_rollback_transaction(db);
+
+#ifdef debugging
+            printf("SQL_execute failed: %s", PQerrorMessage(conn));
+#endif
+
             return -1;
         }
 
@@ -1003,7 +1018,8 @@ ErrorCode SQL_remove_api_subscription(void *db, char *buf, size_t buf_len){
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     PGresult *res;
     int subscriber_id;
-    char *sql_template = "DELETE FROM api_subscriber where id = \'%d\' ;";
+    char *sql_delete_template = "DELETE FROM api_subscriber where id = \'%d\' ;"
+    ;
 
     sscanf(buf, "%d;", &subscriber_id);
 
@@ -1013,13 +1029,18 @@ ErrorCode SQL_remove_api_subscription(void *db, char *buf, size_t buf_len){
 
     /* Create SQL statement */
     memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_template, subscriber_id);
+    sprintf(sql, sql_delete_template, subscriber_id);
 
     /* Execute SQL statement */
     ret_val = SQL_execute(db, sql);
 
     if(WORK_SUCCESSFULLY != ret_val){
         SQL_rollback_transaction(db);
+
+#ifdef debugging
+        printf("SQL_execute failed: %s", PQerrorMessage(conn));
+#endif
+
         return E_SQL_EXECUTE;
     }
 
@@ -1035,12 +1056,12 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     PGresult *res;
-    int topic_id, rows, i;
+    int topic_id, rows, current_row;
 
     char *sql_template = "SELECT id, topic_id, ip_address FROM "\
                          "api_subscriber where topic_id = \'%d\' ;";
 
-    topic_id = SQL_get_api_topic_id(db, buf, *buf_len);
+    topic_id = SQL_get_api_data_owner_id(db, buf, *buf_len);
 
     SQL_begin_transaction(db);
 
@@ -1052,9 +1073,11 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
         SQL_rollback_transaction(db);
         PQclear(res);
+
 #ifdef debugging
         printf("SQL_execute failed: %s", PQerrorMessage(conn));
 #endif
+
         return E_SQL_EXECUTE;
 
     }
@@ -1063,11 +1086,11 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
 
     memset(buf, 0, *buf_len);
 
-    for(i=0;i < rows;i++){
+    for(current_row=0;current_row < rows;current_row ++){
         if(strlen(buf) > 0)
-            sprintf(buf, "%s;%s;", buf, PQgetvalue(res, i, 2));
+            sprintf(buf, "%s;%s;", buf, PQgetvalue(res, current_row, 2));
         else
-            sprintf(buf, "%s;", PQgetvalue(res, i, 2));
+            sprintf(buf, "%s;", PQgetvalue(res, current_row, 2));
     }
 
     *buf_len = strlen(buf);
@@ -1086,17 +1109,17 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len){
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     PGresult *res;
-    int rows, i;
+    int rows, current_row;
 
-    char *sql_template = "SELECT id, name, perimeter, fence, mac_prefix FROM"\
-                         " geo_fence;";
+    char *sql_select_template = "SELECT id, name, perimeter, fence, " \
+                                "mac_prefix FROM geo_fence;";
 
     SQL_begin_transaction(db);
 
     memset(sql, 0, SQL_TEMP_BUFFER_LENGTH);
     memset(buf, 0, WIFI_MESSAGE_LENGTH);
 
-    sprintf(sql, sql_template);
+    sprintf(sql, sql_select_template);
 
     res = PQexec(conn, sql);
 
@@ -1112,17 +1135,23 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len){
 
     rows = PQntuples(res);
 
-    for(i=0;i < rows;i++){
+    for(current_row=0;current_row < rows;current_row++){
         if(strlen(buf) > 0)
             sprintf(buf, "%s;%s;%s;%s;%s;%s;",
-                    buf                  , PQgetvalue(res, i, 0),
-                    PQgetvalue(res, i, 1), PQgetvalue(res, i, 2),
-                    PQgetvalue(res, i, 3), PQgetvalue(res, i, 4));
+                                            buf,
+                                            PQgetvalue(res, current_row, 0),
+                                            PQgetvalue(res, current_row, 1),
+                                            PQgetvalue(res, current_row, 2),
+                                            PQgetvalue(res, current_row, 3),
+                                            PQgetvalue(res, current_row, 4));
         else
             sprintf(buf, "%d;%s;%s;%s;%s;%s;",
-                    rows                 , PQgetvalue(res, i, 0),
-                    PQgetvalue(res, i, 1), PQgetvalue(res, i, 2),
-                    PQgetvalue(res, i, 3), PQgetvalue(res, i, 4));
+                                            rows,
+                                            PQgetvalue(res, current_row, 0),
+                                            PQgetvalue(res, current_row, 1),
+                                            PQgetvalue(res, current_row, 2),
+                                            PQgetvalue(res, current_row, 3),
+                                            PQgetvalue(res, current_row, 4));
     }
 
     *buf_len = strlen(buf);
