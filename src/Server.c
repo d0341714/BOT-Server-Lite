@@ -1282,7 +1282,11 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
     printf("Check whether joined\n");
 #endif
 
-    if(answer=is_in_Address_Map(address_map, address) >=0){
+    if(answer = is_in_Address_Map(address_map, address) >=0){
+
+        strncpy(address_map -> address_map_list[answer].net_address,
+                address, NETWORK_ADDR_LENGTH);
+
         address_map -> address_map_list[answer].last_request_time =
                                                               get_system_time();
         pthread_mutex_unlock( &address_map -> list_lock);
