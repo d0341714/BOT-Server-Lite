@@ -22,7 +22,7 @@
 
   Version:
 
-     1.0, 20190514
+     1.0, 20190519
 
   Abstract:
 
@@ -266,10 +266,14 @@ int main(int argc, char **argv){
         sprintf(content, "%s;%s;", GEO_FENCE_TOPIC,
                 config.server_ip);
 
-        tracked_object_data_topic_id =
+        geo_fence_data_topic_id =
                 SQL_update_api_data_owner(Server_db, content, strlen(content));
 
     }
+
+#ifdef debugging
+    printf("geo_fence_data_topic_id: %d\n", geo_fence_data_topic_id);
+#endif
 
     if(tracked_object_data_topic_id == -1){
         memset(content, 0, WIFI_MESSAGE_LENGTH);
@@ -280,6 +284,10 @@ int main(int argc, char **argv){
                 SQL_update_api_data_owner(Server_db, content, strlen(content));
 
     }
+
+#ifdef debugging
+    printf("tracked_object_data_topic_id: %d\n", tracked_object_data_topic_id);
+#endif
 
     geo_fence_config.number_worker_threads = 10;
     memcpy(geo_fence_config.server_ip,config.server_ip, NETWORK_ADDR_LENGTH);

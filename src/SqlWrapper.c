@@ -24,7 +24,7 @@
 
   Version:
 
-     1.0, 20190415
+     1.0, 20190519
 
   Abstract:
 
@@ -1152,6 +1152,10 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len){
                                             PQgetvalue(res, current_row, 2),
                                             PQgetvalue(res, current_row, 3),
                                             PQgetvalue(res, current_row, 4));
+    }
+
+    if(rows == 0){
+        sprintf(buf, "%d;", rows);
     }
 
     *buf_len = strlen(buf);
