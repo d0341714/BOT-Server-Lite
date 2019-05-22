@@ -428,14 +428,11 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                                        geo_fence_list_entry);
 
 #ifdef debugging
-        printf("[GeoFence] current_list_ptr -> id: %d\n", geo_fence_list_ptr ->
+        printf("[GeoFence] geo_fence_list_ptr -> id: %d\n", geo_fence_list_ptr ->
                id);
 #endif
 
-        if(current_list_ptr -> id == geo_fence_id){
-
-            geo_fence_list_ptr = current_list_ptr;
-
+        if(geo_fence_list_ptr -> id == geo_fence_id){
             break;
         }
 
@@ -508,6 +505,8 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
 
         while(number_of_objects --){
 
+			//mac_address;initial_timestamp;final_timestamp;rssi;push_button;
+
             mac_address = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
             current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
@@ -518,6 +517,8 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
 
             sscanf(current_ptr, "%d", &rssi);
 
+			current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+
             list_for_each(current_mac_list_entry, &geo_fence_list_ptr ->
                                                           mac_prefix_list_head){
 
@@ -525,7 +526,7 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                                                         smac_prefix_list_node,
                                                         mac_prefix_list_entry);
 
-                if((strncmp(mac_address, current_mac_prefix_list_ptr ->
+                if((strncmp_caseinsensitive(mac_address, current_mac_prefix_list_ptr ->
                             mac_prefix, strlen(current_mac_prefix_list_ptr ->
                             mac_prefix)) == 0) && rssi >= threshold){
 
@@ -994,8 +995,7 @@ static void *process_api_recv(void *_geo_fence_config){
                             pkt_content = mp_alloc(&(geo_fence_config ->
                                                    pkt_content_mempool));
 
-                            memset(pkt_content, 0, strlen(pkt_content) *
-                                   sizeof(char));
+							memset(pkt_content, 0, sizeof(pkt_content));
 
                             memcpy(pkt_content -> ip_address, tmp_addr,
                                    strlen(tmp_addr) * sizeof(char));

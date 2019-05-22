@@ -1013,8 +1013,6 @@ void *process_api_routine(void *_buffer_node){
 
     int return_value;
 
-    int data_length;
-
     unsigned long int data_type_id;
 
     char data_content[WIFI_MESSAGE_LENGTH];
@@ -1146,8 +1144,7 @@ void *process_api_routine(void *_buffer_node){
 
                 memset(data_content, 0, WIFI_MESSAGE_LENGTH);
 
-                SQL_get_geo_fence(Server_db, &data_content,
-                                   &data_length);
+                SQL_get_geo_fence(Server_db, &data_content);
 
                 sprintf(&current_node -> content[1], "%s;%s", GEO_FENCE_TOPIC,
                                                                  &data_content);

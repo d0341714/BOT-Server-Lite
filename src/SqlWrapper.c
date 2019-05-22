@@ -866,7 +866,7 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
     char *topic_name, *string_begin, *string_end;
 
     char *sql_select_template = "SELECT id, name, ip_address FROM "\
-                                "api_subscriber where name = %s ;";
+                                "api_data_owner where name = %s ;";
 
     string_begin = string_end + 1;
     string_end = strstr(string_begin, DELIMITER_SEMICOLON);
@@ -1104,7 +1104,7 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
 }
 
 
-ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len){
+ErrorCode SQL_get_geo_fence(void *db, char *buf){
 
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
@@ -1117,7 +1117,6 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len){
     SQL_begin_transaction(db);
 
     memset(sql, 0, SQL_TEMP_BUFFER_LENGTH);
-    memset(buf, 0, WIFI_MESSAGE_LENGTH);
 
     sprintf(sql, sql_select_template);
 
@@ -1135,6 +1134,7 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len){
 
     rows = PQntuples(res);
 
+	buf[0] = '\0';
     for(current_row=0;current_row < rows;current_row++){
         if(strlen(buf) > 0)
             sprintf(buf, "%s;%s;%s;%s;%s;%s;",
@@ -1157,8 +1157,6 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len){
     if(rows == 0){
         sprintf(buf, "%d;", rows);
     }
-
-    *buf_len = strlen(buf);
 
     PQclear(res);
 

@@ -101,6 +101,19 @@ void trim_string_tail(char *message) {
 
 void ctrlc_handler(int stop) { ready_to_work = false; }
 
+int strncmp_caseinsensitive(char const *str_a, char const *str_b, size_t len){
+    int index = 0;
+    int diff = 0;
+
+	for(index = 0; index < len; index++){
+		
+		diff = tolower((unsigned char)str_a[index]) - tolower((unsigned char)str_b[index]);
+		if(0 != diff){
+			return -1;
+		}
+	}
+	return 0;
+}
 
 ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
                       void *arg){

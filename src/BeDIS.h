@@ -364,6 +364,23 @@ void trim_string_tail(char *message);
  */
 void ctrlc_handler(int stop);
 
+/*
+  strncasecmp:
+
+     This function compares two input strings speicified by input parameters.
+
+  Parameters:
+
+     str_a - the first string to be compared
+	 str_b - the second string to be comapred
+	 len - number of characters in the strings to be compared
+
+  Return value:
+     0: if the two strings exactly match
+ */
+
+int strncasecmp(char const *str_a, char const *str_b, size_t len);
+
 
 /*
   startThread:

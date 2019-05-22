@@ -530,7 +530,7 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len);
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
-ErrorCode SQL_get_geo_fence(void *db, char *buf, size_t *buf_len);
+ErrorCode SQL_get_geo_fence(void *db, char *buf);
 
 
 #endif
