@@ -537,13 +537,15 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                                                         smac_prefix_list_node,
                                                         mac_prefix_list_entry);
 
-                if((strncmp_caseinsensitive(mac_address, current_mac_prefix_list_ptr ->
-                            mac_prefix, strlen(current_mac_prefix_list_ptr ->
-                            mac_prefix)) == 0) && rssi >= threshold){
+                if((strncmp_caseinsensitive(mac_address, 
+                        current_mac_prefix_list_ptr -> mac_prefix, 
+                        strlen(current_mac_prefix_list_ptr -> mac_prefix)) == 0)
+                        && rssi >= threshold){
 
 //#ifdef debugging
-                    printf("[GeoFence-Alert] %s %s %s %d\n", uuid, lbeacon_ip,
-                                                             mac_address, rssi);
+                    printf("[GeoFence-Alert] timestamp %d - %s %s %s %d\n",
+                           get_system_time(), uuid, lbeacon_ip, mac_address,
+                           rssi);
 //#endif
 
                 }
