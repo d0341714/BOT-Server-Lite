@@ -908,7 +908,7 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *string_begin, *string_end;
-    char *ip_address, *topic_id_char;
+    char *ip_address, *topic_name;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     PGresult *res;
@@ -930,8 +930,13 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
     string_end = strstr(string_begin, DELIMITER_SEMICOLON);
     *string_end = '\0';
 
-    topic_id_char = string_begin;
-    sscanf(topic_id_char, "%d", &topic_id);
+    topic_name = string_begin;
+    topic_id = SQL_get_api_data_owner_id(db, topic_name, strlen(topic_name));
+
+	if(topic_id < 0)
+	{
+	    return -1;
+	}
 
     string_begin = string_end + 1;
     string_end = strstr(string_begin, DELIMITER_SEMICOLON);
