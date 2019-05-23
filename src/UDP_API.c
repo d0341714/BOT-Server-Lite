@@ -114,6 +114,8 @@ int udp_addpkt(pudp_config udp_config, char *raw_addr, char *content, int size){
 
     addpkt(&udp_config -> pkt_Queue, UDP, removed_address, content, size);
 
+    free(removed_address);
+
     return 0;
 }
 
@@ -167,6 +169,7 @@ void *udp_send_pkt(void *udpconfig){
                     printf("Send pkt success\n");
 #endif
                 }
+                free(dest_address);
             }
         }
         else{
@@ -188,9 +191,12 @@ void *udp_recv_pkt(void *udpconfig){
 
     char *addr_tmp;
 
+	char *tmp_address;
+
     struct sockaddr_in si_recv;
 
     int socketaddr_len = sizeof(si_recv);
+
 
     /* keep listening for data */
     while(!(udp_config -> shutdown)){
@@ -224,9 +230,11 @@ void *udp_recv_pkt(void *udpconfig){
             printf("]\n");
             printf("Data Length %d\n", recv_len);
 #endif
+			tmp_address = udp_address_reduce_point(addr_tmp);
             addpkt(&udp_config -> Received_Queue, UDP
-                 , udp_address_reduce_point(addr_tmp)
+                 , tmp_address
                  , recv_buf, recv_len);
+			free(tmp_address);
 
         }
 #ifdef debugging
@@ -356,5 +364,6 @@ char *udp_hex_to_address(unsigned char *hex_addr){
 
         }
     }
+    free(tmp_address);
     return dest_address;
 }
