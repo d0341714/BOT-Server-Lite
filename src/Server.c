@@ -1194,10 +1194,11 @@ void *process_api_routine(void *_buffer_node){
 
         case update_topic_data:
 
+			memset(data_content, 0, sizeof(data_content));
             return_value = SQL_get_api_subscribers(
                                             Server_db,
                                             data_content,
-                                            strlen(data_content));
+                                            sizeof(data_content));
 
             if((return_value == WORK_SUCCESSFULLY) &&
                (strlen(data_content) > 0)){

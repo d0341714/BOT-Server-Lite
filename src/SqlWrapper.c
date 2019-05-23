@@ -1036,7 +1036,7 @@ ErrorCode SQL_remove_api_subscription(void *db, char *buf, size_t buf_len){
 }
 
 
-ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
+ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
@@ -1046,7 +1046,7 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
     char *sql_template = "SELECT id, topic_id, ip_address FROM "\
                          "api_subscriber where topic_id = \'%d\' ;";
 
-    topic_id = SQL_get_api_data_owner_id(db, buf, *buf_len);
+    topic_id = SQL_get_api_data_owner_id(db, buf, buf_len);
 
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_template, topic_id);
@@ -1066,16 +1066,14 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
 
     rows = PQntuples(res);
 
-    memset(buf, 0, *buf_len);
-
-    for(current_row=0;current_row < rows;current_row ++){
-        if(strlen(buf) > 0)
-            sprintf(buf, "%s;%s;", buf, PQgetvalue(res, current_row, 2));
-        else
-            sprintf(buf, "%s;", PQgetvalue(res, current_row, 2));
+    if(rows > 0){
+        for(current_row=0;current_row < rows;current_row ++){
+            if(strlen(buf) > 0)
+                sprintf(buf, "%s;%s;", buf, PQgetvalue(res, current_row, 2));
+            else
+                sprintf(buf, "%s;", PQgetvalue(res, current_row, 2));
+        }
     }
-
-    *buf_len = strlen(buf);
 
     PQclear(res);
 
