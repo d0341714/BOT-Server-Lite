@@ -826,9 +826,7 @@ ErrorCode SQL_remove_api_data_owner(void *db, char *buf, size_t buf_len){
     ;
 
     sscanf(buf, "%d;", &topic_id);
-
-    memset(sql, 0, SQL_TEMP_BUFFER_LENGTH);
-
+   
     SQL_begin_transaction(db);
 
     /* Create SQL statement */
@@ -857,6 +855,7 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
+    char temp_buf[WIFI_MESSAGE_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     PGresult *res;
     int topic_id, rows;
@@ -865,7 +864,10 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
     char *sql_select_template = "SELECT id, name, ip_address FROM "\
                                 "api_data_owner where name = %s ;";
 
-    string_begin = string_end + 1;
+    memset(temp_buf, 0, WIFI_MESSAGE_LENGTH); 
+    memcpy(temp_buf, buf, buf_len);
+
+    string_begin = temp_buf;
     string_end = strstr(string_begin, DELIMITER_SEMICOLON);
     *string_end = '\0';
 
@@ -922,7 +924,6 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
                                       "and ip_address = %s ;";
 
     memset(temp_buf, 0, WIFI_MESSAGE_LENGTH);
-
     memcpy(temp_buf, buf, buf_len);
 
     string_begin = temp_buf;
@@ -952,7 +953,7 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 #endif
 
         PQclear(res);
-
+        return -1;
     }
 
     if(PQntuples(res) == 0){
@@ -1047,6 +1048,11 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
                          "api_subscriber where topic_id = \'%d\' ;";
 
     topic_id = SQL_get_api_data_owner_id(db, buf, buf_len);
+
+	if(topic_id < 0)
+	{
+	    return E_SQL_EXECUTE;
+	}
 
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_template, topic_id);
