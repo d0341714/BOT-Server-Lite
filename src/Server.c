@@ -891,6 +891,7 @@ void *NSI_routine(void *_buffer_node){
                                            &current_node->content[2],
                                            strlen(&current_node->content[2]));
 
+	free(gateway_record);
     /* put the pkt type to content */
     current_node->content[0] = (char)send_pkt_type;
 
@@ -923,6 +924,7 @@ void *BHM_routine(void *_buffer_node){
                                      lbeacon_record,
                                      strlen(lbeacon_record));
 
+	free(lbeacon_record);
     mp_free( &node_mempool, current_node);
 
     return (void *)NULL;
