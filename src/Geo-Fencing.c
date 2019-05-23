@@ -335,6 +335,8 @@ static void *process_geo_fence_routine(void *_pkt_content){
                                             0);
 */
 					check_tracking_object_data_routine(pkt_content_to_process);
+
+					mp_free(&(geo_fence_config -> pkt_content_mempool),  pkt_content_to_process);
                     break;
                 }
             }
@@ -384,6 +386,7 @@ static void *process_geo_fence_routine(void *_pkt_content){
                                             0);
 */
                     check_tracking_object_data_routine(pkt_content_to_process);
+					mp_free(&(geo_fence_config -> pkt_content_mempool),  pkt_content_to_process);
                     break;
                 }
             }
@@ -846,7 +849,7 @@ static void *update_geo_fence(void *_pkt_content){
 
     pthread_mutex_unlock( &geo_fence_config -> geo_fence_list_lock);
 
-    mp_free( &geo_fence_config->pkt_content_mempool, pkt_content);
+//    mp_free( &geo_fence_config->pkt_content_mempool, pkt_content);
 
     return (void *)NULL;
 }
@@ -1027,6 +1030,7 @@ static void *process_api_recv(void *_geo_fence_config){
                                             0);
 */
                             process_geo_fence_routine(pkt_content);
+							mp_free( &geo_fence_config->pkt_content_mempool, pkt_content);
 
                             free(tmp_addr);
 
