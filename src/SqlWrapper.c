@@ -1105,35 +1105,35 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
 #ifdef debugging
         printf("SQL_execute failed: %s\n", PQerrorMessage(conn));
 #endif
-		sprintf(buf, "%d;", rows);
+        sprintf(buf, "%d;", rows);
         return E_SQL_EXECUTE;
 
     }
 
     rows = PQntuples(res);
 
-    for(current_row=0;current_row < rows;current_row++){
-        if(strlen(buf) > 0)
-            sprintf(buf, "%s;%s;%s;%s;%s;%s;",
-                                            buf,
-                                            PQgetvalue(res, current_row, 0),
-                                            PQgetvalue(res, current_row, 1),
-                                            PQgetvalue(res, current_row, 2),
-                                            PQgetvalue(res, current_row, 3),
-                                            PQgetvalue(res, current_row, 4));
-        else
-            sprintf(buf, "%d;%s;%s;%s;%s;%s;",
-                                            rows,
-                                            PQgetvalue(res, current_row, 0),
-                                            PQgetvalue(res, current_row, 1),
-                                            PQgetvalue(res, current_row, 2),
-                                            PQgetvalue(res, current_row, 3),
-                                            PQgetvalue(res, current_row, 4));
-    }
-
-    if(rows == 0){
+	if(rows == 0){
         sprintf(buf, "%d;", rows);
-    }
+	}else{
+        for(current_row=0;current_row < rows;current_row++){
+            if(strlen(buf) > 0)
+                sprintf(buf, "%s;%s;%s;%s;%s;%s;",
+                                                buf,
+                                                PQgetvalue(res, current_row, 0),
+                                                PQgetvalue(res, current_row, 1),
+                                                PQgetvalue(res, current_row, 2),
+                                                PQgetvalue(res, current_row, 3),
+                                                PQgetvalue(res, current_row, 4));
+            else
+                sprintf(buf, "%d;%s;%s;%s;%s;%s;",
+                                                rows,
+                                                PQgetvalue(res, current_row, 0),
+                                                PQgetvalue(res, current_row, 1),
+                                                PQgetvalue(res, current_row, 2),
+                                                PQgetvalue(res, current_row, 3),
+                                                PQgetvalue(res, current_row, 4));
+	    }
+	}
 
     PQclear(res);
 
