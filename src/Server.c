@@ -1193,9 +1193,7 @@ void *process_api_routine(void *_buffer_node){
             break;
 
         case update_topic_data:
-
-			memset(data_content, 0, sizeof(data_content));
-            return_value = SQL_get_api_subscribers(
+			return_value = SQL_get_api_subscribers(
                                             Server_db,
                                             data_content,
                                             sizeof(data_content));
