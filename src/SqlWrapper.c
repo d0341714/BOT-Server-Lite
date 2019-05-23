@@ -923,6 +923,13 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
                                       "api_subscriber where topic_id = \'%d\' "\
                                       "and ip_address = %s ;";
 
+	topic_id = SQL_get_api_data_owner_id(db, buf, buf_len);
+
+	if(topic_id < 0)
+	{
+	    return -1;
+	}
+
     memset(temp_buf, 0, WIFI_MESSAGE_LENGTH);
     memcpy(temp_buf, buf, buf_len);
 
@@ -931,13 +938,7 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
     *string_end = '\0';
 
     topic_name = string_begin;
-    topic_id = SQL_get_api_data_owner_id(db, topic_name, strlen(topic_name));
-
-	if(topic_id < 0)
-	{
-	    return -1;
-	}
-
+    
     string_begin = string_end + 1;
     string_end = strstr(string_begin, DELIMITER_SEMICOLON);
     *string_end = '\0';
