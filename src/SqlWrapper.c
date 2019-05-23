@@ -1105,7 +1105,7 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
 #ifdef debugging
         printf("SQL_execute failed: %s\n", PQerrorMessage(conn));
 #endif
-        sprintf(buf, "%d;", rows);
+        sprintf(buf, "0;");
         return E_SQL_EXECUTE;
 
     }
@@ -1113,7 +1113,7 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
     rows = PQntuples(res);
 
     if(rows == 0){
-        sprintf(buf, "%d;", rows);
+        sprintf(buf, "0;");
     }else{
         for(current_row=0;current_row < rows;current_row++){
             if(strlen(buf) > 0)
