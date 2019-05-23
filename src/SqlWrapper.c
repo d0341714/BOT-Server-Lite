@@ -799,7 +799,6 @@ int SQL_update_api_data_owner(void *db, char *buf, size_t buf_len){
     res = PQexec(conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
-        SQL_rollback_transaction(db);
         PQclear(res);
 #ifdef debugging
         printf("SQL_execute failed: %s", PQerrorMessage(conn));
@@ -811,8 +810,6 @@ int SQL_update_api_data_owner(void *db, char *buf, size_t buf_len){
     sscanf(PQgetvalue(res, 0, 0), "%d", &topic_id);
 
     PQclear(res);
-
-    SQL_commit_transaction(db);
 
     return topic_id;
 }
@@ -874,8 +871,6 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
 
     topic_name = string_begin;
 
-    SQL_begin_transaction(db);
-
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_select_template,
                  PQescapeLiteral(conn, topic_name, strlen(topic_name)));
@@ -883,7 +878,6 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
     res = PQexec(conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
-        SQL_rollback_transaction(db);
         PQclear(res);
 
 #ifdef debugging
@@ -901,8 +895,6 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
         sscanf(PQgetvalue(res, 0, 0), "%d", &topic_id);
 
     PQclear(res);
-
-    SQL_commit_transaction(db);
 
     return topic_id;
 
@@ -946,8 +938,6 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 
     ip_address = string_begin;
 
-    SQL_begin_transaction(db);
-
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_subscription_template,
                  topic_id,
@@ -956,8 +946,6 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
     res = PQexec(conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
-
-        SQL_rollback_transaction(db);
 
 #ifdef debugging
         printf("SQL_execute failed: %s", PQerrorMessage(conn));
@@ -968,6 +956,8 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
     }
 
     if(PQntuples(res) == 0){
+
+		SQL_begin_transaction(db);
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
@@ -989,22 +979,17 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 
         SQL_commit_transaction(db);
 
-        SQL_begin_transaction(db);
-
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_subscription_template,
                      topic_id,
                      PQescapeLiteral(conn, ip_address, strlen(ip_address)));
 
         res = PQexec(conn, sql);
-
     }
 
     sscanf(PQgetvalue(res, 0, 0), "%d", &subscriber_id);
 
     PQclear(res);
-
-    SQL_commit_transaction(db);
 
     return subscriber_id;
 
@@ -1063,15 +1048,12 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
 
     topic_id = SQL_get_api_data_owner_id(db, buf, *buf_len);
 
-    SQL_begin_transaction(db);
-
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_template, topic_id);
 
     res = PQexec(conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
-        SQL_rollback_transaction(db);
         PQclear(res);
 
 #ifdef debugging
@@ -1097,8 +1079,6 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t *buf_len){
 
     PQclear(res);
 
-    SQL_commit_transaction(db);
-
     return WORK_SUCCESSFULLY;
 
 }
@@ -1114,8 +1094,6 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
     char *sql_select_template = "SELECT id, name, perimeter, fence, " \
                                 "mac_prefix FROM geo_fence;";
 
-    SQL_begin_transaction(db);
-
     memset(sql, 0, SQL_TEMP_BUFFER_LENGTH);
 
     sprintf(sql, sql_select_template);
@@ -1123,18 +1101,17 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
     res = PQexec(conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
-        SQL_rollback_transaction(db);
         PQclear(res);
 #ifdef debugging
         printf("SQL_execute failed: %s\n", PQerrorMessage(conn));
 #endif
+		sprintf(buf, "%d;", rows);
         return E_SQL_EXECUTE;
 
     }
 
     rows = PQntuples(res);
 
-	buf[0] = '\0';
     for(current_row=0;current_row < rows;current_row++){
         if(strlen(buf) > 0)
             sprintf(buf, "%s;%s;%s;%s;%s;%s;",
@@ -1159,8 +1136,6 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
     }
 
     PQclear(res);
-
-    SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 
