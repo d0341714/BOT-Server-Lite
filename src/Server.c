@@ -863,7 +863,7 @@ void *NSI_routine(void *_buffer_node){
 
     int send_pkt_type;
 
-    char  *gateway_record = malloc(WIFI_MESSAGE_LENGTH*sizeof(char));
+    char gateway_record[WIFI_MESSAGE_LENGTH];
 
     send_pkt_type = (from_server & 0x0f)<<4;
 
@@ -879,7 +879,7 @@ void *NSI_routine(void *_buffer_node){
     else
         send_pkt_type += join_request_deny & 0x0f;
 
-    memset(gateway_record, 0, WIFI_MESSAGE_LENGTH*sizeof(char));
+    memset(gateway_record, 0, sizeof(gateway_record));
 
     sprintf(gateway_record, "1;%s;%d;", current_node -> net_address,
             S_NORMAL_STATUS);
@@ -890,8 +890,6 @@ void *NSI_routine(void *_buffer_node){
     SQL_update_lbeacon_registration_status(Server_db,
                                            &current_node->content[2],
                                            strlen(&current_node->content[2]));
-
-	free(gateway_record);
     /* put the pkt type to content */
     current_node->content[0] = (char)send_pkt_type;
 
@@ -914,9 +912,9 @@ void *BHM_routine(void *_buffer_node){
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
-    char  *lbeacon_record = malloc(WIFI_MESSAGE_LENGTH * sizeof(char));
+    char lbeacon_record[WIFI_MESSAGE_LENGTH];
 
-    memset(lbeacon_record, 0, WIFI_MESSAGE_LENGTH * sizeof(char));
+    memset(lbeacon_record, 0, sizeof(lbeacon_record));
 
     sprintf(lbeacon_record, "1;%s;", &current_node ->content[1]);
 
@@ -924,8 +922,7 @@ void *BHM_routine(void *_buffer_node){
                                      lbeacon_record,
                                      strlen(lbeacon_record));
 
-	free(lbeacon_record);
-    mp_free( &node_mempool, current_node);
+	mp_free( &node_mempool, current_node);
 
     return (void *)NULL;
 }
@@ -1430,7 +1427,7 @@ void *process_wifi_receive(){
 
         int test_times;
 
-        char *tmp_addr;
+        char tmp_addr[NETWORK_ADDR_LENGTH];
 
         int pkt_direction;
 
@@ -1473,11 +1470,10 @@ void *process_wifi_receive(){
 
                 new_node -> content_size = temppkt.content_size;
 
-                tmp_addr = udp_hex_to_address(temppkt.address);
+                memset(tmp_addr, 0, sizeof(tmp_addr));
+                udp_hex_to_address(temppkt.address, tmp_addr);
 
                 memcpy(new_node -> net_address, tmp_addr, NETWORK_ADDR_LENGTH);
-
-                free(tmp_addr);
 
                 /* read the pkt direction from higher 4 bits. */
                 pkt_direction = (new_node -> content[0] >> 4) & 0x0f;

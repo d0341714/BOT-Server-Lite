@@ -297,22 +297,6 @@ bool ready_to_work;
 /* FUNCTIONS */
 
 /*
-  uuid_str_to_data:
-
-     Convert uuid from string to unsigned integer.
-
-  Parameters:
-
-     uuid - The uuid in string type.
-
-  Return value:
-
-     unsigned int - The converted uuid in unsigned int type.
- */
-unsigned int *uuid_str_to_data(char *uuid);
-
-
-/*
   twoc:
 
      @todo

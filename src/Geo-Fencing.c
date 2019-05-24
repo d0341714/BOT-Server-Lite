@@ -861,7 +861,8 @@ static void *process_api_recv(void *_geo_fence_config){
 
     sPkt temppkt;
 
-    char *tmp_addr, *current_pointer, *saved_ptr, *topic;
+    char tmp_addr[NETWORK_ADDR_LENGTH];
+    char *current_pointer, *saved_ptr, *topic;
 
     ppkt_content pkt_content;
 
@@ -1005,8 +1006,8 @@ static void *process_api_recv(void *_geo_fence_config){
 #ifdef debugging
                             printf("[GeoFence] Topic: %s\n", topic);
 #endif
-
-                            tmp_addr = udp_hex_to_address(temppkt.address);
+                            memset(tmp_addr, 0, sizeof(tmp_addr));
+                            udp_hex_to_address(temppkt.address, tmp_addr);
 
                             pkt_content = mp_alloc(&(geo_fence_config ->
                                                    pkt_content_mempool));
@@ -1031,8 +1032,6 @@ static void *process_api_recv(void *_geo_fence_config){
 */
                             process_geo_fence_routine(pkt_content);
 							mp_free( &geo_fence_config->pkt_content_mempool, pkt_content);
-
-                            free(tmp_addr);
 
                             break;
                     }

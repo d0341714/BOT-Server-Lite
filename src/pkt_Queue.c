@@ -246,8 +246,8 @@ int delpkt(pkt_ptr pkt_queue) {
 int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num){
 
     pPkt current_pkt;
-    char *char_addr;
-    char *address_char;
+    char char_addr[NETWORK_ADDR_LENGTH];
+    char address_char[NETWORK_ADDR_LENGTH];
 
     if(pkt_num < 0 && pkt_num >= MAX_QUEUE_LENGTH){
         return pkt_Queue_display_over_range;
@@ -255,8 +255,8 @@ int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num){
 
     current_pkt = &pkt_queue -> Queue[pkt_num];
 
-    char_addr = hex_to_char(current_pkt -> address
-                                , NETWORK_ADDR_LENGTH_HEX);
+    memset(char_addr, 0, sizeof(char_addr));
+    hex_to_char(current_pkt -> address, NETWORK_ADDR_LENGTH_HEX, char_addr);
 
 
     printf("==================\n");
@@ -271,8 +271,8 @@ int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num){
 
     printf("===== address ====\n");
 
-    address_char = hex_to_char(current_pkt -> address
-                                   , NETWORK_ADDR_LENGTH_HEX);
+    memset(address_char, 0, sizeof(address_char));
+    hex_to_char(current_pkt -> address, NETWORK_ADDR_LENGTH_HEX, address_char);
 
     print_content(address_char, NETWORK_ADDR_LENGTH);
 
@@ -285,11 +285,7 @@ int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num){
     printf("\n");
     printf("==================\n");
 
-    free(address_char);
-    free(char_addr);
-
     return pkt_Queue_SUCCESS;
-
 }
 
 
@@ -345,18 +341,14 @@ void char_to_hex(char *raw, unsigned char *raw_hex, int size){
 }
 
 
-char *hex_to_char(unsigned char *hex, int size){
-
-    int char_size = size * 2;
-    char *char_addr = malloc(sizeof(char) * (char_size + 1));
+int *hex_to_char(unsigned char *hex, int size, char *buf){
+    int ret = 0;
     int len;
 
-    memset(char_addr, 0, sizeof(char) * (char_size + 1));
-
     for(len = 0;len < size;len ++)
-        sprintf( &char_addr[len * 2], "%02x", hex[len]);
+        sprintf( &buf[len * 2], "%02x", hex[len]);
 
-    return char_addr;
+    return ret;
 }
 
 

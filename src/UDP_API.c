@@ -105,16 +105,15 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
 
 int udp_addpkt(pudp_config udp_config, char *raw_addr, char *content, int size){
 
-    char *removed_address;
+    char removed_address[NETWORK_ADDR_LENGTH];
 
     if(size > MESSAGE_LENGTH)
         return addpkt_msg_oversize;
 
-    removed_address = udp_address_reduce_point(raw_addr);
+    memset(removed_address, 0, sizeof(removed_address));
+    udp_address_reduce_point(raw_addr, removed_address);
 
     addpkt(&udp_config -> pkt_Queue, UDP, removed_address, content, size);
-
-    free(removed_address);
 
     return 0;
 }
@@ -136,6 +135,8 @@ void *udp_send_pkt(void *udpconfig){
 
     struct sockaddr_in si_send;
 
+	char dest_address[NETWORK_ADDR_LENGTH];
+
     while(!(udp_config -> shutdown)){
 
         if(!(is_null( &udp_config -> pkt_Queue))){
@@ -143,8 +144,8 @@ void *udp_send_pkt(void *udpconfig){
             current_send_pkt = get_pkt(&udp_config -> pkt_Queue);
 
             if (current_send_pkt.type == UDP){
-                char *dest_address = udp_hex_to_address(
-                                     current_send_pkt.address);
+                memset(dest_address, 0, sizeof(dest_address));
+                udp_hex_to_address(current_send_pkt.address, dest_address);
 
                 memset(&si_send, 0, sizeof(si_send));
                 si_send.sin_family = AF_INET;
@@ -169,7 +170,6 @@ void *udp_send_pkt(void *udpconfig){
                     printf("Send pkt success\n");
 #endif
                 }
-                free(dest_address);
             }
         }
         else{
@@ -191,7 +191,7 @@ void *udp_recv_pkt(void *udpconfig){
 
     char *addr_tmp;
 
-	char *tmp_address;
+	char tmp_address[NETWORK_ADDR_LENGTH];
 
     struct sockaddr_in si_recv;
 
@@ -230,12 +230,12 @@ void *udp_recv_pkt(void *udpconfig){
             printf("]\n");
             printf("Data Length %d\n", recv_len);
 #endif
-			tmp_address = udp_address_reduce_point(addr_tmp);
+			memset(tmp_address, 0, sizeof(tmp_address));
+			udp_address_reduce_point(addr_tmp, tmp_address);
             addpkt(&udp_config -> Received_Queue, UDP
                  , tmp_address
                  , recv_buf, recv_len);
-			free(tmp_address);
-
+			
         }
 #ifdef debugging
         else
@@ -270,7 +270,7 @@ int udp_release(pudp_config udp_config){
 }
 
 
-char *udp_address_reduce_point(char *raw_addr){
+int udp_address_reduce_point(char *raw_addr, char *address){
 
     /* Record current filled Address Location. */
     int address_loc = 0;
@@ -281,13 +281,9 @@ char *udp_address_reduce_point(char *raw_addr){
 
     int lo, n;
 
-    char *address = malloc(sizeof(char) * NETWORK_ADDR_LENGTH);
-
 #ifdef debugging
     printf("Enter udp_address_reduce_point address [%s]\n", raw_addr);
 #endif
-
-    memset(address, 0, NETWORK_ADDR_LENGTH);
 
     /* Four part in a address.(devided by '.') */
     for(n = 0; n < 4; n++){
@@ -329,19 +325,19 @@ char *udp_address_reduce_point(char *raw_addr){
 #ifdef debugging
     printf("Result of udp_address_reduce_point address [%s]\n", address);
 #endif
-    return address;
+    return 0;
 }
 
 
-char *udp_hex_to_address(unsigned char *hex_addr){
+int udp_hex_to_address(unsigned char *hex_addr, char *dest_address){
 
     /*  Stored a recovered address. */
-    char *dest_address;
-    char *tmp_address = hex_to_char(hex_addr, 6);
+    char tmp_address[NETWORK_ADDR_LENGTH];
     int address_loc = 0;
     int loc, n;
-    dest_address = malloc(sizeof(char) * 17);
-    memset(dest_address, 0, sizeof(char) * 17);
+
+	memset(tmp_address, 0, sizeof(tmp_address));
+	hex_to_char(hex_addr, strlen(hex_addr), tmp_address);
 
     for(n=0;n < 4;n ++){
 
@@ -364,6 +360,5 @@ char *udp_hex_to_address(unsigned char *hex_addr){
 
         }
     }
-    free(tmp_address);
-    return dest_address;
+    return 0;
 }
