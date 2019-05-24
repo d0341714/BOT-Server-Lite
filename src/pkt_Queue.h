@@ -271,7 +271,7 @@ void char_to_hex(char *raw, unsigned char *raw_hex, int size);
       0: success
 
  */
-int *hex_to_char(unsigned char *hex, int size, char * buf);
+int hex_to_char(unsigned char *hex, int size, char * buf);
 
 
 /* display_pkt

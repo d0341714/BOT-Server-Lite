@@ -341,7 +341,7 @@ void char_to_hex(char *raw, unsigned char *raw_hex, int size){
 }
 
 
-int *hex_to_char(unsigned char *hex, int size, char *buf){
+int hex_to_char(unsigned char *hex, int size, char *buf){
     int ret = 0;
     int len;
 
