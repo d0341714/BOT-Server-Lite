@@ -1280,7 +1280,6 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
     char *alert_time = NULL;
     char *rssi = NULL;
     char *geo_fence_id = NULL;
-    char *receive_time = NULL;
 
     char *pqescape_mac_address = NULL;
     char *pqescape_type = NULL;
@@ -1288,7 +1287,6 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
     char *pqescape_alert_time = NULL;
     char *pqescape_rssi = NULL;
     char *pqescape_geo_fence_id = NULL;
-    char *pqescape_receive_time = NULL;
 
     saved_ptr = NULL;
 
@@ -1308,7 +1306,6 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
         alert_time = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
         rssi = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
         geo_fence_id = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
-        receive_time = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
@@ -1322,8 +1319,6 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
         pqescape_rssi = PQescapeLiteral(conn, rssi, strlen(rssi));
         pqescape_geo_fence_id = PQescapeLiteral(conn, geo_fence_id,
                                                 strlen(geo_fence_id));
-        pqescape_receive_time = PQescapeLiteral(conn, receive_time,
-                                                strlen(receive_time));
 
         sprintf(sql, sql_template,
                 pqescape_mac_address,
@@ -1331,8 +1326,7 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
                 pqescape_uuid,
                 pqescape_alert_time,
                 pqescape_rssi,
-                pqescape_geo_fence_id,
-                pqescape_receive_time);
+                pqescape_geo_fence_id);
 
         PQfreemem(pqescape_mac_address);
         PQfreemem(pqescape_type);
@@ -1340,7 +1334,6 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
         PQfreemem(pqescape_alert_time);
         PQfreemem(pqescape_rssi);
         PQfreemem(pqescape_geo_fence_id);
-        PQfreemem(pqescape_receive_time);
 
         /* Execute SQL statement */
         ret_val = SQL_execute(db, sql);

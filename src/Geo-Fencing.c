@@ -590,9 +590,9 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                     //number_of_geo_fence_alert;mac_address1;type1;uuid1;
                     //alert_time1;rssi1;geo_fence_id1;
 
-                    sprintf( &content_for_alert[1], "%d;%s;%s;%s;%d;%d;%d;",
-                            1, mac_address, lbeacon_type, uuid, final_timestamp,
-                            rssi, geo_fence_id);
+                    sprintf( &content_for_alert[1], "%s;%d;%s;%s;%s;%d;%d;%d;",
+                            GEO_FENCE_ALERT_TOPIC, 1, mac_address, lbeacon_type, uuid, 
+                            final_timestamp, rssi, geo_fence_id);
 
                     udp_addpkt(udp_config, geo_fence_config -> server_ip,
                                content_for_alert, strlen(content_for_alert));
