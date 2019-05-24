@@ -77,6 +77,8 @@ void *geo_fence_routine(void *_geo_fence_config){
 
     geo_fence_config -> tracked_object_data_subscribe_id = -1;
 
+    geo_fence_config -> geo_fence_alert_data_owner_id = -1;
+
 #ifdef debugging
     printf("[GeoFence] Allicating Memory\n");
 #endif
@@ -146,8 +148,8 @@ void *geo_fence_routine(void *_geo_fence_config){
 
         content[0] = ((from_modules << 4) & 0xf0) + (add_subscriber & 0x0f);
 
-        sprintf( &content[1], "%s;%s;", GEO_FENCE_TOPIC, 
-			     geo_fence_config -> server_ip);
+        sprintf( &content[1], "%s;%s;", GEO_FENCE_TOPIC,
+                geo_fence_config -> server_ip);
 
         udp_addpkt(udp_config, geo_fence_config -> server_ip, content,
                    strlen(content));
@@ -186,6 +188,32 @@ void *geo_fence_routine(void *_geo_fence_config){
 
 #ifdef debugging
     printf("[GeoFence] Subscribe tracked object data Success\n");
+#endif
+
+#ifdef debugging
+    printf("[GeoFence] Register geo fence alert\n");
+#endif
+
+    while(geo_fence_config -> geo_fence_alert_data_owner_id == -1){
+
+        memset(content, 0, WIFI_MESSAGE_LENGTH);
+
+        content[0] = ((from_modules << 4) & 0xf0) + (add_data_owner & 0x0f);
+
+        sprintf( &content[1], "%s;%s;", GEO_FENCE_ALERT_TOPIC,
+                geo_fence_config -> server_ip);
+
+        udp_addpkt(udp_config, geo_fence_config -> server_ip, content,
+                   strlen(content));
+
+        last_subscribe_tracked_object_data_time = get_system_time();
+
+        Sleep(3000); // 3 sec
+
+    }
+
+#ifdef debugging
+    printf("[GeoFence] Register geo fence alert success\n");
 #endif
 
     while(geo_fence_config -> is_running){
@@ -264,7 +292,7 @@ static void *process_geo_fence_routine(void *_pkt_content){
                         pkt_content,
                         0);
 */
-		update_geo_fence(pkt_content);
+        update_geo_fence(pkt_content);
 
     }
     else if(topic_name != NULL && strncmp(topic_name, TRACKED_OBJECT_DATA_TOPIC,
@@ -334,9 +362,9 @@ static void *process_geo_fence_routine(void *_pkt_content){
                                             pkt_content_to_process,
                                             0);
 */
-					check_tracking_object_data_routine(pkt_content_to_process);
+                    check_tracking_object_data_routine(pkt_content_to_process);
 
-					mp_free(&(geo_fence_config -> pkt_content_mempool),  pkt_content_to_process);
+                    mp_free(&(geo_fence_config -> pkt_content_mempool),  pkt_content_to_process);
                     break;
                 }
             }
@@ -386,7 +414,7 @@ static void *process_geo_fence_routine(void *_pkt_content){
                                             0);
 */
                     check_tracking_object_data_routine(pkt_content_to_process);
-					mp_free(&(geo_fence_config -> pkt_content_mempool),  pkt_content_to_process);
+                    mp_free(&(geo_fence_config -> pkt_content_mempool),  pkt_content_to_process);
                     break;
                 }
             }
@@ -406,6 +434,8 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
 
     pgeo_fence_config geo_fence_config = pkt_content -> geo_fence_config;
 
+	pudp_config udp_config = &geo_fence_config -> udp_config;
+
     List_Entry *current_list_entry, *current_mac_list_entry;
 
     sgeo_fence_list_node *current_list_ptr, *geo_fence_list_ptr;
@@ -413,11 +443,13 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
     smac_prefix_list_node *current_mac_prefix_list_ptr;
 
     char *current_ptr, *saved_ptr, *uuid, *lbeacon_ip, *lbeacon_type,
-         *mac_address;
+         *mac_address, *initial_timestamp, *final_timestamp, *push_button;
 
     char content_for_processing[WIFI_MESSAGE_LENGTH];
 
     int geo_fence_id, object_type, number_of_objects, rssi, threshold;
+
+    char content_for_alert[WIFI_MESSAGE_LENGTH];
 
     /*
      * id;"P/F";threshold;tracking_data
@@ -519,19 +551,19 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
 
         while(number_of_objects --){
 
-			//mac_address;initial_timestamp;final_timestamp;rssi;push_button;
+            //mac_address;initial_timestamp;final_timestamp;rssi;push_button;
 
             mac_address = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
-            current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+            initial_timestamp = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
-            current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+            final_timestamp = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
             current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
             sscanf(current_ptr, "%d", &rssi);
 
-			current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+            push_button = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
             list_for_each(current_mac_list_entry, &geo_fence_list_ptr ->
                                                           mac_prefix_list_head){
@@ -540,8 +572,8 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                                                         smac_prefix_list_node,
                                                         mac_prefix_list_entry);
 
-                if((strncmp_caseinsensitive(mac_address, 
-                        current_mac_prefix_list_ptr -> mac_prefix, 
+                if((strncmp_caseinsensitive(mac_address,
+                        current_mac_prefix_list_ptr -> mac_prefix,
                         strlen(current_mac_prefix_list_ptr -> mac_prefix)) == 0)
                         && rssi >= threshold){
 
@@ -549,6 +581,23 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                     printf("[GeoFence-Alert] timestamp %d - %s %s %s %d\n",
                            get_system_time(), uuid, lbeacon_ip, mac_address,
                            rssi);
+
+                    memset(content_for_alert, 0, WIFI_MESSAGE_LENGTH);
+
+                    content_for_alert[0] =  ((from_modules << 4) & 0xf0) +
+                                             (update_topic_data & 0x0f);
+
+                    //number_of_geo_fence_alert;mac_address1;type1;uuid1;
+                    //alert_time1;rssi1;geo_fence_id1;
+
+                    sprintf( &content_for_alert[1], "%d;%s;%s;%s;%d;%d;%d;",
+                            1, mac_address, lbeacon_type, uuid, final_timestamp,
+                            rssi, geo_fence_id);
+
+                    udp_addpkt(udp_config, geo_fence_config -> server_ip,
+                               content_for_alert, strlen(content_for_alert));
+
+
 //#endif
 
                 }
@@ -908,6 +957,38 @@ static void *process_api_recv(void *_geo_fence_config){
 
 #ifdef debugging
                             printf("[GeoFence] Topic: %s\n", topic);
+
+                            if(topic != NULL && strncmp(
+                               topic, GEO_FENCE_ALERT_TOPIC,
+                               strlen(GEO_FENCE_ALERT_TOPIC)) == 0){
+
+                                current_pointer = strtok_s(NULL,
+                                                         DELIMITER_SEMICOLON,
+                                                         &saved_ptr);
+
+                                if(current_pointer != NULL && strncmp(
+                                   current_pointer, "Success",
+                                   strlen("Success")) == 0){
+
+                                    current_pointer = strtok_s(NULL,
+                                                           DELIMITER_SEMICOLON,
+                                                           &saved_ptr);
+
+                                    if(current_pointer != NULL){
+
+                                        sscanf(current_pointer, "%d",
+                                              &geo_fence_config ->
+                                              geo_fence_alert_data_owner_id);
+
+#ifdef debugging
+                                        printf("[GeoFence] geo_fence_alert_" \
+                                               "data_owner_id: %d\n",
+                                               geo_fence_config ->
+                                              geo_fence_alert_data_owner_id);
+#endif
+                                    }
+                                }
+                            }
 #endif
 
                             break;

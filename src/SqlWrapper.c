@@ -24,7 +24,7 @@
 
   Version:
 
-     1.0, 20190519
+     1.0, 20190524
 
   Abstract:
 
@@ -285,9 +285,9 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
         *string_end = '\0';
 
         /* Create SQL statement */
-		pqescape_ip_address = 
+		pqescape_ip_address =
             PQescapeLiteral(conn, ip_address, strlen(ip_address));
-        
+
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_template,
                 pqescape_ip_address,
@@ -462,13 +462,13 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
-		
+
         pqescape_uuid = PQescapeLiteral(conn, uuid, strlen(uuid));
-        pqescape_lbeacon_ip = 
+        pqescape_lbeacon_ip =
             PQescapeLiteral(conn, lbeacon_ip, strlen(lbeacon_ip));
-        pqescape_gateway_ip = 
+        pqescape_gateway_ip =
             PQescapeLiteral(conn, gateway_ip, strlen(gateway_ip));
-        pqescape_registered_timestamp_GMT = 
+        pqescape_registered_timestamp_GMT =
             PQescapeLiteral(conn, registered_timestamp_GMT,
                             strlen(registered_timestamp_GMT));
 
@@ -549,9 +549,9 @@ ErrorCode SQL_update_gateway_health_status(void *db,
         *string_end = '\0';
 
         /* Create SQL statement */
-        pqescape_ip_address = 
+        pqescape_ip_address =
             PQescapeLiteral(conn, ip_address, strlen(ip_address));
-        pqescape_health_status = 
+        pqescape_health_status =
             PQescapeLiteral(conn, health_status, strlen(health_status));
 
         memset(sql, 0, sizeof(sql));
@@ -628,7 +628,7 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
 
         /* Create SQL statement */
         pqescape_uuid = PQescapeLiteral(conn, uuid, strlen(uuid));
-        pqescape_health_status = 
+        pqescape_health_status =
             PQescapeLiteral(conn, health_status, strlen(health_status));
 
         memset(sql, 0, sizeof(sql));
@@ -669,7 +669,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                          "(object_mac_address, " \
                          "lbeacon_uuid, " \
                          "rssi, " \
-                         "push_button, " \
+                         "panic_button, " \
                          "initial_timestamp, " \
                          "final_timestamp, " \
                          "server_time_offset) " \
@@ -692,7 +692,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     int current_time = get_system_time();
     char *pqescape_object_mac_address = NULL;
     char *pqescape_lbeacon_uuid = NULL;
-    char *pqescape_rssi = NULL; 
+    char *pqescape_rssi = NULL;
     char *pqescape_push_button = NULL;
     char *pqescape_initial_timestamp_GMT = NULL;
     char *pqescape_final_timestamp_GMT = NULL;
@@ -748,18 +748,18 @@ ErrorCode SQL_update_object_tracking_data(void *db,
             *string_end = '\0';
 
             /* Create SQL statement */
-            pqescape_object_mac_address = 
+            pqescape_object_mac_address =
                 PQescapeLiteral(conn, object_mac_address,
                                 strlen(object_mac_address));
-            pqescape_lbeacon_uuid =  
+            pqescape_lbeacon_uuid =
                 PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid));
             pqescape_rssi = PQescapeLiteral(conn, rssi, strlen(rssi));
-            pqescape_push_button =  
+            pqescape_push_button =
                 PQescapeLiteral(conn, push_button, strlen(push_button));
-            pqescape_initial_timestamp_GMT = 
+            pqescape_initial_timestamp_GMT =
                 PQescapeLiteral(conn, initial_timestamp_GMT,
                                 strlen(initial_timestamp_GMT));
-            pqescape_final_timestamp_GMT = 
+            pqescape_final_timestamp_GMT =
                 PQescapeLiteral(conn, final_timestamp_GMT,
                                 strlen(final_timestamp_GMT));
 
@@ -841,9 +841,9 @@ int SQL_update_api_data_owner(void *db, char *buf, size_t buf_len){
     SQL_begin_transaction(db);
 
     /* Create SQL statement */
-    pqescape_topic_name = 
+    pqescape_topic_name =
         PQescapeLiteral(conn, topic_name, strlen(topic_name));
-    pqescape_ip_address = 
+    pqescape_ip_address =
         PQescapeLiteral(conn, ip_address, strlen(ip_address));
 
     memset(sql, 0, sizeof(sql));
@@ -868,9 +868,9 @@ int SQL_update_api_data_owner(void *db, char *buf, size_t buf_len){
 
     SQL_commit_transaction(db);
 
-    pqescape_topic_name = 
+    pqescape_topic_name =
         PQescapeLiteral(conn, topic_name, strlen(topic_name));
-    
+
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_select_template,
                  pqescape_topic_name);
@@ -906,7 +906,7 @@ ErrorCode SQL_remove_api_data_owner(void *db, char *buf, size_t buf_len){
     char *sql_delete_template = "DELETE FROM api_data_owner where id =\'%d\';";
 
     sscanf(buf, "%d;", &topic_id);
-   
+
     SQL_begin_transaction(db);
 
     /* Create SQL statement */
@@ -945,7 +945,7 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
     char *sql_select_template = "SELECT id, name, ip_address FROM "\
                                 "api_data_owner where name = %s ;";
 
-    memset(temp_buf, 0, WIFI_MESSAGE_LENGTH); 
+    memset(temp_buf, 0, WIFI_MESSAGE_LENGTH);
     memcpy(temp_buf, buf, buf_len);
 
     string_begin = temp_buf;
@@ -954,7 +954,7 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
 
     topic_name = string_begin;
 
-    pqescape_topic_name = 
+    pqescape_topic_name =
         PQescapeLiteral(conn, topic_name, strlen(topic_name));
 
     memset(sql, 0, sizeof(sql));
@@ -1025,14 +1025,14 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
     *string_end = '\0';
 
     topic_name = string_begin;
-    
+
     string_begin = string_end + 1;
     string_end = strstr(string_begin, DELIMITER_SEMICOLON);
     *string_end = '\0';
 
     ip_address = string_begin;
 
-    pqescape_ip_addreee = 
+    pqescape_ip_addreee =
         PQescapeLiteral(conn, ip_address, strlen(ip_address));
 
     memset(sql, 0, sizeof(sql));
@@ -1059,7 +1059,7 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 		SQL_begin_transaction(db);
 
         /* Create SQL statement */
-        pqescape_ip_addreee = 
+        pqescape_ip_addreee =
             PQescapeLiteral(conn, ip_address, strlen(ip_address));
 
         memset(sql, 0, sizeof(sql));
@@ -1083,7 +1083,7 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
 
         SQL_commit_transaction(db);
 
-        pqescape_ip_addreee = 
+        pqescape_ip_addreee =
             PQescapeLiteral(conn, ip_address, strlen(ip_address));
 
         memset(sql, 0, sizeof(sql));
@@ -1250,4 +1250,109 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
 
     return WORK_SUCCESSFULLY;
 
+}
+
+ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
+
+    PGconn *conn = (PGconn *) db;
+    char *saved_ptr;
+    char content_temp[WIFI_MESSAGE_LENGTH];
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char *sql_template = "INSERT INTO geo_fence_alert " \
+                         "(mac_address, " \
+                         "type, " \
+                         "uuid, " \
+                         "alert_time, " \
+                         "rssi, " \
+                         "geo_fence_id, " \
+                         "receive_time) " \
+                         "VALUES " \
+                         "(%s, %s, %s, " \
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
+                         "%s, %s, NOW());";
+
+    int number_of_geo_fence_alert = 0;
+    char *number_of_geo_fence_alert_str;
+    char *mac_address = NULL;
+    char *type = NULL;
+    char *uuid = NULL;
+    char *alert_time = NULL;
+    char *rssi = NULL;
+    char *geo_fence_id = NULL;
+    char *receive_time = NULL;
+
+    char *pqescape_mac_address = NULL;
+    char *pqescape_type = NULL;
+    char *pqescape_uuid = NULL;
+    char *pqescape_alert_time = NULL;
+    char *pqescape_rssi = NULL;
+    char *pqescape_geo_fence_id = NULL;
+    char *pqescape_receive_time = NULL;
+
+    saved_ptr = NULL;
+
+    memcpy(content_temp, buf, buf_len);
+
+    number_of_geo_fence_alert_str = strtok_s(content_temp, DELIMITER_SEMICOLON,
+                                              &saved_ptr);
+    sscanf(number_of_geo_fence_alert_str, "%d", &number_of_geo_fence_alert);
+
+    SQL_begin_transaction(db);
+
+    while( number_of_geo_fence_alert-- ){
+
+        mac_address = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        type = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        uuid = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        alert_time = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        rssi = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        geo_fence_id = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        receive_time = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+
+        /* Create SQL statement */
+        memset(sql, 0, sizeof(sql));
+
+        pqescape_mac_address = PQescapeLiteral(conn, mac_address,
+                                               strlen(mac_address));
+        pqescape_type = PQescapeLiteral(conn, type, strlen(type));
+        pqescape_uuid = PQescapeLiteral(conn, uuid, strlen(uuid));
+        pqescape_alert_time = PQescapeLiteral(conn, alert_time,
+                                              strlen(alert_time));
+        pqescape_rssi = PQescapeLiteral(conn, rssi, strlen(rssi));
+        pqescape_geo_fence_id = PQescapeLiteral(conn, geo_fence_id,
+                                                strlen(geo_fence_id));
+        pqescape_receive_time = PQescapeLiteral(conn, receive_time,
+                                                strlen(receive_time));
+
+        sprintf(sql, sql_template,
+                pqescape_mac_address,
+                pqescape_type,
+                pqescape_uuid,
+                pqescape_alert_time,
+                pqescape_rssi,
+                pqescape_geo_fence_id,
+                pqescape_receive_time);
+
+        PQfreemem(pqescape_mac_address);
+        PQfreemem(pqescape_type);
+        PQfreemem(pqescape_uuid);
+        PQfreemem(pqescape_alert_time);
+        PQfreemem(pqescape_rssi);
+        PQfreemem(pqescape_geo_fence_id);
+        PQfreemem(pqescape_receive_time);
+
+        /* Execute SQL statement */
+        ret_val = SQL_execute(db, sql);
+
+        if(WORK_SUCCESSFULLY != ret_val){
+            SQL_rollback_transaction(db);
+            return E_SQL_EXECUTE;
+        }
+
+    }
+
+    SQL_commit_transaction(db);
+
+    return WORK_SUCCESSFULLY;
 }

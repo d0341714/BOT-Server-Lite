@@ -46,7 +46,7 @@
 #include "BeDIS.h"
 
 /* When debugging is needed */
-//#define debugging
+#define debugging
 
 
 typedef struct {
@@ -151,6 +151,8 @@ typedef struct {
 
     /* Number of schedule_worker allow to use */
     int number_worker_threads;
+
+    int geo_fence_alert_data_owner_id;
 
     int geo_fence_data_subscribe_id;
 

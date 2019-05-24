@@ -508,7 +508,7 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len);
 
 
 /*
-  SQL_get_api_subscribers
+  SQL_get_geo_fence
 
      This function get geo fence table.
 
@@ -531,6 +531,32 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len);
                  is WORK_SUCCESSFULLY.
 */
 ErrorCode SQL_get_geo_fence(void *db, char *buf);
+
+
+/*
+  SQL_insert_geo_fence_alert
+
+     This function insert received geo fence alert into geo_fence_alert table.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     buf - pointer to an array to receive the returned geo fence information.
+           The returned message format is below.
+
+            number_of_geo_fence_alert;mac_address1;type1;uuid1;alert_time1;
+            rssi1;geo_fence_id1;mac_address2;type2;uuid2;alert_time2;
+            rssi2;geo_fence_id2;
+
+     buf_len - Length in number of bytes of buf
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len);
 
 
 #endif

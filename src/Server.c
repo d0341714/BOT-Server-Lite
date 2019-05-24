@@ -1192,7 +1192,20 @@ void *process_api_routine(void *_buffer_node){
             break;
 
         case update_topic_data:
-			return_value = SQL_get_api_subscribers(
+
+            topic_name = strtok_s(data_content, DELIMITER_SEMICOLON,
+                                                       &saved_data_pointer);
+
+            if(strncmp(topic_name, GEO_FENCE_ALERT_TOPIC,
+                       strlen(GEO_FENCE_ALERT_TOPIC)) == 0){
+                SQL_insert_geo_fence_alert(Server_db, saved_data_pointer,
+                                           strlen(saved_data_pointer));
+            }
+
+            memcpy(data_content, &(current_node -> content[1]),
+                    current_node -> content_size - 1);
+
+            return_value = SQL_get_api_subscribers(
                                             Server_db,
                                             data_content,
                                             sizeof(data_content));
