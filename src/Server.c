@@ -1201,7 +1201,7 @@ void *process_api_routine(void *_buffer_node){
                 SQL_insert_geo_fence_alert(Server_db, saved_data_pointer,
                                            strlen(saved_data_pointer));
             }
-
+/*
             memcpy(data_content, &(current_node -> content[1]),
                     current_node -> content_size - 1);
 
@@ -1234,7 +1234,7 @@ void *process_api_routine(void *_buffer_node){
                 }
 
             }
-
+*/
             break;
 
     }
