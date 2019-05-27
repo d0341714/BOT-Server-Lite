@@ -553,7 +553,7 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                     //number_of_geo_fence_alert;mac_address1;type1;uuid1;
                     //alert_time1;rssi1;geo_fence_id1;
 
-                    sprintf( &content_for_alert[1], "%s;%d;%s;%s;%s;%d;%d;%d;",
+                    sprintf( &content_for_alert[1], "%s;%d;%s;%s;%s;%s;%d;%d;",
                             GEO_FENCE_ALERT_TOPIC, 1, mac_address, lbeacon_type, uuid, 
                             final_timestamp, rssi, geo_fence_id);
 
@@ -911,7 +911,7 @@ static void *process_api_recv(void *_geo_fence_config){
                         case add_data_owner:
 #ifdef debugging
                             printf("[GeoFence] pkt content in responsed "\
-                                   "addtopic: [%s]\n", tmp_content);
+                                   "add topic: [%s]\n", tmp_content);
 #endif
                             topic = strtok_s( &tmp_content[1],
                                            DELIMITER_SEMICOLON, &saved_ptr);
@@ -958,7 +958,7 @@ static void *process_api_recv(void *_geo_fence_config){
 
 #ifdef debugging
                             printf("[GeoFence] pkt content in responsed "\
-                                   "addsubscriber: [%s]\n", tmp_content);
+                                   "add subscriber: [%s]\n", tmp_content);
 #endif
 
                             topic = strtok_s( &tmp_content[1],
