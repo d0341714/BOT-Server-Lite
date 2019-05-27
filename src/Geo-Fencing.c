@@ -36,7 +36,8 @@
 
   Authors:
 
-     Gary Xiao     , garyh0205@hotmail.com
+     Gary Xiao    , garyh0205@hotmail.com
+     Chun Yu Lai  , chunyu1202@gmail.com
 
  */
 
@@ -55,24 +56,7 @@ void *geo_fence_routine(void *_geo_fence_config){
     char content[WIFI_MESSAGE_LENGTH];
 
     geo_fence_config -> is_running = true;
-/*
-#ifdef debugging
-    printf("[GeoFence] init ThreadPool\nNumber of worker thread: %d\n",
-           geo_fence_config -> number_worker_threads);
-#endif
-    geo_fence_config -> worker_thread = thpool_init(
-                                   geo_fence_config -> number_worker_threads);
 
-	if(NULL == geo_fence_config->worker_thread){
-		printf("[GeoFence] Failed to initialize thread pool\n");
-	    return E_INITIALIZATION_FAIL;
-	}
-
-#ifdef debugging
-    printf("[GeoFence] init ThreadPool success\nNumber of worker thread: %d\n",
-           geo_fence_config -> number_worker_threads);
-#endif
-*/
     geo_fence_config -> geo_fence_data_subscribe_id = -1;
 
     geo_fence_config -> tracked_object_data_subscribe_id = -1;
@@ -223,9 +207,7 @@ void *geo_fence_routine(void *_geo_fence_config){
     }
 
     udp_release( &geo_fence_config -> udp_config);
-/*
-    thpool_destroy( &geo_fence_config -> worker_thread);
-*/
+
     pthread_mutex_destroy( &geo_fence_config -> geo_fence_list_lock);
 
     mp_destroy( &geo_fence_config -> pkt_content_mempool);
@@ -251,9 +233,9 @@ static void *process_geo_fence_routine(void *_pkt_content){
 
     /* lbeacon_uuid;lbeacon_datetime,lbeacon_ip;
      * object_type;object_number;object_mac_address_1;initial_timestamp_GMT_1;
-     * final_timestamp_GMT_1;rssi_1;object_type;object_number;
+     * final_timestamp_GMT_1;rssi_1;panic_button_1;object_type;object_number;
      * object_mac_address_2;initial_timestamp_GMT_2;final_timestamp_GMT_2;rssi_2
-     * ;
+     * ;panic_button_2;
      */
 
     ppkt_content pkt_content = (ppkt_content)_pkt_content;
@@ -286,12 +268,7 @@ static void *process_geo_fence_routine(void *_pkt_content){
 
     if(topic_name != NULL && strncmp(topic_name, GEO_FENCE_TOPIC,
        strlen(GEO_FENCE_TOPIC)) == 0){
-/*
-        thpool_add_work(geo_fence_config -> worker_thread,
-                        update_geo_fence,
-                        pkt_content,
-                        0);
-*/
+
         update_geo_fence(pkt_content);
 
     }
@@ -355,13 +332,7 @@ static void *process_geo_fence_routine(void *_pkt_content){
 
                         memcpy(pkt_content_to_process -> ip_address, pkt_content ->
                                ip_address, NETWORK_ADDR_LENGTH);
-    /*
-                        return_value = thpool_add_work(
-                                                geo_fence_config -> worker_thread,
-                                                check_tracking_object_data_routine,
-                                                pkt_content_to_process,
-                                                0);
-    */
+
                         check_tracking_object_data_routine(pkt_content_to_process);
 
                         mp_free(&(geo_fence_config -> pkt_content_mempool),  pkt_content_to_process);
@@ -407,13 +378,7 @@ static void *process_geo_fence_routine(void *_pkt_content){
 
                         memcpy(pkt_content_to_process->ip_address, pkt_content ->
                                ip_address, NETWORK_ADDR_LENGTH);
-    /*
-                        return_value = thpool_add_work(
-                                                geo_fence_config -> worker_thread,
-                                                check_tracking_object_data_routine,
-                                                pkt_content_to_process,
-                                                0);
-    */
+
                         check_tracking_object_data_routine(pkt_content_to_process);
                         mp_free(&(geo_fence_config -> pkt_content_mempool),  pkt_content_to_process);
                     }
@@ -445,7 +410,7 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
     smac_prefix_list_node *current_mac_prefix_list_ptr;
 
     char *current_ptr, *saved_ptr, *uuid, *lbeacon_ip, *lbeacon_type,
-         *mac_address, *initial_timestamp, *final_timestamp, *push_button;
+         *mac_address, *initial_timestamp, *final_timestamp, *panic_button;
 
     char content_for_processing[WIFI_MESSAGE_LENGTH];
 
@@ -465,9 +430,7 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                            &saved_ptr);
 
     sscanf(current_ptr, "%d", &geo_fence_id);
-/*
-    pthread_mutex_lock( &geo_fence_config -> geo_fence_list_lock);
-*/
+
     list_for_each(current_list_entry, &geo_fence_config ->
                                       geo_fence_list_head.geo_fence_list_entry){
 
@@ -487,9 +450,7 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
     }
 
     if(geo_fence_list_ptr == NULL){
-/*
-        pthread_mutex_unlock( &geo_fence_config -> geo_fence_list_lock);
-*/
+
 #ifdef debugging
         printf("[GeoFence] Exit\n");
 #endif
@@ -553,7 +514,7 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
 
         while(number_of_objects --){
 
-            //mac_address;initial_timestamp;final_timestamp;rssi;push_button;
+            //mac_address;initial_timestamp;final_timestamp;rssi;panic_button;
 
             mac_address = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
@@ -565,7 +526,7 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
 
             sscanf(current_ptr, "%d", &rssi);
 
-            push_button = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+            panic_button = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
             list_for_each(current_mac_list_entry, &geo_fence_list_ptr ->
                                                           mac_prefix_list_head){
@@ -608,9 +569,7 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
         }
 
     }while(object_type != (max_type - 1));
-/*
-    pthread_mutex_unlock( &geo_fence_config -> geo_fence_list_lock);
-*/
+
     return (void *)NULL;
 
 }
@@ -902,8 +861,6 @@ static void *update_geo_fence(void *_pkt_content){
 
     pthread_mutex_unlock( &geo_fence_config -> geo_fence_list_lock);
 
-//    mp_free( &geo_fence_config->pkt_content_mempool, pkt_content);
-
     return (void *)NULL;
 }
 
@@ -1110,13 +1067,7 @@ static void *process_api_recv(void *_geo_fence_config){
                                 pkt_content -> content_size = temppkt.content_size;
 
                                 pkt_content -> geo_fence_config = geo_fence_config;
-    /*
-                                return_value = thpool_add_work(
-                                                geo_fence_config -> worker_thread,
-                                                process_geo_fence_routine,
-                                                pkt_content,
-                                                0);
-    */
+   
                                 process_geo_fence_routine(pkt_content);
 							    mp_free( &geo_fence_config->pkt_content_mempool, pkt_content);
 
