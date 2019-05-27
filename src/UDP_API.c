@@ -232,9 +232,7 @@ void *udp_recv_pkt(void *udpconfig){
 #endif
 			memset(tmp_address, 0, sizeof(tmp_address));
 			udp_address_reduce_point(addr_tmp, tmp_address);
-            addpkt(&udp_config -> Received_Queue, UDP
-                 , tmp_address
-                 , recv_buf, recv_len);
+            addpkt(&udp_config -> Received_Queue, UDP, tmp_address, recv_buf, recv_len);
 			
         }
 #ifdef debugging
