@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190519
+     1.0, 20190528
 
   Abstract:
 
@@ -36,8 +36,8 @@
 
   Authors:
 
-     Gary Xiao    , garyh0205@hotmail.com
      Chun Yu Lai  , chunyu1202@gmail.com
+     Gary Xiao    , garyh0205@hotmail.com
 
  */
 

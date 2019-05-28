@@ -1179,6 +1179,8 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
 
     rows = PQntuples(res);
 
+    memset(buf, 0, sizeof(buf));
+
     if(rows > 0){
         for(current_row=0;current_row < rows;current_row ++){
             if(strlen(buf) > 0)

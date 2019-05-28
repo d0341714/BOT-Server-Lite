@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190519
+     1.0, 20190528
 
   Abstract:
 
@@ -36,8 +36,8 @@
 
   Authors:
 
-     Gary Xiao    , garyh0205@hotmail.com
      Chun Yu Lai  , chunyu1202@gmail.com
+     Gary Xiao    , garyh0205@hotmail.com
 
  */
 
@@ -309,33 +309,39 @@ static void *process_geo_fence_routine(void *_pkt_content){
                     pkt_content_to_process = mp_alloc( &(geo_fence_config ->
                                                       pkt_content_mempool));
                     if(pkt_content_to_process != NULL){
-                        sprintf(pkt_content_to_process -> content, "%d;%s;%d;%s",
-                                                current_list_ptr -> id, "F",
-                                                current_uuid_list_ptr -> threshold,
+                        sprintf(pkt_content_to_process -> content, 
+                                                "%d;%s;%d;%s", 
+                                                current_list_ptr -> id, 
+                                                "F",
+                                                current_uuid_list_ptr -> 
+                                                threshold,
                                                  &pkt_content->content[1]);
 
-    #ifdef debugging
-                        printf("[GeoFence] Content: %s\n", pkt_content_to_process ->
-                                                           content);
-    #endif
+#ifdef debugging
+                        printf("[GeoFence] Content: %s\n", 
+                                             pkt_content_to_process -> content);
+#endif
 
                         pkt_content_to_process -> content_size = strlen(
-                                                 pkt_content_to_process -> content);
+                                             pkt_content_to_process -> content);
 
-    #ifdef debugging
-                        printf("[GeoFence] Size: %d\n", pkt_content_to_process ->
-                                                                      content_size);
-    #endif
+#ifdef debugging
+                        printf("[GeoFence] Size: %d\n", 
+                                       pkt_content_to_process ->  content_size);
+#endif
 
                         pkt_content_to_process -> geo_fence_config =
-                                                                   geo_fence_config;
+                                                               geo_fence_config;
 
-                        memcpy(pkt_content_to_process -> ip_address, pkt_content ->
-                               ip_address, NETWORK_ADDR_LENGTH);
+                        memcpy(pkt_content_to_process -> ip_address, 
+                                                      pkt_content -> ip_address,
+                                                      NETWORK_ADDR_LENGTH);
 
-                        check_tracking_object_data_routine(pkt_content_to_process);
+                        check_tracking_object_data_routine
+                                                       (pkt_content_to_process);
 
-                        mp_free(&(geo_fence_config -> pkt_content_mempool),  pkt_content_to_process);
+                        mp_free(&(geo_fence_config -> pkt_content_mempool),  
+                                                        pkt_content_to_process);
                     }
                     break;
                 }
@@ -356,31 +362,38 @@ static void *process_geo_fence_routine(void *_pkt_content){
                     pkt_content_to_process = mp_alloc(&(geo_fence_config ->
                                                         pkt_content_mempool));
                     if(pkt_content_to_process != NULL){
-                        sprintf(pkt_content_to_process -> content, "%d;%s;%d;%s",
-                                current_list_ptr->id, "P", current_uuid_list_ptr ->
-                                threshold, &pkt_content->content[1]);
+                        sprintf(pkt_content_to_process -> content, 
+                                                       "%d;%s;%d;%s",
+                                                       current_list_ptr->id, 
+                                                       "P", 
+                                                       current_uuid_list_ptr ->
+                                                       threshold, 
+                                                        &pkt_content->content[1]
+                                                       );
 
-    #ifdef debugging
-                        printf("[GeoFence] Content: %s\n", pkt_content_to_process ->
-                                                                           content);
-    #endif
+#ifdef debugging
+                        printf("[GeoFence] Content: %s\n",
+                                             pkt_content_to_process -> content);
+#endif
 
-                        pkt_content_to_process -> content_size = strlen(
-                                                   pkt_content_to_process->content);
+                        pkt_content_to_process -> content_size = 
+                                        strlen(pkt_content_to_process->content);
 
-    #ifdef debugging
-                        printf("[GeoFence] Size: %d\n", pkt_content_to_process ->
-                                                                      content_size);
-    #endif
+#ifdef debugging
+                        printf("[GeoFence] Size: %d\n", 
+                                        pkt_content_to_process -> content_size);
+#endif
 
                         pkt_content_to_process -> geo_fence_config =
-                                                                   geo_fence_config;
+                                                               geo_fence_config;
 
-                        memcpy(pkt_content_to_process->ip_address, pkt_content ->
-                               ip_address, NETWORK_ADDR_LENGTH);
+                        memcpy(pkt_content_to_process->ip_address, 
+                                pkt_content -> ip_address, NETWORK_ADDR_LENGTH);
 
-                        check_tracking_object_data_routine(pkt_content_to_process);
-                        mp_free(&(geo_fence_config -> pkt_content_mempool),  pkt_content_to_process);
+                        check_tracking_object_data_routine
+                                                       (pkt_content_to_process);
+                        mp_free(&(geo_fence_config -> pkt_content_mempool),  
+                                                        pkt_content_to_process);
                     }
                     break;
                 }
@@ -439,8 +452,8 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                                        geo_fence_list_entry);
 
 #ifdef debugging
-        printf("[GeoFence] geo_fence_list_ptr -> id: %d\n", geo_fence_list_ptr ->
-               id);
+        printf("[GeoFence] geo_fence_list_ptr -> id: %d\n", 
+                                                      geo_fence_list_ptr -> id);
 #endif
 
         if(geo_fence_list_ptr -> id == geo_fence_id){
@@ -554,8 +567,8 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                     //alert_time1;rssi1;geo_fence_id1;
 
                     sprintf( &content_for_alert[1], "%s;%d;%s;%s;%s;%s;%d;%d;",
-                            GEO_FENCE_ALERT_TOPIC, 1, mac_address, lbeacon_type, uuid, 
-                            final_timestamp, rssi, geo_fence_id);
+                            GEO_FENCE_ALERT_TOPIC, 1, mac_address, lbeacon_type,
+                            uuid, final_timestamp, rssi, geo_fence_id);
 
                     udp_addpkt(udp_config, geo_fence_config -> server_ip,
                                content_for_alert, strlen(content_for_alert));
@@ -759,18 +772,19 @@ static void *update_geo_fence(void *_pkt_content){
                 memcpy(uuid_list_node -> uuid, uuid, UUID_LENGTH);
 
     #ifdef debugging
-                printf("[GeoFence] uuid_list_node -> uuid: %s\n", uuid_list_node ->
-                                                                              uuid);
+                printf("[GeoFence] uuid_list_node -> uuid: %s\n", 
+                                                     uuid_list_node -> uuid);
     #endif
                 uuid_list_node -> threshold = threshold;
 
     #ifdef debugging
                 printf("[GeoFence] uuid_list_node -> threshold: %d\n",
-                                                       uuid_list_node -> threshold);
+                                                uuid_list_node -> threshold);
     #endif
 
                 insert_list_tail( &uuid_list_node -> uuid_list_entry,
-                                 &geo_fence_list_node -> perimeters_uuid_list_head);
+                                  &geo_fence_list_node -> 
+                                 perimeters_uuid_list_head);
             }
         }
 
@@ -845,7 +859,8 @@ static void *update_geo_fence(void *_pkt_content){
                 memcpy(mac_prefix_node -> mac_prefix, current_ptr,
                        strlen(current_ptr) * sizeof(char));
     #ifdef debugging
-                printf("[GeoFence] MAC_Prefix: %s\n", mac_prefix_node -> mac_prefix)
+                printf("[GeoFence] MAC_Prefix: %s\n", mac_prefix_node -> 
+                                                      mac_prefix)
                 ;
     #endif
                 insert_list_tail( &mac_prefix_node -> mac_prefix_list_entry,
@@ -1064,12 +1079,15 @@ static void *process_api_recv(void *_geo_fence_config){
                                 memcpy(pkt_content -> content, temppkt.content,
                                        temppkt.content_size);
 
-                                pkt_content -> content_size = temppkt.content_size;
+                                pkt_content -> content_size = 
+                                                           temppkt.content_size;
 
-                                pkt_content -> geo_fence_config = geo_fence_config;
+                                pkt_content -> geo_fence_config = 
+                                                               geo_fence_config;
    
                                 process_geo_fence_routine(pkt_content);
-							    mp_free( &geo_fence_config->pkt_content_mempool, pkt_content);
+							    mp_free( &geo_fence_config->pkt_content_mempool,
+                                        pkt_content);
 
                             }
                             break;
