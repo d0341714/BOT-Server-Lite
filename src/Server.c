@@ -22,7 +22,7 @@
 
   Version:
 
-     1.0, 20190519
+     1.0, 20190527
 
   Abstract:
 
@@ -54,14 +54,13 @@ int main(int argc, char **argv){
     /* The flag is to know if any routines are processed in this while loop */
     bool did_work;
 
-    /* The pkt type to be send */
+    /* The type of the packet */
     int send_pkt_type;
 
-    /* The msg for sending commend */
-    char command_msg[MINIMUM_WIFI_MESSAGE_LENGTH],
-         content[WIFI_MESSAGE_LENGTH];
+    /* The command message to be sent */
+    char command_msg[MINIMUM_WIFI_MESSAGE_LENGTH];
 
-    /* The command for opening database */
+    /* The database argument for opening database */
     char database_argument[SQL_TEMP_BUFFER_LENGTH];
 
     int current_time, content_size;
@@ -70,7 +69,7 @@ int main(int argc, char **argv){
     pthread_t CommUnit_thread;
 
     /* The thread to listen for messages from Wi-Fi interface */
-    pthread_t wifi_listener;
+    pthread_t wifi_listener_thread;
 
     /* The  thread to process the geo fence routine */
     pthread_t GeoFence_thread;
@@ -243,7 +242,8 @@ int main(int argc, char **argv){
     printf("Start Communication\n");
 #endif
 
-    /* The while loop waiting for NSI and CommUnit to be ready */
+    /* The while loop waiting for NSI routine and CommUnit routine to be ready 
+     */
     while(NSI_initialization_complete == false ||
           CommUnit_initialization_complete == false){
 
@@ -262,8 +262,8 @@ int main(int argc, char **argv){
     }
 
     if(geo_fence_data_topic_id == -1){
-        memset(content, 0, WIFI_MESSAGE_LENGTH);
-        sprintf(content, "%s;%s;", GEO_FENCE_TOPIC,
+        memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
+        sprintf(command_msg, "%s;%s;", GEO_FENCE_TOPIC,
                 config.server_ip);
 
         geo_fence_data_topic_id =
@@ -276,8 +276,8 @@ int main(int argc, char **argv){
 #endif
 
     if(tracked_object_data_topic_id == -1){
-        memset(content, 0, WIFI_MESSAGE_LENGTH);
-        sprintf(content, "%s;%s;", TRACKED_OBJECT_DATA_TOPIC,
+        memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
+        sprintf(command_msg, "%s;%s;", TRACKED_OBJECT_DATA_TOPIC,
                 config.server_ip);
 
         tracked_object_data_topic_id =
