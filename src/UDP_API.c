@@ -16,8 +16,12 @@
 
   File Description:
 
-     This file contains the program to connect to Wi-Fi and in the project, we
-     use it for data transmission most.
+     This file contains the program to transmission data using UDP protcol. The 
+     device communicates by this UDP API should be in the same network.
+
+  Version:
+    
+     2.0, 20190527
 
   Abstract:
 
@@ -38,7 +42,7 @@
 
 int udp_initial(pudp_config udp_config, int send_port, int recv_port){
 
-    int ret;
+    int return_value;
 
     int timeout;
 
@@ -53,24 +57,22 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
     memset((char *) &udp_config -> si_server, 0, sizeof(udp_config
            -> si_server));
 
-    ret = init_Packet_Queue( &udp_config -> pkt_Queue);
+    if (return_value = init_Packet_Queue( &udp_config -> pkt_Queue) != 
+        pkt_Queue_SUCCESS)
+        return return_value;
 
-    if(ret != pkt_Queue_SUCCESS)
-        return ret;
-
-    ret = init_Packet_Queue( &udp_config -> Received_Queue);
-
-    if(ret != pkt_Queue_SUCCESS)
-        return ret;
+    if (return_value = init_Packet_Queue( &udp_config -> Received_Queue) != 
+        pkt_Queue_SUCCESS)
+        return return_value;
 
     /* create a send UDP socket */
     if ((udp_config -> send_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))
-         == -1)
+        == -1)
         return send_socket_error;
 
     /* create a recv UDP socket */
     if ((udp_config -> recv_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))
-         == -1)
+        == -1)
         return recv_socket_error;
 
 
@@ -89,19 +91,22 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
     udp_config -> send_port = send_port;
     udp_config -> recv_port = recv_port;
 
-    /* bind recv socket to port */
+    /* bind recv socket to the port */
     if( bind(udp_config -> recv_socket, (struct sockaddr *)&udp_config ->
              si_server, sizeof(udp_config -> si_server) ) == -1)
         return recv_socket_bind_error;
 
-    pthread_create(&udp_config -> udp_receive, NULL, udp_recv_pkt, (void*)
-                   udp_config);
+    /* The thread is used for receiving data */
+    pthread_create(&udp_config -> udp_receive_thread, NULL,    
+                   udp_recv_pkt_routine, (void*) udp_config);
 
-    pthread_create(&udp_config -> udp_send, NULL, udp_send_pkt, (void*)
-                   udp_config);
+    /* The thread is used for sending data */
+    pthread_create(&udp_config -> udp_send_thread, NULL, udp_send_pkt_routine, 
+                   (void*) udp_config);
 
     return 0;
 }
+
 
 int udp_addpkt(pudp_config udp_config, char *raw_addr, char *content, int size){
 
@@ -127,7 +132,7 @@ sPkt udp_getrecv(pudp_config udp_config){
 }
 
 
-void *udp_send_pkt(void *udpconfig){
+void *udp_send_pkt_routine(void *udpconfig){
 
     pudp_config udp_config = (pudp_config) udpconfig;
 
@@ -173,7 +178,7 @@ void *udp_send_pkt(void *udpconfig){
             }
         }
         else{
-            Sleep(WAITING_TIME);
+            Sleep(SEND_THREAD_IDLE_SLEEP_TIME);
         }
 
     }
@@ -181,7 +186,8 @@ void *udp_send_pkt(void *udpconfig){
     return (void *)NULL;
 }
 
-void *udp_recv_pkt(void *udpconfig){
+
+void *udp_recv_pkt_routine(void *udpconfig){
 
     pudp_config udp_config = (pudp_config) udpconfig;
 
@@ -189,9 +195,11 @@ void *udp_recv_pkt(void *udpconfig){
 
     char recv_buf[MESSAGE_LENGTH];
 
-    char *addr_tmp;
+    char *address_ntoa_ptr;
 
-	char tmp_address[NETWORK_ADDR_LENGTH];
+    char address_ntoa[NETWORK_ADDR_LENGTH];
+
+	char reduced_address[NETWORK_ADDR_LENGTH];
 
     struct sockaddr_in si_recv;
 
@@ -216,23 +224,29 @@ void *udp_recv_pkt(void *udpconfig){
 #ifdef debugging
             printf("No data received.\n");
 #endif
-            Sleep(WAITING_TIME);
+            Sleep(SEND_THREAD_IDLE_SLEEP_TIME);
         }
         else if(recv_len > 0){
 
-            addr_tmp = inet_ntoa(si_recv.sin_addr);
+            memset(address_ntoa, 0, sizeof(address_ntoa));
+        
+            address_ntoa_ptr = inet_ntoa(si_recv.sin_addr);
+
+            memcpy(address_ntoa, address_ntoa_ptr, strlen(address_ntoa_ptr) * 
+                   sizeof(char));
 #ifdef debugging
             /* print details of the client/peer and the data received */
-            printf("Received packet from %s:%d\n", inet_ntoa(si_recv.sin_addr),
+            printf("Received packet from %s:%d\n", address_ntoa,
                                                    ntohs(si_recv.sin_port));
             printf("Data: [");
             print_content(recv_buf, recv_len);
             printf("]\n");
             printf("Data Length %d\n", recv_len);
 #endif
-			memset(tmp_address, 0, sizeof(tmp_address));
-			udp_address_reduce_point(addr_tmp, tmp_address);
-            addpkt(&udp_config -> Received_Queue, UDP, tmp_address, recv_buf, recv_len);
+			memset(reduced_address, 0, sizeof(reduced_address));
+			udp_address_reduce_point(address_ntoa, reduced_address);
+            addpkt(&udp_config -> Received_Queue, UDP, reduced_address, 
+                   recv_buf, recv_len);
 			
         }
 #ifdef debugging
@@ -245,6 +259,7 @@ void *udp_recv_pkt(void *udpconfig){
 #endif
     return (void *)NULL;
 }
+
 
 int udp_release(pudp_config udp_config){
 
@@ -271,7 +286,7 @@ int udp_release(pudp_config udp_config){
 int udp_address_reduce_point(char *raw_addr, char *address){
 
     /* Record current filled Address Location. */
-    int address_loc = 0;
+    int address_loc;
 
     /* in each part, at most 3 number. */
     int count = 0;
@@ -282,6 +297,10 @@ int udp_address_reduce_point(char *raw_addr, char *address){
 #ifdef debugging
     printf("Enter udp_address_reduce_point address [%s]\n", raw_addr);
 #endif
+
+    memset(address, 0, sizeof(address));
+
+    address_loc = 0;
 
     /* Four part in a address.(devided by '.') */
     for(n = 0; n < 4; n++){
