@@ -354,7 +354,7 @@ int udp_hex_to_address(unsigned char *hex_addr, char *dest_address){
     int loc, n;
 
 	memset(tmp_address, 0, sizeof(tmp_address));
-	hex_to_char(hex_addr, strlen(hex_addr), tmp_address);
+	hex_to_char(hex_addr, NETWORK_ADDR_LENGTH_HEX, tmp_address);
 
     for(n=0;n < 4;n ++){
 
