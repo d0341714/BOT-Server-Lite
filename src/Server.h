@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190308
+     1.0, 20190527
 
   Abstract:
 
@@ -63,8 +63,6 @@
 /* The category of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
 
-#define MAXIMUM_DATABASE_INFO 1024
-
 #ifdef debugging
 
 /* The category of the printf during debugging */
@@ -72,9 +70,12 @@
 
 #endif
 
+#define MAXIMUM_DATABASE_INFO 1024
+
 /* Maximum number of nodes (Gateways) per star network rooted at a Server */
 #define MAX_NUMBER_NODES 32
 
+/* Maximum number of times to retry mp_alloc() */
 #define TEST_MALLOC_MAX_NUMBER_TIMES 5
 
 /*
@@ -92,7 +93,7 @@ typedef struct {
     /* The IP address of database for the Server to connect. */
     char db_ip[NETWORK_ADDR_LENGTH];
 
-    /* The number of Gateway nodes in the star network of this Server */
+    /* The maximum number of Gateway nodes allowed in the star network of this Server */
     int allowed_number_nodes;
 
     /* The time interval in seconds for the Server sending request for health
@@ -103,8 +104,8 @@ typedef struct {
        object data from LBeacon */
     int period_between_RFTOD;
 
-    /*The number of worker threads used by the communication unit for sending
-      and receiving packets to and from LBeacons and the sever.*/
+    /* The number of worker threads used by the communication unit for sending
+      and receiving packets to and from LBeacons and the sever. */
     int number_worker_threads;
 
     /* A port that Gateways are listening on and for the Server to send to. */
@@ -138,7 +139,7 @@ typedef struct {
 /*  A struct for recording a Gateway and it's last update time */
 typedef struct {
 
-    /* network address of wifi link to the Gateway */
+    /* The network address of wifi link to the Gateway */
     char net_address[NETWORK_ADDR_LENGTH];
 
     /* The last join request time */
@@ -149,7 +150,7 @@ typedef struct {
 
 typedef struct {
 
-    /* A per list lock */
+    /* A per array lock for the AddressMapArray when reading and update data */
     pthread_mutex_t list_lock;
 
     /* A Boolean array in which ith element records whether the ith address map
@@ -166,12 +167,13 @@ typedef struct {
 
     struct List_Entry buffer_entry;
 
-    /* network address of the source or destination */
+    /* The network address of the packet received or the packet to be sent */
     char net_address[NETWORK_ADDR_LENGTH];
 
-    /* pointer to where the data is stored. */
+    /* The pointer points to the content. */
     char content[WIFI_MESSAGE_LENGTH];
 
+   /* The size of the content */
     int content_size;
 
 } BufferNode;
@@ -187,14 +189,14 @@ typedef struct {
 
     struct List_Entry priority_list_entry;
 
-    /* nice relative to normal priority (i.e. nice = 0) */
+    /* The nice is a value relative to the normal priority (i.e. nice = 0) */
     int priority_nice;
 
     /* The pointer point to the function to be called to process buffer nodes in
        the list. */
     void (*function)(void *arg);
 
-    /* function's argument */
+    /* The argument of the function */
     void *arg;
 
 } BufferListHead;
@@ -202,16 +204,17 @@ typedef struct {
 
 /* Global variables */
 
-/* A Server config struct for storing config parameters from the config file */
-ServerConfig config;
+/* The Server config struct for storing config parameters from the config file 
+ */
+ServerConfig serverconfig;
 
-/* A pointer point to db cursor */
+/* The pointer points to the db cursor */
 void *Server_db;
 
-/* Struct for storing necessary objects for Wifi connection */
+/* The struct for storing necessary objects for the Wifi connection */
 sudp_config udp_config;
 
-/* mempool from which buffer node structure are allocated */
+/* The mempool for the buffer node structure to allocate memory */
 Memory_Pool node_mempool;
 
 sgeo_fence_config geo_fence_config;
@@ -244,7 +247,8 @@ BufferListHead BHM_receive_buffer_list_head;
 /* The head of a list of buffers holding message from modulse */
 BufferListHead API_receive_buffer_list_head;
 
-/* The head of a list of buffers for buffer list head in priority order. */
+/* The head of a list of buffers for the buffer list head in the priority 
+   order. */
 BufferListHead priority_list_head;
 
 
@@ -258,6 +262,7 @@ BufferListHead priority_list_head;
 bool NSI_initialization_complete;
 bool CommUnit_initialization_complete;
 
+/* The flag is to identify whether any component fail to initialize */
 bool initialization_failed;
 
 /* Variables for storing the last polling times in second*/
@@ -297,10 +302,10 @@ ErrorCode get_config(ServerConfig *config, char *file_name);
 
   Parameters:
 
-     buffer - A pointer of the buffer to be modified.
-     buff_id - The index of the buffer for the priority array
-     function - A function pointer to be assigned to the buffer
-     priority - The priority level of the buffer
+     buffer - A pointer points to the buffer to be modified.
+     buff_id - The index of the buffer for the priority array.
+     function - The pointer points to the function be assigned to the buffer.
+     priority - The priority nice of the buffer when processing the buffer.
 
   Return value:
 
@@ -314,13 +319,13 @@ void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
   sort_priority_list:
 
      The function arrange entries in the priority list in nonincreasing
-     order of Priority_nice.
+     order of the priority nice.
 
   Parameters:
 
      config - The pointer points to the structure which stored config for
               gateway.
-     list_head - The pointer of the priority list head.
+     list_head - The pointer points to the priority list head.
 
   Return value:
 
@@ -356,7 +361,7 @@ void *CommUnit_routine();
 
   Parameters:
 
-     _buffer_list_head - A pointer points to the buffer to be modified.
+     _buffer_list_head - The pointer points to the buffer to be modified.
 
   Return value:
 
@@ -373,7 +378,7 @@ void *NSI_routine(void *_buffer_node);
 
   Parameters:
 
-     _buffer_list_head - A pointer points to the buffer to be modified.
+     _buffer_list_head - The pointer points to the buffer to be modified.
 
   Return value:
 
@@ -391,7 +396,7 @@ void *BHM_routine(void *_buffer_node);
 
   Parameters:
 
-     _buffer_list_head - A pointer points to the buffer to be modified.
+     _buffer_list_head - The pointer points to the buffer to be modified.
 
   Return value:
 
@@ -409,7 +414,7 @@ void *LBeacon_routine(void *_buffer_node);
 
   Parameters:
 
-     _buffer_list_head - A pointer points to the buffer to be modified.
+     _buffer_list_head - The pointer points to the buffer to be modified.
 
   Return value:
 
@@ -427,7 +432,7 @@ void *Gateway_routine(void *_buffer_node);
 
   Parameters:
 
-     _buffer_list_head - A pointer points to the buffer list head.
+     _buffer_list_head - The pointer points to the buffer list head.
 
   Return value:
 
@@ -460,8 +465,9 @@ void init_Address_Map(AddressMapArray *address_map);
 
   Parameters:
 
-     address_map - The head of the AddressMap.
-     net_address - the network address we decide to compare.
+     address_map - The pointer points to the head of the AddressMap.
+     net_address - The pointer points to the  network address we decide to 
+                   compare.
 
   Return value:
 
@@ -479,8 +485,8 @@ int is_in_Address_Map(AddressMapArray *address_map, char *net_address);
 
   Parameters:
 
-     address_map - The head of the AddressMap.
-     address - The mac address of the LBeacon IP.
+     address_map - The pointer points to the  head of the AddressMap.
+     address - The pointer points to the address of the LBeacon IP.
 
   Return value:
 
@@ -500,7 +506,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address
      Gateway_address_map.
 
   Parameters:
-     address_map - The head of the AddressMap.
+     address_map - The pointer points to the head of the AddressMap.
      msg - The pointer points to the msg to be send to beacons.
      size - The size of the msg.
 
@@ -523,7 +529,7 @@ void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size);
 
   Return value:
 
-      ErrorCode - The error code for the corresponding error or successful
+      ErrorCode
 
  */
 ErrorCode Wifi_init(char *IPaddress);
@@ -549,11 +555,12 @@ void Wifi_free();
 /*
   process_wifi_send:
 
-     This function sends the msg in the buffer list to the server via Wi-Fi.
+     This function sends the message in the buffer list to the destination via 
+     Wi-Fi.
 
   Parameters:
 
-     _buffer_list_head - A pointer points to the buffer list head.
+     _buffer_list_head - The pointer points to the buffer list head.
 
   Return value:
 
@@ -566,7 +573,7 @@ void *process_wifi_send(void *_buffer_node);
   process_wifi_receive:
 
      This function listens for messages or command received from the server or
-     beacons. After getting the message, push the data in the message into the
+     LBeacons. After getting the message, push the received data into the 
      buffer.
 
   Parameters:
