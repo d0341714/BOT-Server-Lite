@@ -20,7 +20,7 @@
 
   Version:
 
-     2.0, 20190119
+     2.0, 20190527
 
   Abstract:
 
@@ -113,11 +113,11 @@ typedef spkt_ptr *pkt_ptr;
 
 /* init_Packet_Queue
 
-      Initialize Queue for packets
+      Initialize the queue for storing pkts.
 
   Parameter:
 
-      pkt_queue : A struct store pointer of the pkt Queue.
+      pkt_queue : The pointer points to the pkt queue.
 
   Return Value:
 
@@ -130,12 +130,15 @@ int init_Packet_Queue(pkt_ptr pkt_queue);
 
 /*
   Free_Packet_Queue
-      Release all the packets in the packet queue, the header and
-      the tail of the packet queue and release the struct stored the pointer of
-      the packet queue.
+
+      Release all the packets in the packet queue, the header and the tail of 
+      the packet queue and release the struct stores the pointer of the packet 
+      queue.
+
   Parameter:
 
-      pkt_queue : A struct stored the first and the last of the packet queue.
+      pkt_queue : The pointer points to the struct stores the first and the 
+                  last of the packet queue.
 
   Return Value:
 
@@ -148,12 +151,13 @@ int Free_Packet_Queue(pkt_ptr pkt_queue);
 /*
   addpkt
 
-      Add new packet into the packet queue we assigned. And this function is
-      for the data length shorter than MAX_XBEE_DATA_LENGTH.
+      Add new packet into the packet queue. This function is only allow for the 
+      data length shorter than the MESSAGE_LENGTH.
 
   Parameter:
 
-      pkt_Queue : The Queue we store pkt.
+      pkt_queue : The pointer points to the pkt queue we prepare to store the 
+                  pkt.
       type      : Record the type of packets working environment.
       raw_addr  : The destnation address of the packet.
       content   : The content we decided to send.
@@ -171,15 +175,16 @@ int addpkt(pkt_ptr pkt_queue, unsigned int type
 
 /* get_pkt
 
-      get the first of the pkt_queue.
+      Get the first pkt of the pkt queue.
 
   Parameter:
 
-      pkt_Queue : The Queue we store pkt.
+      pkt_queue : The pointer points to the pkt queue we going to get 
+                  a pkt from.
 
   Return Value:
 
-      sPkt : return the first pkt content.
+      sPkt : return the content of the first pkt.
 
  */
 sPkt get_pkt(pkt_ptr pkt_queue);
@@ -188,15 +193,15 @@ sPkt get_pkt(pkt_ptr pkt_queue);
 /*
   delpkt
 
-      delete the first of the packet queue we assigned.
+      Delete the first of the packet queue.
 
   Parameter:
 
-      pkt_Queue: The Queue we store pkt.
+      pkt_queue: The pointer points to the pkt queue.
 
   Return Value:
 
-      int: If return 0, everything work well.
+      int: If return 0, work successfully.
 
  */
 int delpkt(pkt_ptr pkt_queue);
@@ -209,11 +214,11 @@ int delpkt(pkt_ptr pkt_queue);
 
   Parameter:
 
-      type: A variable stored packet needed send type.
+      type: The integer stores the type of the packet.
 
   Return Value:
 
-      Return a char pointer which is it's type name.
+      Return a pointer with type char which is the name of the type.
 
  */
 char *type_to_str(int type);
@@ -222,15 +227,15 @@ char *type_to_str(int type);
 /*
   str_to_type
 
-      TO convert type name to type num.
+      TO convert the name of the type to the num of the type.
 
   Parameter:
 
-      conType: A string to tell the connection type.
+      conType: A string to tell the type of the connection.
 
   Return Value:
 
-      Return a int which is it's type num.
+      Return a int which is the name of the type.
 
  */
 int str_to_type(const char *conType);
@@ -244,8 +249,9 @@ int str_to_type(const char *conType);
   Parameter:
 
       raw    : The original char type array.
-      result : The destnation variable to store the converted result(hex).
-      size   : size of the raw array. (result size must half of raw size.)
+      result : The variable to store the converted result(hex).
+      size   : The size of the raw array. (result size must the half of the raw 
+               size.)
 
   Return Value:
 
@@ -262,9 +268,9 @@ void char_to_hex(char *raw, unsigned char *raw_hex, int size);
 
   Parameter:
 
-      hex  : A array stored in Hex.
-      size : size of the hex length.
-      buf  : an output char array to store the output converted from the 
+      hex  : An array stores in Hex.
+      size : The size of the hex length.
+      buf  : An output char array to store the output converted from the 
              input hex array
 
   Return Value:
@@ -277,13 +283,13 @@ int hex_to_char(unsigned char *hex, int size, char * buf);
 
 /* display_pkt
 
-      display the packet we decide to see.
+      Display the packet we decide to see.
 
   Parameter:
 
       display_title : The title we want to show in front of the packet content.
       pkt     : The packet we want to see it's content.
-      pkt_num : chose whitch pkts we want to display.
+      pkt_num : Choose whitch pkts we want to display.
 
   Return Value:
 
@@ -296,13 +302,13 @@ int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num);
 /*
   array_copy
 
-      Copy the src array to dest array.
+      Copy the src array to the destination array.
 
   Parameter:
 
-      src  : the src array we copy from.
-      dest : the dest array we copy to.
-      size : size of the src array. (Must same as dest array)
+      src  : The src array we copy from.
+      dest : The dest array we copy to.
+      size : The size of the src array. (Must the same as the dest array)
 
   Return Value:
 
@@ -337,7 +343,7 @@ bool address_compare(unsigned char *addr1,unsigned char *addr2);
 
   Parameter:
 
-      pkt_Queue : the pkt we stored in the Queue.
+      pkt_queue : The pointer points to the pkt queue.
 
   Return Value:
 
@@ -354,7 +360,7 @@ bool is_null(pkt_ptr pkt_queue);
 
   Parameter:
 
-      pkt_Queue : the pkt we stored in the Queue.
+      pkt_queue : The pointer points to the pkt queue.
 
   Return Value:
 
@@ -371,11 +377,11 @@ bool is_full(pkt_ptr pkt_queue);
 
   Parameter:
 
-      pkt_Queue : The queue we want to count.
+      pkt_queue : The queue we want to count.
 
   Return Value:
 
-      int : the length of the Queue.
+      int : The length of the Queue.
 
  */
 int queue_len(pkt_ptr pkt_queue);
@@ -385,12 +391,12 @@ int queue_len(pkt_ptr pkt_queue);
 
   print_content
 
-      print pkt content.
+      print the content.
 
   Parameter:
 
       content : The pointer of content we desire to read.
-      size    : The size of content.
+      size    : The size of the content.
 
   Return Value:
 
