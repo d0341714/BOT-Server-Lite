@@ -3,7 +3,7 @@
 
   License:
 
-     GPL 3.0 : The content of this file is subject to the terms and conditions
+     GPL 3.0 : The content of this file is subject to the terms and conditions  
      defined in file 'COPYING.txt', which is part of this source code package.
 
   Project Name:
@@ -14,9 +14,13 @@
 
      UDP_API.h
 
+   Version:
+
+      2.0, 20190527                                                             
+
   File Description:
 
-     This file contains the header of  function declarations and variable used
+     This file contains the header of function declarations and variable used
      in UDP_API.c
 
   Abstract:
@@ -37,9 +41,9 @@
 #ifndef UDP_API_H
 #define UDP_API_H
 
-#include <stdio.h> //printf
-#include <string.h> //memset
-#include <stdlib.h> //exit(0)
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h>
 #include <winsock2.h>
@@ -49,9 +53,14 @@
 #include <errno.h>
 #include "pkt_Queue.h"
 
+/* The time interval in seconds for Select() break the block */
+#define UDP_SELECT_TIMEOUT 60
 
-#define UDP_SELECT_TIMEOUT 60    //second
-#define WAITING_TIME 5 //milliseconds
+/* The time in milliseconds for the send thread to sleep when it is idle */
+#define SEND_THREAD_IDLE_SLEEP_TIME 5
+
+/* The time in milliseconds for the receive thread to sleep when it is idle */
+#define RECEIVE_THREAD_IDLE_SLEEP_TIME 5
 
 /* When debugging is needed */
 //#define debugging
@@ -74,7 +83,7 @@ typedef struct {
 
     char Local_Address[NETWORK_ADDR_LENGTH];
 
-    pthread_t udp_send, udp_receive;
+    pthread_t udp_send_thread, udp_receive_thread;
 
     bool shutdown;
 
@@ -93,11 +102,11 @@ set_socketopt_error = -4,recv_socket_bind_error = -5,addpkt_msg_oversize = -6};
 /*
   udp_initial
 
-     For initialize UDP Socketm including it's buffer.
+     For initialize UDP Socket including the send queue and the receive queue.
 
   Parameter:
 
-     udp_config: A structure contain all variables for UDP.
+     udp_config: The pointer points to the structure contains all variables for the UDP connection.
 
   Return Value:
 
@@ -110,14 +119,15 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port);
 /*
   udp_addpkt
 
-     A function for add pkt to the assigned pkt_Queue.
+     This function is used to add the packet to the assigned pkt queue.
 
   Parameter:
 
-     udp_config : A structure contain all variables for UDP.
-     raw_addr   : The destnation address of the packet.
-     content    : The content we decided to send.
-     size       : size of the content.
+     udp_config : The pointer points to the structure contains all variables 
+                  for the UDP connection.
+     raw_addr   : The pointer points to the destnation address of the packet.
+     content    : The pointer points to the content we decided to send.
+     size       : The size of the content.
 
   Return Value:
 
@@ -130,59 +140,62 @@ int udp_addpkt(pudp_config udp_config, char *raw_addr, char *content, int size);
 /*
   udp_getrecv
 
-     A function for get pkt from the assigned pkt_Queue.
+     This function is used for get received packet from the received queue.
 
   Parameter:
 
-     udp_config : A structure contain all variables for UDP.
+     udp_config : The pointer points to the  structure contains all variables   
+                  for the UDP connection.
 
   Return Value:
 
-     sPkt : return the first pkt content in Received_Queue.
+     sPkt : return the first pkt content in the received queue.
  */
 sPkt udp_getrecv(pudp_config udp_config);
 
 
 /*
-  udp_send_pkt
+  udp_send_pkt_routine
 
-     A thread for sending pkt to dest address.
+     The thread for sending packets to the destination address.
 
   Parameter:
 
-     udpconfig: A structure contain all variables for UDP.
+     udpconfig: The pointer points to the structure contains all variables for             the UDP connection.
 
   Return Value:
 
      None
  */
-void *udp_send_pkt(void *udpconfig);
+void *udp_send_pkt_routine(void *udpconfig);
 
 
 /*
-  udp_recv_pkt
+  udp_recv_pkt_routine
 
-     A thread for recv pkt.
+     The thread for receiving packets.
 
   Parameter:
 
-     udpconfig: A structure contain all variables for UDP.
+     udpconfig: The pointer points to the structure contains all variables for  
+                the UDP connection.
 
   Return Value:
 
      None
  */
-void *udp_recv_pkt(void *udpconfig);
+void *udp_recv_pkt_routine(void *udpconfig);
 
 
 /*
   udp_release
 
-     Release All pkt and mutex.
+     Release All pkts and mutexes.
 
   Parameter:
 
-     udp_config: A structure contain all variables for UDP.
+     udp_config: The pointer points to the structure contains all variables for 
+                 the UDP connection.
 
   Return Value:
 
@@ -199,8 +212,9 @@ int udp_release(pudp_config udp_config);
 
   Parameter:
 
-     raw_addr: A array pointer point to the address we want to convert.
-     address: the output array pointer to store the network address reduced point
+     raw_addr: The pointer points to the address we want to convert.
+     address: The pointer points to the output array to store the network 
+              address without points.
 
   Return Value:
 
@@ -216,8 +230,9 @@ int udp_address_reduce_point(char *raw_addr, char *address);
 
   Parameter:
 
-     hex_addr: A array pointer point to the address we want to convert.
-     dest_address: the output array pointer to store the converted address.
+     hex_addr: The pointer points to the address we want to convert.
+     dest_address: The pointer points to the output array to store the 
+                   converted address.
 
   Return Value:
 
