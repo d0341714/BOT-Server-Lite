@@ -118,8 +118,10 @@ int main(int argc, char **argv){
     memset(database_argument, 0, SQL_TEMP_BUFFER_LENGTH);
 
     sprintf(database_argument, "dbname=%s user=%s password=%s host=%s port=%d",
-                               serverconfig.database_name, serverconfig.database_account,
-                               serverconfig.database_password, serverconfig.db_ip,
+                               serverconfig.database_name, 
+                               serverconfig.database_account,
+                               serverconfig.database_password, 
+                               serverconfig.db_ip,
                                serverconfig.database_port );
 
 #ifdef debugging
@@ -207,7 +209,8 @@ int main(int argc, char **argv){
         return E_WIFI_INIT_FAIL;
     }
 
-    return_value = startThread( &wifi_listener, (void *)process_wifi_receive,
+    return_value = startThread( &wifi_listener_thread, 
+                               (void *)process_wifi_receive,
                                NULL);
 
     if(return_value != WORK_SUCCESSFULLY){
@@ -267,7 +270,8 @@ int main(int argc, char **argv){
                 serverconfig.server_ip);
 
         geo_fence_data_topic_id =
-                SQL_update_api_data_owner(Server_db, content, strlen(content));
+                SQL_update_api_data_owner(Server_db, command_msg, 
+                                          strlen(command_msg));
 
     }
 
@@ -281,7 +285,8 @@ int main(int argc, char **argv){
                 serverconfig.server_ip);
 
         tracked_object_data_topic_id =
-                SQL_update_api_data_owner(Server_db, content, strlen(content));
+                SQL_update_api_data_owner(Server_db, command_msg, 
+                                          strlen(command_msg));
 
     }
 
@@ -290,8 +295,10 @@ int main(int argc, char **argv){
 #endif
 
     geo_fence_config.number_worker_threads = 10;
-    memcpy(geo_fence_config.server_ip,serverconfig.server_ip, NETWORK_ADDR_LENGTH);
-    memcpy(geo_fence_config.geo_fence_ip,serverconfig.server_ip, NETWORK_ADDR_LENGTH);
+    memcpy(geo_fence_config.server_ip,serverconfig.server_ip, 
+           NETWORK_ADDR_LENGTH);
+    memcpy(geo_fence_config.geo_fence_ip,serverconfig.server_ip, 
+           NETWORK_ADDR_LENGTH);
     geo_fence_config.recv_port = serverconfig.send_port;
     geo_fence_config.api_recv_port = serverconfig.recv_port;
     return_value = startThread( &GeoFence_thread,
@@ -436,7 +443,8 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name) {
         serverconfig->allowed_number_nodes = atoi(config_message);
 
 #ifdef debugging
-        printf("Allow Number of Nodes [%d]\n", serverconfig->allowed_number_nodes);
+        printf("Allow Number of Nodes [%d]\n", 
+               serverconfig->allowed_number_nodes);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -479,7 +487,8 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name) {
         serverconfig->send_port = atoi(config_message);
 
 #ifdef debugging
-        printf("The destination port when sending [%d]\n", serverconfig->send_port);
+        printf("The destination port when sending [%d]\n", 
+               serverconfig->send_port);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -511,7 +520,8 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name) {
         else
             config_message_size = strlen(config_message);
 
-        memcpy(serverconfig->database_name, config_message, config_message_size);
+        memcpy(serverconfig->database_name, config_message, config_message_size)
+        ;
 
 #ifdef debugging
         printf("Database Name [%s]\n", serverconfig->database_name);
@@ -526,7 +536,8 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name) {
         else
             config_message_size = strlen(config_message);
 
-        memcpy(serverconfig->database_account, config_message, config_message_size);
+        memcpy(serverconfig->database_account, config_message, 
+               config_message_size);
 
 #ifdef debugging
         printf("Database Account [%s]\n", serverconfig->database_account);
@@ -541,7 +552,8 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name) {
         else
             config_message_size = strlen(config_message);
 
-        memcpy(serverconfig->database_password, config_message, config_message_size);
+        memcpy(serverconfig->database_password, config_message, 
+               config_message_size);
 
 #ifdef debugging
         printf("Database Password [%s]\n", serverconfig->database_password);
@@ -565,7 +577,8 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name) {
         serverconfig->high_priority = atoi(config_message);
 
 #ifdef debugging
-        printf("The nice of high priority is [%d]\n", serverconfig->high_priority);
+        printf("The nice of high priority is [%d]\n", 
+               serverconfig->high_priority);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -586,7 +599,8 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name) {
         serverconfig->low_priority = atoi(config_message);
 
 #ifdef debugging
-        printf("The nice of low priority is [%d]\n", serverconfig->low_priority);
+        printf("The nice of low priority is [%d]\n", serverconfig->low_priority)
+        ;
 #endif
 
         fclose(file);
@@ -646,7 +660,8 @@ void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head){
 
             insert_list_tail( list_pointer, &high_priority_head);
 
-        else if(current_head -> priority_nice == serverconfig -> normal_priority)
+        else if(current_head -> priority_nice == serverconfig -> 
+                normal_priority)
 
             insert_list_tail( list_pointer, &normal_priority_head);
 

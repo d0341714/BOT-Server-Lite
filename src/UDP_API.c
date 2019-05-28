@@ -265,9 +265,9 @@ int udp_release(pudp_config udp_config){
 
     udp_config -> shutdown = true;
 
-    pthread_join(udp_config -> udp_send, NULL);
+    pthread_join(udp_config -> udp_send_thread, NULL);
 
-    pthread_join(udp_config -> udp_receive, NULL);
+    pthread_join(udp_config -> udp_receive_thread, NULL);
 
     closesocket(udp_config -> send_socket);
 
