@@ -88,9 +88,9 @@ int main(int argc, char **argv){
     printf("Start Server\n");
 #endif
 
-    /* Create the config from input config file */
+    /* Create the serverconfig from input serverconfig file */
 
-    if(get_config( &config, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY){
+    if(get_config( &serverconfig, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY){
 
         return E_OPEN_FILE;
     }
@@ -118,9 +118,9 @@ int main(int argc, char **argv){
     memset(database_argument, 0, SQL_TEMP_BUFFER_LENGTH);
 
     sprintf(database_argument, "dbname=%s user=%s password=%s host=%s port=%d",
-                               config.database_name, config.database_account,
-                               config.database_password, config.db_ip,
-                               config.database_port );
+                               serverconfig.database_name, serverconfig.database_account,
+                               serverconfig.database_password, serverconfig.db_ip,
+                               serverconfig.database_port );
 
 #ifdef debugging
     printf("Database Argument [%s]\n", database_argument);
@@ -143,50 +143,50 @@ int main(int argc, char **argv){
      */
 
     init_buffer( &priority_list_head, (void *) sort_priority_list,
-                config.high_priority);
+                serverconfig.high_priority);
 
     init_buffer( &time_critical_Gateway_receive_buffer_list_head,
-                (void *) Gateway_routine, config.high_priority);
+                (void *) Gateway_routine, serverconfig.high_priority);
     insert_list_tail( &time_critical_Gateway_receive_buffer_list_head
                      .priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &Gateway_receive_buffer_list_head,
-                (void *) Gateway_routine, config.normal_priority);
+                (void *) Gateway_routine, serverconfig.normal_priority);
     insert_list_tail( &Gateway_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &LBeacon_receive_buffer_list_head,
-                (void *) LBeacon_routine, config.high_priority);
+                (void *) LBeacon_routine, serverconfig.high_priority);
     insert_list_tail( &LBeacon_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &NSI_send_buffer_list_head,
-                (void *) process_wifi_send, config.normal_priority);
+                (void *) process_wifi_send, serverconfig.normal_priority);
     insert_list_tail( &NSI_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &NSI_receive_buffer_list_head,
-                (void *) NSI_routine, config.normal_priority);
+                (void *) NSI_routine, serverconfig.normal_priority);
     insert_list_tail( &NSI_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &BHM_receive_buffer_list_head,
-                (void *) BHM_routine, config.low_priority);
+                (void *) BHM_routine, serverconfig.low_priority);
     insert_list_tail( &BHM_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &BHM_send_buffer_list_head,
-                (void *) process_wifi_send, config.low_priority);
+                (void *) process_wifi_send, serverconfig.low_priority);
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &API_receive_buffer_list_head,
-                (void *) process_api_routine, config.normal_priority);
+                (void *) process_api_routine, serverconfig.normal_priority);
     insert_list_tail( &API_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
-    sort_priority_list(&config, &priority_list_head);
+    sort_priority_list(&serverconfig, &priority_list_head);
 #ifdef debugging
     printf("Buffer lists initialized\n");
 #endif
@@ -196,7 +196,7 @@ int main(int argc, char **argv){
 #endif
 
     /* Initialize the Wifi connection */
-    if(return_value = Wifi_init(config.server_ip) != WORK_SUCCESSFULLY){
+    if(return_value = Wifi_init(serverconfig.server_ip) != WORK_SUCCESSFULLY){
         /* Error handling and return */
         initialization_failed = true;
 
@@ -264,7 +264,7 @@ int main(int argc, char **argv){
     if(geo_fence_data_topic_id == -1){
         memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
         sprintf(command_msg, "%s;%s;", GEO_FENCE_TOPIC,
-                config.server_ip);
+                serverconfig.server_ip);
 
         geo_fence_data_topic_id =
                 SQL_update_api_data_owner(Server_db, content, strlen(content));
@@ -278,7 +278,7 @@ int main(int argc, char **argv){
     if(tracked_object_data_topic_id == -1){
         memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
         sprintf(command_msg, "%s;%s;", TRACKED_OBJECT_DATA_TOPIC,
-                config.server_ip);
+                serverconfig.server_ip);
 
         tracked_object_data_topic_id =
                 SQL_update_api_data_owner(Server_db, content, strlen(content));
@@ -290,10 +290,10 @@ int main(int argc, char **argv){
 #endif
 
     geo_fence_config.number_worker_threads = 10;
-    memcpy(geo_fence_config.server_ip,config.server_ip, NETWORK_ADDR_LENGTH);
-    memcpy(geo_fence_config.geo_fence_ip,config.server_ip, NETWORK_ADDR_LENGTH);
-    geo_fence_config.recv_port = config.send_port;
-    geo_fence_config.api_recv_port = config.recv_port;
+    memcpy(geo_fence_config.server_ip,serverconfig.server_ip, NETWORK_ADDR_LENGTH);
+    memcpy(geo_fence_config.geo_fence_ip,serverconfig.server_ip, NETWORK_ADDR_LENGTH);
+    geo_fence_config.recv_port = serverconfig.send_port;
+    geo_fence_config.api_recv_port = serverconfig.recv_port;
     return_value = startThread( &GeoFence_thread,
                                 geo_fence_routine,
                                 &geo_fence_config);
@@ -312,7 +312,7 @@ int main(int argc, char **argv){
         /* If it is the time to poll health reports from LBeacons, get a
            thread to do this work */
         if(current_time - last_polling_object_tracking_time >=
-           config.period_between_RFTOD){
+           serverconfig.period_between_RFTOD){
 
             /* Pull object tracking object data */
             /* set the pkt type */
@@ -338,7 +338,7 @@ int main(int argc, char **argv){
             did_work = true;
         }
         else if(current_time - last_polling_LBeacon_for_HR_time >=
-                config.period_between_RFHR){
+                serverconfig.period_between_RFHR){
 
             /* Polling for health reports. */
             /* set the pkt type */
@@ -380,13 +380,13 @@ int main(int argc, char **argv){
 }
 
 
-ErrorCode get_config(ServerConfig *config, char *file_name) {
+ErrorCode get_config(ServerConfig *serverconfig, char *file_name) {
 
     FILE *file = fopen(file_name, "r");
     if (file == NULL) {
 
 #ifdef debugging
-        printf("Load config fail\n");
+        printf("Load serverconfig fail\n");
 #endif
 
         return E_OPEN_FILE;
@@ -398,7 +398,7 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
         char *config_message = NULL;
         int config_message_size = 0;
 
-        /* Keep reading each line and store into the config struct */
+        /* Keep reading each line and store into the serverconfig struct */
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
@@ -408,10 +408,10 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
         else
             config_message_size = strlen(config_message);
 
-        memcpy(config->server_ip, config_message, config_message_size);
+        memcpy(serverconfig->server_ip, config_message, config_message_size);
 
 #ifdef debugging
-        printf("Server IP [%s]\n", config->server_ip);
+        printf("Server IP [%s]\n", serverconfig->server_ip);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -423,83 +423,83 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
         else
             config_message_size = strlen(config_message);
 
-        memcpy(config->db_ip, config_message, config_message_size);
+        memcpy(serverconfig->db_ip, config_message, config_message_size);
 
 #ifdef debugging
-        printf("Database IP [%s]\n", config->db_ip);
+        printf("Database IP [%s]\n", serverconfig->db_ip);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        config->allowed_number_nodes = atoi(config_message);
+        serverconfig->allowed_number_nodes = atoi(config_message);
 
 #ifdef debugging
-        printf("Allow Number of Nodes [%d]\n", config->allowed_number_nodes);
+        printf("Allow Number of Nodes [%d]\n", serverconfig->allowed_number_nodes);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        config->period_between_RFHR = atoi(config_message);
+        serverconfig->period_between_RFHR = atoi(config_message);
 
 #ifdef debugging
         printf("Periods between request for health report [%d]\n",
-               config->period_between_RFHR);
+               serverconfig->period_between_RFHR);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        config->period_between_RFTOD = atoi(config_message);
+        serverconfig->period_between_RFTOD = atoi(config_message);
 
 #ifdef debugging
         printf("Periods between request for tracked object data [%d]\n",
-                config->period_between_RFTOD);
+                serverconfig->period_between_RFTOD);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        config->number_worker_threads = atoi(config_message);
+        serverconfig->number_worker_threads = atoi(config_message);
 
 #ifdef debugging
         printf("Number of worker threads [%d]\n",
-               config->number_worker_threads);
+               serverconfig->number_worker_threads);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        config->send_port = atoi(config_message);
+        serverconfig->send_port = atoi(config_message);
 
 #ifdef debugging
-        printf("The destination port when sending [%d]\n", config->send_port);
+        printf("The destination port when sending [%d]\n", serverconfig->send_port);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        config->recv_port = atoi(config_message);
+        serverconfig->recv_port = atoi(config_message);
 
 #ifdef debugging
-        printf("The received port [%d]\n", config->recv_port);
+        printf("The received port [%d]\n", serverconfig->recv_port);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        config->database_port = atoi(config_message);
+        serverconfig->database_port = atoi(config_message);
 
 #ifdef debugging
-        printf("The database port [%d]\n", config->database_port);
+        printf("The database port [%d]\n", serverconfig->database_port);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -511,10 +511,10 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
         else
             config_message_size = strlen(config_message);
 
-        memcpy(config->database_name, config_message, config_message_size);
+        memcpy(serverconfig->database_name, config_message, config_message_size);
 
 #ifdef debugging
-        printf("Database Name [%s]\n", config->database_name);
+        printf("Database Name [%s]\n", serverconfig->database_name);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -526,10 +526,10 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
         else
             config_message_size = strlen(config_message);
 
-        memcpy(config->database_account, config_message, config_message_size);
+        memcpy(serverconfig->database_account, config_message, config_message_size);
 
 #ifdef debugging
-        printf("Database Account [%s]\n", config->database_account);
+        printf("Database Account [%s]\n", serverconfig->database_account);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -541,52 +541,52 @@ ErrorCode get_config(ServerConfig *config, char *file_name) {
         else
             config_message_size = strlen(config_message);
 
-        memcpy(config->database_password, config_message, config_message_size);
+        memcpy(serverconfig->database_password, config_message, config_message_size);
 
 #ifdef debugging
-        printf("Database Password [%s]\n", config->database_password);
+        printf("Database Password [%s]\n", serverconfig->database_password);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        config->critical_priority = atoi(config_message);
+        serverconfig->critical_priority = atoi(config_message);
 
 #ifdef debugging
         printf("The nice of critical priority is [%d]\n",
-               config->critical_priority);
+               serverconfig->critical_priority);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        config->high_priority = atoi(config_message);
+        serverconfig->high_priority = atoi(config_message);
 
 #ifdef debugging
-        printf("The nice of high priority is [%d]\n", config->high_priority);
+        printf("The nice of high priority is [%d]\n", serverconfig->high_priority);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        config->normal_priority = atoi(config_message);
+        serverconfig->normal_priority = atoi(config_message);
 
 #ifdef debugging
         printf("The nice of normal priority is [%d]\n",
-               config->normal_priority);
+               serverconfig->normal_priority);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        config->low_priority = atoi(config_message);
+        serverconfig->low_priority = atoi(config_message);
 
 #ifdef debugging
-        printf("The nice of low priority is [%d]\n", config->low_priority);
+        printf("The nice of low priority is [%d]\n", serverconfig->low_priority);
 #endif
 
         fclose(file);
@@ -613,7 +613,7 @@ void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
 }
 
 
-void *sort_priority_list(ServerConfig *config, BufferListHead *list_head){
+void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head){
 
     List_Entry *list_pointer,
                *next_list_pointer;
@@ -638,19 +638,19 @@ void *sort_priority_list(ServerConfig *config, BufferListHead *list_head){
         current_head = ListEntry(list_pointer, BufferListHead,
                                  priority_list_entry);
 
-        if(current_head -> priority_nice == config -> critical_priority)
+        if(current_head -> priority_nice == serverconfig -> critical_priority)
 
             insert_list_tail( list_pointer, &critical_priority_head);
 
-        else if(current_head -> priority_nice == config -> high_priority)
+        else if(current_head -> priority_nice == serverconfig -> high_priority)
 
             insert_list_tail( list_pointer, &high_priority_head);
 
-        else if(current_head -> priority_nice == config -> normal_priority)
+        else if(current_head -> priority_nice == serverconfig -> normal_priority)
 
             insert_list_tail( list_pointer, &normal_priority_head);
 
-        else if(current_head -> priority_nice == config -> low_priority)
+        else if(current_head -> priority_nice == serverconfig -> low_priority)
 
             insert_list_tail( list_pointer, &low_priority_head);
 
@@ -719,8 +719,8 @@ void *CommUnit_routine(){
     }
 
     /* Initialize the threadpool with specified number of worker threads
-       according to the data stored in the config file. */
-    thpool = thpool_init(config.number_worker_threads);
+       according to the data stored in the serverconfig file. */
+    thpool = thpool_init(serverconfig.number_worker_threads);
 
     current_time = get_system_time();
 
@@ -952,7 +952,7 @@ void *LBeacon_routine(void *_buffer_node){
                                                    &current_node -> content[1]);
 
         udp_addpkt(&udp_config,
-                   config.server_ip,
+                   serverconfig.server_ip,
                    content,
                    strlen(content));
 
@@ -989,7 +989,7 @@ void *Gateway_routine(void *_buffer_node){
                                                    &current_node -> content[1]);
 
         udp_addpkt(&udp_config,
-                   config.server_ip,
+                   serverconfig.server_ip,
                    content,
                    strlen(content));
     }
@@ -1386,7 +1386,7 @@ ErrorCode Wifi_init(char *IPaddress){
     array_copy(IPaddress, udp_config.Local_Address, strlen(IPaddress));
 
     /* Initialize the Wifi cinfig file */
-    if(udp_initial( &udp_config, config.send_port, config.recv_port)
+    if(udp_initial( &udp_config, serverconfig.send_port, serverconfig.recv_port)
                    != WORK_SUCCESSFULLY){
 
         /* Error handling TODO */
