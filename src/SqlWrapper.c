@@ -1054,48 +1054,63 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
         return -1;
     }
 
-    if(PQntuples(res) == 0){
+    if(PQntuples(res) > 0){
+        sscanf(PQgetvalue(res, 0, 0), "%d", &subscriber_id);
 
-		SQL_begin_transaction(db);
+        PQclear(res);
 
-        /* Create SQL statement */
-        pqescape_ip_addreee =
-            PQescapeLiteral(conn, ip_address, strlen(ip_address));
-
-        memset(sql, 0, sizeof(sql));
-        sprintf(sql, sql_insert_template, topic_id,
-                pqescape_ip_addreee);
-
-        PQfreemem(pqescape_ip_addreee);
-
-        /* Execute SQL statement */
-        ret_val = SQL_execute(db, sql);
-
-        if(WORK_SUCCESSFULLY != ret_val){
-            SQL_rollback_transaction(db);
-
-#ifdef debugging
-            printf("SQL_execute failed: %s", PQerrorMessage(conn));
-#endif
-
-            return -1;
-        }
-
-        SQL_commit_transaction(db);
-
-        pqescape_ip_addreee =
-            PQescapeLiteral(conn, ip_address, strlen(ip_address));
-
-        memset(sql, 0, sizeof(sql));
-        sprintf(sql, sql_subscription_template,
-                     topic_id,
-                     pqescape_ip_addreee);
-
-        PQfreemem(pqescape_ip_addreee);
-
-        res = PQexec(conn, sql);
+        return subscriber_id;
     }
 
+    SQL_begin_transaction(db);
+
+    /* Create SQL statement */
+    pqescape_ip_addreee =
+        PQescapeLiteral(conn, ip_address, strlen(ip_address));
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_insert_template, topic_id,
+            pqescape_ip_addreee);
+
+    PQfreemem(pqescape_ip_addreee);
+
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db, sql);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        SQL_rollback_transaction(db);
+
+#ifdef debugging
+        printf("SQL_execute failed: %s", PQerrorMessage(conn));
+#endif
+
+        return -1;
+    }
+
+    SQL_commit_transaction(db);
+
+    pqescape_ip_addreee =
+        PQescapeLiteral(conn, ip_address, strlen(ip_address));
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_subscription_template,
+                 topic_id,
+                 pqescape_ip_addreee);
+
+    PQfreemem(pqescape_ip_addreee);
+
+    res = PQexec(conn, sql);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+
+#ifdef debugging
+    printf("SQL_execute failed: %s", PQerrorMessage(conn));
+#endif
+
+        PQclear(res);
+        return -1;
+    }
+    
     sscanf(PQgetvalue(res, 0, 0), "%d", &subscriber_id);
 
     PQclear(res);
