@@ -58,10 +58,6 @@ int init_Packet_Queue(pkt_ptr pkt_queue)
 
     pkt_queue -> rear  = -1;
 
-    for(num = 0;num < MAX_QUEUE_LENGTH;num ++){
-        pkt_queue -> Queue[num].type = NONE;
-    }
-
     pthread_mutex_unlock( &pkt_queue -> mutex);
 
     return pkt_Queue_SUCCESS;
@@ -92,8 +88,8 @@ int Free_Packet_Queue(pkt_ptr pkt_queue)
 
 
 int addpkt(pkt_ptr pkt_queue, 
-           unsigned int type, 
-           char *raw_addr, 
+           unsigned int port, 
+           char *address, 
            char *content, 
            int content_size) 
 {
@@ -112,11 +108,9 @@ int addpkt(pkt_ptr pkt_queue,
 
 #ifdef debugging
     printf("--------- Content ---------\n");
-    printf("type               : %s\n", type_to_str(type));
 
-    printf("address            : ");
-
-    print_content(raw_addr, NETWORK_ADDR_LENGTH);
+    printf("address            : %s\n", address);
+    printf("port               : %d\n", port);
 
     printf("\n");
     printf("--------- content ---------\n");
@@ -144,13 +138,16 @@ int addpkt(pkt_ptr pkt_queue,
 
     current_idx = pkt_queue -> rear;
 
-    pkt_queue -> Queue[current_idx].type = type;
+    memset(pkt_queue -> Queue[current_idx].address, 0, 
+           NETWORK_ADDR_LENGTH * sizeof(char));
 
-    char_to_hex(raw_addr, pkt_queue -> Queue[current_idx].address,
-                NETWORK_ADDR_LENGTH);
+    strncpy(pkt_queue -> Queue[current_idx].address, address, 
+            NETWORK_ADDR_LENGTH);
 
-    memset(pkt_queue -> Queue[current_idx].content, 0
-         , MESSAGE_LENGTH * sizeof(char));
+    pkt_queue -> Queue[current_idx].port = port;
+
+    memset(pkt_queue -> Queue[current_idx].content, 0, 
+           MESSAGE_LENGTH * sizeof(char));
 
     strncpy(pkt_queue -> Queue[current_idx].content, content
           , content_size);
@@ -221,10 +218,13 @@ int delpkt(pkt_ptr pkt_queue)
     display_pkt("deledpkt", pkt_queue, current_idx);
 #endif
 
-    memset(pkt_queue -> Queue[current_idx].content, 0
-         , MESSAGE_LENGTH * sizeof(char));
+    memset(pkt_queue -> Queue[current_idx].content, 0, 
+           MESSAGE_LENGTH * sizeof(char));
 
-    pkt_queue -> Queue[current_idx].type = NONE;
+    memset(pkt_queue -> Queue[current_idx].address, 0, 
+           NETWORK_ADDR_LENGTH * sizeof(char));
+
+    pkt_queue -> Queue[current_idx].port = 0;
 
     if(current_idx == pkt_queue -> rear){
 
@@ -255,18 +255,12 @@ int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num)
 {
 
     pPkt current_pkt;
-    char char_addr[NETWORK_ADDR_LENGTH];
-    char address_char[NETWORK_ADDR_LENGTH];
 
-    if(pkt_num < 0 && pkt_num >= MAX_QUEUE_LENGTH){
+    if(pkt_num < 0 || pkt_num >= MAX_QUEUE_LENGTH){
         return pkt_Queue_display_over_range;
     }
 
     current_pkt = &pkt_queue -> Queue[pkt_num];
-
-    memset(char_addr, 0, sizeof(char_addr));
-    hex_to_char(current_pkt -> address, NETWORK_ADDR_LENGTH_HEX, char_addr);
-
 
     printf("==================\n");
 
@@ -274,18 +268,13 @@ int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num)
 
     printf("==================\n");
 
-    printf("====== type ======\n");
-
-    printf("%s\n", type_to_str(current_pkt -> type));
-
     printf("===== address ====\n");
 
-    memset(address_char, 0, sizeof(address_char));
-    hex_to_char(current_pkt -> address, NETWORK_ADDR_LENGTH_HEX, address_char);
+    printf("%s\n", current_pkt -> address);
 
-    print_content(address_char, NETWORK_ADDR_LENGTH);
+    printf("====== port ======\n");
 
-    printf("\n");
+    printf("%d\n", current_pkt -> port);
 
     printf("==== content =====\n");
 
@@ -299,93 +288,6 @@ int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num)
 
 
 /* Tools */
-
-
-char *type_to_str(int type)
-{
-
-    switch(type){
-
-        case Data:
-            return "Data";
-            break;
-
-        case Local_AT:
-            return "Local AT";
-            break;
-
-        case UDP:
-            return "UDP";
-            break;
-
-        default:
-            return "UNKNOWN";
-    }
-
-}
-
-
-int str_to_type(const char *conType)
-{
-
-    if(memcmp(conType, "Transmit Status"
-     , strlen("Transmit Status") * sizeof(char)) == 0)
-        return Data;
-    else if(memcmp(conType, "Data", strlen("Data") * sizeof(char)) == 0)
-        return Data;
-    else
-        return UNKNOWN;
-
-}
-
-
-void char_to_hex(char *raw, unsigned char *raw_hex, int size)
-{
-
-    int i;
-    char tmp[2];
-
-    for(i = 0 ; i < (size/2) ; i ++){
-
-        tmp[0] = raw[i * 2];
-        tmp[1] = raw[i * 2 + 1];
-        raw_hex[i] = strtol(tmp,(void *) NULL, 16);
-    }
-
-}
-
-
-int hex_to_char(unsigned char *hex, int size, char *buf)
-{
-    int ret = 0;
-    int len;
-
-    for(len = 0;len < size;len ++)
-        sprintf( &buf[len * 2], "%02x", hex[len]);
-
-    return ret;
-}
-
-
-void array_copy(unsigned char *src, unsigned char *dest, int size)
-{
-
-    memcpy(dest, src, size);
-
-    return;
-
-}
-
-
-bool address_compare(unsigned char *addr1,unsigned char *addr2)
-{
-
-    if (memcmp(addr1, addr2, NETWORK_ADDR_LENGTH_HEX) == 0)
-        return true;
-
-    return false;
-
-}
 
 
 bool is_null(pkt_ptr pkt_queue)
