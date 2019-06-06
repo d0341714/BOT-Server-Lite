@@ -170,6 +170,9 @@ typedef struct {
     /* The network address of the packet received or the packet to be sent */
     char net_address[NETWORK_ADDR_LENGTH];
 
+   /* The port of the packet received or the packet to be sent */
+    unsigned int port;
+
     /* The pointer points to the content. */
     char content[WIFI_MESSAGE_LENGTH];
 

@@ -968,6 +968,7 @@ void *LBeacon_routine(void *_buffer_node){
 
         udp_addpkt(&udp_config,
                    serverconfig.server_ip,
+                   serverconfig.send_port,
                    content,
                    strlen(content));
 
@@ -1005,6 +1006,7 @@ void *Gateway_routine(void *_buffer_node){
 
         udp_addpkt(&udp_config,
                    serverconfig.server_ip,
+                   serverconfig.send_port,
                    content,
                    strlen(content));
     }
@@ -1090,6 +1092,7 @@ void *process_api_routine(void *_buffer_node){
 
             udp_addpkt(&udp_config,
                        current_node -> net_address,
+                       serverconfig.send_port,
                        current_node -> content,
                        strlen(current_node -> content));
 
@@ -1118,6 +1121,7 @@ void *process_api_routine(void *_buffer_node){
 
             udp_addpkt(&udp_config,
                        current_node -> net_address,
+                       serverconfig.send_port,
                        current_node -> content,
                        strlen(current_node -> content));
 
@@ -1147,6 +1151,7 @@ void *process_api_routine(void *_buffer_node){
 
             udp_addpkt(&udp_config,
                        current_node -> net_address,
+                       serverconfig.send_port,
                        current_node -> content,
                        strlen(current_node -> content));
 
@@ -1170,6 +1175,7 @@ void *process_api_routine(void *_buffer_node){
 
                 udp_addpkt( &udp_config,
                            current_node -> net_address,
+                           serverconfig.send_port,
                            current_node -> content,
                            strlen(current_node -> content));
 
@@ -1201,6 +1207,7 @@ void *process_api_routine(void *_buffer_node){
 
             udp_addpkt(&udp_config,
                        current_node -> net_address,
+                       serverconfig.send_port,
                        current_node -> content,
                        strlen(current_node -> content));
 
@@ -1243,6 +1250,7 @@ void *process_api_routine(void *_buffer_node){
 
                     udp_addpkt(&udp_config,
                                current_process_ip,
+                               serverconfig.send_port,
                                current_node -> content,
                                current_node -> content_size);
 
@@ -1387,6 +1395,7 @@ void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size){
                 udp_addpkt( &udp_config,
                             address_map ->
                             address_map_list[current_index].net_address,
+                            serverconfig.send_port,
                             msg,
                             size);
             }
@@ -1403,7 +1412,7 @@ ErrorCode Wifi_init(char *IPaddress){
     array_copy(IPaddress, udp_config.Local_Address, strlen(IPaddress));
 
     /* Initialize the Wifi cinfig file */
-    if(udp_initial( &udp_config, serverconfig.send_port, serverconfig.recv_port)
+    if(udp_initial( &udp_config, serverconfig.recv_port)
                    != WORK_SUCCESSFULLY){
 
         /* Error handling TODO */
@@ -1426,8 +1435,9 @@ void *process_wifi_send(void *_buffer_node){
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
 #ifdef debugging
-    printf("Start Send pkt\naddress [%s]\nmsg [%s]\nsize [%d]\n",
+    printf("Start Send pkt\naddress [%s]\nport [%d]\nmsg [%s]\nsize [%d]\n",
                                                     current_node->net_address,
+                                                    serverconfig.send_port,
                                                     current_node->content,
                                                     current_node->content_size);
 #endif
@@ -1435,7 +1445,8 @@ void *process_wifi_send(void *_buffer_node){
     /* Add the content of tje buffer node to the UDP to be sent to the
        server */
     udp_addpkt( &udp_config, current_node -> net_address,
-               current_node->content, current_node->content_size);
+               serverconfig.send_port, current_node->content, 
+               current_node->content_size);
 
     mp_free( &node_mempool, current_node);
 
@@ -1456,8 +1467,6 @@ void *process_wifi_receive(){
         sPkt temppkt = udp_getrecv( &udp_config);
 
         int test_times;
-
-        char tmp_addr[NETWORK_ADDR_LENGTH];
 
         int pkt_direction;
 
@@ -1500,10 +1509,10 @@ void *process_wifi_receive(){
 
                 new_node -> content_size = temppkt.content_size;
 
-                memset(tmp_addr, 0, sizeof(tmp_addr));
-                udp_hex_to_address(temppkt.address, tmp_addr);
+                new_node -> port = temppkt.port;
 
-                memcpy(new_node -> net_address, tmp_addr, NETWORK_ADDR_LENGTH);
+                memcpy(new_node -> net_address, temppkt.address,
+                       NETWORK_ADDR_LENGTH);
 
                 /* read the pkt direction from higher 4 bits. */
                 pkt_direction = (new_node -> content[0] >> 4) & 0x0f;
