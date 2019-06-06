@@ -961,6 +961,10 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
     sprintf(sql, sql_select_template,
                  pqescape_topic_name);
 
+#ifdef debugging
+    printf("SQL_get_api_data_owner_id sql command=[%s]\n", sql);
+#endif
+
     PQfreemem(pqescape_topic_name);
 
     res = PQexec(conn, sql);
@@ -977,11 +981,15 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
 
     rows = PQntuples(res);
 
-    if(rows == 0)
-        topic_id = -1;
-    else
-        sscanf(PQgetvalue(res, 0, 0), "%d", &topic_id);
+#ifdef debugging
+    printf("SQL result rows=[%d]\n", rows);
+#endif
 
+    topic_id = -1;
+    if(rows > 0)
+    {
+        sscanf(PQgetvalue(res, 0, 0), "%d", &topic_id);
+    }
     PQclear(res);
 
     return topic_id;
@@ -1240,9 +1248,7 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
 
     rows = PQntuples(res);
 
-    if(rows == 0){
-        sprintf(buf, "0;");
-    }else{
+    if(rows > 0){
         for(current_row=0;current_row < rows;current_row++){
             if(strlen(buf) > 0)
                 sprintf(buf, "%s;%s;%s;%s;%s;%s;",
@@ -1261,6 +1267,8 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
                                                 PQgetvalue(res, current_row, 3),
                                                 PQgetvalue(res, current_row, 4));
 	    }
+    }else{
+        sprintf(buf, "0;");
     }
 
     PQclear(res);
