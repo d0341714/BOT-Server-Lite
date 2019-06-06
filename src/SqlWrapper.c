@@ -24,7 +24,7 @@
 
   Version:
 
-     1.0, 20190524
+     1.0, 20190606
 
   Abstract:
 
@@ -1294,7 +1294,7 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
 
     memcpy(content_temp, buf, buf_len);
 
-    number_of_geo_fence_alert_str = strtok_s(content_temp, DELIMITER_SEMICOLON,
+    number_of_geo_fence_alert_str = strtok_save(content_temp, DELIMITER_SEMICOLON,
                                               &saved_ptr);
     sscanf(number_of_geo_fence_alert_str, "%d", &number_of_geo_fence_alert);
 
@@ -1302,12 +1302,12 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
 
     while( number_of_geo_fence_alert-- ){
 
-        mac_address = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
-        type = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
-        uuid = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
-        alert_time = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
-        rssi = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
-        geo_fence_id = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        mac_address = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        type = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        alert_time = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        rssi = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        geo_fence_id = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));

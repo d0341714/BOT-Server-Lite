@@ -21,7 +21,7 @@
 
   Version:
 
-     2.0, 20190514
+     2.0, 20190606
 
   Abstract:
 
@@ -384,6 +384,30 @@ int strncasecmp(char const *str_a, char const *str_b, size_t len);
  */
 ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
                       void *arg);
+
+
+/*
+  strtok_save:
+     
+     This function breaks string str into a series of tokens using the delimiter delim.
+     
+     Windows uses strtok_s()
+
+  Parameters:
+
+     str - The contents of this string are modified and broken into smaller    
+           strings (tokens).
+     delim - This is the C string containing the delimiters. These may vary 
+             from one call to another.
+
+     saveptr - The pointer points to the next char of the searched char.
+
+  Return value:
+
+      Return a pointer to the next token, or NULL if there are no more tokens.
+
+ */
+char *strtok_save(char *str, char *delim, char **saveptr);
 
 
 /*

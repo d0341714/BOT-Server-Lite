@@ -22,7 +22,7 @@
 
   Version:
 
-     1.0, 20190527
+     1.0, 20190606
 
   Abstract:
 
@@ -1052,7 +1052,7 @@ void *process_api_routine(void *_buffer_node){
             printf("Start add_data_owner\n");
 #endif
 
-            topic_name = strtok_s(data_content, DELIMITER_SEMICOLON,
+            topic_name = strtok_save(data_content, DELIMITER_SEMICOLON,
                                                            &saved_data_pointer);
 
 #ifdef debugging
@@ -1097,7 +1097,7 @@ void *process_api_routine(void *_buffer_node){
 
         case remove_data_owner:
 
-            topic_name = strtok_s(data_content, DELIMITER_SEMICOLON,
+            topic_name = strtok_save(data_content, DELIMITER_SEMICOLON,
                                                            &saved_data_pointer);
 
             return_value = SQL_remove_api_data_owner(Server_db,
@@ -1125,7 +1125,7 @@ void *process_api_routine(void *_buffer_node){
 
         case add_subscriber:
 
-            topic_name = strtok_s(data_content, DELIMITER_SEMICOLON,
+            topic_name = strtok_save(data_content, DELIMITER_SEMICOLON,
                                                            &saved_data_pointer);
 
             subscriber_id = SQL_update_api_subscription(
@@ -1179,7 +1179,7 @@ void *process_api_routine(void *_buffer_node){
 
         case del_subscriber:
 
-            topic_name = strtok_s(data_content, DELIMITER_SEMICOLON,
+            topic_name = strtok_save(data_content, DELIMITER_SEMICOLON,
                                                            &saved_data_pointer);
 
             return_value = SQL_remove_api_subscription(
@@ -1208,7 +1208,7 @@ void *process_api_routine(void *_buffer_node){
 
         case update_topic_data:
 
-            topic_name = strtok_s(data_content, DELIMITER_SEMICOLON,
+            topic_name = strtok_save(data_content, DELIMITER_SEMICOLON,
                                                        &saved_data_pointer);
 
             if(strncmp(topic_name, GEO_FENCE_ALERT_TOPIC,
@@ -1232,7 +1232,7 @@ void *process_api_routine(void *_buffer_node){
 
                 return_data = data_content;
 
-                current_process_ip = strtok_s(return_data, DELIMITER_SEMICOLON,
+                current_process_ip = strtok_save(return_data, DELIMITER_SEMICOLON,
                                                            &saved_data_pointer);
 
                 while(current_process_ip != NULL){
@@ -1246,7 +1246,7 @@ void *process_api_routine(void *_buffer_node){
                                current_node -> content,
                                current_node -> content_size);
 
-                    current_process_ip = strtok_s(NULL, DELIMITER_SEMICOLON,
+                    current_process_ip = strtok_save(NULL, DELIMITER_SEMICOLON,
                                                            &saved_data_pointer);
                 }
 

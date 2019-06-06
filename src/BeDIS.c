@@ -20,7 +20,7 @@
 
   Version:
 
-     2.0, 20190514
+     2.0, 20190606
 
   Abstract:
 
@@ -116,6 +116,30 @@ int get_system_time(){
 
     return system_time;
 }
+
+
+char *strtok_save(char *str, char *delim, char **saveptr){
+    
+    char *tmp;
+
+    if(str == NULL){
+        tmp = *saveptr;
+    }
+    else{
+        tmp = str;
+    }
+
+    if(strncmp(tmp, delim, strlen(delim)) == 0){
+        
+        *saveptr += strlen(delim) * sizeof(char);
+        return NULL;
+
+    }
+
+    return strtok_s(str, delim, saveptr);
+
+}
+
 
 int display_time(void){
 

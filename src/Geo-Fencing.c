@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190528
+     1.0, 20190606
 
   Abstract:
 
@@ -264,7 +264,7 @@ static void *process_geo_fence_routine(void *_pkt_content){
 
     memcpy(content_temp, pkt_content -> content, WIFI_MESSAGE_LENGTH);
 
-    topic_name = strtok_s( &content_temp[1], DELIMITER_SEMICOLON, &save_ptr);
+    topic_name = strtok_save( &content_temp[1], DELIMITER_SEMICOLON, &save_ptr);
 
     if(topic_name != NULL && strncmp(topic_name, GEO_FENCE_TOPIC,
        strlen(GEO_FENCE_TOPIC)) == 0){
@@ -275,15 +275,15 @@ static void *process_geo_fence_routine(void *_pkt_content){
     else if(topic_name != NULL && strncmp(topic_name, TRACKED_OBJECT_DATA_TOPIC,
             strlen(TRACKED_OBJECT_DATA_TOPIC)) == 0){
 
-        uuid = strtok_s( NULL, DELIMITER_SEMICOLON, &save_ptr);
+        uuid = strtok_save( NULL, DELIMITER_SEMICOLON, &save_ptr);
 
 #ifdef debugging
         printf("[GeoFence] Current processing UUID: %s\n", uuid);
 #endif
 
-        lbeacon_datetime = strtok_s(NULL, DELIMITER_SEMICOLON, &save_ptr);
+        lbeacon_datetime = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
-        lbeacon_ip = strtok_s(NULL, DELIMITER_SEMICOLON, &save_ptr);
+        lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
         pthread_mutex_lock( &geo_fence_config -> geo_fence_list_lock);
 
@@ -439,7 +439,7 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
     memcpy(content_for_processing, pkt_content->content, WIFI_MESSAGE_LENGTH);
     geo_fence_list_ptr  = NULL;
 
-    current_ptr = strtok_s(content_for_processing, DELIMITER_SEMICOLON,
+    current_ptr = strtok_save(content_for_processing, DELIMITER_SEMICOLON,
                            &saved_ptr);
 
     sscanf(current_ptr, "%d", &geo_fence_id);
@@ -475,13 +475,13 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
     printf("[GeoFence] Start detect mac address\n");
 #endif
 
-    lbeacon_type = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+    lbeacon_type = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
 #ifdef debugging
     printf("[GeoFence] LBeacon Fence Type: %s\n", lbeacon_type);
 #endif
 
-    current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+    current_ptr = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
     sscanf(current_ptr, "%d", &threshold);
 
@@ -489,17 +489,17 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
     printf("[GeoFence] Threshold: %d\n", threshold);
 #endif
 
-    current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+    current_ptr = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
-    uuid = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+    uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
 #ifdef debugging
     printf("[GeoFence] UUID: %s\n", uuid);
 #endif
 
-    current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+    current_ptr = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
-    lbeacon_ip = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+    lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
 #ifdef debugging
     printf("[GeoFence] LBeacon IP: %s\n", lbeacon_ip);
@@ -509,7 +509,7 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
 
     do{
 
-        current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        current_ptr = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
         sscanf(current_ptr, "%d", &object_type);
 
@@ -517,7 +517,7 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
         printf("[GeoFence] Object Type: %d\n", object_type);
 #endif
 
-        current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        current_ptr = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
         sscanf(current_ptr, "%d", &number_of_objects);
 
@@ -529,17 +529,17 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
 
             //mac_address;initial_timestamp;final_timestamp;rssi;panic_button;
 
-            mac_address = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+            mac_address = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
-            initial_timestamp = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+            initial_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
-            final_timestamp = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+            final_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
-            current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+            current_ptr = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
             sscanf(current_ptr, "%d", &rssi);
 
-            panic_button = strtok_s(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+            panic_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
             list_for_each(current_mac_list_entry, &geo_fence_list_ptr ->
                                                           mac_prefix_list_head){
@@ -619,14 +619,14 @@ static void *update_geo_fence(void *_pkt_content){
     current_ptr = NULL;
     saveptr = NULL;
 
-    current_ptr = strtok_s( &pkt_content -> content[1],
+    current_ptr = strtok_save( &pkt_content -> content[1],
                            DELIMITER_SEMICOLON, &saveptr);
 
 #ifdef debugging
     printf("[GeoFence] Topic: %s\n", current_ptr);
 #endif
 
-    current_ptr = strtok_s( NULL,
+    current_ptr = strtok_save( NULL,
                            DELIMITER_SEMICOLON, &saveptr);
 
 #ifdef debugging
@@ -654,7 +654,7 @@ static void *update_geo_fence(void *_pkt_content){
         fence = NULL;
         mac_prefix = NULL;
 
-        current_ptr = strtok_s(NULL, DELIMITER_SEMICOLON, &saveptr);
+        current_ptr = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
         sscanf(current_ptr, "%d", &geo_fence_id);
 
@@ -663,7 +663,7 @@ static void *update_geo_fence(void *_pkt_content){
         ;
 #endif
 
-        name = strtok_s(NULL, DELIMITER_SEMICOLON, &saveptr);
+        name = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
 #ifdef debugging
         printf("[GeoFence] Current Proceccing Geo Fence NAME: %s\n", name);
@@ -710,7 +710,7 @@ static void *update_geo_fence(void *_pkt_content){
 #endif
         }
 
-        perimeters = strtok_s(NULL, DELIMITER_SEMICOLON,
+        perimeters = strtok_save(NULL, DELIMITER_SEMICOLON,
                               &saveptr);
 
         geo_fence_list_node->id = geo_fence_id;
@@ -721,13 +721,13 @@ static void *update_geo_fence(void *_pkt_content){
         printf("[GeoFence] Perimeters: [%s]\n", perimeters);
 #endif
 
-        fence = strtok_s(NULL, DELIMITER_SEMICOLON, &saveptr);
+        fence = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
 #ifdef debugging
         printf("[GeoFence] Fence: [%s]\n", fence);
 #endif
 
-        mac_prefix = strtok_s(NULL, DELIMITER_SEMICOLON,
+        mac_prefix = strtok_save(NULL, DELIMITER_SEMICOLON,
                               &saveptr);
 
 #ifdef debugging
@@ -737,7 +737,7 @@ static void *update_geo_fence(void *_pkt_content){
         current_ptr = NULL;
         save_current_ptr = NULL;
 
-        current_ptr = strtok_s(perimeters, DELIMITER_COMMA, &save_current_ptr);
+        current_ptr = strtok_save(perimeters, DELIMITER_COMMA, &save_current_ptr);
         sscanf(current_ptr, "%d", &number_of_perimeters);
 
 #ifdef debugging
@@ -751,12 +751,12 @@ static void *update_geo_fence(void *_pkt_content){
             uuid_list_node = NULL;
             threshold_str = NULL;
 
-            uuid = strtok_s(NULL, DELIMITER_COMMA, &save_current_ptr);
+            uuid = strtok_save(NULL, DELIMITER_COMMA, &save_current_ptr);
 
 #ifdef debugging
             printf("[GeoFence] UUID: %s\n", uuid);
 #endif
-            threshold_str = strtok_s(NULL, DELIMITER_COMMA, &save_current_ptr);
+            threshold_str = strtok_save(NULL, DELIMITER_COMMA, &save_current_ptr);
 
             sscanf(threshold_str, "%d", &threshold);
 
@@ -791,7 +791,7 @@ static void *update_geo_fence(void *_pkt_content){
         current_ptr = NULL;
         save_current_ptr = NULL;
 
-        current_ptr = strtok_s(fence, DELIMITER_COMMA, &save_current_ptr);
+        current_ptr = strtok_save(fence, DELIMITER_COMMA, &save_current_ptr);
         sscanf(current_ptr, "%d", &number_of_fence);
 
 #ifdef debugging
@@ -805,13 +805,13 @@ static void *update_geo_fence(void *_pkt_content){
             uuid_list_node = NULL;
             threshold_str = NULL;
 
-            uuid = strtok_s(NULL, DELIMITER_COMMA, &save_current_ptr);
+            uuid = strtok_save(NULL, DELIMITER_COMMA, &save_current_ptr);
 
 #ifdef debugging
             printf("[GeoFence] UUID: %s\n", uuid);
 #endif
 
-            threshold_str = strtok_s(NULL, DELIMITER_COMMA, &save_current_ptr);
+            threshold_str = strtok_save(NULL, DELIMITER_COMMA, &save_current_ptr);
 
             sscanf(threshold_str, "%d", &threshold);
 
@@ -836,7 +836,7 @@ static void *update_geo_fence(void *_pkt_content){
         current_ptr = NULL;
         save_current_ptr = NULL;
 
-        current_ptr = strtok_s(mac_prefix, DELIMITER_COMMA, &save_current_ptr);
+        current_ptr = strtok_save(mac_prefix, DELIMITER_COMMA, &save_current_ptr);
         sscanf(current_ptr, "%d", &number_of_mac_prefix);
 
 #ifdef debugging
@@ -849,7 +849,7 @@ static void *update_geo_fence(void *_pkt_content){
             current_ptr = NULL;
             mac_prefix_node = NULL;
 
-            current_ptr = strtok_s(NULL, DELIMITER_COMMA, &save_current_ptr);
+            current_ptr = strtok_save(NULL, DELIMITER_COMMA, &save_current_ptr);
 
             mac_prefix_node = mp_alloc( &geo_fence_config ->
                                        mac_prefix_list_node_mempool);
@@ -928,7 +928,7 @@ static void *process_api_recv(void *_geo_fence_config){
                             printf("[GeoFence] pkt content in responsed "\
                                    "add topic: [%s]\n", tmp_content);
 #endif
-                            topic = strtok_s( &tmp_content[1],
+                            topic = strtok_save( &tmp_content[1],
                                            DELIMITER_SEMICOLON, &saved_ptr);
 
 #ifdef debugging
@@ -938,7 +938,7 @@ static void *process_api_recv(void *_geo_fence_config){
                                topic, GEO_FENCE_ALERT_TOPIC,
                                strlen(GEO_FENCE_ALERT_TOPIC)) == 0){
 
-                                current_pointer = strtok_s(NULL,
+                                current_pointer = strtok_save(NULL,
                                                          DELIMITER_SEMICOLON,
                                                          &saved_ptr);
 
@@ -946,7 +946,7 @@ static void *process_api_recv(void *_geo_fence_config){
                                    current_pointer, "Success",
                                    strlen("Success")) == 0){
 
-                                    current_pointer = strtok_s(NULL,
+                                    current_pointer = strtok_save(NULL,
                                                            DELIMITER_SEMICOLON,
                                                            &saved_ptr);
 
@@ -976,7 +976,7 @@ static void *process_api_recv(void *_geo_fence_config){
                                    "add subscriber: [%s]\n", tmp_content);
 #endif
 
-                            topic = strtok_s( &tmp_content[1],
+                            topic = strtok_save( &tmp_content[1],
                                               DELIMITER_SEMICOLON,
                                               &saved_ptr);
 
@@ -988,7 +988,7 @@ static void *process_api_recv(void *_geo_fence_config){
                                topic, TRACKED_OBJECT_DATA_TOPIC,
                                strlen(TRACKED_OBJECT_DATA_TOPIC)) == 0){
 
-                                current_pointer = strtok_s(NULL,
+                                current_pointer = strtok_save(NULL,
                                                          DELIMITER_SEMICOLON,
                                                          &saved_ptr);
 
@@ -996,7 +996,7 @@ static void *process_api_recv(void *_geo_fence_config){
                                    current_pointer, "Success",
                                    strlen("Success")) == 0){
 
-                                    current_pointer = strtok_s(NULL,
+                                    current_pointer = strtok_save(NULL,
                                                            DELIMITER_SEMICOLON,
                                                            &saved_ptr);
 
@@ -1020,7 +1020,7 @@ static void *process_api_recv(void *_geo_fence_config){
                                topic, GEO_FENCE_TOPIC,
                                strlen(GEO_FENCE_TOPIC)) == 0){
 
-                                current_pointer = strtok_s(NULL,
+                                current_pointer = strtok_save(NULL,
                                                          DELIMITER_SEMICOLON,
                                                          &saved_ptr);
 
@@ -1028,7 +1028,7 @@ static void *process_api_recv(void *_geo_fence_config){
                                    current_pointer, "Success",
                                    strlen("Success")) == 0){
 
-                                    current_pointer = strtok_s(NULL,
+                                    current_pointer = strtok_save(NULL,
                                                            DELIMITER_SEMICOLON,
                                                            &saved_ptr);
 
@@ -1056,7 +1056,7 @@ static void *process_api_recv(void *_geo_fence_config){
                                    "[%s]\n", tmp_content);
 #endif
 
-                            topic = strtok_s( &tmp_content[1],
+                            topic = strtok_save( &tmp_content[1],
                                                      DELIMITER_SEMICOLON,
                                                      &saved_ptr);
 
