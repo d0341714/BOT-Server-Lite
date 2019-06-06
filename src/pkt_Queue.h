@@ -20,7 +20,7 @@
 
   Version:
 
-     2.0, 20190527
+     2.0, 20190606
 
   Abstract:
 
@@ -51,23 +51,38 @@
 /* When debugging is needed */
 //#define debugging
 
-/* Length of address of the network */
+/* The size of the IP address in char */
 #define NETWORK_ADDR_LENGTH 16
 
-/* Length of address of the network in Hex */
+/* Length of the IP address in Hex */
 #define NETWORK_ADDR_LENGTH_HEX 8
 
-/* Maximum length of message to be sent over WiFi in bytes */
-#define MESSAGE_LENGTH 4096
+/* Maximum length of message to be sent over Wi-Fi in bytes 
+   (The maximum UDP pkt size is 65535 bytes - 8 bytes UDP header - 
+    20 bytes IP header) 
+ */
+#define MESSAGE_LENGTH 65507
 
-//define the maximum length of pkt Queue.
-#define MAX_QUEUE_LENGTH 512
+/* The maximum length of the pkt Queue. */
+#define MAX_QUEUE_LENGTH 1024
 
-enum {UNKNOWN, Data, Local_AT, UDP, NONE};
+enum {
+    UNKNOWN, 
+    Data, 
+    Local_AT, 
+    UDP, 
+    NONE
+    };
 
-enum{ pkt_Queue_SUCCESS = 0, pkt_Queue_FULL = -1, queue_len_error = -2
-    , pkt_Queue_is_free = -3, pkt_Queue_is_NULL = -4
-    , pkt_Queue_display_over_range = -5, MESSAGE_OVERSIZE = -6};
+enum{ 
+    pkt_Queue_SUCCESS = 0, 
+    pkt_Queue_FULL = -1, 
+    queue_len_error = -2, 
+    pkt_Queue_is_free = -3, 
+    pkt_Queue_is_NULL = -4, 
+    pkt_Queue_display_over_range = -5, 
+    MESSAGE_OVERSIZE = -6
+    };
 
 
 /* packet format */
@@ -404,5 +419,6 @@ int queue_len(pkt_ptr pkt_queue);
 
  */
 void print_content(char *content, int size);
+
 
 #endif

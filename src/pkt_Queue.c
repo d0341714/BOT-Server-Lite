@@ -20,7 +20,7 @@
 
   Version:
 
-     2.0, 20190119
+     2.0, 20190606
 
   Abstract:
 
@@ -40,10 +40,11 @@
 #include "pkt_Queue.h"
 
 
-/* Queue initialize and free */
+/* Initialize and free Queue */
 
 
-int init_Packet_Queue(pkt_ptr pkt_queue){
+int init_Packet_Queue(pkt_ptr pkt_queue)
+{
 
     int num;
 
@@ -68,7 +69,8 @@ int init_Packet_Queue(pkt_ptr pkt_queue){
 }
 
 
-int Free_Packet_Queue(pkt_ptr pkt_queue){
+int Free_Packet_Queue(pkt_ptr pkt_queue)
+{
 
     pthread_mutex_lock( &pkt_queue -> mutex);
 
@@ -89,8 +91,12 @@ int Free_Packet_Queue(pkt_ptr pkt_queue){
 /* New : add pkts */
 
 
-int addpkt(pkt_ptr pkt_queue, unsigned int type, char *raw_addr, char *content
-                                                           , int content_size) {
+int addpkt(pkt_ptr pkt_queue, 
+           unsigned int type, 
+           char *raw_addr, 
+           char *content, 
+           int content_size) 
+{
 
     int current_idx;
 
@@ -168,7 +174,8 @@ int addpkt(pkt_ptr pkt_queue, unsigned int type, char *raw_addr, char *content
 }
 
 
-sPkt get_pkt(pkt_ptr pkt_queue){
+sPkt get_pkt(pkt_ptr pkt_queue)
+{
 
     sPkt tmp;
 
@@ -199,7 +206,8 @@ sPkt get_pkt(pkt_ptr pkt_queue){
 /* Delete : delete pkts */
 
 
-int delpkt(pkt_ptr pkt_queue) {
+int delpkt(pkt_ptr pkt_queue) 
+{
 
     int current_idx;
 
@@ -243,7 +251,8 @@ int delpkt(pkt_ptr pkt_queue) {
 }
 
 
-int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num){
+int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num)
+{
 
     pPkt current_pkt;
     char char_addr[NETWORK_ADDR_LENGTH];
@@ -292,7 +301,8 @@ int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num){
 /* Tools */
 
 
-char *type_to_str(int type){
+char *type_to_str(int type)
+{
 
     switch(type){
 
@@ -311,10 +321,12 @@ char *type_to_str(int type){
         default:
             return "UNKNOWN";
     }
+
 }
 
 
-int str_to_type(const char *conType){
+int str_to_type(const char *conType)
+{
 
     if(memcmp(conType, "Transmit Status"
      , strlen("Transmit Status") * sizeof(char)) == 0)
@@ -327,7 +339,8 @@ int str_to_type(const char *conType){
 }
 
 
-void char_to_hex(char *raw, unsigned char *raw_hex, int size){
+void char_to_hex(char *raw, unsigned char *raw_hex, int size)
+{
 
     int i;
     char tmp[2];
@@ -338,10 +351,12 @@ void char_to_hex(char *raw, unsigned char *raw_hex, int size){
         tmp[1] = raw[i * 2 + 1];
         raw_hex[i] = strtol(tmp,(void *) NULL, 16);
     }
+
 }
 
 
-int hex_to_char(unsigned char *hex, int size, char *buf){
+int hex_to_char(unsigned char *hex, int size, char *buf)
+{
     int ret = 0;
     int len;
 
@@ -352,7 +367,8 @@ int hex_to_char(unsigned char *hex, int size, char *buf){
 }
 
 
-void array_copy(unsigned char *src, unsigned char *dest, int size){
+void array_copy(unsigned char *src, unsigned char *dest, int size)
+{
 
     memcpy(dest, src, size);
 
@@ -361,75 +377,80 @@ void array_copy(unsigned char *src, unsigned char *dest, int size){
 }
 
 
-bool address_compare(unsigned char *addr1,unsigned char *addr2){
+bool address_compare(unsigned char *addr1,unsigned char *addr2)
+{
 
-    if (memcmp(addr1, addr2, 8) == 0)
+    if (memcmp(addr1, addr2, NETWORK_ADDR_LENGTH_HEX) == 0)
+        return true;
+
+    return false;
+
+}
+
+
+bool is_null(pkt_ptr pkt_queue)
+{
+
+    if (pkt_queue->front == -1 && pkt_queue->rear == -1)
         return true;
 
     return false;
 }
 
 
-bool is_null(pkt_ptr pkt_queue){
+bool is_full(pkt_ptr pkt_queue)
+{
 
-    if (pkt_queue->front == -1 && pkt_queue->rear == -1){
-
+    if(pkt_queue -> front == pkt_queue -> rear + 1)
         return true;
-    }
-    return false;
-}
 
-
-bool is_full(pkt_ptr pkt_queue){
-
-    if(pkt_queue -> front == pkt_queue -> rear + 1){
+    else if(pkt_queue -> front == 0 && pkt_queue -> rear == 
+            MAX_QUEUE_LENGTH - 1）
         return true;
-    }
-    else if(pkt_queue -> front == 0 && pkt_queue -> rear == MAX_QUEUE_LENGTH - 1
-           ){
-        return true;
-    }
-    else{
+
+    else
         return false;
-    }
 }
 
 
-int queue_len(pkt_ptr pkt_queue){
+int queue_len(pkt_ptr pkt_queue)
+{
 
-    if (pkt_queue -> front == 0 && pkt_queue -> rear == 0){
+    if (pkt_queue -> front == 0 && pkt_queue -> rear == 0)
         return 1;
 
-    }
-    else if(pkt_queue -> front == -1 && pkt_queue -> rear == -1){
+    else if(pkt_queue -> front == -1 && pkt_queue -> rear == -1)
         return 0;
 
-    }
-    else if (pkt_queue -> front == pkt_queue -> rear){
+    else if (pkt_queue -> front == pkt_queue -> rear)
         return 1;
-    }
+
     else if (pkt_queue -> rear > pkt_queue -> front){
 
         int len = (pkt_queue -> rear - pkt_queue -> front + 1);
         return len;
     }
+
     else if (pkt_queue -> front > pkt_queue -> rear){
 
-        int len = ((MAX_QUEUE_LENGTH - pkt_queue -> front)
-                    + pkt_queue -> rear + 1);
+        int len = ((MAX_QUEUE_LENGTH - pkt_queue -> front) + 
+                   pkt_queue -> rear + 1);
         return len;
     }
-    else{
+
+    else
         return queue_len_error;
-    }
+
     return queue_len_error;
 }
 
 
-void print_content(char *content, int size){
+void print_content(char *content, int size)
+{
 
     int loc;
 
     for(loc = 0; loc < size; loc ++)
         printf("%c", content[loc]);
+
 }
