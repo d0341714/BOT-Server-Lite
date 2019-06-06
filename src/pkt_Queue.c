@@ -87,11 +87,8 @@ int Free_Packet_Queue(pkt_ptr pkt_queue)
 /* New : add pkts */
 
 
-int addpkt(pkt_ptr pkt_queue, 
-           unsigned int port, 
-           char *address, 
-           char *content, 
-           int content_size) 
+int addpkt(pkt_ptr pkt_queue, char *address, unsigned int port, 
+           char *content, int content_size)
 {
 
     int current_idx;

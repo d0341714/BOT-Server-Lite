@@ -158,9 +158,10 @@ int Free_Packet_Queue(pkt_ptr pkt_queue);
 
       pkt_queue : The pointer points to the pkt queue we prepare to store the 
                   pkt.
-      port      : The port number of the packet.
       address   : The IP address of the packet.
+      port      : The port number of the packet.
       content   : The content of the packet.
+      content_size : The size of the content.
 
   Return Value:
 
@@ -169,8 +170,8 @@ int Free_Packet_Queue(pkt_ptr pkt_queue);
            If not 0, Somthing Wrong.
 
  */
-int addpkt(pkt_ptr pkt_queue, unsigned int port
-         , char *address, char *content, int content_size);
+int addpkt(pkt_ptr pkt_queue, char *address, unsigned int port, 
+           char *content, int content_size);
 
 
 /* get_pkt
