@@ -179,7 +179,6 @@ sPkt get_pkt(pkt_ptr pkt_queue)
 
     if(is_null(pkt_queue)){
         pthread_mutex_unlock( &pkt_queue -> mutex);
-        tmp.type = NONE;
         return tmp;
     }
 
@@ -304,7 +303,7 @@ bool is_full(pkt_ptr pkt_queue)
         return true;
 
     else if(pkt_queue -> front == 0 && pkt_queue -> rear == 
-            MAX_QUEUE_LENGTH - 1）
+            MAX_QUEUE_LENGTH - 1)
         return true;
 
     else

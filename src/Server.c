@@ -1408,9 +1408,6 @@ void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size){
 
 ErrorCode Wifi_init(char *IPaddress){
 
-    /* Set the address of server */
-    array_copy(IPaddress, udp_config.Local_Address, strlen(IPaddress));
-
     /* Initialize the Wifi cinfig file */
     if(udp_initial( &udp_config, serverconfig.recv_port)
                    != WORK_SUCCESSFULLY){
@@ -1472,188 +1469,180 @@ void *process_wifi_receive(){
 
         int pkt_type;
 
-        if(temppkt.type == UDP){
+        /* counting test time for mp_alloc(). */
+        test_times = 0;
 
-            /* counting test time for mp_alloc(). */
-            test_times = 0;
+        /* Allocate memory from node_mempool a buffer node for received data
+           and copy the data from Wi-Fi receive queue to the node. */
+        do{
+            if(test_times == TEST_MALLOC_MAX_NUMBER_TIMES)
+                break;
+            else if(test_times != 0)
+                Sleep(WAITING_TIME);
 
-            /* Allocate memory from node_mempool a buffer node for received data
-               and copy the data from Wi-Fi receive queue to the node. */
-            do{
-                if(test_times == TEST_MALLOC_MAX_NUMBER_TIMES)
-                    break;
-                else if(test_times != 0)
-                    Sleep(WAITING_TIME);
+            new_node = mp_alloc( &node_mempool);
+            test_times ++;
 
-                new_node = mp_alloc( &node_mempool);
-                test_times ++;
+        }while( new_node == NULL);
 
-            }while( new_node == NULL);
-
-            if(new_node == NULL){
-                /* Alloc memory failed, error handling. */
+        if(new_node == NULL){
+            /* Alloc memory failed, error handling. */
 #ifdef debugging
-                printf("No memory allow to alloc...\n");
+            printf("No memory allow to alloc...\n");
 #endif
-            }
-            else{
-
-                memset(new_node, 0, sizeof(BufferNode));
-
-                /* Initialize the entry of the buffer node */
-                init_entry( &new_node -> buffer_entry);
-
-                /* Copy the content to the buffer_node */
-                memcpy(new_node -> content, temppkt.content
-                     , temppkt.content_size);
-
-                new_node -> content_size = temppkt.content_size;
-
-                new_node -> port = temppkt.port;
-
-                memcpy(new_node -> net_address, temppkt.address,
-                       NETWORK_ADDR_LENGTH);
-
-                /* read the pkt direction from higher 4 bits. */
-                pkt_direction = (new_node -> content[0] >> 4) & 0x0f;
-                /* read the pkt type from lower lower 4 bits. */
-                pkt_type = new_node -> content[0] & 0x0f;
-
-                /* Insert the node to the specified buffer, and release
-                   list_lock. */
-
-                switch (pkt_direction) {
-
-                    case from_gateway:
-
-                        switch (pkt_type) {
-
-                            case request_to_join:
-#ifdef debugging
-                                display_time();
-                                printf("Get Join request from Gateway.\n");
-#endif
-                                pthread_mutex_lock(&NSI_receive_buffer_list_head
-                                                   .list_lock);
-                                insert_list_tail(&new_node -> buffer_entry,
-                                                 &NSI_receive_buffer_list_head
-                                                 .list_head);
-                                pthread_mutex_unlock(
-                                       &NSI_receive_buffer_list_head.list_lock);
-                                break;
-
-                            case tracked_object_data:
-#ifdef debugging
-                                display_time();
-                                printf("Get Tracked Object Data from Gateway\n")
-                                ;
-#endif
-                                pthread_mutex_lock(
-                                   &Gateway_receive_buffer_list_head.list_lock);
-                                insert_list_tail( &new_node -> buffer_entry,
-                                   &Gateway_receive_buffer_list_head.list_head);
-                                pthread_mutex_unlock(
-                                   &Gateway_receive_buffer_list_head.list_lock);
-                                break;
-
-                            case health_report:
-#ifdef debugging
-                                display_time();
-                                printf("Get Health Report from Gateway\n");
-#endif
-                                pthread_mutex_lock(&BHM_receive_buffer_list_head
-                                                   .list_lock);
-                                insert_list_tail( &new_node -> buffer_entry,
-                                       &BHM_receive_buffer_list_head.list_head);
-                                pthread_mutex_unlock(
-                                       &BHM_receive_buffer_list_head.list_lock);
-                                break;
-
-                            default:
-                                mp_free( &node_mempool, new_node);
-                                break;
-                        }
-                        break;
-
-                    case from_beacon:
-
-                        switch (pkt_type) {
-
-                            case tracked_object_data:
-#ifdef debugging
-                                display_time();
-                                printf("Get Tracked Object Data from LBeacon\n")
-                                ;
-#endif
-                                pthread_mutex_lock(
-                                   &LBeacon_receive_buffer_list_head.list_lock);
-                                insert_list_tail( &new_node -> buffer_entry,
-                                   &LBeacon_receive_buffer_list_head.list_head);
-                                pthread_mutex_unlock(
-                                   &LBeacon_receive_buffer_list_head.list_lock);
-                                break;
-
-                            case health_report:
-#ifdef debugging
-                                display_time();
-                                printf("Get Health Report from LBeacon\n");
-#endif
-                                pthread_mutex_lock(&BHM_receive_buffer_list_head
-                                                   .list_lock);
-                                insert_list_tail( &new_node -> buffer_entry,
-                                       &BHM_receive_buffer_list_head.list_head);
-                                pthread_mutex_unlock(
-                                       &BHM_receive_buffer_list_head.list_lock);
-                                break;
-
-                            default:
-                                mp_free( &node_mempool, new_node);
-                                break;
-                        }
-                        break;
-
-                    case from_modules:
-#ifdef debugging
-                        printf("IP: %s\nContent: %s\nSize: %d\n",
-                                                        new_node->net_address,
-                                                        new_node->content,
-                                                        new_node->content_size);
-#endif
-                        switch (pkt_type) {
-
-                            case add_data_owner:
-                            case remove_data_owner:
-                            case add_subscriber:
-                            case del_subscriber:
-                            case update_topic_data:
-                            case request_data:
-#ifdef debugging
-                                display_time();
-                                printf("Get api message from the module\n");
-#endif
-                                pthread_mutex_lock(&API_receive_buffer_list_head
-                                                   .list_lock);
-                                insert_list_tail( &new_node -> buffer_entry,
-                                       &API_receive_buffer_list_head.list_head);
-                                pthread_mutex_unlock(
-                                       &API_receive_buffer_list_head.list_lock);
-
-                                break;
-
-                            default:
-                                mp_free( &node_mempool, new_node);
-                                break;
-                        }
-                        break;
-
-                    default:
-                        mp_free( &node_mempool, new_node);
-                        break;
-                }
-            }
         }
         else{
-            Sleep(WAITING_TIME);
+
+            memset(new_node, 0, sizeof(BufferNode));
+
+            /* Initialize the entry of the buffer node */
+            init_entry( &new_node -> buffer_entry);
+
+            /* Copy the content to the buffer_node */
+            memcpy(new_node -> content, temppkt.content, temppkt.content_size);
+
+            new_node -> content_size = temppkt.content_size;
+
+            new_node -> port = temppkt.port;
+
+            memcpy(new_node -> net_address, temppkt.address,    
+                   NETWORK_ADDR_LENGTH);
+
+            /* read the pkt direction from higher 4 bits. */
+            pkt_direction = (new_node -> content[0] >> 4) & 0x0f;
+            /* read the pkt type from lower lower 4 bits. */
+            pkt_type = new_node -> content[0] & 0x0f;
+
+            /* Insert the node to the specified buffer, and release
+               list_lock. */
+
+            switch (pkt_direction) {
+
+                case from_gateway:
+
+                    switch (pkt_type) {
+
+                        case request_to_join:
+#ifdef debugging
+                            display_time();
+                            printf("Get Join request from Gateway.\n");
+#endif
+                            pthread_mutex_lock( 
+                                       &NSI_receive_buffer_list_head.list_lock);
+                            insert_list_tail( &new_node -> buffer_entry,
+                                       &NSI_receive_buffer_list_head.list_head);
+                            pthread_mutex_unlock(
+                                       &NSI_receive_buffer_list_head.list_lock);
+                            break;
+
+                        case tracked_object_data:
+#ifdef debugging
+                            display_time();
+                            printf("Get Tracked Object Data from Gateway\n");
+#endif
+                            pthread_mutex_lock(
+                                   &Gateway_receive_buffer_list_head.list_lock);
+                            insert_list_tail( &new_node -> buffer_entry,
+                                   &Gateway_receive_buffer_list_head.list_head);
+                            pthread_mutex_unlock(
+                                   &Gateway_receive_buffer_list_head.list_lock);
+                            break;
+
+                        case health_report:
+#ifdef debugging
+                            display_time();
+                            printf("Get Health Report from Gateway\n");
+#endif
+                            pthread_mutex_lock( 
+                                       &BHM_receive_buffer_list_head.list_lock);
+                            insert_list_tail( &new_node -> buffer_entry,
+                                       &BHM_receive_buffer_list_head.list_head);
+                            pthread_mutex_unlock(
+                                       &BHM_receive_buffer_list_head.list_lock);
+                            break;
+
+                        default:
+                            mp_free( &node_mempool, new_node);
+                            break;
+                    }
+                    
+                    break;
+
+                case from_beacon:
+
+                    switch (pkt_type) {
+
+                        case tracked_object_data:
+#ifdef debugging
+                            display_time();
+                            printf("Get Tracked Object Data from LBeacon\n");
+#endif
+                            pthread_mutex_lock(
+                                   &LBeacon_receive_buffer_list_head.list_lock);
+                            insert_list_tail( &new_node -> buffer_entry,
+                                   &LBeacon_receive_buffer_list_head.list_head);
+                            pthread_mutex_unlock(
+                                   &LBeacon_receive_buffer_list_head.list_lock);
+                            break;
+
+                        case health_report:
+#ifdef debugging
+                            display_time();
+                            printf("Get Health Report from LBeacon\n");
+#endif
+                            pthread_mutex_lock(&BHM_receive_buffer_list_head
+                                                   .list_lock);
+                            insert_list_tail( &new_node -> buffer_entry,
+                                       &BHM_receive_buffer_list_head.list_head);
+                            pthread_mutex_unlock(
+                                       &BHM_receive_buffer_list_head.list_lock);
+                            break;
+
+                        default:
+                            mp_free( &node_mempool, new_node);
+                            break;
+                    }
+                    break;
+
+                case from_modules:
+#ifdef debugging
+                    printf("IP: %s\nPort: %d\nContent: %s\nSize: %d\n",
+                                                    new_node->net_address,
+                                                    new_node->port,
+                                                    new_node->content,
+                                                    new_node->content_size);
+#endif
+                    switch (pkt_type) {
+
+                        case add_data_owner:
+                        case remove_data_owner:
+                        case add_subscriber:
+                        case del_subscriber:
+                        case update_topic_data:
+                        case request_data:
+#ifdef debugging
+                            display_time();
+                            printf("Get api message from the module\n");
+#endif
+                            pthread_mutex_lock(
+                                       &API_receive_buffer_list_head.list_lock);
+                            insert_list_tail( &new_node -> buffer_entry,
+                                       &API_receive_buffer_list_head.list_head);
+                            pthread_mutex_unlock(
+                                       &API_receive_buffer_list_head.list_lock);
+
+                            break;
+
+                        default:
+                            mp_free( &node_mempool, new_node);
+                            break;
+                    }
+                    break;
+
+                default:
+                    mp_free( &node_mempool, new_node);
+                    break;
+            }
         }
     }
     return (void *)NULL;
