@@ -933,7 +933,7 @@ static void *process_api_recv(void *_geo_fence_config){
 #endif
                         if(topic != NULL && strncmp(topic, 
                            GEO_FENCE_ALERT_TOPIC, strlen(GEO_FENCE_ALERT_TOPIC) 
-                           == 0){
+                           == 0)){
 
                             current_pointer = strtok_save(NULL,
                                                             DELIMITER_SEMICOLON,
