@@ -938,9 +938,9 @@ static void *process_api_recv(void *_geo_fence_config){
 #ifdef debugging
                         printf("[GeoFence] Topic: %s\n", topic);
 #endif
-                        if(topic != NULL && strncmp(topic, 
-                           GEO_FENCE_ALERT_TOPIC, strlen(GEO_FENCE_ALERT_TOPIC) 
-                           == 0)){
+                        if(topic != NULL && strncmp(topic,  
+                           GEO_FENCE_ALERT_TOPIC, strlen(GEO_FENCE_ALERT_TOPIC))
+                           == 0){
 
                             current_pointer = strtok_save(NULL,
                                                             DELIMITER_SEMICOLON,
