@@ -21,7 +21,7 @@
 
   Version:
     
-     2.0, 20190606
+     2.0, 20190608
 
   Abstract:
 
@@ -53,8 +53,8 @@ int udp_initial(pudp_config udp_config, int recv_port)
          return 0;
 
     /* zero out the structure */
-    memset((char *) &udp_config -> si_server, 0, sizeof(udp_config
-           -> si_server));
+    memset((char *) &udp_config -> si_server, 0,
+           sizeof(udp_config -> si_server));
 
     if (return_value = init_Packet_Queue( &udp_config -> pkt_Queue) != 
         pkt_Queue_SUCCESS)
@@ -77,8 +77,8 @@ int udp_initial(pudp_config udp_config, int recv_port)
 
     timeout = UDP_SELECT_TIMEOUT; // sec
 
-    if (setsockopt(udp_config -> recv_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout
-                 , sizeof(timeout)) == -1)
+    if (setsockopt(udp_config -> recv_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+        sizeof(timeout)) == -1)
         return set_socketopt_error;
 
     udp_config -> si_server.sin_family = AF_INET;
@@ -137,40 +137,48 @@ void *udp_send_pkt_routine(void *udpconfig)
 
     struct sockaddr_in si_send;
 
-    while(!(udp_config -> shutdown)){
+    while((udp_config -> shutdown) == false)
+    {
 
-        if(!(is_null( &udp_config -> pkt_Queue))){
+        if(!(is_null( &udp_config -> pkt_Queue)))
+        {
 
             current_send_pkt = get_pkt(&udp_config -> pkt_Queue);
 
-            memset(&si_send, 0, sizeof(si_send));
-            si_send.sin_family = AF_INET;
-            si_send.sin_port   = htons(current_send_pkt.port);
-            si_send.sin_addr.s_addr   = inet_addr(current_send_pkt.address);
+            if(current_send_pkt.is_null == false)
+            {
+                memset(&si_send, 0, sizeof(si_send));
+                si_send.sin_family = AF_INET;
+                si_send.sin_port   = htons(current_send_pkt.port);
+                si_send.sin_addr.s_addr   = inet_addr(current_send_pkt.address);
 
 #ifdef debugging
-            printf("Start Send pkts\n(sendto [%s] msg [", 
+                printf("Start Send pkts\n(sendto [%s] msg [", 
                                                       current_send_pkt.address);
-            print_content(current_send_pkt.content,   
+                print_content(current_send_pkt.content,   
                                                  current_send_pkt.content_size);
-            printf("])\n");
+                printf("])\n");
 #endif
 
-            if (sendto(udp_config -> send_socket, current_send_pkt.content, 
-                current_send_pkt.content_size, 0,(struct sockaddr *)&si_send, 
-                sizeof(struct sockaddr)) == -1){
+                if (sendto(udp_config -> send_socket, current_send_pkt.content, 
+                    current_send_pkt.content_size, 0,
+                    (struct sockaddr *)&si_send, sizeof(struct sockaddr)) == -1)
+                {
 #ifdef debugging
-                printf("sendto error.[%s]\n", strerror(errno));
+                    printf("sendto error.[%s]\n", strerror(errno));
 #endif
-            }
-            else{
+                }
+                else
+                {
 #ifdef debugging
-                printf("Send pkt success\n");
+                    printf("Send pkt success\n");
 #endif
+                }
             }
-        }
-        else{
-            Sleep(SEND_THREAD_IDLE_SLEEP_TIME);
+            else
+            {
+                Sleep(SEND_THREAD_IDLE_SLEEP_TIME);
+            }
         }
 
     }
@@ -200,7 +208,8 @@ void *udp_recv_pkt_routine(void *udpconfig)
 
 
     /* keep listening for data */
-    while(!(udp_config -> shutdown)){
+    while((udp_config -> shutdown) == false)
+    {
 
         memset(&si_recv, 0, sizeof(si_recv));
 
@@ -213,13 +222,15 @@ void *udp_recv_pkt_routine(void *udpconfig)
         /* try to receive some data, this is a non-blocking call */
         if ((recv_len = recvfrom(udp_config -> recv_socket, recv_buf,
              MESSAGE_LENGTH, 0, (struct sockaddr *) &si_recv, 
-             (socklen_t *)&socketaddr_len)) == -1){
+             (socklen_t *)&socketaddr_len)) == -1)
+        {
 #ifdef debugging
             printf("No data received.\n");
 #endif
             Sleep(SEND_THREAD_IDLE_SLEEP_TIME);
         }
-        else if(recv_len > 0){
+        else if(recv_len > 0)
+        {
 
             memset(address_ntoa, 0, sizeof(address_ntoa));
         

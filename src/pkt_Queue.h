@@ -20,7 +20,7 @@
 
   Version:
 
-     2.0, 20190606
+     2.0, 20190608
 
   Abstract:
 
@@ -77,12 +77,19 @@ enum{
 /* packet format */
 typedef struct pkt {
 
+    /* If the pkt is not in use, the flag set to true */
+    bool is_null;
+
+    /* The IP adddress of the current pkt */
     unsigned char address[NETWORK_ADDR_LENGTH];
 
+    /* The port number of the current pkt */
     unsigned int port;
 
+    /* The content of the current pkt */
     char content[MESSAGE_LENGTH];
 
+    /* The size of the current pkt */
     int  content_size;
 
 } sPkt;
@@ -92,18 +99,19 @@ typedef sPkt *pPkt;
 
 typedef struct pkt_header {
 
-    // front store the location of the first of thr Pkt Queue
-    // rear  store the location of the end of the Pkt Queue
+    /* front store the location of the first of thr Pkt Queue */
     int front;
 
+    /* rear  store the location of the end of the Pkt Queue */
     int rear;
 
+    /* The array is used to store pkts. */
     sPkt Queue[MAX_QUEUE_LENGTH];
 
-    unsigned char address[NETWORK_ADDR_LENGTH];
-
+    /* If the pkt queue is initialized, the flag will set to false */
     bool is_free;
 
+    /* The mutex is used to read/write lock before processing the pkt queue */
     pthread_mutex_t mutex;
 
 } spkt_ptr;
@@ -215,8 +223,8 @@ int delpkt(pkt_ptr pkt_queue);
   Parameter:
 
       display_title : The title we want to show in front of the packet content.
-      pkt     : The packet we want to see it's content.
-      pkt_num : Choose whitch pkts we want to display.
+      pkt           : The packet we want to see it's content.
+      pkt_num       : Choose whitch pkts we want to display.
 
   Return Value:
 

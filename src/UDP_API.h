@@ -16,7 +16,7 @@
 
   Version:
 
-     2.0, 20190606                                                            
+     2.0, 20190608
 
   File Description:
 
@@ -41,6 +41,7 @@
 #ifndef UDP_API_H
 #define UDP_API_H
 
+#ifdef _MSC_VER
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -51,7 +52,9 @@
 #pragma comment(lib,"WS2_32.lib")
 #include <WS2tcpip.h>
 #include <errno.h>
+#endif
 #include "pkt_Queue.h"
+
 
 /* The time interval in seconds for Select() break the block */
 #define UDP_SELECT_TIMEOUT 60
@@ -81,6 +84,7 @@ typedef struct {
 
     pthread_t udp_send_thread, udp_receive_thread;
 
+   /* The flag set to true whwn the process need to stop */
     bool shutdown;
 
     spkt_ptr pkt_Queue, Received_Queue;
