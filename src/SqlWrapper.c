@@ -164,6 +164,8 @@ ErrorCode SQL_vacuum_database(void *db){
     char *sql_template = "VACUUM %s;";
     int idx = 0;
 
+    SQL_begin_transaction(db);
+
     for(idx = 0; idx< 4 ; idx++){
 
         memset(sql, 0, sizeof(sql));
@@ -173,10 +175,13 @@ ErrorCode SQL_vacuum_database(void *db){
         ret_val = SQL_execute(db, sql);
 
         if(WORK_SUCCESSFULLY != ret_val){
+            SQL_rollback_transaction(db);
             return E_SQL_EXECUTE;
         }
 
     }
+
+    SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -197,6 +202,8 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
                               "\'%s\');";
     PGresult *res;
 
+    SQL_begin_transaction(db);
+
     for(idx = 0; idx<3; idx++){
 
         memset(sql, 0, sizeof(sql));
@@ -207,6 +214,7 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
         ret_val = SQL_execute(db, sql);
 
         if(WORK_SUCCESSFULLY != ret_val){
+            SQL_rollback_transaction(db);
             return E_SQL_EXECUTE;
         }
 
@@ -229,11 +237,15 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
 
             PQclear(res);
             printf("SQL_execute failed: %s", PQerrorMessage(conn));
+            SQL_rollback_transaction(db);
+
             return E_SQL_EXECUTE;
 
         }
         PQclear(res);
     }
+
+    SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -344,6 +356,8 @@ ErrorCode SQL_query_registered_gateways(void *db,
 
     /* Execute SQL statement */
 
+    SQL_begin_transaction(db);
+
 #ifdef debugging
     printf("SQL command = [%s]\n", sql);
 #endif
@@ -356,6 +370,8 @@ ErrorCode SQL_query_registered_gateways(void *db,
 #ifdef debugging
         printf("SQL_execute failed: %s", PQerrorMessage(conn));
 #endif
+
+        SQL_rollback_transaction(db);
 
         return E_SQL_EXECUTE;
     }
@@ -376,6 +392,9 @@ ErrorCode SQL_query_registered_gateways(void *db,
 #endif
 
             PQclear(res);
+
+            SQL_rollback_transaction(db);
+
             return E_SQL_RESULT_EXCEED;
         }
 
@@ -384,6 +403,8 @@ ErrorCode SQL_query_registered_gateways(void *db,
     }
 
     PQclear(res);
+
+    SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -967,7 +988,11 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
 
     PQfreemem(pqescape_topic_name);
 
+    SQL_begin_transaction(db);
+
     res = PQexec(conn, sql);
+
+    SQL_commit_transaction(db);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
         PQclear(res);
@@ -975,8 +1000,8 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
 #ifdef debugging
         printf("SQL_execute failed: %s", PQerrorMessage(conn));
 #endif
-        return -1;
 
+        return -1;
     }
 
     rows = PQntuples(res);
@@ -1187,7 +1212,11 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_template, topic_id);
 
+    SQL_begin_transaction(db);
+
     res = PQexec(conn, sql);
+
+    SQL_commit_transaction(db);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
         PQclear(res);
@@ -1234,7 +1263,11 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
 
     sprintf(sql, sql_select_template);
 
+    SQL_begin_transaction(db);
+
     res = PQexec(conn, sql);
+
+    SQL_commit_transaction(db);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
         PQclear(res);
