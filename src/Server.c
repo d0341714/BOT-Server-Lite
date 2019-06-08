@@ -22,7 +22,7 @@
 
   Version:
 
-     1.0, 20190606
+     1.0, 20190608
 
   Abstract:
 
@@ -47,7 +47,8 @@
 
 #include "Server.h"
 
-int main(int argc, char **argv){
+int main(int argc, char **argv)
+{
 
     int return_value;
 
@@ -90,8 +91,8 @@ int main(int argc, char **argv){
 
     /* Create the serverconfig from input serverconfig file */
 
-    if(get_config( &serverconfig, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY){
-
+    if(get_config( &serverconfig, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY)
+    {
         return E_OPEN_FILE;
     }
 
@@ -101,8 +102,8 @@ int main(int argc, char **argv){
 
     /* Initialize the memory pool */
     if(mp_init( &node_mempool, sizeof(BufferNode), SLOTS_IN_MEM_POOL)
-       != MEMORY_POOL_SUCCESS){
-
+       != MEMORY_POOL_SUCCESS)
+    {
         return E_MALLOC;
     }
 #ifdef debugging
@@ -189,6 +190,7 @@ int main(int argc, char **argv){
                       &priority_list_head.priority_list_entry);
 
     sort_priority_list(&serverconfig, &priority_list_head);
+
 #ifdef debugging
     printf("Buffer lists initialized\n");
 #endif
@@ -198,7 +200,8 @@ int main(int argc, char **argv){
 #endif
 
     /* Initialize the Wifi connection */
-    if(return_value = Wifi_init(serverconfig.server_ip) != WORK_SUCCESSFULLY){
+    if(return_value = Wifi_init(serverconfig.server_ip) != WORK_SUCCESSFULLY)
+    {
         /* Error handling and return */
         initialization_failed = true;
 
@@ -213,9 +216,9 @@ int main(int argc, char **argv){
                                (void *)process_wifi_receive,
                                NULL);
 
-    if(return_value != WORK_SUCCESSFULLY){
+    if(return_value != WORK_SUCCESSFULLY)
+    {
         initialization_failed = true;
-
         return E_WIFI_INIT_FAIL;
     }
 
@@ -236,8 +239,8 @@ int main(int argc, char **argv){
     /* Create the main thread of Communication Unit  */
     return_value = startThread( &CommUnit_thread, CommUnit_routine, NULL);
 
-    if(return_value != WORK_SUCCESSFULLY){
-
+    if(return_value != WORK_SUCCESSFULLY)
+    {
         return return_value;
     }
 
@@ -248,11 +251,12 @@ int main(int argc, char **argv){
     /* The while loop waiting for NSI routine and CommUnit routine to be ready 
      */
     while(NSI_initialization_complete == false ||
-          CommUnit_initialization_complete == false){
-
+          CommUnit_initialization_complete == false)
+    {
         Sleep(WAITING_TIME);
 
-        if(initialization_failed == true){
+        if(initialization_failed == true)
+        {
             ready_to_work = false;
 
             /* The program is going to be ended. Free the connection of Wifi */
@@ -264,7 +268,8 @@ int main(int argc, char **argv){
         }
     }
 
-    if(geo_fence_data_topic_id == -1){
+    if(geo_fence_data_topic_id == -1)
+    {
         memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
         sprintf(command_msg, "%s;%s;", GEO_FENCE_TOPIC,
                 serverconfig.server_ip);
@@ -279,7 +284,8 @@ int main(int argc, char **argv){
     printf("geo_fence_data_topic_id: %d\n", geo_fence_data_topic_id);
 #endif
 
-    if(tracked_object_data_topic_id == -1){
+    if(tracked_object_data_topic_id == -1)
+    {
         memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
         sprintf(command_msg, "%s;%s;", TRACKED_OBJECT_DATA_TOPIC,
                 serverconfig.server_ip);
@@ -310,8 +316,8 @@ int main(int argc, char **argv){
     last_polling_LBeacon_for_HR_time = 0;
 
     /* The while loop that keeps the program running */
-    while(ready_to_work == true){
-
+    while(ready_to_work == true)
+    {
         did_work = false;
 
         current_time = get_system_time();
@@ -319,8 +325,8 @@ int main(int argc, char **argv){
         /* If it is the time to poll health reports from LBeacons, get a
            thread to do this work */
         if(current_time - last_polling_object_tracking_time >=
-           serverconfig.period_between_RFTOD){
-
+           serverconfig.period_between_RFTOD)
+        {
             /* Pull object tracking object data */
             /* set the pkt type */
             send_pkt_type = ((from_server & 0x0f) << 4) +
@@ -345,7 +351,8 @@ int main(int argc, char **argv){
             did_work = true;
         }
         else if(current_time - last_polling_LBeacon_for_HR_time >=
-                serverconfig.period_between_RFHR){
+                serverconfig.period_between_RFHR)
+        {
 
             /* Polling for health reports. */
             /* set the pkt type */
@@ -370,7 +377,8 @@ int main(int argc, char **argv){
             did_work = true;
         }
 
-        if(did_work == false){
+        if(did_work == false)
+        {
             Sleep(WAITING_TIME);
         }
 
@@ -387,10 +395,13 @@ int main(int argc, char **argv){
 }
 
 
-ErrorCode get_config(ServerConfig *serverconfig, char *file_name) {
+ErrorCode get_config(ServerConfig *serverconfig, char *file_name) 
+{
 
     FILE *file = fopen(file_name, "r");
-    if (file == NULL) {
+    
+    if (file == NULL) 
+    {
 
 #ifdef debugging
         printf("Load serverconfig fail\n");
@@ -398,7 +409,8 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name) {
 
         return E_OPEN_FILE;
     }
-    else {
+    else 
+    {
 
         /* Create spaces for storing the string in the current line being read*/
         char  config_setting[CONFIG_BUFFER_SIZE];
@@ -611,7 +623,8 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name) {
 
 
 void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
-                 int priority_nice){
+                 int priority_nice)
+{
 
     init_entry( &(buffer_list_head -> list_head));
 
@@ -627,7 +640,8 @@ void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
 }
 
 
-void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head){
+void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head)
+{
 
     List_Entry *list_pointer,
                *next_list_pointer;
@@ -645,7 +659,8 @@ void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head){
     pthread_mutex_lock( &list_head -> list_lock);
 
     list_for_each_safe(list_pointer, next_list_pointer,
-                       &list_head -> priority_list_entry){
+                       &list_head -> priority_list_entry)
+    {
 
         remove_list_node(list_pointer);
 
@@ -671,25 +686,29 @@ void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head){
 
     }
 
-    if(is_entry_list_empty(&critical_priority_head) == false){
+    if(is_entry_list_empty(&critical_priority_head) == false)
+    {
         list_pointer = critical_priority_head.next;
         remove_list_node(list_pointer -> prev);
         concat_list( &list_head -> priority_list_entry, list_pointer);
     }
 
-    if(is_entry_list_empty(&high_priority_head) == false){
+    if(is_entry_list_empty(&high_priority_head) == false)
+    {
         list_pointer = high_priority_head.next;
         remove_list_node(list_pointer -> prev);
         concat_list( &list_head -> priority_list_entry, list_pointer);
     }
 
-    if(is_entry_list_empty(&normal_priority_head) == false){
+    if(is_entry_list_empty(&normal_priority_head) == false)
+    {
         list_pointer = normal_priority_head.next;
         remove_list_node(list_pointer -> prev);
         concat_list( &list_head -> priority_list_entry, list_pointer);
     }
 
-    if(is_entry_list_empty(&low_priority_head) == false){
+    if(is_entry_list_empty(&low_priority_head) == false)
+    {
         list_pointer = low_priority_head.next;
         remove_list_node(list_pointer -> prev);
         concat_list( &list_head -> priority_list_entry, list_pointer);
@@ -703,7 +722,8 @@ void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head){
 }
 
 
-void *CommUnit_routine(){
+void *CommUnit_routine()
+{
 
     /* The last reset time */
     int init_time;
@@ -726,9 +746,11 @@ void *CommUnit_routine(){
     BufferListHead *current_head;
 
     /* wait for NSI get ready */
-    while(NSI_initialization_complete == false){
+    while(NSI_initialization_complete == false)
+    {
         Sleep(WAITING_TIME);
-        if(initialization_failed == true){
+        if(initialization_failed == true)
+        {
             return (void *)NULL;
         }
     }
@@ -747,8 +769,8 @@ void *CommUnit_routine(){
     CommUnit_initialization_complete = true;
 
     /* When there is no dead thead, do the work. */
-    while(ready_to_work == true){
-
+    while(ready_to_work == true)
+    {
         did_work = false;
 
         current_time = get_system_time();
@@ -756,22 +778,24 @@ void *CommUnit_routine(){
         /* In the normal situation, the scanning starts from the high priority
            to lower priority. When the timer expired for MAX_STARVATION_TIME,
            reverse the scanning process */
-        while(current_time - init_time < MAX_STARVATION_TIME){
-
+        while(current_time - init_time < MAX_STARVATION_TIME)
+        {
             /* Scan the priority_list to get the buffer list with the highest
                priority among all lists that are not empty. */
 
             pthread_mutex_lock( &priority_list_head.list_lock);
 
             list_for_each(current_entry,
-                          &priority_list_head.priority_list_entry){
+                          &priority_list_head.priority_list_entry)
+            {
 
                 current_head = ListEntry(current_entry, BufferListHead,
                                          priority_list_entry);
 
                 pthread_mutex_lock( &current_head -> list_lock);
 
-                if (is_entry_list_empty( &current_head->list_head) == true){
+                if (is_entry_list_empty( &current_head->list_head) == true)
+                {
 
                     pthread_mutex_unlock( &current_head -> list_lock);
                     /* Go to check the next buffer list in the priority list */
@@ -779,7 +803,8 @@ void *CommUnit_routine(){
                     Sleep(WAITING_TIME);
                     continue;
                 }
-                else {
+                else 
+                {
 
                     list_entry = current_head -> list_head.next;
 
@@ -815,14 +840,16 @@ void *CommUnit_routine(){
         pthread_mutex_lock( &priority_list_head.list_lock);
 
         list_for_each_reverse(current_entry,
-                              &priority_list_head.priority_list_entry){
+                              &priority_list_head.priority_list_entry)
+        {
 
             current_head = ListEntry(current_entry, BufferListHead,
                                      priority_list_entry);
 
             pthread_mutex_lock( &current_head -> list_lock);
 
-            if (is_entry_list_empty( &current_head->list_head) == true){
+            if (is_entry_list_empty( &current_head->list_head) == true)
+            {
 
                 pthread_mutex_unlock( &current_head -> list_lock);
                 /* Go to check the next buffer list in the priority list */
@@ -830,7 +857,8 @@ void *CommUnit_routine(){
                 Sleep(WAITING_TIME);
                 continue;
             }
-            else {
+            else 
+            {
 
                 list_entry = current_head -> list_head.next;
 
@@ -861,7 +889,8 @@ void *CommUnit_routine(){
 
     } /* End while(ready_to_work == true) */
 
-    if(did_work == false){
+    if(did_work == false)
+    {
         Sleep(WAITING_TIME);
     }
 
@@ -872,7 +901,8 @@ void *CommUnit_routine(){
 }
 
 
-void *NSI_routine(void *_buffer_node){
+void *NSI_routine(void *_buffer_node)
+{
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
@@ -923,8 +953,8 @@ void *NSI_routine(void *_buffer_node){
 }
 
 
-void *BHM_routine(void *_buffer_node){
-
+void *BHM_routine(void *_buffer_node)
+{
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
     char lbeacon_record[WIFI_MESSAGE_LENGTH];
@@ -943,8 +973,8 @@ void *BHM_routine(void *_buffer_node){
 }
 
 
-void *LBeacon_routine(void *_buffer_node){
-
+void *LBeacon_routine(void *_buffer_node)
+{
     int pkt_type;
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
@@ -956,7 +986,8 @@ void *LBeacon_routine(void *_buffer_node){
     /* read the pkt type from lower lower 4 bits. */
     pkt_type = current_node ->content[0] & 0x0f;
 
-    if(pkt_type == tracked_object_data){
+    if(pkt_type == tracked_object_data)
+    {
         SQL_update_object_tracking_data(Server_db,
                                         &current_node ->content[1],
                                         strlen(&current_node ->content[1]));
@@ -981,8 +1012,8 @@ void *LBeacon_routine(void *_buffer_node){
 }
 
 
-void *Gateway_routine(void *_buffer_node){
-
+void *Gateway_routine(void *_buffer_node)
+{
     int pkt_type;
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
@@ -994,7 +1025,8 @@ void *Gateway_routine(void *_buffer_node){
     /* read the pkt type from lower lower 4 bits. */
     pkt_type = current_node ->content[0] & 0x0f;
 
-    if(pkt_type == tracked_object_data){
+    if(pkt_type == tracked_object_data)
+    {
         SQL_update_object_tracking_data(Server_db,
                                         &current_node ->content[1],
                                         strlen(&current_node ->content[1]));
@@ -1017,7 +1049,8 @@ void *Gateway_routine(void *_buffer_node){
 }
 
 
-void *process_api_routine(void *_buffer_node){
+void *process_api_routine(void *_buffer_node)
+{
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
@@ -1046,7 +1079,8 @@ void *process_api_routine(void *_buffer_node){
     memcpy(data_content, &(current_node -> content[1]),
             current_node -> content_size - 1);
 
-    switch(data_type){
+    switch(data_type)
+    {
 
         case add_data_owner:
 
@@ -1271,7 +1305,8 @@ void *process_api_routine(void *_buffer_node){
 }
 
 
-void init_Address_Map(AddressMapArray *address_map){
+void init_Address_Map(AddressMapArray *address_map)
+{
 
     int n;
 
@@ -1285,7 +1320,8 @@ void init_Address_Map(AddressMapArray *address_map){
 }
 
 
-int is_in_Address_Map(AddressMapArray *address_map, char *net_address){
+int is_in_Address_Map(AddressMapArray *address_map, char *net_address)
+{
 
     int n;
 
@@ -1302,7 +1338,8 @@ int is_in_Address_Map(AddressMapArray *address_map, char *net_address){
 }
 
 
-bool Gateway_join_request(AddressMapArray *address_map, char *address){
+bool Gateway_join_request(AddressMapArray *address_map, char *address)
+{
 
     int not_in_use = -1;
     int n;
@@ -1351,7 +1388,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
 #endif
 
     /* If still has space for the LBeacon to register */
-    if (not_in_use != -1){
+    if (not_in_use != -1)
+    {
 
         AddressMap *tmp =  &address_map -> address_map_list[not_in_use];
 
@@ -1367,7 +1405,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
 
         return true;
     }
-    else{
+    else
+    {
         pthread_mutex_unlock( &address_map -> list_lock);
 
 #ifdef debugging
@@ -1378,18 +1417,21 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address){
 }
 
 
-void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size){
+void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size)
+{
 
     /* The counter for for-loop*/
     int current_index;
 
     pthread_mutex_lock( &address_map -> list_lock);
 
-    if (size <= WIFI_MESSAGE_LENGTH){
+    if (size <= WIFI_MESSAGE_LENGTH)
+    {
         for(current_index = 0;current_index < MAX_NUMBER_NODES;current_index ++)
         {
 
-            if (address_map -> in_use[current_index] == true){
+            if (address_map -> in_use[current_index] == true)
+            {
                 /* Add the content of tje buffer node to the UDP to be sent to
                    the server */
                 udp_addpkt( &udp_config,
@@ -1406,7 +1448,8 @@ void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size){
 }
 
 
-ErrorCode Wifi_init(char *IPaddress){
+ErrorCode Wifi_init(char *IPaddress)
+{
 
     /* Initialize the Wifi cinfig file */
     if(udp_initial( &udp_config, serverconfig.recv_port)
@@ -1419,7 +1462,8 @@ ErrorCode Wifi_init(char *IPaddress){
 }
 
 
-void Wifi_free(){
+void Wifi_free()
+{
 
     /* Release the Wifi elements and close the connection. */
     udp_release( &udp_config);
@@ -1427,7 +1471,8 @@ void Wifi_free(){
 }
 
 
-void *process_wifi_send(void *_buffer_node){
+void *process_wifi_send(void *_buffer_node)
+{
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
@@ -1455,19 +1500,26 @@ void *process_wifi_send(void *_buffer_node){
 }
 
 
-void *process_wifi_receive(){
+void *process_wifi_receive()
+{
+    BufferNode *new_node;
 
-    while (ready_to_work == true) {
+    int test_times;
 
-        BufferNode *new_node;
+    int pkt_direction;
 
+    int pkt_type;
+
+    while (ready_to_work == true) 
+    {
         sPkt temppkt = udp_getrecv( &udp_config);
 
-        int test_times;
-
-        int pkt_direction;
-
-        int pkt_type;
+        /* If there is no pkt received */
+        if(temppkt.is_null == true)
+        {
+            Sleep(WAITING_TIME);
+            continue;
+        }
 
         /* counting test time for mp_alloc(). */
         test_times = 0;
@@ -1485,13 +1537,15 @@ void *process_wifi_receive(){
 
         }while( new_node == NULL);
 
-        if(new_node == NULL){
+        if(new_node == NULL)
+        {
             /* Alloc memory failed, error handling. */
 #ifdef debugging
             printf("No memory allow to alloc...\n");
 #endif
         }
-        else{
+        else
+        {
 
             memset(new_node, 0, sizeof(BufferNode));
 
@@ -1516,11 +1570,13 @@ void *process_wifi_receive(){
             /* Insert the node to the specified buffer, and release
                list_lock. */
 
-            switch (pkt_direction) {
+            switch (pkt_direction) 
+            {
 
                 case from_gateway:
 
-                    switch (pkt_type) {
+                    switch (pkt_type) 
+                    {
 
                         case request_to_join:
 #ifdef debugging
@@ -1570,8 +1626,8 @@ void *process_wifi_receive(){
 
                 case from_beacon:
 
-                    switch (pkt_type) {
-
+                    switch (pkt_type) 
+                    {
                         case tracked_object_data:
 #ifdef debugging
                             display_time();
@@ -1612,7 +1668,8 @@ void *process_wifi_receive(){
                                                     new_node->content,
                                                     new_node->content_size);
 #endif
-                    switch (pkt_type) {
+                    switch (pkt_type) 
+                    {
 
                         case add_data_owner:
                         case remove_data_owner:

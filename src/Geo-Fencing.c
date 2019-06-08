@@ -903,6 +903,13 @@ static void *process_api_recv(void *_geo_fence_config){
 
         temppkt = udp_getrecv( &geo_fence_config -> udp_config);
 
+        /* If there is no pkt received */
+        if(temppkt.is_null == true)
+        {
+            Sleep(WAITING_TIME);
+            continue;
+        }
+
         memcpy( &tmp_content,  &temppkt.content, WIFI_MESSAGE_LENGTH);
 
         pkt_direction = (temppkt.content[0] >> 4) & 0x0f;
