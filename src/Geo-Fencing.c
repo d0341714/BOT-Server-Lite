@@ -101,8 +101,8 @@ void *geo_fence_routine(void *_geo_fence_config){
     printf("[GeoFence] init UDP\n");
 #endif
 
-    if (udp_initial(&geo_fence_config -> udp_config, geo_fence_config ->
-        api_recv_port, geo_fence_config -> recv_port) != WORK_SUCCESSFULLY)
+    if (udp_initial(&geo_fence_config -> udp_config, geo_fence_config -> 
+        recv_port) != WORK_SUCCESSFULLY)
         return E_WIFI_INIT_FAIL;
 
 #ifdef debugging
