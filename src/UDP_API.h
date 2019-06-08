@@ -16,7 +16,7 @@
 
   Version:
 
-     2.0, 20190527                                                             
+     2.0, 20190608
 
   File Description:
 
@@ -41,6 +41,7 @@
 #ifndef UDP_API_H
 #define UDP_API_H
 
+#ifdef _MSC_VER
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -51,16 +52,18 @@
 #pragma comment(lib,"WS2_32.lib")
 #include <WS2tcpip.h>
 #include <errno.h>
+#endif
 #include "pkt_Queue.h"
+
 
 /* The time interval in seconds for Select() break the block */
 #define UDP_SELECT_TIMEOUT 60
 
 /* The time in milliseconds for the send thread to sleep when it is idle */
-#define SEND_THREAD_IDLE_SLEEP_TIME 5
+#define SEND_THREAD_IDLE_SLEEP_TIME 1
 
 /* The time in milliseconds for the receive thread to sleep when it is idle */
-#define RECEIVE_THREAD_IDLE_SLEEP_TIME 5
+#define RECEIVE_THREAD_IDLE_SLEEP_TIME 1
 
 /* When debugging is needed */
 //#define debugging
@@ -77,14 +80,11 @@ typedef struct {
 
     int  send_socket, recv_socket;
 
-    int send_port;
-
     int recv_port;
-
-    char Local_Address[NETWORK_ADDR_LENGTH];
 
     pthread_t udp_send_thread, udp_receive_thread;
 
+   /* The flag set to true whwn the process need to stop */
     bool shutdown;
 
     spkt_ptr pkt_Queue, Received_Queue;
@@ -93,10 +93,15 @@ typedef struct {
 
 typedef sudp_config *pudp_config;
 
-enum{File_OPEN_ERROR = -1, E_ADDPKT_OVERSIZE = -2};
 
-enum{socket_error = -1, send_socket_error = -2, recv_socket_error = -3,
-set_socketopt_error = -4,recv_socket_bind_error = -5,addpkt_msg_oversize = -6};
+enum{
+   socket_error = -1, 
+   send_socket_error = -2, 
+   recv_socket_error = -3,
+   set_socketopt_error = -4,
+   recv_socket_bind_error = -5,
+   addpkt_msg_oversize = -6
+   };
 
 
 /*
@@ -106,14 +111,14 @@ set_socketopt_error = -4,recv_socket_bind_error = -5,addpkt_msg_oversize = -6};
 
   Parameter:
 
-     udp_config: The pointer points to the structure contains all variables for the UDP connection.
+     udp_config: The pointer points to the structure contains all variables for             the UDP connection.
 
   Return Value:
 
      int : If return 0, everything work successfully.
            If not 0   , somthing wrong.
  */
-int udp_initial(pudp_config udp_config, int send_port, int recv_port);
+int udp_initial(pudp_config udp_config, int recv_port);
 
 
 /*
@@ -125,7 +130,8 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port);
 
      udp_config : The pointer points to the structure contains all variables 
                   for the UDP connection.
-     raw_addr   : The pointer points to the destnation address of the packet.
+     port       : The port number to be sent to.
+     address    : The pointer points to the destnation address of the packet.
      content    : The pointer points to the content we decided to send.
      size       : The size of the content.
 
@@ -134,7 +140,8 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port);
      int : If return 0, everything work successfully.
            If not 0   , something wrong.
  */
-int udp_addpkt(pudp_config udp_config, char *raw_addr, char *content, int size);
+int udp_addpkt(pudp_config udp_config, char *address, unsigned int port, 
+               char *content, int size);
 
 
 /*
@@ -203,42 +210,6 @@ void *udp_recv_pkt_routine(void *udpconfig);
            If not 0   , something wrong.
  */
 int udp_release(pudp_config udp_config);
-
-
-/*
-  udp_address_reduce_point
-
-     Convert address from address to a address remove all points.
-
-  Parameter:
-
-     raw_addr: The pointer points to the address we want to convert.
-     address: The pointer points to the output array to store the network 
-              address without points.
-
-  Return Value:
-
-     0: success
- */
-int udp_address_reduce_point(char *raw_addr, char *address);
-
-
-/*
-  udp_hex_to_address
-
-     Convert address from hex format to char.
-
-  Parameter:
-
-     hex_addr: The pointer points to the address we want to convert.
-     dest_address: The pointer points to the output array to store the 
-                   converted address.
-
-  Return Value:
-
-     0: success
- */
-int udp_hex_to_address(unsigned char *hex_addr, char* dest_address);
 
 
 #endif

@@ -101,8 +101,8 @@ void *geo_fence_routine(void *_geo_fence_config){
     printf("[GeoFence] init UDP\n");
 #endif
 
-    if (udp_initial(&geo_fence_config -> udp_config, geo_fence_config ->
-        api_recv_port, geo_fence_config -> recv_port) != WORK_SUCCESSFULLY)
+    if (udp_initial(&geo_fence_config -> udp_config, geo_fence_config -> 
+        recv_port) != WORK_SUCCESSFULLY)
         return E_WIFI_INIT_FAIL;
 
 #ifdef debugging
@@ -135,7 +135,8 @@ void *geo_fence_routine(void *_geo_fence_config){
         sprintf( &content[1], "%s;%s;", GEO_FENCE_TOPIC,
                 geo_fence_config -> server_ip);
 
-        udp_addpkt(udp_config, geo_fence_config -> server_ip, content,
+        udp_addpkt(udp_config, geo_fence_config -> server_ip, 
+                   geo_fence_config->api_recv_port, content,
                    strlen(content));
 
         last_subscribe_geo_fence_data_time = get_system_time();
@@ -161,7 +162,8 @@ void *geo_fence_routine(void *_geo_fence_config){
         sprintf( &content[1], "%s;%s;", TRACKED_OBJECT_DATA_TOPIC,
                 geo_fence_config -> server_ip);
 
-        udp_addpkt(udp_config, geo_fence_config -> server_ip, content,
+        udp_addpkt(udp_config, geo_fence_config -> server_ip, 
+                   geo_fence_config -> api_recv_port, content,
                    strlen(content));
 
         last_subscribe_tracked_object_data_time = get_system_time();
@@ -187,7 +189,8 @@ void *geo_fence_routine(void *_geo_fence_config){
         sprintf( &content[1], "%s;%s;", GEO_FENCE_ALERT_TOPIC,
                 geo_fence_config -> server_ip);
 
-        udp_addpkt(udp_config, geo_fence_config -> server_ip, content,
+        udp_addpkt(udp_config, geo_fence_config -> server_ip, 
+                   geo_fence_config -> api_recv_port, content,
                    strlen(content));
 
         last_subscribe_tracked_object_data_time = get_system_time();
@@ -553,7 +556,6 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                         strlen(current_mac_prefix_list_ptr -> mac_prefix)) == 0)
                         && rssi >= threshold){
 
-//#ifdef debugging
                     printf("[GeoFence-Alert] timestamp %d - %s %s %s %d\n",
                            get_system_time(), uuid, lbeacon_ip, mac_address,
                            rssi);
@@ -570,11 +572,9 @@ static void *check_tracking_object_data_routine(void *_pkt_content){
                             GEO_FENCE_ALERT_TOPIC, 1, mac_address, lbeacon_type,
                             uuid, final_timestamp, rssi, geo_fence_id);
 
-                    udp_addpkt(udp_config, geo_fence_config -> server_ip,
+                    udp_addpkt(udp_config, geo_fence_config -> server_ip, 
+                               geo_fence_config -> api_recv_port,
                                content_for_alert, strlen(content_for_alert));
-
-
-//#endif
 
                 }
             }
@@ -620,14 +620,14 @@ static void *update_geo_fence(void *_pkt_content){
     saveptr = NULL;
 
     current_ptr = strtok_save( &pkt_content -> content[1],
-                           DELIMITER_SEMICOLON, &saveptr);
+                              DELIMITER_SEMICOLON, &saveptr);
 
 #ifdef debugging
     printf("[GeoFence] Topic: %s\n", current_ptr);
 #endif
 
-    current_ptr = strtok_save( NULL,
-                           DELIMITER_SEMICOLON, &saveptr);
+    current_ptr = strtok_save(NULL,
+                              DELIMITER_SEMICOLON, &saveptr);
 
 #ifdef debugging
     printf("[GeoFence] number_of_geo_fence: %s\n", current_ptr);
@@ -697,9 +697,9 @@ static void *update_geo_fence(void *_pkt_content){
             if(geo_fence_list_node != NULL){
                 init_geo_fence_list_node(geo_fence_list_node);
 
-    #ifdef debugging
+#ifdef debugging
                 printf("[GeoFence] Not Exists\n");
-    #endif
+#endif
             }
         }
         else{
@@ -771,16 +771,16 @@ static void *update_geo_fence(void *_pkt_content){
 
                 memcpy(uuid_list_node -> uuid, uuid, UUID_LENGTH);
 
-    #ifdef debugging
+#ifdef debugging
                 printf("[GeoFence] uuid_list_node -> uuid: %s\n", 
                                                      uuid_list_node -> uuid);
-    #endif
+#endif
                 uuid_list_node -> threshold = threshold;
 
-    #ifdef debugging
+#ifdef debugging
                 printf("[GeoFence] uuid_list_node -> threshold: %d\n",
                                                 uuid_list_node -> threshold);
-    #endif
+#endif
 
                 insert_list_tail( &uuid_list_node -> uuid_list_entry,
                                   &geo_fence_list_node -> 
@@ -886,7 +886,6 @@ static void *process_api_recv(void *_geo_fence_config){
 
     sPkt temppkt;
 
-    char tmp_addr[NETWORK_ADDR_LENGTH];
     char *current_pointer, *saved_ptr, *topic;
 
     ppkt_content pkt_content;
@@ -904,197 +903,198 @@ static void *process_api_recv(void *_geo_fence_config){
 
         temppkt = udp_getrecv( &geo_fence_config -> udp_config);
 
+        /* If there is no pkt received */
+        if(temppkt.is_null == true)
+        {
+            Sleep(WAITING_TIME);
+            continue;
+        }
+
         memcpy( &tmp_content,  &temppkt.content, WIFI_MESSAGE_LENGTH);
 
-        if(temppkt.type == UDP){
+        pkt_direction = (temppkt.content[0] >> 4) & 0x0f;
 
-            pkt_direction = (temppkt.content[0] >> 4) & 0x0f;
-
-            pkt_type = temppkt.content[0] & 0x0f;
+        pkt_type = temppkt.content[0] & 0x0f;
 
 #ifdef debugging
-            printf("[GeoFence] get pkts\nDirection: %d\nType: %d\n",
+        printf("[GeoFence] get pkts\nDirection: %d\nType: %d\n",
                                                        pkt_direction, pkt_type);
 #endif
 
-            switch (pkt_direction) {
+        switch (pkt_direction) {
 
-                case from_server:
+            case from_server:
 
-                    switch (pkt_type) {
+                switch (pkt_type) {
 
-                        case add_data_owner:
+                    case add_data_owner:
 #ifdef debugging
-                            printf("[GeoFence] pkt content in responsed "\
-                                   "add topic: [%s]\n", tmp_content);
+                        printf("[GeoFence] pkt content in responsed "\
+                                              "add topic: [%s]\n", tmp_content);
 #endif
-                            topic = strtok_save( &tmp_content[1],
-                                           DELIMITER_SEMICOLON, &saved_ptr);
+                        topic = strtok_save( &tmp_content[1],
+                                            DELIMITER_SEMICOLON, &saved_ptr);
 
 #ifdef debugging
-                            printf("[GeoFence] Topic: %s\n", topic);
+                        printf("[GeoFence] Topic: %s\n", topic);
+#endif
+                        if(topic != NULL && strncmp(topic, 
+                           GEO_FENCE_ALERT_TOPIC, strlen(GEO_FENCE_ALERT_TOPIC) 
+                           == 0)){
 
-                            if(topic != NULL && strncmp(
-                               topic, GEO_FENCE_ALERT_TOPIC,
-                               strlen(GEO_FENCE_ALERT_TOPIC)) == 0){
+                            current_pointer = strtok_save(NULL,
+                                                            DELIMITER_SEMICOLON,
+                                                             &saved_ptr);
+
+                            if(current_pointer != NULL && strncmp(
+                               current_pointer, "Success",
+                               strlen("Success")) == 0){
 
                                 current_pointer = strtok_save(NULL,
-                                                         DELIMITER_SEMICOLON,
-                                                         &saved_ptr);
-
-                                if(current_pointer != NULL && strncmp(
-                                   current_pointer, "Success",
-                                   strlen("Success")) == 0){
-
-                                    current_pointer = strtok_save(NULL,
                                                            DELIMITER_SEMICOLON,
                                                            &saved_ptr);
 
-                                    if(current_pointer != NULL){
+                                if(current_pointer != NULL){
 
-                                        sscanf(current_pointer, "%d",
-                                              &geo_fence_config ->
-                                              geo_fence_alert_data_owner_id);
+                                    sscanf(current_pointer, "%d",
+                                            &geo_fence_config ->
+                                            geo_fence_alert_data_owner_id);
 
 #ifdef debugging
-                                        printf("[GeoFence] geo_fence_alert_" \
-                                               "data_owner_id: %d\n",
-                                               geo_fence_config ->
-                                              geo_fence_alert_data_owner_id);
+                                    printf("[GeoFence] geo_fence_alert_" \
+                                            "data_owner_id: %d\n",
+                                            geo_fence_config ->
+                                            geo_fence_alert_data_owner_id);
 #endif
-                                    }
                                 }
                             }
-#endif
+                        }
 
-                            break;
+                        break;
 
-                        case add_subscriber:
-
-#ifdef debugging
-                            printf("[GeoFence] pkt content in responsed "\
-                                   "add subscriber: [%s]\n", tmp_content);
-#endif
-
-                            topic = strtok_save( &tmp_content[1],
-                                              DELIMITER_SEMICOLON,
-                                              &saved_ptr);
+                    case add_subscriber:
 
 #ifdef debugging
-                            printf("[GeoFence] TOPIC: %s\n", topic);
+                        printf("[GeoFence] pkt content in responsed "\
+                               "add subscriber: [%s]\n", tmp_content);
 #endif
 
-                            if(topic != NULL && strncmp(
-                               topic, TRACKED_OBJECT_DATA_TOPIC,
-                               strlen(TRACKED_OBJECT_DATA_TOPIC)) == 0){
+                        topic = strtok_save( &tmp_content[1],
+                                            DELIMITER_SEMICOLON,
+                                             &saved_ptr);
+
+#ifdef debugging
+                        printf("[GeoFence] TOPIC: %s\n", topic);
+#endif
+
+                        if(topic != NULL && strncmp(
+                           topic, TRACKED_OBJECT_DATA_TOPIC,
+                           strlen(TRACKED_OBJECT_DATA_TOPIC)) == 0){
+
+                            current_pointer = strtok_save(NULL,
+                                                          DELIMITER_SEMICOLON,
+                                                           &saved_ptr);
+
+                            if(current_pointer != NULL && strncmp(
+                               current_pointer, "Success",
+                               strlen("Success")) == 0){
 
                                 current_pointer = strtok_save(NULL,
+                                                            DELIMITER_SEMICOLON,
+                                                             &saved_ptr);
+
+                                if(current_pointer != NULL){
+
+                                    sscanf(current_pointer, "%d",
+                                            &geo_fence_config ->
+                                           tracked_object_data_subscribe_id);
+
+#ifdef debugging
+                                    printf("[GeoFence] tracked_object_data"\
+                                           "_subscribe_id: %d\n",
+                                           geo_fence_config ->
+                                           tracked_object_data_subscribe_id);
+#endif
+                                }
+                            }
+                        }
+
+                        if(topic != NULL && strncmp(
+                           topic, GEO_FENCE_TOPIC,
+                           strlen(GEO_FENCE_TOPIC)) == 0){
+
+                            current_pointer = strtok_save(NULL,
                                                          DELIMITER_SEMICOLON,
                                                          &saved_ptr);
 
-                                if(current_pointer != NULL && strncmp(
-                                   current_pointer, "Success",
-                                   strlen("Success")) == 0){
-
-                                    current_pointer = strtok_save(NULL,
-                                                           DELIMITER_SEMICOLON,
-                                                           &saved_ptr);
-
-                                    if(current_pointer != NULL){
-
-                                        sscanf(current_pointer, "%d",
-                                              &geo_fence_config ->
-                                              tracked_object_data_subscribe_id);
-
-#ifdef debugging
-                                        printf("[GeoFence] tracked_object_data"\
-                                               "_subscribe_id: %d\n",
-                                               geo_fence_config ->
-                                              tracked_object_data_subscribe_id);
-#endif
-                                    }
-                                }
-                            }
-
-                            if(topic != NULL && strncmp(
-                               topic, GEO_FENCE_TOPIC,
-                               strlen(GEO_FENCE_TOPIC)) == 0){
+                            if(current_pointer != NULL && strncmp(
+                               current_pointer, "Success",
+                               strlen("Success")) == 0){
 
                                 current_pointer = strtok_save(NULL,
-                                                         DELIMITER_SEMICOLON,
-                                                         &saved_ptr);
-
-                                if(current_pointer != NULL && strncmp(
-                                   current_pointer, "Success",
-                                   strlen("Success")) == 0){
-
-                                    current_pointer = strtok_save(NULL,
                                                            DELIMITER_SEMICOLON,
                                                            &saved_ptr);
 
-                                    if(current_pointer != NULL){
+                                if(current_pointer != NULL){
 
-                                        sscanf(current_pointer, "%d",
-                                               &geo_fence_config ->
-                                               geo_fence_data_subscribe_id);
+                                    sscanf(current_pointer, "%d",
+                                            &geo_fence_config ->
+                                           geo_fence_data_subscribe_id);
 #ifdef debugging
-                                        printf("geo_fence_data_subscribe_id: "\
-                                              "%d\n", geo_fence_config ->
-                                              geo_fence_data_subscribe_id);
+                                    printf("geo_fence_data_subscribe_id: "\
+                                           "%d\n", geo_fence_config ->
+                                           geo_fence_data_subscribe_id);
 #endif
-                                    }
                                 }
                             }
+                        }
 
-                            break;
+                        break;
 
-                        case update_topic_data:
-
-
-#ifdef debugging
-                            printf("[GeoFence] pkt content for update data: "\
-                                   "[%s]\n", tmp_content);
-#endif
-
-                            topic = strtok_save( &tmp_content[1],
-                                                     DELIMITER_SEMICOLON,
-                                                     &saved_ptr);
+                    case update_topic_data:
 
 #ifdef debugging
-                            printf("[GeoFence] Topic: %s\n", topic);
+                        printf("[GeoFence] pkt content for update data: "\
+                               "[%s]\n", tmp_content);
 #endif
-                            memset(tmp_addr, 0, sizeof(tmp_addr));
-                            udp_hex_to_address(temppkt.address, tmp_addr);
 
-                            pkt_content = mp_alloc(&(geo_fence_config ->
-                                                   pkt_content_mempool));
+                        topic = strtok_save( &tmp_content[1],
+                                            DELIMITER_SEMICOLON,
+                                             &saved_ptr);
 
-                            if(pkt_content != NULL){
+#ifdef debugging
+                        printf("[GeoFence] Topic: %s\n", topic);
+#endif
+                        pkt_content = mp_alloc( &(geo_fence_config ->
+                                               pkt_content_mempool));
 
-							    memset(pkt_content, 0, sizeof(pkt_content));
+                        if(pkt_content != NULL){
 
-                                memcpy(pkt_content -> ip_address, tmp_addr,
-                                       strlen(tmp_addr) * sizeof(char));
+							memset(pkt_content, 0, sizeof(pkt_content));
 
-                                memcpy(pkt_content -> content, temppkt.content,
-                                       temppkt.content_size);
+                            memcpy(pkt_content -> ip_address, temppkt.address,
+                                   strlen(temppkt.address) * sizeof(char));
 
-                                pkt_content -> content_size = 
-                                                           temppkt.content_size;
+                            memcpy(pkt_content -> content, temppkt.content,
+                                   temppkt.content_size);
 
-                                pkt_content -> geo_fence_config = 
-                                                               geo_fence_config;
+                            pkt_content-> port = temppkt.port;
+
+                            pkt_content -> content_size = temppkt.content_size;
+
+                            pkt_content -> geo_fence_config = geo_fence_config;
    
-                                process_geo_fence_routine(pkt_content);
-							    mp_free( &geo_fence_config->pkt_content_mempool,
-                                        pkt_content);
+                            process_geo_fence_routine(pkt_content);
+							
+                            mp_free( &geo_fence_config->pkt_content_mempool,
+                                    pkt_content);
 
-                            }
-                            break;
-                    }
+                        }
+                        
+                        break;
+                }
 
-                    break;
-            }
+                break;
         }
     }
 

@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190528
+     1.0, 20190606
 
   Abstract:
 
@@ -47,7 +47,7 @@
 #include "BeDIS.h"
 
 /* When debugging is needed */
-#define debugging
+//#define debugging
 
 
 typedef struct {
@@ -173,6 +173,8 @@ typedef sgeo_fence_config *pgeo_fence_config;
 typedef struct {
 
     char ip_address[NETWORK_ADDR_LENGTH];
+
+    int port;
 
     char content[WIFI_MESSAGE_LENGTH];
 

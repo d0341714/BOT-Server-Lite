@@ -20,7 +20,7 @@
 
   Version:
 
-     2.0, 20190527
+     2.0, 20190608
 
   Abstract:
 
@@ -51,38 +51,45 @@
 /* When debugging is needed */
 //#define debugging
 
-/* Length of address of the network */
+/* The size of the IP address in char */
 #define NETWORK_ADDR_LENGTH 16
 
-/* Length of address of the network in Hex */
-#define NETWORK_ADDR_LENGTH_HEX 8
+/* Maximum length of message to be sent over Wi-Fi in bytes 
+   (The maximum UDP pkt size is 65535 bytes - 8 bytes UDP header - 
+    20 bytes IP header = 65507 bytes) 
+ */
+#define MESSAGE_LENGTH 65507
 
-/* Maximum length of message to be sent over WiFi in bytes */
-#define MESSAGE_LENGTH 4096
-
-//define the maximum length of pkt Queue.
+/* The maximum length of the pkt Queue. */
 #define MAX_QUEUE_LENGTH 512
 
-enum {UNKNOWN, Data, Local_AT, UDP, NONE};
-
-enum{ pkt_Queue_SUCCESS = 0, pkt_Queue_FULL = -1, queue_len_error = -2
-    , pkt_Queue_is_free = -3, pkt_Queue_is_NULL = -4
-    , pkt_Queue_display_over_range = -5, MESSAGE_OVERSIZE = -6};
+enum{ 
+    pkt_Queue_SUCCESS = 0, 
+    pkt_Queue_FULL = -1, 
+    queue_len_error = -2, 
+    pkt_Queue_is_free = -3, 
+    pkt_Queue_is_NULL = -4, 
+    pkt_Queue_display_over_range = -5, 
+    MESSAGE_OVERSIZE = -6
+    };
 
 
 /* packet format */
 typedef struct pkt {
 
-    // Brocast:     000000000000FFFF;
-    // Coordinator: 0000000000000000
-    unsigned char address[NETWORK_ADDR_LENGTH_HEX];
+    /* If the pkt is not in use, the flag set to true */
+    bool is_null;
 
-    //"Data" type
-    unsigned int type;
+    /* The IP adddress of the current pkt */
+    unsigned char address[NETWORK_ADDR_LENGTH];
 
-    // Data
+    /* The port number of the current pkt */
+    unsigned int port;
+
+    /* The content of the current pkt */
     char content[MESSAGE_LENGTH];
 
+    /* The size of the current pkt */
     int  content_size;
 
 } sPkt;
@@ -92,18 +99,19 @@ typedef sPkt *pPkt;
 
 typedef struct pkt_header {
 
-    // front store the location of the first of thr Pkt Queue
-    // rear  store the location of the end of the Pkt Queue
+    /* front store the location of the first of thr Pkt Queue */
     int front;
 
+    /* rear  store the location of the end of the Pkt Queue */
     int rear;
 
+    /* The array is used to store pkts. */
     sPkt Queue[MAX_QUEUE_LENGTH];
 
-    unsigned char address[NETWORK_ADDR_LENGTH_HEX];
-
+    /* If the pkt queue is initialized, the flag will set to false */
     bool is_free;
 
+    /* The mutex is used to read/write lock before processing the pkt queue */
     pthread_mutex_t mutex;
 
 } spkt_ptr;
@@ -158,9 +166,10 @@ int Free_Packet_Queue(pkt_ptr pkt_queue);
 
       pkt_queue : The pointer points to the pkt queue we prepare to store the 
                   pkt.
-      type      : Record the type of packets working environment.
-      raw_addr  : The destnation address of the packet.
-      content   : The content we decided to send.
+      address   : The IP address of the packet.
+      port      : The port number of the packet.
+      content   : The content of the packet.
+      content_size : The size of the content.
 
   Return Value:
 
@@ -169,8 +178,8 @@ int Free_Packet_Queue(pkt_ptr pkt_queue);
            If not 0, Somthing Wrong.
 
  */
-int addpkt(pkt_ptr pkt_queue, unsigned int type
-         , char *raw_addr, char *content, int content_size);
+int addpkt(pkt_ptr pkt_queue, char *address, unsigned int port, 
+           char *content, int content_size);
 
 
 /* get_pkt
@@ -207,80 +216,6 @@ sPkt get_pkt(pkt_ptr pkt_queue);
 int delpkt(pkt_ptr pkt_queue);
 
 
-/*
-  type_to_str
-
-      TO convert type to it's original type name.
-
-  Parameter:
-
-      type: The integer stores the type of the packet.
-
-  Return Value:
-
-      Return a pointer with type char which is the name of the type.
-
- */
-char *type_to_str(int type);
-
-
-/*
-  str_to_type
-
-      TO convert the name of the type to the num of the type.
-
-  Parameter:
-
-      conType: A string to tell the type of the connection.
-
-  Return Value:
-
-      Return a int which is the name of the type.
-
- */
-int str_to_type(const char *conType);
-
-
-/*
-  char_to_hex
-
-      Convert array from char to hex.
-
-  Parameter:
-
-      raw    : The original char type array.
-      result : The variable to store the converted result(hex).
-      size   : The size of the raw array. (result size must the half of the raw 
-               size.)
-
-  Return Value:
-
-      None
-
- */
-void char_to_hex(char *raw, unsigned char *raw_hex, int size);
-
-
-/*
-  hex_to_char
-
-      Convert hex to char.
-
-  Parameter:
-
-      hex  : An array stores in Hex.
-      size : The size of the hex length.
-      buf  : An output char array to store the output converted from the 
-             input hex array
-
-  Return Value:
-
-      0: success
-
- */
-int hex_to_char(unsigned char *hex, int size, char * buf);
-
-
 /* display_pkt
 
       Display the packet we decide to see.
@@ -288,8 +223,8 @@ int hex_to_char(unsigned char *hex, int size, char * buf);
   Parameter:
 
       display_title : The title we want to show in front of the packet content.
-      pkt     : The packet we want to see it's content.
-      pkt_num : Choose whitch pkts we want to display.
+      pkt           : The packet we want to see it's content.
+      pkt_num       : Choose whitch pkts we want to display.
 
   Return Value:
 
@@ -297,43 +232,6 @@ int hex_to_char(unsigned char *hex, int size, char * buf);
 
  */
 int display_pkt(char *display_title, pkt_ptr pkt_queue, int pkt_num);
-
-
-/*
-  array_copy
-
-      Copy the src array to the destination array.
-
-  Parameter:
-
-      src  : The src array we copy from.
-      dest : The dest array we copy to.
-      size : The size of the src array. (Must the same as the dest array)
-
-  Return Value:
-
-      None
-
- */
-void array_copy(unsigned char *src, unsigned char *dest, int size);
-
-
-/*
-  address_compare
-
-      Compare the address whether is the same.
-
-  Parameter:
-
-      addr1: the address we want to compare.
-      addr2: the address we want to compare.
-
-  Return Value:
-
-      bool: if true, the same.
-
- */
-bool address_compare(unsigned char *addr1,unsigned char *addr2);
 
 
 /*
@@ -404,5 +302,6 @@ int queue_len(pkt_ptr pkt_queue);
 
  */
 void print_content(char *content, int size);
+
 
 #endif

@@ -21,7 +21,7 @@
 
   Version:
     
-     2.0, 20190527
+     2.0, 20190608
 
   Abstract:
 
@@ -40,7 +40,8 @@
 #include "UDP_API.h"
 
 
-int udp_initial(pudp_config udp_config, int send_port, int recv_port){
+int udp_initial(pudp_config udp_config, int recv_port)
+{
 
     int return_value;
 
@@ -49,13 +50,11 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
      udp_config -> sockVersion = MAKEWORD(2,2);
 
      if(WSAStartup(udp_config -> sockVersion, &udp_config -> wsaData) != 0)
-     {
          return 0;
-     }
 
     /* zero out the structure */
-    memset((char *) &udp_config -> si_server, 0, sizeof(udp_config
-           -> si_server));
+    memset((char *) &udp_config -> si_server, 0,
+           sizeof(udp_config -> si_server));
 
     if (return_value = init_Packet_Queue( &udp_config -> pkt_Queue) != 
         pkt_Queue_SUCCESS)
@@ -78,8 +77,8 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
 
     timeout = UDP_SELECT_TIMEOUT; // sec
 
-    if (setsockopt(udp_config -> recv_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout
-                 , sizeof(timeout)) == -1)
+    if (setsockopt(udp_config -> recv_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+        sizeof(timeout)) == -1)
         return set_socketopt_error;
 
     udp_config -> si_server.sin_family = AF_INET;
@@ -88,7 +87,6 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
 
     udp_config -> shutdown = false;
 
-    udp_config -> send_port = send_port;
     udp_config -> recv_port = recv_port;
 
     /* bind recv socket to the port */
@@ -108,23 +106,21 @@ int udp_initial(pudp_config udp_config, int send_port, int recv_port){
 }
 
 
-int udp_addpkt(pudp_config udp_config, char *raw_addr, char *content, int size){
-
-    char removed_address[NETWORK_ADDR_LENGTH];
+int udp_addpkt(pudp_config udp_config, char *address, unsigned int port, 
+               char *content, int size)
+{
 
     if(size > MESSAGE_LENGTH)
         return addpkt_msg_oversize;
 
-    memset(removed_address, 0, sizeof(removed_address));
-    udp_address_reduce_point(raw_addr, removed_address);
-
-    addpkt(&udp_config -> pkt_Queue, UDP, removed_address, content, size);
+    addpkt(&udp_config -> pkt_Queue, address, port, content, size);
 
     return 0;
 }
 
 
-sPkt udp_getrecv(pudp_config udp_config){
+sPkt udp_getrecv(pudp_config udp_config)
+{
 
     sPkt tmp = get_pkt(&udp_config -> Received_Queue);
 
@@ -132,7 +128,8 @@ sPkt udp_getrecv(pudp_config udp_config){
 }
 
 
-void *udp_send_pkt_routine(void *udpconfig){
+void *udp_send_pkt_routine(void *udpconfig)
+{
 
     pudp_config udp_config = (pudp_config) udpconfig;
 
@@ -140,45 +137,48 @@ void *udp_send_pkt_routine(void *udpconfig){
 
     struct sockaddr_in si_send;
 
-	char dest_address[NETWORK_ADDR_LENGTH];
+    while((udp_config -> shutdown) == false)
+    {
 
-    while(!(udp_config -> shutdown)){
-
-        if(!(is_null( &udp_config -> pkt_Queue))){
+        if(!(is_null( &udp_config -> pkt_Queue)))
+        {
 
             current_send_pkt = get_pkt(&udp_config -> pkt_Queue);
 
-            if (current_send_pkt.type == UDP){
-                memset(dest_address, 0, sizeof(dest_address));
-                udp_hex_to_address(current_send_pkt.address, dest_address);
-
+            if(current_send_pkt.is_null == false)
+            {
                 memset(&si_send, 0, sizeof(si_send));
                 si_send.sin_family = AF_INET;
-                si_send.sin_port   = htons(udp_config -> send_port);
-                si_send.sin_addr.s_addr   = inet_addr(dest_address);
+                si_send.sin_port   = htons(current_send_pkt.port);
+                si_send.sin_addr.s_addr   = inet_addr(current_send_pkt.address);
 
 #ifdef debugging
-                printf("Start Send pkts\n(sendto [%s] msg [", dest_address);
-                print_content(current_send_pkt.content, current_send_pkt.content_size);
+                printf("Start Send pkts\n(sendto [%s] msg [", 
+                                                      current_send_pkt.address);
+                print_content(current_send_pkt.content,   
+                                                 current_send_pkt.content_size);
                 printf("])\n");
 #endif
 
-                if (sendto(udp_config -> send_socket, current_send_pkt.content
-                  , current_send_pkt.content_size, 0,(struct sockaddr *)&si_send
-                  , sizeof(struct sockaddr)) == -1){
+                if (sendto(udp_config -> send_socket, current_send_pkt.content, 
+                    current_send_pkt.content_size, 0,
+                    (struct sockaddr *)&si_send, sizeof(struct sockaddr)) == -1)
+                {
 #ifdef debugging
-                      printf("sendto error.[%s]\n", strerror(errno));
+                    printf("sendto error.[%s]\n", strerror(errno));
 #endif
-                 }
-                else{
+                }
+                else
+                {
 #ifdef debugging
                     printf("Send pkt success\n");
 #endif
                 }
             }
-        }
-        else{
-            Sleep(SEND_THREAD_IDLE_SLEEP_TIME);
+            else
+            {
+                Sleep(SEND_THREAD_IDLE_SLEEP_TIME);
+            }
         }
 
     }
@@ -187,7 +187,8 @@ void *udp_send_pkt_routine(void *udpconfig){
 }
 
 
-void *udp_recv_pkt_routine(void *udpconfig){
+void *udp_recv_pkt_routine(void *udpconfig)
+{
 
     pudp_config udp_config = (pudp_config) udpconfig;
 
@@ -199,7 +200,7 @@ void *udp_recv_pkt_routine(void *udpconfig){
 
     char address_ntoa[NETWORK_ADDR_LENGTH];
 
-	char reduced_address[NETWORK_ADDR_LENGTH];
+    int port;
 
     struct sockaddr_in si_recv;
 
@@ -207,7 +208,8 @@ void *udp_recv_pkt_routine(void *udpconfig){
 
 
     /* keep listening for data */
-    while(!(udp_config -> shutdown)){
+    while((udp_config -> shutdown) == false)
+    {
 
         memset(&si_recv, 0, sizeof(si_recv));
 
@@ -219,14 +221,16 @@ void *udp_recv_pkt_routine(void *udpconfig){
 #endif
         /* try to receive some data, this is a non-blocking call */
         if ((recv_len = recvfrom(udp_config -> recv_socket, recv_buf,
-             MESSAGE_LENGTH, 0, (struct sockaddr *) &si_recv
-                                    , (socklen_t *)&socketaddr_len)) == -1){
+             MESSAGE_LENGTH, 0, (struct sockaddr *) &si_recv, 
+             (socklen_t *)&socketaddr_len)) == -1)
+        {
 #ifdef debugging
             printf("No data received.\n");
 #endif
             Sleep(SEND_THREAD_IDLE_SLEEP_TIME);
         }
-        else if(recv_len > 0){
+        else if(recv_len > 0)
+        {
 
             memset(address_ntoa, 0, sizeof(address_ntoa));
         
@@ -234,18 +238,18 @@ void *udp_recv_pkt_routine(void *udpconfig){
 
             memcpy(address_ntoa, address_ntoa_ptr, strlen(address_ntoa_ptr) * 
                    sizeof(char));
+
+            port = ntohs(si_recv.sin_port);
+
 #ifdef debugging
             /* print details of the client/peer and the data received */
-            printf("Received packet from %s:%d\n", address_ntoa,
-                                                   ntohs(si_recv.sin_port));
+            printf("Received packet from %s:%d\n", address_ntoa, port);
             printf("Data: [");
             print_content(recv_buf, recv_len);
             printf("]\n");
             printf("Data Length %d\n", recv_len);
 #endif
-			memset(reduced_address, 0, sizeof(reduced_address));
-			udp_address_reduce_point(address_ntoa, reduced_address);
-            addpkt(&udp_config -> Received_Queue, UDP, reduced_address, 
+            addpkt(&udp_config -> Received_Queue, address_ntoa, port,
                    recv_buf, recv_len);
 			
         }
@@ -257,11 +261,13 @@ void *udp_recv_pkt_routine(void *udpconfig){
 #ifdef debugging
     printf("Exit Receive.\n");
 #endif
+    
     return (void *)NULL;
 }
 
 
-int udp_release(pudp_config udp_config){
+int udp_release(pudp_config udp_config)
+{
 
     udp_config -> shutdown = true;
 
@@ -279,103 +285,5 @@ int udp_release(pudp_config udp_config){
 
     Free_Packet_Queue( &udp_config -> Received_Queue);
 
-    return 0;
-}
-
-
-int udp_address_reduce_point(char *raw_addr, char *address){
-
-    /* Record current filled Address Location. */
-    int address_loc;
-
-    /* in each part, at most 3 number. */
-    int count = 0;
-    unsigned char tmp[3];
-
-    int lo, n;
-
-#ifdef debugging
-    printf("Enter udp_address_reduce_point address [%s]\n", raw_addr);
-#endif
-
-    memset(address, 0, sizeof(address));
-
-    address_loc = 0;
-
-    /* Four part in a address.(devided by '.') */
-    for(n = 0; n < 4; n++){
-
-        count = 0;
-
-        memset(&tmp, 0, sizeof(char) * 3);
-
-        while(count != 3){
-
-            /* When read '.' from address_loc means the end of this part. */
-            if (raw_addr[address_loc] == '.'){
-
-                address_loc ++;
-                break;
-
-            }
-            else{
-                tmp[count] = raw_addr[address_loc];
-
-                count ++;
-                address_loc ++;
-
-                if(address_loc >= strlen(raw_addr))
-                    break;
-            }
-        }
-
-        for(lo = 0; lo < 3;lo ++)
-
-            if ((3 - count) > lo )
-                address[n * 3 + lo] = '0';
-            else
-                address[n * 3 + lo] = tmp[lo - (3 - count)];
-
-        if (count == 3)
-            address_loc ++;
-    }
-#ifdef debugging
-    printf("Result of udp_address_reduce_point address [%s]\n", address);
-#endif
-    return 0;
-}
-
-
-int udp_hex_to_address(unsigned char *hex_addr, char *dest_address){
-
-    /*  Stored a recovered address. */
-    char tmp_address[NETWORK_ADDR_LENGTH];
-    int address_loc = 0;
-    int loc, n;
-
-	memset(tmp_address, 0, sizeof(tmp_address));
-	hex_to_char(hex_addr, NETWORK_ADDR_LENGTH_HEX, tmp_address);
-
-    for(n=0;n < 4;n ++){
-
-        bool no_zero = false;
-        for(loc=0;loc < 3;loc ++){
-
-            if(tmp_address[n * 3 + loc]== '0' && no_zero == false &&
-               loc != 2)
-                continue;
-            no_zero = true;
-            dest_address[address_loc] = tmp_address[n * 3 + loc];
-            address_loc ++;
-
-        }
-
-        if(n < 3){
-
-            dest_address[address_loc] = '.';
-            address_loc ++;
-
-        }
-    }
     return 0;
 }
