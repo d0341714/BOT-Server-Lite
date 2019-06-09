@@ -164,8 +164,9 @@ BufferListHead BHM_send_buffer_list_head;
 /* The head of a list of buffers holding health reports from LBeacons */
 BufferListHead BHM_receive_buffer_list_head;
 
-/* The head of a list of buffers holding message from modulse */
-BufferListHead API_receive_buffer_list_head;
+/* The head of a list of buffers holding message from LBeacons specified by 
+   GeoFence */
+BufferListHead GeoFence_receive_buffer_list_head;
 
 /* The head of a list of buffers for the buffer list head in the priority 
    order. */
@@ -189,9 +190,6 @@ bool initialization_failed;
 int last_polling_LBeacon_for_HR_time;
 int last_polling_object_tracking_time;
 
-/* API data owner id */
-int geo_fence_data_topic_id;
-int tracked_object_data_topic_id;
 
 /*
   get_config:
@@ -322,10 +320,10 @@ void *Gateway_routine(void *_buffer_node);
 
 
 /*
-  process_api_routine:
+  process_GeoFence_routine:
 
      This function is executed by worker threads when processing
-     the buffer node in the API receive buffer list.
+     the buffer node in the GeoFence receive buffer list.
 
   Parameters:
 
@@ -336,7 +334,7 @@ void *Gateway_routine(void *_buffer_node);
      None
 
  */
-void *process_api_routine(void *_buffer_node);
+void *process_GeoFence_routine(void *_buffer_node);
 
 
 /*

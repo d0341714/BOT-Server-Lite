@@ -49,7 +49,6 @@
 
 int main(int argc, char **argv)
 {
-
     int return_value;
 
     /* The flag is to know if any routines are processed in this while loop */
@@ -184,9 +183,9 @@ int main(int argc, char **argv)
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
-    init_buffer( &API_receive_buffer_list_head,
-                (void *) process_api_routine, serverconfig.normal_priority);
-    insert_list_tail( &API_receive_buffer_list_head.priority_list_entry,
+    init_buffer( &GeoFence_receive_buffer_list_head,
+                (void *) process_api_routine, serverconfig.high_priority);
+    insert_list_tail( &GeoFence_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     sort_priority_list(&serverconfig, &priority_list_head);
@@ -267,50 +266,6 @@ int main(int argc, char **argv)
             return E_INITIALIZATION_FAIL;
         }
     }
-
-    if(geo_fence_data_topic_id == -1)
-    {
-        memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
-        sprintf(command_msg, "%s;%s;", GEO_FENCE_TOPIC,
-                serverconfig.server_ip);
-
-        geo_fence_data_topic_id =
-                SQL_update_api_data_owner(Server_db, command_msg, 
-                                          strlen(command_msg));
-
-    }
-
-#ifdef debugging
-    printf("geo_fence_data_topic_id: %d\n", geo_fence_data_topic_id);
-#endif
-
-    if(tracked_object_data_topic_id == -1)
-    {
-        memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
-        sprintf(command_msg, "%s;%s;", TRACKED_OBJECT_DATA_TOPIC,
-                serverconfig.server_ip);
-
-        tracked_object_data_topic_id =
-                SQL_update_api_data_owner(Server_db, command_msg, 
-                                          strlen(command_msg));
-
-    }
-
-#ifdef debugging
-    printf("tracked_object_data_topic_id: %d\n", tracked_object_data_topic_id);
-#endif
-
-    geo_fence_config.number_worker_threads = 10;
-    memcpy(geo_fence_config.server_ip,serverconfig.server_ip, 
-           NETWORK_ADDR_LENGTH);
-    memcpy(geo_fence_config.geo_fence_ip,serverconfig.server_ip, 
-           NETWORK_ADDR_LENGTH);
-    geo_fence_config.recv_port = serverconfig.send_port;
-    geo_fence_config.api_recv_port = serverconfig.recv_port;
-    return_value = startThread( &GeoFence_thread,
-                                geo_fence_routine,
-                                &geo_fence_config);
-
 
     last_polling_object_tracking_time = 0;
     last_polling_LBeacon_for_HR_time = 0;
@@ -413,7 +368,7 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name)
     {
 
         /* Create spaces for storing the string in the current line being read*/
-        char  config_setting[CONFIG_BUFFER_SIZE];
+        char config_setting[CONFIG_BUFFER_SIZE];
         char *config_message = NULL;
         int config_message_size = 0;
 
@@ -961,10 +916,6 @@ void *LBeacon_routine(void *_buffer_node)
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
-    char content[WIFI_MESSAGE_LENGTH];
-
-    memset(content, 0, WIFI_MESSAGE_LENGTH);
-
     /* read the pkt type from lower lower 4 bits. */
     pkt_type = current_node ->content[0] & 0x0f;
 
@@ -973,18 +924,6 @@ void *LBeacon_routine(void *_buffer_node)
         SQL_update_object_tracking_data(Server_db,
                                         &current_node ->content[1],
                                         strlen(&current_node ->content[1]));
-
-        content[0] = (update_topic_data & 0x0f) + ((from_server << 4) & 0xf0);
-
-        sprintf(&content[1], "%s;%s", TRACKED_OBJECT_DATA_TOPIC,
-                                                   &current_node -> content[1]);
-
-        udp_addpkt(&udp_config,
-                   serverconfig.server_ip,
-                   serverconfig.send_port,
-                   content,
-                   strlen(content));
-
 
     }
 
@@ -1000,10 +939,6 @@ void *Gateway_routine(void *_buffer_node)
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
-    char content[WIFI_MESSAGE_LENGTH];
-
-    memset(content, 0, WIFI_MESSAGE_LENGTH);
-
     /* read the pkt type from lower lower 4 bits. */
     pkt_type = current_node ->content[0] & 0x0f;
 
@@ -1012,17 +947,6 @@ void *Gateway_routine(void *_buffer_node)
         SQL_update_object_tracking_data(Server_db,
                                         &current_node ->content[1],
                                         strlen(&current_node ->content[1]));
-
-        content[0] = (update_topic_data & 0x0f) + ((from_server << 4) & 0xf0);
-
-        sprintf(&content[1], "%s;%s", TRACKED_OBJECT_DATA_TOPIC,
-                                                   &current_node -> content[1]);
-
-        udp_addpkt(&udp_config,
-                   serverconfig.server_ip,
-                   serverconfig.send_port,
-                   content,
-                   strlen(content));
     }
 
     mp_free( &node_mempool, current_node);
@@ -1031,7 +955,7 @@ void *Gateway_routine(void *_buffer_node)
 }
 
 
-void *process_api_routine(void *_buffer_node)
+void *process_GeoFence_routine(void *_buffer_node)
 {
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
@@ -1061,224 +985,6 @@ void *process_api_routine(void *_buffer_node)
     memcpy(data_content, &(current_node -> content[1]),
             current_node -> content_size - 1);
 
-    switch(data_type)
-    {
-
-        case add_data_owner:
-
-#ifdef debugging
-            printf("Start add_data_owner\n");
-#endif
-
-            topic_name = strtok_save(data_content, DELIMITER_SEMICOLON,
-                                                           &saved_data_pointer);
-
-#ifdef debugging
-            printf("IP: %s\nName: %s\nContent: %s\nSize: %d\n",
-                                            current_node -> net_address,
-                                            topic_name,
-                                            &current_node -> content[1],
-                                            current_node -> content_size -1);
-#endif
-
-            data_owner_id = SQL_update_api_data_owner(Server_db,
-                                            &current_node -> content[1],
-                                            current_node -> content_size -1);
-
-#ifdef debugging
-            printf("Data Owner id: %d\n", data_owner_id);
-#endif
-
-            memset(current_node -> content, 0, WIFI_MESSAGE_LENGTH);
-
-            current_node -> content[0] = ((data_direction & 0x0f ) << 4) +
-                                         (data_type & 0x0f);
-
-#ifdef debugging
-            printf("Before strlen: %d\n", strlen(&current_node -> content));
-#endif
-
-            if(data_owner_id > 0)
-                sprintf(&current_node -> content[1], "%s;Success;%d;",
-                                                     topic_name,
-                                                     data_owner_id);
-            else
-                sprintf(&current_node -> content[1], "%s;Fail;",
-                                                     topic_name);
-
-            udp_addpkt(&udp_config,
-                       current_node -> net_address,
-                       serverconfig.send_port,
-                       current_node -> content,
-                       strlen(current_node -> content));
-
-            break;
-
-        case remove_data_owner:
-
-            topic_name = strtok_save(data_content, DELIMITER_SEMICOLON,
-                                                           &saved_data_pointer);
-
-            return_value = SQL_remove_api_data_owner(Server_db,
-                                            &current_node -> content[1],
-                                            current_node -> content_size -1);
-
-            memset(&current_node -> content, 0, WIFI_MESSAGE_LENGTH);
-
-            current_node -> content[0] = ((data_direction & 0x0f ) << 4) +
-                                         (data_type & 0x0f);
-
-            if(return_value == WORK_SUCCESSFULLY)
-                sprintf(&current_node -> content[1], "%s;Success;",
-                                                     topic_name);
-            else
-                sprintf(&current_node -> content[1], "%s;Fail;",
-                                                     topic_name);
-
-            udp_addpkt(&udp_config,
-                       current_node -> net_address,
-                       serverconfig.send_port,
-                       current_node -> content,
-                       strlen(current_node -> content));
-
-            break;
-
-        case add_subscriber:
-
-            topic_name = strtok_save(data_content, DELIMITER_SEMICOLON,
-                                                           &saved_data_pointer);
-
-            subscriber_id = SQL_update_api_subscription(
-                                            Server_db,
-                                            &current_node -> content[1],
-                                            current_node -> content_size - 1);
-
-            memset(current_node -> content, 0, WIFI_MESSAGE_LENGTH);
-
-            current_node -> content[0] = ((data_direction & 0x0f ) << 4) +
-                                         (data_type & 0x0f);
-
-            if(subscriber_id > 0)
-                sprintf(&current_node -> content[1], "%s;Success;%d;",
-                        topic_name, subscriber_id);
-            else
-                sprintf(&current_node -> content[1], "%s;Fail;",
-                        topic_name);
-
-            udp_addpkt(&udp_config,
-                       current_node -> net_address,
-                       serverconfig.send_port,
-                       current_node -> content,
-                       strlen(current_node -> content));
-
-            if(strncmp(topic_name, GEO_FENCE_TOPIC,
-                       strlen(GEO_FENCE_TOPIC)) == 0){
-
-                current_node -> content[0] = (update_topic_data & 0x0f) +
-                                              ((from_server << 4) & 0xf0);
-
-                memset(data_content, 0, WIFI_MESSAGE_LENGTH);
-
-                SQL_get_geo_fence(Server_db, &data_content);
-
-                sprintf(&current_node -> content[1], "%s;%s", GEO_FENCE_TOPIC,
-                                                                 &data_content);
-
-#ifdef debugging
-                printf("returned Geo_Fence data: %s\nIP: %s\n", &current_node ->
-                                       content[1], current_node -> net_address);
-#endif
-
-                udp_addpkt( &udp_config,
-                           current_node -> net_address,
-                           serverconfig.send_port,
-                           current_node -> content,
-                           strlen(current_node -> content));
-
-            }
-
-            break;
-
-        case del_subscriber:
-
-            topic_name = strtok_save(data_content, DELIMITER_SEMICOLON,
-                                                           &saved_data_pointer);
-
-            return_value = SQL_remove_api_subscription(
-                                            Server_db,
-                                            &current_node -> content[1],
-                                            current_node -> content_size -1);
-
-            memset(current_node -> content, 0, WIFI_MESSAGE_LENGTH);
-
-            current_node -> content[0] = ((data_direction & 0x0f ) << 4) +
-                                         (data_type & 0x0f);
-
-            if(return_value == WORK_SUCCESSFULLY)
-                sprintf(&current_node -> content[1], "%s;Success;",
-                                                     topic_name);
-            else
-                sprintf(&current_node -> content[1], "%s;Fail;",
-                                                     topic_name);
-
-            udp_addpkt(&udp_config,
-                       current_node -> net_address,
-                       serverconfig.send_port,
-                       current_node -> content,
-                       strlen(current_node -> content));
-
-            break;
-
-        case update_topic_data:
-
-            topic_name = strtok_save(data_content, DELIMITER_SEMICOLON,
-                                                       &saved_data_pointer);
-
-            if(strncmp(topic_name, GEO_FENCE_ALERT_TOPIC,
-                       strlen(GEO_FENCE_ALERT_TOPIC)) == 0){
-                SQL_insert_geo_fence_alert(Server_db, saved_data_pointer,
-                                           strlen(saved_data_pointer));
-            }
-
-            memset(data_content, 0, sizeof(data_content));
-
-            memcpy(data_content, &(current_node -> content[1]),
-                    current_node -> content_size - 1);
-
-            return_value = SQL_get_api_subscribers(
-                                            Server_db,
-                                            data_content,
-                                            sizeof(data_content));
-
-            if((return_value == WORK_SUCCESSFULLY) &&
-               (strlen(data_content) > 0)){
-
-                return_data = data_content;
-
-                current_process_ip = strtok_save(return_data, DELIMITER_SEMICOLON,
-                                                           &saved_data_pointer);
-
-                while(current_process_ip != NULL){
-
-#ifdef debugging
-                    printf ("Current Process IP: %s\n",current_process_ip);
-#endif
-
-                    udp_addpkt(&udp_config,
-                               current_process_ip,
-                               serverconfig.send_port,
-                               current_node -> content,
-                               current_node -> content_size);
-
-                    current_process_ip = strtok_save(NULL, DELIMITER_SEMICOLON,
-                                                           &saved_data_pointer);
-                }
-
-            }
-
-            break;
-
-    }
 
     mp_free( &node_mempool, current_node);
 
@@ -1578,42 +1284,6 @@ void *process_wifi_receive()
                                        &BHM_receive_buffer_list_head.list_head);
                             pthread_mutex_unlock(
                                        &BHM_receive_buffer_list_head.list_lock);
-                            break;
-
-                        default:
-                            mp_free( &node_mempool, new_node);
-                            break;
-                    }
-                    break;
-
-                case from_modules:
-#ifdef debugging
-                    printf("IP: %s\nPort: %d\nContent: %s\nSize: %d\n",
-                                                    new_node->net_address,
-                                                    new_node->port,
-                                                    new_node->content,
-                                                    new_node->content_size);
-#endif
-                    switch (pkt_type) 
-                    {
-
-                        case add_data_owner:
-                        case remove_data_owner:
-                        case add_subscriber:
-                        case del_subscriber:
-                        case update_topic_data:
-                        case request_data:
-#ifdef debugging
-                            display_time();
-                            printf("Get api message from the module\n");
-#endif
-                            pthread_mutex_lock(
-                                       &API_receive_buffer_list_head.list_lock);
-                            insert_list_tail( &new_node -> buffer_entry,
-                                       &API_receive_buffer_list_head.list_head);
-                            pthread_mutex_unlock(
-                                       &API_receive_buffer_list_head.list_lock);
-
                             break;
 
                         default:

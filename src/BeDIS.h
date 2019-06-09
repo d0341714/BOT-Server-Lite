@@ -245,25 +245,12 @@ typedef enum pkt_types {
     /* A pkt for LBeacon */
     data_for_LBeacon = 6,
 
-    /* For server */
+    /* GeoFence */
 
-    /* For the Gateway polling tracked object data from LBeacons */
-    poll_for_tracked_object_data_from_server = 9,
-    /* A polling request for health report from server */
-    RFHR_from_server = 10,
-
-    /* For api */
-
-    /* Public */
-    add_data_owner = 11,
-    remove_data_owner = 12,
-    update_topic_data = 13,
-
-    /* Subscription */
-    add_subscriber = 14,
-    del_subscriber = 15,
-    request_data = 8
-
+    /* A pkt containing GeoFence data */
+    GeoFence_data = 7,
+    /* A pkt containing GeoFence alert data */
+    GeoFence_alert_data = 8
 
 } PktType;
 
