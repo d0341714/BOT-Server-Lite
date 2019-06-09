@@ -20,7 +20,7 @@
 
   Version:
 
-     2.0, 20190606
+     2.0, 20190608
 
   Abstract:
 
@@ -49,6 +49,57 @@
 unsigned int twoc(int in, int t) {
 
     return (in < 0) ? (in + (2 << (t - 1))) : in;
+}
+
+
+void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
+                 int priority_nice)
+{
+
+    init_entry( &(buffer_list_head -> list_head));
+
+    init_entry( &(buffer_list_head -> priority_list_entry));
+
+    pthread_mutex_init( &buffer_list_head -> list_lock, 0);
+
+    buffer_list_head -> function = function_p;
+
+    buffer_list_head -> arg = (void *) buffer_list_head;
+
+    buffer_list_head -> priority_nice = priority_nice;
+}
+
+
+void init_Address_Map(AddressMapArray *address_map)
+{
+
+    int n;
+
+    pthread_mutex_init( &address_map -> list_lock, 0);
+
+    memset(address_map -> address_map_list, 0,
+           sizeof(address_map -> address_map_list));
+
+    for(n = 0; n < MAX_NUMBER_NODES; n ++)
+        address_map -> in_use[n] = false;
+}
+
+
+int is_in_Address_Map(AddressMapArray *address_map, char *net_address)
+{
+
+    int n;
+
+    for(n = 0;n < MAX_NUMBER_NODES;n ++){
+
+        if (address_map -> in_use[n] == true && strncmp(address_map ->
+            address_map_list[n].net_address, net_address, NETWORK_ADDR_LENGTH)
+            == 0){
+                return n;
+        }
+
+    }
+    return -1;
 }
 
 

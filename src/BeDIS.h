@@ -21,7 +21,7 @@
 
   Version:
 
-     2.0, 20190606
+     2.0, 20190608
 
   Abstract:
 
@@ -210,15 +210,6 @@ typedef enum _HealthStatus {
 } HealthStatus;
 
 
-typedef struct coordinates{
-
-    char X_coordinates[COORDINATE_LENGTH];
-    char Y_coordinates[COORDINATE_LENGTH];
-    char Z_coordinates[COORDINATE_LENGTH];
-
-} Coordinates;
-
-
 typedef enum pkt_types {
     /* Unknown type of pkt type */
     undefined = 0,
@@ -288,6 +279,84 @@ typedef enum DeviceType {
 } DeviceType;
 
 
+/* A node of buffer to store received data and/or data to be send */
+typedef struct {
+
+    struct List_Entry buffer_entry;
+
+    /* The network address of the packet received or the packet to be sent */
+    char net_address[NETWORK_ADDR_LENGTH];
+
+    /* The port of the packet received or the packet to be sent */
+    unsigned int port;
+
+    /* The pointer points to the content. */
+    char content[WIFI_MESSAGE_LENGTH];
+
+    /* The size of the content */
+    int content_size;
+
+} BufferNode;
+
+
+/* A Head of a list of msg buffers */
+typedef struct {
+
+    /* A per list lock */
+    pthread_mutex_t list_lock;
+
+    struct List_Entry list_head;
+
+    struct List_Entry priority_list_entry;
+
+    /* The nice is a value relative to the normal priority (i.e. nice = 0) */
+    int priority_nice;
+
+    /* The pointer point to the function to be called to process buffer nodes in
+       the list. */
+    void (*function)(void *arg);
+
+    /* The argument of the function */
+    void *arg;
+
+} BufferListHead;
+
+
+/*  A struct for recording the network address and it's last update time */
+typedef struct {
+
+    /* The network address of wifi link to the Gateway */
+    char net_address[NETWORK_ADDR_LENGTH];
+
+    /* The last join request time */
+    int last_request_time;
+
+} AddressMap;
+
+
+typedef struct {
+
+    /* A per array lock for the AddressMapArray when reading and update data */
+    pthread_mutex_t list_lock;
+
+    /* A Boolean array in which ith element records whether the ith address map
+       is in use. */
+    bool in_use[MAX_NUMBER_NODES];
+
+    AddressMap address_map_list[MAX_NUMBER_NODES];
+
+} AddressMapArray;
+
+
+typedef struct coordinates{
+
+    char X_coordinates[COORDINATE_LENGTH];
+    char Y_coordinates[COORDINATE_LENGTH];
+    char Z_coordinates[COORDINATE_LENGTH];
+
+} Coordinates;
+
+
 /* A global flag that is initially set to true by the main thread. It is set
    to false by any thread when the thread encounters a fatal error,
    indicating that it is about to exit. In addition, if user presses Ctrl+C,
@@ -312,6 +381,63 @@ bool ready_to_work;
      data - @todo
  */
 unsigned int twoc(int in, int t);
+
+
+/*
+  init_buffer:
+
+     The function fills the attributes of a specified buffer to be called by
+     another threads to process the buffer content, including the function, the
+     argument of the function and the priority level which the function is to be
+     executed.
+
+  Parameters:
+
+     buffer - A pointer points to the buffer to be modified.
+     buff_id - The index of the buffer for the priority array.
+     function - The pointer points to the function be assigned to the buffer.
+     priority - The priority nice of the buffer when processing the buffer.
+
+  Return value:
+
+     None
+ */
+void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
+                 int priority_nice);
+
+
+/*
+  init_Address_Map:
+
+     This function initialize the head of the AddressMap.
+
+  Parameters:
+
+     address_map - The head of the AddressMap.
+
+  Return value:
+
+     None
+ */
+void init_Address_Map(AddressMapArray *address_map);
+
+
+/*
+  is_in_Address_Map:
+
+     This function check whether the network address is in the AddressMap.
+
+  Parameters:
+
+     address_map - The pointer points to the head of the AddressMap.
+     net_address - The pointer points to the  network address we decide to 
+                   compare.
+
+  Return value:
+
+     int: If not find, return -1, else return its array number.
+ */
+int is_in_Address_Map(AddressMapArray *address_map, char *net_address);
 
 
 /*

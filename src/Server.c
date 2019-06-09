@@ -200,8 +200,8 @@ int main(int argc, char **argv)
 #endif
 
     /* Initialize the Wifi connection */
-    if(return_value = Wifi_init(serverconfig.server_ip) != WORK_SUCCESSFULLY)
-    {
+    if(udp_initial( &udp_config, serverconfig.recv_port) != WORK_SUCCESSFULLY){
+
         /* Error handling and return */
         initialization_failed = true;
 
@@ -384,8 +384,8 @@ int main(int argc, char **argv)
 
     }
 
-    /* The program is going to be ended. Free the connection of Wifi */
-    Wifi_free();
+    /* Release the Wifi elements and close the connection. */
+    udp_release( &udp_config);
 
     SQL_close_database_connection(Server_db);
 
@@ -619,24 +619,6 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name)
 
     }
     return WORK_SUCCESSFULLY;
-}
-
-
-void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
-                 int priority_nice)
-{
-
-    init_entry( &(buffer_list_head -> list_head));
-
-    init_entry( &(buffer_list_head -> priority_list_entry));
-
-    pthread_mutex_init( &buffer_list_head->list_lock, 0);
-
-    buffer_list_head -> function = function_p;
-
-    buffer_list_head -> arg = (void *) buffer_list_head;
-
-    buffer_list_head -> priority_nice = priority_nice;
 }
 
 
@@ -1305,39 +1287,6 @@ void *process_api_routine(void *_buffer_node)
 }
 
 
-void init_Address_Map(AddressMapArray *address_map)
-{
-
-    int n;
-
-    pthread_mutex_init( &address_map -> list_lock, 0);
-
-    memset(address_map -> address_map_list, 0,
-           sizeof(address_map -> address_map_list));
-
-    for(n = 0; n < MAX_NUMBER_NODES; n ++)
-        address_map -> in_use[n] = false;
-}
-
-
-int is_in_Address_Map(AddressMapArray *address_map, char *net_address)
-{
-
-    int n;
-
-    for(n = 0;n < MAX_NUMBER_NODES;n ++){
-
-        if (address_map -> in_use[n] == true && strncmp(address_map ->
-            address_map_list[n].net_address, net_address, NETWORK_ADDR_LENGTH)
-            == 0){
-                return n;
-        }
-
-    }
-    return -1;
-}
-
-
 bool Gateway_join_request(AddressMapArray *address_map, char *address)
 {
 
@@ -1448,29 +1397,6 @@ void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size)
 }
 
 
-ErrorCode Wifi_init(char *IPaddress)
-{
-
-    /* Initialize the Wifi cinfig file */
-    if(udp_initial( &udp_config, serverconfig.recv_port)
-                   != WORK_SUCCESSFULLY){
-
-        /* Error handling TODO */
-        return E_WIFI_INIT_FAIL;
-    }
-    return WORK_SUCCESSFULLY;
-}
-
-
-void Wifi_free()
-{
-
-    /* Release the Wifi elements and close the connection. */
-    udp_release( &udp_config);
-    return (void)NULL;
-}
-
-
 void *process_wifi_send(void *_buffer_node)
 {
 
@@ -1487,8 +1413,8 @@ void *process_wifi_send(void *_buffer_node)
     /* Add the content of tje buffer node to the UDP to be sent to the
        server */
     udp_addpkt( &udp_config, current_node -> net_address,
-               serverconfig.send_port, current_node->content, 
-               current_node->content_size);
+               serverconfig.send_port, current_node -> content, 
+               current_node -> content_size);
 
     mp_free( &node_mempool, current_node);
 
