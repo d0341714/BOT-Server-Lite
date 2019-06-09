@@ -259,8 +259,8 @@ int main(int argc, char **argv)
         {
             ready_to_work = false;
 
-            /* The program is going to be ended. Free the connection of Wifi */
-            Wifi_free();
+            /* Release the Wifi elements and close the connection. */
+            udp_release( &udp_config);
 
             SQL_close_database_connection(Server_db);
 
