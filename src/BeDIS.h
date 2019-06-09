@@ -105,18 +105,22 @@
 /* Length of the IP address in Hex */
 #define NETWORK_ADDR_LENGTH_HEX 8
 
-/* Maximum length of message to be sent over WiFi in bytes */
+/* The size of message to be sent over WiFi in bytes */
 #define WIFI_MESSAGE_LENGTH 4096
+
+/* Maximum length of the message allow to set to WIFI_MESSAGE_LENGTH */
+#define MAXIMUM_WIFI_MESSAGE_LENGTH 65507
+
+/* Minimum length of the message 
+   (One byte for data type and one byte for a space) 
+ */
+#define MINIMUM_WIFI_MESSAGE_LENGTH 2
 
 /* Number of characters in a Bluetooth MAC address */
 #define LENGTH_OF_MAC_ADDRESS 18
 
 /* Maximum length of message to communicate with SQL wrapper API in bytes */
 #define SQL_TEMP_BUFFER_LENGTH 4096
-
-/* Minimum Wi-Fi message size (One byte for data type and one byte for a space)
- */
-#define MINIMUM_WIFI_MESSAGE_LENGTH 2
 
 /* The size of array to store Wi-Fi SSID */
 #define WIFI_SSID_LENGTH 10
@@ -284,6 +288,10 @@ typedef struct {
 
     struct List_Entry buffer_entry;
 
+    unsigned int pkt_direction;
+
+    unsigned int pkt_type;
+
     /* The network address of the packet received or the packet to be sent */
     char net_address[NETWORK_ADDR_LENGTH];
 
@@ -438,6 +446,26 @@ void init_Address_Map(AddressMapArray *address_map);
      int: If not find, return -1, else return its array number.
  */
 int is_in_Address_Map(AddressMapArray *address_map, char *net_address);
+
+
+/*
+  udp_sendpkt
+
+     This function is used to send the packet to the destination via UDP 
+     connection.
+
+  Parameter:
+
+     udp_config  : The pointer points to the structure contains all variables 
+                   for the UDP connection.
+     buffer_node : The pointer points to the buffer node.
+
+  Return Value:
+
+     int : If return 0, everything work successfully.
+           If not 0   , something wrong.
+ */
+int udp_sendpkt(pudp_config udp_config, BufferNode *buffer_node);
 
 
 /*

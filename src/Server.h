@@ -50,7 +50,7 @@
 
 #include "BeDIS.h"
 #include "SqlWrapper.h"
-#include "Geo-Fencing.h"
+//#include "Geo-Fencing.h"
 
 /* When debugging is needed */
 //#define debugging
@@ -136,8 +136,6 @@ sudp_config udp_config;
 
 /* The mempool for the buffer node structure to allocate memory */
 Memory_Pool node_mempool;
-
-sgeo_fence_config geo_fence_config;
 
 /* An array of address maps */
 AddressMapArray Gateway_address_map;
@@ -256,7 +254,7 @@ void *CommUnit_routine();
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer to be modified.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 
@@ -273,7 +271,7 @@ void *NSI_routine(void *_buffer_node);
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer to be modified.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 
@@ -291,7 +289,7 @@ void *BHM_routine(void *_buffer_node);
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer to be modified.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 
@@ -309,7 +307,7 @@ void *LBeacon_routine(void *_buffer_node);
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer to be modified.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 

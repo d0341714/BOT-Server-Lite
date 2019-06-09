@@ -71,18 +71,11 @@ int main(int argc, char **argv)
     /* The thread to listen for messages from Wi-Fi interface */
     pthread_t wifi_listener_thread;
 
-    /* The  thread to process the geo fence routine */
-    pthread_t GeoFence_thread;
-
     /* Initialize flags */
     NSI_initialization_complete      = false;
     CommUnit_initialization_complete = false;
     initialization_failed            = false;
     ready_to_work                    = true;
-
-    /* Initialize data owner id */
-    geo_fence_data_topic_id          = -1;
-    tracked_object_data_topic_id     = -1;
 
 #ifdef debugging
     printf("Start Server\n");
@@ -843,11 +836,10 @@ void *NSI_routine(void *_buffer_node)
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
-    int send_pkt_type;
 
     char gateway_record[WIFI_MESSAGE_LENGTH];
 
-    send_pkt_type = (from_server & 0x0f)<<4;
+    current_node -> pkt_direction = from_server;
 
 #ifdef debugging
     printf("Start join...(%s)\n", current_node -> net_address);
@@ -857,9 +849,9 @@ void *NSI_routine(void *_buffer_node)
      */
     if (Gateway_join_request(&Gateway_address_map, current_node ->
                              net_address) == true)
-        send_pkt_type += join_request_ack & 0x0f;
+        current_node -> pkt_type = join_request_ack;
     else
-        send_pkt_type += join_request_deny & 0x0f;
+        current_node -> pkt_type = join_request_deny;
 
     memset(gateway_record, 0, sizeof(gateway_record));
 
@@ -870,14 +862,12 @@ void *NSI_routine(void *_buffer_node)
                                            strlen(gateway_record));
 
     SQL_update_lbeacon_registration_status(Server_db,
-                                           &current_node->content[2],
-                                           strlen(&current_node->content[2]));
-    /* put the pkt type to content */
-    current_node->content[0] = (char)send_pkt_type;
+                                           &current_node->content[1],
+                                           strlen(&current_node->content[1]));
 
     pthread_mutex_lock(&NSI_send_buffer_list_head.list_lock);
 
-    insert_list_tail( &current_node->buffer_entry,
+    insert_list_tail( &current_node -> buffer_entry,
                       &NSI_send_buffer_list_head.list_head);
 
     pthread_mutex_unlock( &NSI_send_buffer_list_head.list_lock);
@@ -898,7 +888,7 @@ void *BHM_routine(void *_buffer_node)
 
     memset(lbeacon_record, 0, sizeof(lbeacon_record));
 
-    sprintf(lbeacon_record, "1;%s;", &current_node ->content[1]);
+    sprintf(lbeacon_record, "1;%s;", current_node -> content);
 
     SQL_update_lbeacon_health_status(Server_db,
                                      lbeacon_record,
@@ -912,18 +902,13 @@ void *BHM_routine(void *_buffer_node)
 
 void *LBeacon_routine(void *_buffer_node)
 {
-    int pkt_type;
-
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
-    /* read the pkt type from lower lower 4 bits. */
-    pkt_type = current_node ->content[0] & 0x0f;
-
-    if(pkt_type == tracked_object_data)
+    if(current_node -> pkt_type == tracked_object_data)
     {
         SQL_update_object_tracking_data(Server_db,
-                                        &current_node ->content[1],
-                                        strlen(&current_node ->content[1]));
+                                        current_node -> content,
+                                        strlen(current_node -> content));
 
     }
 
@@ -935,18 +920,13 @@ void *LBeacon_routine(void *_buffer_node)
 
 void *Gateway_routine(void *_buffer_node)
 {
-    int pkt_type;
-
     BufferNode *current_node = (BufferNode *)_buffer_node;
-
-    /* read the pkt type from lower lower 4 bits. */
-    pkt_type = current_node ->content[0] & 0x0f;
 
     if(pkt_type == tracked_object_data)
     {
         SQL_update_object_tracking_data(Server_db,
-                                        &current_node ->content[1],
-                                        strlen(&current_node ->content[1]));
+                                        current_node ->content,
+                                        strlen(current_node ->content));
     }
 
     mp_free( &node_mempool, current_node);
@@ -959,32 +939,6 @@ void *process_GeoFence_routine(void *_buffer_node)
 {
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
-
-    int data_direction;
-
-    int data_type;
-
-    int data_owner_id, subscriber_id;
-
-    int return_value;
-
-    unsigned long int data_type_id;
-
-    char data_content[WIFI_MESSAGE_LENGTH];
-
-    char *saved_data_pointer = NULL,
-         *return_data, *topic_name, *current_process_ip;
-
-    /* read the pkt direction from higher 4 bits. */
-    data_direction = from_server;
-    /* read the pkt type from lower lower 4 bits. */
-    data_type = current_node -> content[0] & 0x0f;
-
-    memset(data_content, 0, WIFI_MESSAGE_LENGTH);
-
-    memcpy(data_content, &(current_node -> content[1]),
-            current_node -> content_size - 1);
-
 
     mp_free( &node_mempool, current_node);
 
@@ -1118,9 +1072,9 @@ void *process_wifi_send(void *_buffer_node)
 
     /* Add the content of tje buffer node to the UDP to be sent to the
        server */
-    udp_addpkt( &udp_config, current_node -> net_address,
-               serverconfig.send_port, current_node -> content, 
-               current_node -> content_size);
+    udp_sendpkt( &udp_config, current_node -> net_address,
+                serverconfig.send_port, current_node -> content, 
+                current_node -> content_size);
 
     mp_free( &node_mempool, current_node);
 
@@ -1138,13 +1092,11 @@ void *process_wifi_receive()
 
     int test_times;
 
-    int pkt_direction;
+    sPkt temppkt;
 
-    int pkt_type;
-
-    while (ready_to_work == true) 
+    while (ready_to_work == true)
     {
-        sPkt temppkt = udp_getrecv( &udp_config);
+        temppkt = udp_getrecv( &udp_config);
 
         /* If there is no pkt received */
         if(temppkt.is_null == true)
@@ -1178,16 +1130,16 @@ void *process_wifi_receive()
         }
         else
         {
-
             memset(new_node, 0, sizeof(BufferNode));
 
             /* Initialize the entry of the buffer node */
             init_entry( &new_node -> buffer_entry);
 
             /* Copy the content to the buffer_node */
-            memcpy(new_node -> content, temppkt.content, temppkt.content_size);
+            memcpy(new_node -> content, &temppkt.content[1], 
+                   temppkt.content_size - 1);
 
-            new_node -> content_size = temppkt.content_size;
+            new_node -> content_size = temppkt.content_size - 1;
 
             new_node -> port = temppkt.port;
 
@@ -1195,21 +1147,19 @@ void *process_wifi_receive()
                    NETWORK_ADDR_LENGTH);
 
             /* read the pkt direction from higher 4 bits. */
-            pkt_direction = (new_node -> content[0] >> 4) & 0x0f;
+            new_node -> pkt_direction = (new_node -> content[0] >> 4) & 0x0f;
             /* read the pkt type from lower lower 4 bits. */
-            pkt_type = new_node -> content[0] & 0x0f;
+            new_node -> pkt_type = new_node -> content[0] & 0x0f;
 
             /* Insert the node to the specified buffer, and release
                list_lock. */
 
-            switch (pkt_direction) 
+            switch (new_node -> pkt_direction) 
             {
-
                 case from_gateway:
 
-                    switch (pkt_type) 
+                    switch (new_node -> pkt_type) 
                     {
-
                         case request_to_join:
 #ifdef debugging
                             display_time();
@@ -1258,7 +1208,7 @@ void *process_wifi_receive()
 
                 case from_beacon:
 
-                    switch (pkt_type) 
+                    switch (new_node -> pkt_type) 
                     {
                         case tracked_object_data:
 #ifdef debugging
