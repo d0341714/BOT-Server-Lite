@@ -177,7 +177,7 @@ int main(int argc, char **argv)
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &GeoFence_receive_buffer_list_head,
-                (void *) process_api_routine, serverconfig.high_priority);
+                (void *) process_GeoFence_routine, serverconfig.high_priority);
     insert_list_tail( &GeoFence_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
@@ -922,7 +922,7 @@ void *Gateway_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
-    if(pkt_type == tracked_object_data)
+    if(current_node -> pkt_type == tracked_object_data)
     {
         SQL_update_object_tracking_data(Server_db,
                                         current_node ->content,
