@@ -70,20 +70,6 @@
 
 #endif
 
-#define MAXIMUM_DATABASE_INFO 1024
-
-/* Maximum number of nodes (Gateways) per star network rooted at a Server */
-#define MAX_NUMBER_NODES 32
-
-/* Maximum number of times to retry mp_alloc() */
-#define TEST_MALLOC_MAX_NUMBER_TIMES 5
-
-/*
-  Maximum length of time in seconds low priority message lists are starved
-  of attention. */
-#define MAX_STARVATION_TIME 600
-
-
 /* The configuration file structure */
 typedef struct {
 
