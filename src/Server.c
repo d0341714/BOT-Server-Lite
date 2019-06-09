@@ -1147,9 +1147,9 @@ void *process_wifi_receive()
                    NETWORK_ADDR_LENGTH);
 
             /* read the pkt direction from higher 4 bits. */
-            new_node -> pkt_direction = (new_node -> content[0] >> 4) & 0x0f;
+            new_node -> pkt_direction = (temppkt.content[0] >> 4) & 0x0f;
             /* read the pkt type from lower lower 4 bits. */
-            new_node -> pkt_type = new_node -> content[0] & 0x0f;
+            new_node -> pkt_type = temppkt.content[0] & 0x0f;
 
             /* Insert the node to the specified buffer, and release
                list_lock. */
