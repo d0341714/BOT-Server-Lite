@@ -71,6 +71,10 @@ int main(int argc, char **argv)
     /* The thread to listen for messages from Wi-Fi interface */
     pthread_t wifi_listener_thread;
 
+    BufferNode *current_node;
+
+    char content[WIFI_MESSAGE_LENGTH];
+
     /* Initialize flags */
     NSI_initialization_complete      = false;
     CommUnit_initialization_complete = false;
@@ -269,6 +273,8 @@ int main(int argc, char **argv)
     last_polling_object_tracking_time = 0;
     last_polling_LBeacon_for_HR_time = 0;
 
+    last_update_geo_fence = 0;
+
     /* The while loop that keeps the program running */
     while(ready_to_work == true)
     {
@@ -329,6 +335,26 @@ int main(int argc, char **argv)
             last_polling_LBeacon_for_HR_time = get_system_time();
 
             did_work = true;
+        }
+
+        if(current_time - last_update_geo_fence > 
+           period_between_update_geo_fence)
+        {
+            current_node = mp_alloc( &node_mempool);
+
+            SQL_get_geo_fence(Server_db, content, &content_size);
+
+            current_node->pkt_type=GeoFence_data;
+            current_node->pkt_direction=from_server;
+            strncpy(current_node->content, content, content_size);
+            //current_node->net_address
+            //current_node->port
+
+            pthread_mutex_lock( &GeoFence_receive_buffer_list_head.list_lock);
+            insert_list_tail( &forward_node -> buffer_entry,
+                                  &GeoFence_receive_buffer_list_head.list_head);
+            pthread_mutex_unlock( &GeoFence_receive_buffer_list_head.list_lock);
+
         }
 
         if(did_work == false)

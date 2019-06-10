@@ -63,6 +63,8 @@
 /* The category of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
 
+#define period_between_update_geo_fence 120
+
 #ifdef debugging
 
 /* The category of the printf during debugging */
@@ -189,6 +191,8 @@ bool initialization_failed;
 /* Variables for storing the last polling times in second*/
 int last_polling_LBeacon_for_HR_time;
 int last_polling_object_tracking_time;
+
+int last_update_geo_fence;
 
 
 /*
