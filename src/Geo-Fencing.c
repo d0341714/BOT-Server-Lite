@@ -124,7 +124,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
 
     List_Entry *current_list_entry, *current_uuid_list_entry;
 
-    char *save_ptr, *uuid, *lbeacon_ip, *lbeacon_datetime, *topic_name;
+    char *save_ptr, *uuid, *lbeacon_ip, *lbeacon_datetime;
 
     char content_temp[WIFI_MESSAGE_LENGTH];
 
@@ -138,15 +138,12 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
 
     current_list_ptr = NULL;
     save_ptr = NULL;
-    topic_name = NULL;
 
     memset(content_temp, 0, WIFI_MESSAGE_LENGTH);
 
     memcpy(content_temp, buffer_node -> content, buffer_node -> content_size);
 
-    topic_name = strtok_save( content_temp, DELIMITER_SEMICOLON, &save_ptr);
-
-    uuid = strtok_save( NULL, DELIMITER_SEMICOLON, &save_ptr);
+    uuid = strtok_save( content_temp, DELIMITER_SEMICOLON, &save_ptr);
 
 #ifdef debugging
     printf("[GeoFence] Current processing UUID: %s\n", uuid);
@@ -315,6 +312,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
     memset(content_for_processing, 0, WIFI_MESSAGE_LENGTH);
     memcpy(content_for_processing, buffer_node -> content, buffer_node -> 
            content_size);
+
     geo_fence_list_ptr  = NULL;
 
     current_ptr = strtok_save(content_for_processing, DELIMITER_SEMICOLON,
@@ -368,8 +366,6 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
 #ifdef debugging
     printf("[GeoFence] Threshold: %d\n", threshold);
 #endif
-
-    current_ptr = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
     uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
@@ -526,13 +522,6 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
     saveptr = NULL;
 
     current_ptr = strtok_save(buffer_node -> content,
-                              DELIMITER_SEMICOLON, &saveptr);
-
-#ifdef debugging
-    printf("[GeoFence] Topic: %s\n", current_ptr);
-#endif
-
-    current_ptr = strtok_save(NULL,
                               DELIMITER_SEMICOLON, &saveptr);
 
 #ifdef debugging

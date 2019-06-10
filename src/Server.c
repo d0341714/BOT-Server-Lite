@@ -176,7 +176,7 @@ int main(int argc, char **argv)
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &GeoFence_receive_buffer_list_head,
-                (void *) process_GeoFence_routine, serverconfig.high_priority);
+                (void *) process_GeoFence_routine, serverconfig.normal_priority);
     insert_list_tail( &GeoFence_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
@@ -342,19 +342,30 @@ int main(int argc, char **argv)
         {
             current_node = mp_alloc( &node_mempool);
 
-            SQL_get_geo_fence(Server_db, content, &content_size);
+            SQL_get_geo_fence(Server_db, content);
 
-            current_node->pkt_type=GeoFence_data;
-            current_node->pkt_direction=from_server;
-            strncpy(current_node->content, content, content_size);
+            printf("update_geo_fence: [%s]\n", content);
+
+            current_node -> pkt_type = GeoFence_data;
+            
+            printf("update_geo_fence insert to tail\n");
+            current_node -> pkt_direction = from_server;
+            
+            printf("update_geo_fence insert to tail\n");
+            memcpy(current_node -> content, content, strlen(content));
             //current_node->net_address
             //current_node->port
 
+            printf("update_geo_fence insert to tail\n");
+
             pthread_mutex_lock( &GeoFence_receive_buffer_list_head.list_lock);
-            insert_list_tail( &forward_node -> buffer_entry,
+            insert_list_tail( &current_node -> buffer_entry,
                                   &GeoFence_receive_buffer_list_head.list_head);
             pthread_mutex_unlock( &GeoFence_receive_buffer_list_head.list_lock);
 
+            printf("update_geo_fence insert to tail success\n");
+
+            last_update_geo_fence = get_system_time();
         }
 
         if(did_work == false)
@@ -986,6 +997,10 @@ void *process_GeoFence_routine(void *_buffer_node)
 void *process_GeoFence_alert_routine(void *_buffer_node){
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
+
+#ifdef debugging
+    printf("Process GeoFence alert [%s]\n", current_node -> content);
+#endif
 
     SQL_insert_geo_fence_alert(Server_db, current_node -> content, 
                                current_node -> content_size);
