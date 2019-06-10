@@ -138,7 +138,7 @@ typedef struct {
 
 typedef sgeo_fence_config *pgeo_fence_config;
 
-emum {
+enum {
       Perimeter = 1,
       Fence = 2
       };

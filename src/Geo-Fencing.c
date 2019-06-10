@@ -50,10 +50,6 @@ ErrorCode init_geo_fence(pgeo_fence_config geo_fence_config)
     printf("[GeoFence] Allicating Memory\n");
 #endif
 
-    if(mp_init( &(geo_fence_config -> pkt_content_mempool),
-       sizeof(spkt_content), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
-        return E_MALLOC;
-
     if(mp_init( &(geo_fence_config -> tracked_mac_list_head_mempool),
        sizeof(smac_prefix_list_node), SLOTS_IN_MEM_POOL) !=
               MEMORY_POOL_SUCCESS)
@@ -92,8 +88,6 @@ ErrorCode release_geo_fence(pgeo_fence_config geo_fence_config)
     geo_fence_config -> is_initialized = false;
 
     pthread_mutex_destroy( &geo_fence_config -> geo_fence_list_lock);
-
-    mp_destroy( &geo_fence_config -> pkt_content_mempool);
 
     mp_destroy( &geo_fence_config -> tracked_mac_list_head_mempool);
 
@@ -183,14 +177,14 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
                     if(strncmp(uuid, current_uuid_list_ptr -> uuid, UUID_LENGTH)
                        == 0)
                     {
-                        memset(temp_buffer_node, 0, sizeof(BufferNode);
+                        memset( &temp_buffer_node, 0, sizeof(BufferNode));
 
-                        temp_buffer_node -> pkt_direction = buffer_node -> 
+                        temp_buffer_node.pkt_direction = buffer_node -> 
                                                                 pkt_direction;
-                        temp_buffer_node -> pkt_type = buffer_node -> pkt_type;
-                        temp_buffer_node -> port = buffer_node -> port;
+                        temp_buffer_node.pkt_type = buffer_node -> pkt_type;
+                        temp_buffer_node.port = buffer_node -> port;
 
-                        sprintf(temp_buffer_node -> content, 
+                        sprintf(temp_buffer_node.content, 
                                 "%d;%s;%d;%s", 
                                 current_list_ptr -> id, 
                                 "Fence",
@@ -200,23 +194,23 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
 
 #ifdef debugging
                         printf("[GeoFence] Content: %s\n", 
-                                             temp_buffer_node -> content);
+                                             temp_buffer_node.content);
 #endif
 
-                        temp_buffer_node -> content_size = strlen(
-                                             temp_buffer_node -> content);
+                        temp_buffer_node.content_size = strlen(
+                                             temp_buffer_node.content);
 
 #ifdef debugging
                         printf("[GeoFence] Size: %d\n", 
-                                       temp_buffer_node ->  content_size);
+                                       temp_buffer_node.content_size);
 #endif
 
-                        memcpy(temp_buffer_node -> net_address, 
+                        memcpy(temp_buffer_node.net_address, 
                                buffer_node-> net_address,
                                NETWORK_ADDR_LENGTH);
 
                         check_geo_fence_routine(geo_fence_config, 
-                                                temp_buffer_node);
+                                                 &temp_buffer_node);
                     }
                 
                     break;
@@ -235,14 +229,14 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
                     if(strncmp(uuid, current_uuid_list_ptr -> uuid, UUID_LENGTH)
                        ==  0)
                     {
-                        memset(temp_buffer_node, 0, sizeof(BufferNode);
+                        memset( &temp_buffer_node, 0, sizeof(BufferNode));
 
-                        temp_buffer_node -> pkt_direction = buffer_node -> 
+                        temp_buffer_node.pkt_direction = buffer_node -> 
                                                                 pkt_direction;
-                        temp_buffer_node -> pkt_type = buffer_node -> pkt_type;
-                        temp_buffer_node -> port = buffer_node -> port;
+                        temp_buffer_node.pkt_type = buffer_node -> pkt_type;
+                        temp_buffer_node.port = buffer_node -> port;
 
-                        sprintf(temp_buffer_node -> content, 
+                        sprintf(temp_buffer_node.content, 
                                 "%d;%s;%d;%s", 
                                 current_list_ptr -> id, 
                                 "Perimeter",
@@ -255,20 +249,20 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
                                              temp_buffer_node -> content);
 #endif
 
-                        temp_buffer_node -> content_size = strlen(
-                                             temp_buffer_node -> content);
+                        temp_buffer_node.content_size = strlen(
+                                             temp_buffer_node.content);
 
 #ifdef debugging
                         printf("[GeoFence] Size: %d\n", 
-                                       temp_buffer_node ->  content_size);
+                                       temp_buffer_node.content_size);
 #endif
 
-                        memcpy(temp_buffer_node -> net_address, 
+                        memcpy(temp_buffer_node.net_address, 
                                buffer_node-> net_address,
                                NETWORK_ADDR_LENGTH);
 
                         check_geo_fence_routine(geo_fence_config, 
-                                                temp_buffer_node);
+                                                 &temp_buffer_node);
                     }
                     
                     break;
@@ -281,7 +275,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
 
     pthread_mutex_unlock( &geo_fence_config -> geo_fence_list_lock);
 
-    return (void *)NULL;
+    return WORK_SUCCESSFULLY;
 
 }
 
@@ -321,7 +315,8 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
     sscanf(current_ptr, "%d", &geo_fence_id);
 
     list_for_each(current_list_entry, &geo_fence_config ->
-                                      geo_fence_list_head.geo_fence_list_entry){
+                                      geo_fence_list_head.geo_fence_list_entry)
+    {
 
         geo_fence_list_ptr = ListEntry(current_list_entry,
                                        sgeo_fence_list_node,
@@ -338,13 +333,14 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
 
     }
 
-    if(geo_fence_list_ptr == NULL){
+    if(geo_fence_list_ptr == NULL)
+    {
 
 #ifdef debugging
         printf("[GeoFence] Exit\n");
 #endif
 
-        return (void *)NULL;
+        return WORK_SUCCESSFULLY;
     }
 
 #ifdef debugging
@@ -401,8 +397,8 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
         printf("[GeoFence] Number of Objects: %d\n", number_of_objects);
 #endif
 
-        while(number_of_objects --){
-
+        while(number_of_objects --)
+        {
             //mac_address;initial_timestamp;final_timestamp;rssi;panic_button;
 
             mac_address = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
@@ -429,7 +425,8 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
                 if((strncmp_caseinsensitive(mac_address,
                         current_mac_prefix_list_ptr -> mac_prefix,
                         strlen(current_mac_prefix_list_ptr -> mac_prefix)) == 0)
-                        && rssi >= threshold){
+                        && rssi >= threshold)
+                {
 
                     printf("[GeoFence-Alert] timestamp %d - %s %s %s %d\n",
                            get_system_time(), uuid, lbeacon_ip, mac_address,
@@ -442,7 +439,8 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
 
                     GeoFence_alert_buffer_node = NULL;
 
-                    while(GeoFence_alert_buffer_node == NULL){
+                    while(GeoFence_alert_buffer_node == NULL)
+                    {
                         GeoFence_alert_buffer_node = mp_alloc(geo_fence_config 
                                            -> GeoFence_alert_list_node_mempool);
                     }
@@ -471,7 +469,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
                     insert_list_tail( &GeoFence_alert_buffer_node -> 
                                      buffer_entry,
                                       &geo_fence_config -> 
-                                     GeoFence_alert_list_head.list_head);
+                                     GeoFence_alert_list_head -> list_head);
 
                     pthread_mutex_unlock( &geo_fence_config  -> 
                                          GeoFence_alert_list_head -> list_lock);
@@ -483,20 +481,14 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
 
     }while(object_type != (max_type - 1));
 
-    return (void *)NULL;
+    return WORK_SUCCESSFULLY;
 
 }
 
 
-static void *update_geo_fence(pgeo_fence_config geo_fence_config, 
-                              BufferNode* buffer_node)
+ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config, 
+                           BufferNode* buffer_node)
 {
-
-    ppkt_content pkt_content = (ppkt_content)_pkt_content;
-
-    pgeo_fence_config geo_fence_config = pkt_content ->
-                                         geo_fence_config;
-
     pgeo_fence_list_node geo_fence_list_head = &geo_fence_config ->
                                                geo_fence_list_head;
 
@@ -521,7 +513,7 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
     current_ptr = NULL;
     saveptr = NULL;
 
-    current_ptr = strtok_save( &pkt_content -> content[1],
+    current_ptr = strtok_save(buffer_node -> content,
                               DELIMITER_SEMICOLON, &saveptr);
 
 #ifdef debugging
@@ -537,7 +529,8 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
 
     sscanf(current_ptr, "%d", &number_of_geo_fence);
 
-    for (counter = 0; counter < number_of_geo_fence; counter ++){
+    for (counter = 0; counter < number_of_geo_fence; counter ++)
+    {
 
         char *save_current_ptr, *uuid, *threshold_str;
 
@@ -545,8 +538,8 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
         pmac_prefix_list_node mac_prefix_node;
         pgeo_fence_list_node geo_fence_list_node;
 
-        int number_of_perimeters, number_of_fence, number_of_mac_prefix,
-            threshold;
+        int number_of_perimeters, number_of_fence, 
+            number_of_mac_prefix, threshold;
 
         is_exist = false;
         current_ptr = NULL;
@@ -572,7 +565,8 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
 #endif
 
         list_for_each(current_list_entry, &geo_fence_config ->
-                                      geo_fence_list_head.geo_fence_list_entry){
+                                      geo_fence_list_head.geo_fence_list_entry)
+        {
 
             current_list_ptr = ListEntry(current_list_entry,
                                          sgeo_fence_list_node,
@@ -583,7 +577,8 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
                    "geo_fence_id: %d\n", current_list_ptr->id, geo_fence_id);
 #endif
 
-            if(current_list_ptr->id == geo_fence_id){
+            if(current_list_ptr->id == geo_fence_id)
+            {
 
                 geo_fence_list_node = current_list_ptr;
 
@@ -592,11 +587,13 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
 
         }
 
-        if(geo_fence_list_node == NULL){
+        if(geo_fence_list_node == NULL)
+        {
             geo_fence_list_node = mp_alloc( &geo_fence_config ->
                                            geo_fence_list_node_mempool);
 
-            if(geo_fence_list_node != NULL){
+            if(geo_fence_list_node != NULL)
+            {
                 init_geo_fence_list_node(geo_fence_list_node);
 
 #ifdef debugging
@@ -604,7 +601,8 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
 #endif
             }
         }
-        else{
+        else
+        {
             free_geo_fence_list_node(geo_fence_list_node, geo_fence_config);
 
 #ifdef debugging
@@ -647,7 +645,8 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
 #endif
 
         for(counter_for_lbeacon = 0;counter_for_lbeacon < number_of_perimeters;
-            counter_for_lbeacon ++){
+            counter_for_lbeacon ++)
+        {
 
             uuid = NULL;
             uuid_list_node = NULL;
@@ -668,7 +667,8 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
 
             uuid_list_node = mp_alloc( &geo_fence_config ->
                                       uuid_list_node_mempool);
-            if(uuid_list_node != NULL){
+            if(uuid_list_node != NULL)
+            {
                 init_uuid_list_node(uuid_list_node);
 
                 memcpy(uuid_list_node -> uuid, uuid, UUID_LENGTH);
@@ -701,7 +701,8 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
 #endif
 
         for(counter_for_lbeacon = 0;counter_for_lbeacon < number_of_fence;
-            counter_for_lbeacon ++){
+            counter_for_lbeacon ++)
+        {
 
             uuid = NULL;
             uuid_list_node = NULL;
@@ -723,7 +724,8 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
 
             uuid_list_node = mp_alloc( &geo_fence_config ->
                                       uuid_list_node_mempool);
-            if(uuid_list_node != NULL){
+            if(uuid_list_node != NULL)
+            {
                 init_uuid_list_node(uuid_list_node);
 
                 memcpy(uuid_list_node -> uuid, uuid, UUID_LENGTH);
@@ -746,7 +748,8 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
 #endif
 
         for(counter_for_mac_prefix = 0;counter_for_mac_prefix <
-            number_of_mac_prefix;counter_for_mac_prefix ++){
+            number_of_mac_prefix;counter_for_mac_prefix ++)
+        {
 
             current_ptr = NULL;
             mac_prefix_node = NULL;
@@ -755,15 +758,15 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
 
             mac_prefix_node = mp_alloc( &geo_fence_config ->
                                        mac_prefix_list_node_mempool);
-            if(mac_prefix_node != NULL){
+            if(mac_prefix_node != NULL)
+            {
                 init_mac_prefix_node(mac_prefix_node);
 
                 memcpy(mac_prefix_node -> mac_prefix, current_ptr,
                        strlen(current_ptr) * sizeof(char));
     #ifdef debugging
                 printf("[GeoFence] MAC_Prefix: %s\n", mac_prefix_node -> 
-                                                      mac_prefix)
-                ;
+                                                      mac_prefix);
     #endif
                 insert_list_tail( &mac_prefix_node -> mac_prefix_list_entry,
                                   &geo_fence_list_node -> mac_prefix_list_head);
@@ -778,12 +781,13 @@ static void *update_geo_fence(pgeo_fence_config geo_fence_config,
 
     pthread_mutex_unlock( &geo_fence_config -> geo_fence_list_lock);
 
-    return (void *)NULL;
+    return WORK_SUCCESSFULLY;
 }
 
 
 static ErrorCode init_geo_fence_list_node(pgeo_fence_list_node
-                                                           geo_fence_list_node){
+                                                           geo_fence_list_node)
+{
 
     geo_fence_list_node -> id = -1;
 
@@ -804,7 +808,8 @@ static ErrorCode init_geo_fence_list_node(pgeo_fence_list_node
 
 static ErrorCode free_geo_fence_list_node(
                                       pgeo_fence_list_node geo_fence_list_node,
-                                      pgeo_fence_config geo_fence_config){
+                                      pgeo_fence_config geo_fence_config)
+{
 
     List_Entry *current_uuid_list_ptr, *next_uuid_list_ptr,
                *current_mac_prefix_list_ptr, *next_mac_prefix_list_ptr;
@@ -824,7 +829,8 @@ static ErrorCode free_geo_fence_list_node(
     remove_list_node( &geo_fence_list_node -> geo_fence_list_entry);
 
     list_for_each_safe(current_uuid_list_ptr, next_uuid_list_ptr,
-                        &geo_fence_list_node -> perimeters_uuid_list_head){
+                        &geo_fence_list_node -> perimeters_uuid_list_head)
+    {
 
         current_uuid_list_node = ListEntry(current_uuid_list_ptr,
                                            suuid_list_node,
@@ -838,7 +844,8 @@ static ErrorCode free_geo_fence_list_node(
     }
 
     list_for_each_safe(current_uuid_list_ptr, next_uuid_list_ptr,
-                        &geo_fence_list_node -> fence_uuid_list_head){
+                        &geo_fence_list_node -> fence_uuid_list_head)
+    {
 
         current_uuid_list_node = ListEntry(current_uuid_list_ptr,
                                            suuid_list_node,
@@ -852,7 +859,8 @@ static ErrorCode free_geo_fence_list_node(
     }
 
     list_for_each_safe(current_uuid_list_ptr, next_uuid_list_ptr,
-                        &geo_fence_list_node -> mac_prefix_list_head){
+                        &geo_fence_list_node -> mac_prefix_list_head)
+    {
 
         current_mac_prefix_list_node = ListEntry(current_uuid_list_ptr,
                                                  smac_prefix_list_node,
@@ -871,7 +879,8 @@ static ErrorCode free_geo_fence_list_node(
 
 
 static ErrorCode init_tracked_mac_list_node(ptracked_mac_list_node
-                                                         tracked_mac_list_head){
+                                                         tracked_mac_list_head)
+{
 
     init_entry( &tracked_mac_list_head -> mac_list_entry);
 
@@ -883,7 +892,8 @@ static ErrorCode init_tracked_mac_list_node(ptracked_mac_list_node
 
 
 static ErrorCode free_tracked_mac_list_node(ptracked_mac_list_node
-                                                         tracked_mac_list_head){
+                                                         tracked_mac_list_head)
+{
 
     remove_list_node( &tracked_mac_list_head -> mac_list_entry);
 
@@ -894,7 +904,8 @@ static ErrorCode free_tracked_mac_list_node(ptracked_mac_list_node
 }
 
 
-static ErrorCode init_uuid_list_node(puuid_list_node uuid_list_node){
+static ErrorCode init_uuid_list_node(puuid_list_node uuid_list_node)
+{
 
     memset(uuid_list_node -> uuid, 0, UUID_LENGTH);
 
@@ -905,7 +916,8 @@ static ErrorCode init_uuid_list_node(puuid_list_node uuid_list_node){
 }
 
 
-static ErrorCode free_uuid_list_node(puuid_list_node uuid_list_node){
+static ErrorCode free_uuid_list_node(puuid_list_node uuid_list_node)
+{
 
     memset(uuid_list_node -> uuid, 0, UUID_LENGTH);
 
@@ -916,7 +928,8 @@ static ErrorCode free_uuid_list_node(puuid_list_node uuid_list_node){
 }
 
 
-static ErrorCode init_mac_prefix_node(pmac_prefix_list_node mac_prefix_node){
+static ErrorCode init_mac_prefix_node(pmac_prefix_list_node mac_prefix_node)
+{
 
     memset(mac_prefix_node -> mac_prefix, 0, LENGTH_OF_MAC_ADDRESS);
 
@@ -927,7 +940,8 @@ static ErrorCode init_mac_prefix_node(pmac_prefix_list_node mac_prefix_node){
 }
 
 
-static ErrorCode free_mac_prefix_node(pmac_prefix_list_node mac_prefix_node){
+static ErrorCode free_mac_prefix_node(pmac_prefix_list_node mac_prefix_node)
+{
 
     memset(mac_prefix_node -> mac_prefix, 0, LENGTH_OF_MAC_ADDRESS);
 
