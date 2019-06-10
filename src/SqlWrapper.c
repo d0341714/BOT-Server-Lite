@@ -272,8 +272,8 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
                          "DO UPDATE SET health_status = \'%d\', " \
                          "last_report_timestamp = NOW();";
     HealthStatus health_status = S_NORMAL_STATUS;
-	char *ip_address = NULL;
-	char *pqescape_ip_address = NULL;
+    char *ip_address = NULL;
+    char *pqescape_ip_address = NULL;
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -297,7 +297,7 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
         *string_end = '\0';
 
         /* Create SQL statement */
-		pqescape_ip_address =
+        pqescape_ip_address =
             PQescapeLiteral(conn, ip_address, strlen(ip_address));
 
         memset(sql, 0, sizeof(sql));
@@ -305,7 +305,7 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
                 pqescape_ip_address,
                 health_status, health_status);
 
-		PQfreemem(pqescape_ip_address);
+        PQfreemem(pqescape_ip_address);
 
         /* Execute SQL statement */
         ret_val = SQL_execute(db, sql);
@@ -438,11 +438,11 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
                          "gateway_ip_address = %s, " \
                          "last_report_timestamp = NOW() ;";
     HealthStatus health_status = S_NORMAL_STATUS;
-	char *uuid = NULL;
+    char *uuid = NULL;
     char *lbeacon_ip = NULL;
     char *gateway_ip = NULL;
     char *registered_timestamp_GMT = NULL;
-	char *pqescape_uuid = NULL;
+    char *pqescape_uuid = NULL;
     char *pqescape_lbeacon_ip = NULL;
     char *pqescape_gateway_ip = NULL;
     char *pqescape_registered_timestamp_GMT = NULL;
@@ -1011,8 +1011,7 @@ int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len){
 #endif
 
     topic_id = -1;
-    if(rows > 0)
-    {
+    if(rows > 0){
         sscanf(PQgetvalue(res, 0, 0), "%d", &topic_id);
     }
     PQclear(res);
@@ -1043,12 +1042,11 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
                                       "api_subscriber where topic_id = \'%d\' "\
                                       "and ip_address = %s ;";
 
-	topic_id = SQL_get_api_data_owner_id(db, buf, buf_len);
+    topic_id = SQL_get_api_data_owner_id(db, buf, buf_len);
 
-	if(topic_id < 0)
-	{
-	    return -1;
-	}
+    if(topic_id < 0){
+        return -1;
+    }
 
     memset(temp_buf, 0, WIFI_MESSAGE_LENGTH);
     memcpy(temp_buf, buf, buf_len);
@@ -1143,7 +1141,7 @@ int SQL_update_api_subscription(void *db, char *buf, size_t buf_len){
         PQclear(res);
         return -1;
     }
-    
+
     sscanf(PQgetvalue(res, 0, 0), "%d", &subscriber_id);
 
     PQclear(res);
@@ -1204,10 +1202,9 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len){
 
     topic_id = SQL_get_api_data_owner_id(db, buf, buf_len);
 
-	if(topic_id < 0)
-	{
-	    return E_SQL_EXECUTE;
-	}
+    if(topic_id < 0){
+        return E_SQL_EXECUTE;
+    }
 
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_template, topic_id);
