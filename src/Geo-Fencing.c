@@ -250,7 +250,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
 
 #ifdef debugging
                         printf("[GeoFence] Content: %s\n", 
-                                             temp_buffer_node -> content);
+                                             temp_buffer_node.content);
 #endif
 
                         temp_buffer_node.content_size = strlen(
