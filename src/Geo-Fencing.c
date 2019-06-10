@@ -132,6 +132,10 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
 
     BufferNode temp_buffer_node;
 
+    if(geo_fence_config -> is_initialized == false){
+        return E_API_INITIALLZATION;
+    }
+
     current_list_ptr = NULL;
     save_ptr = NULL;
     topic_name = NULL;
@@ -299,6 +303,10 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
     char content_for_alert[WIFI_MESSAGE_LENGTH];
 
     BufferNode *GeoFence_alert_buffer_node;
+
+    if(geo_fence_config -> is_initialized == false){
+        return E_API_INITIALLZATION;
+    }
 
     /*
      * id;"P/F";threshold;tracking_data
@@ -506,6 +514,10 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
          *current_ptr;
 
     bool is_exist;
+
+    if(geo_fence_config -> is_initialized == false){
+        return E_API_INITIALLZATION;
+    }
 
     pthread_mutex_lock( &geo_fence_config -> geo_fence_list_lock);
 

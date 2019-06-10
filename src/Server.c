@@ -146,11 +146,6 @@ int main(int argc, char **argv)
                      .priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
-    init_buffer( &Gateway_receive_buffer_list_head,
-                (void *) Gateway_routine, serverconfig.normal_priority);
-    insert_list_tail( &Gateway_receive_buffer_list_head.priority_list_entry,
-                      &priority_list_head.priority_list_entry);
-
     init_buffer( &LBeacon_receive_buffer_list_head,
                 (void *) LBeacon_routine, serverconfig.high_priority);
     insert_list_tail( &LBeacon_receive_buffer_list_head.priority_list_entry,
@@ -179,6 +174,12 @@ int main(int argc, char **argv)
     init_buffer( &GeoFence_receive_buffer_list_head,
                 (void *) process_GeoFence_routine, serverconfig.high_priority);
     insert_list_tail( &GeoFence_receive_buffer_list_head.priority_list_entry,
+                      &priority_list_head.priority_list_entry);
+
+    init_buffer( &GeoFence_alert_buffer_list_head,
+                (void *) process_GeoFence_alert_routine, 
+                serverconfig.high_priority);
+    insert_list_tail( &GeoFence_alert_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     sort_priority_list(&serverconfig, &priority_list_head);
@@ -260,6 +261,11 @@ int main(int argc, char **argv)
         }
     }
 
+    geo_fence_config.GeoFence_alert_list_node_mempool = &node_mempool;
+    geo_fecne_config.GeoFence_alert_list_head =
+                                               &GeoFence_alert_buffer_list_head;
+    init_geo_fence(&geo_fence_config);
+
     last_polling_object_tracking_time = 0;
     last_polling_LBeacon_for_HR_time = 0;
 
@@ -331,6 +337,8 @@ int main(int argc, char **argv)
         }
 
     }
+
+    release_geo_fence( &geo_fence_config);
 
     /* Release the Wifi elements and close the connection. */
     udp_release( &udp_config);
@@ -918,33 +926,50 @@ void *LBeacon_routine(void *_buffer_node)
 }
 
 
-void *Gateway_routine(void *_buffer_node)
-{
-    BufferNode *current_node = (BufferNode *)_buffer_node;
-
-    if(current_node -> pkt_type == tracked_object_data)
-    {
-        SQL_update_object_tracking_data(Server_db,
-                                        current_node ->content,
-                                        strlen(current_node ->content));
-    }
-
-    mp_free( &node_mempool, current_node);
-
-    return (void* )NULL;
-}
-
-
 void *process_GeoFence_routine(void *_buffer_node)
 {
 
     BufferNode *current_node = (BufferNode *)_buffer_node;
+
+    switch (current_node->pkt_type)
+    {
+        case tracked_object_data:
+            geo_fence_check_tracked_object_data_routine( &geo_fence_config, 
+                                                        Fence,
+                                                        current_node);
+            geo_fence_check_tracked_object_data_routine( &geo_fence_config, 
+                                                        Perimeter,
+                                                        current_node);
+            break;
+
+        case GeoFence_data:
+            update_geo_fence( &geo_fence_config, current_node);
+            break;
+
+        default:
+            break;
+    }
 
     mp_free( &node_mempool, current_node);
 
     return (void *)NULL;
 
 }
+
+
+void *process_GeoFence_alert_routine(void *_buffer_node){
+
+    BufferNode *current_node = (BufferNode *)_buffer_node;
+
+    SQL_insert_geo_fence_alert(Server_db, current_node -> content, 
+                               current_node -> content_size);
+    
+    mp_free( &node_mempool, current_node);
+
+    return (void *)NULL;
+
+}
+
 
 
 bool Gateway_join_request(AddressMapArray *address_map, char *address)
@@ -1088,7 +1113,7 @@ void *process_wifi_send(void *_buffer_node)
 
 void *process_wifi_receive()
 {
-    BufferNode *new_node;
+    BufferNode *new_node, *forward_node;
 
     int test_times;
 
@@ -1110,142 +1135,129 @@ void *process_wifi_receive()
 
         /* Allocate memory from node_mempool a buffer node for received data
            and copy the data from Wi-Fi receive queue to the node. */
-        do{
-            if(test_times == TEST_MALLOC_MAX_NUMBER_TIMES)
-                break;
-            else if(test_times != 0)
-                Sleep(WAITING_TIME);
+        new_node = NULL;
 
+        while( new_node == NULL){
             new_node = mp_alloc( &node_mempool);
-            test_times ++;
-
-        }while( new_node == NULL);
-
-        if(new_node == NULL)
-        {
-            /* Alloc memory failed, error handling. */
-#ifdef debugging
-            printf("No memory allow to alloc...\n");
-#endif
         }
-        else
+
+
+        memset(new_node, 0, sizeof(BufferNode));
+
+        /* Initialize the entry of the buffer node */
+        init_entry( &new_node -> buffer_entry);
+
+        /* Copy the content to the buffer_node */
+        memcpy(new_node -> content, &temppkt.content[1], 
+               temppkt.content_size - 1);
+
+        new_node -> content_size = temppkt.content_size - 1;
+
+        new_node -> port = temppkt.port;
+
+        memcpy(new_node -> net_address, temppkt.address,    
+               NETWORK_ADDR_LENGTH);
+
+        /* read the pkt direction from higher 4 bits. */
+        new_node -> pkt_direction = (temppkt.content[0] >> 4) & 0x0f;
+        /* read the pkt type from lower lower 4 bits. */
+        new_node -> pkt_type = temppkt.content[0] & 0x0f;
+
+        /* Insert the node to the specified buffer, and release
+           list_lock. */
+
+        switch (new_node -> pkt_direction) 
         {
-            memset(new_node, 0, sizeof(BufferNode));
+            case from_gateway:
 
-            /* Initialize the entry of the buffer node */
-            init_entry( &new_node -> buffer_entry);
-
-            /* Copy the content to the buffer_node */
-            memcpy(new_node -> content, &temppkt.content[1], 
-                   temppkt.content_size - 1);
-
-            new_node -> content_size = temppkt.content_size - 1;
-
-            new_node -> port = temppkt.port;
-
-            memcpy(new_node -> net_address, temppkt.address,    
-                   NETWORK_ADDR_LENGTH);
-
-            /* read the pkt direction from higher 4 bits. */
-            new_node -> pkt_direction = (temppkt.content[0] >> 4) & 0x0f;
-            /* read the pkt type from lower lower 4 bits. */
-            new_node -> pkt_type = temppkt.content[0] & 0x0f;
-
-            /* Insert the node to the specified buffer, and release
-               list_lock. */
-
-            switch (new_node -> pkt_direction) 
-            {
-                case from_gateway:
-
-                    switch (new_node -> pkt_type) 
-                    {
-                        case request_to_join:
+                switch (new_node -> pkt_type) 
+                {
+                    case request_to_join:
 #ifdef debugging
-                            display_time();
-                            printf("Get Join request from Gateway.\n");
+                        display_time();
+                        printf("Get Join request from Gateway.\n");
 #endif
-                            pthread_mutex_lock( 
+                        pthread_mutex_lock( 
                                        &NSI_receive_buffer_list_head.list_lock);
-                            insert_list_tail( &new_node -> buffer_entry,
+                        insert_list_tail( &new_node -> buffer_entry,
                                        &NSI_receive_buffer_list_head.list_head);
-                            pthread_mutex_unlock(
+                        pthread_mutex_unlock(
                                        &NSI_receive_buffer_list_head.list_lock);
-                            break;
+                        break;
 
-                        case tracked_object_data:
+                    case health_report:
 #ifdef debugging
-                            display_time();
-                            printf("Get Tracked Object Data from Gateway\n");
+                        display_time();
+                        printf("Get Health Report from Gateway\n");
 #endif
-                            pthread_mutex_lock(
-                                   &Gateway_receive_buffer_list_head.list_lock);
-                            insert_list_tail( &new_node -> buffer_entry,
-                                   &Gateway_receive_buffer_list_head.list_head);
-                            pthread_mutex_unlock(
-                                   &Gateway_receive_buffer_list_head.list_lock);
-                            break;
-
-                        case health_report:
-#ifdef debugging
-                            display_time();
-                            printf("Get Health Report from Gateway\n");
-#endif
-                            pthread_mutex_lock( 
+                        pthread_mutex_lock( 
                                        &BHM_receive_buffer_list_head.list_lock);
-                            insert_list_tail( &new_node -> buffer_entry,
+                        insert_list_tail( &new_node -> buffer_entry,
                                        &BHM_receive_buffer_list_head.list_head);
-                            pthread_mutex_unlock(
+                        pthread_mutex_unlock(
                                        &BHM_receive_buffer_list_head.list_lock);
-                            break;
+                        break;
 
-                        default:
-                            mp_free( &node_mempool, new_node);
-                            break;
-                    }
+                    default:
+                        mp_free( &node_mempool, new_node);
+                        break;
+                }
                     
-                    break;
+                break;
 
-                case from_beacon:
+            case from_beacon:
 
-                    switch (new_node -> pkt_type) 
-                    {
-                        case tracked_object_data:
+                switch (new_node -> pkt_type) 
+                {
+                    case tracked_object_data:
 #ifdef debugging
-                            display_time();
-                            printf("Get Tracked Object Data from LBeacon\n");
+                        display_time();
+                        printf("Get Tracked Object Data from LBeacon\n");
 #endif
-                            pthread_mutex_lock(
+                        forward_node = NULL;
+                        while(forward_node == NULL){
+                            forward_node = mp_alloc( &node_mempool);
+                        }
+                        memcpy(forward_node, new_node, sizeof(BufferNode));
+
+                        pthread_mutex_lock(
                                    &LBeacon_receive_buffer_list_head.list_lock);
-                            insert_list_tail( &new_node -> buffer_entry,
+                        insert_list_tail( &new_node -> buffer_entry,
                                    &LBeacon_receive_buffer_list_head.list_head);
-                            pthread_mutex_unlock(
+                        pthread_mutex_unlock(
                                    &LBeacon_receive_buffer_list_head.list_lock);
-                            break;
 
-                        case health_report:
+                        pthread_mutex_lock(
+                                  &GeoFence_receive_buffer_list_head.list_lock);
+                        insert_list_tail( &forward_node -> buffer_entry,
+                                  &GeoFence_receive_buffer_list_head.list_head);
+                        pthread_mutex_unlock(
+                                  &GeoFence_receive_buffer_list_head.list_lock);
+
+                        break;
+
+                    case health_report:
 #ifdef debugging
-                            display_time();
-                            printf("Get Health Report from LBeacon\n");
+                        display_time();
+                        printf("Get Health Report from LBeacon\n");
 #endif
-                            pthread_mutex_lock(&BHM_receive_buffer_list_head
+                        pthread_mutex_lock(&BHM_receive_buffer_list_head
                                                    .list_lock);
-                            insert_list_tail( &new_node -> buffer_entry,
+                        insert_list_tail( &new_node -> buffer_entry,
                                        &BHM_receive_buffer_list_head.list_head);
-                            pthread_mutex_unlock(
+                        pthread_mutex_unlock(
                                        &BHM_receive_buffer_list_head.list_lock);
-                            break;
+                        break;
 
-                        default:
-                            mp_free( &node_mempool, new_node);
-                            break;
-                    }
-                    break;
+                    default:
+                        mp_free( &node_mempool, new_node);
+                        break;
+                }
+                break;
 
-                default:
-                    mp_free( &node_mempool, new_node);
-                    break;
-            }
+            default:
+                mp_free( &node_mempool, new_node);
+                break;
         }
     }
     return (void *)NULL;

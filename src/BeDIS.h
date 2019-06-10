@@ -151,17 +151,10 @@
 /* Maximum number of nodes per star network */
 #define MAX_NUMBER_NODES 16
 
-/* Maximum number of times to retry mp_alloc() */
-#define TEST_MALLOC_MAX_NUMBER_TIMES 5
-
 /*
   Maximum length of time in seconds low priority message lists are starved
   of attention. */
 #define MAX_STARVATION_TIME 600
-
-#define GEO_FENCE_TOPIC "GEO_FENCE"
-#define GEO_FENCE_ALERT_TOPIC "GEO_FENCE_ALERT"
-#define TRACKED_OBJECT_DATA_TOPIC "TRACKED_OBJECT_DATA"
 
 
 typedef enum _ErrorCode{

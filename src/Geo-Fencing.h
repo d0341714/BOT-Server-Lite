@@ -153,14 +153,10 @@ enum {
 
      _geo_fence_config - The pointer points to the geo_fence_config.
 
-     * Need to set the following member of the geo_fence_config before starting
-       the thread.
-            number_worker_threads
-            geo_fence_ip
-            server_ip
-            recv_port
-            api_recv_port
-            decision_threshold
+     * Need to set the following member of the geo_fence_config before 
+       initializing.
+         GeoFence_alert_list_node_mempool
+         GeoFence_alert_list_head
 
   Return value:
 
@@ -179,15 +175,6 @@ ErrorCode init_geo_fence(pgeo_fence_config geo_fence_config);
   Parameters:
 
      _geo_fence_config - The pointer points to the geo_fence_config.
-
-     * Need to set the following member of the geo_fence_config before starting
-       the thread.
-            number_worker_threads
-            geo_fence_ip
-            server_ip
-            recv_port
-            api_recv_port
-            decision_threshold
 
   Return value:
 

@@ -50,7 +50,7 @@
 
 #include "BeDIS.h"
 #include "SqlWrapper.h"
-//#include "Geo-Fencing.h"
+#include "Geo-Fencing.h"
 
 /* When debugging is needed */
 //#define debugging
@@ -140,9 +140,6 @@ Memory_Pool node_mempool;
 /* An array of address maps */
 AddressMapArray Gateway_address_map;
 
-/* The head of a list of buffers of data from Gateway */
-BufferListHead Gateway_receive_buffer_list_head;
-
 /* The head of a list of buffers of data from LBeacons */
 BufferListHead LBeacon_receive_buffer_list_head;
 
@@ -166,9 +163,14 @@ BufferListHead BHM_receive_buffer_list_head;
    GeoFence */
 BufferListHead GeoFence_receive_buffer_list_head;
 
+/* The head of a list of buffers holding GeoFence alert from GeoFence */
+BufferListHead GeoFence_alert_buffer_list_head;
+
 /* The head of a list of buffers for the buffer list head in the priority 
    order. */
 BufferListHead priority_list_head;
+
+sgeo_fence_config geo_fence_config;
 
 
 /* Flags */
@@ -300,24 +302,6 @@ void *LBeacon_routine(void *_buffer_node);
 
 
 /*
-  Gateway_routine:
-
-     This function is executed by worker threads when they process the buffer
-     nodes in Command_msg_buffer_list and broadcast to Gateway.
-
-  Parameters:
-
-     _buffer_node - The pointer points to the buffer node.
-
-  Return value:
-
-     None
-
- */
-void *Gateway_routine(void *_buffer_node);
-
-
-/*
   process_GeoFence_routine:
 
      This function is executed by worker threads when processing
@@ -333,6 +317,24 @@ void *Gateway_routine(void *_buffer_node);
 
  */
 void *process_GeoFence_routine(void *_buffer_node);
+
+
+/*
+  process_GeoFence_alert_routine:
+
+     This function is executed by worker threads when processing
+     the buffer node in the GeoFence alert buffer list.
+
+  Parameters:
+
+     _buffer_list_head - The pointer points to the buffer list head.
+
+  Return value:
+
+     None
+
+ */
+void *process_GeoFence_alert_routine(void *_buffer_node);
 
 
 /*
