@@ -141,7 +141,7 @@ int main(int argc, char **argv)
                 serverconfig.high_priority);
 
     init_buffer( &time_critical_Gateway_receive_buffer_list_head,
-                (void *) Gateway_routine, serverconfig.high_priority);
+                (void *) NULL, serverconfig.high_priority);
     insert_list_tail( &time_critical_Gateway_receive_buffer_list_head
                      .priority_list_entry,
                       &priority_list_head.priority_list_entry);
@@ -262,7 +262,7 @@ int main(int argc, char **argv)
     }
 
     geo_fence_config.GeoFence_alert_list_node_mempool = &node_mempool;
-    geo_fecne_config.GeoFence_alert_list_head =
+    geo_fence_config.GeoFence_alert_list_head =
                                                &GeoFence_alert_buffer_list_head;
     init_geo_fence(&geo_fence_config);
 
