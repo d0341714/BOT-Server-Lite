@@ -112,31 +112,7 @@ typedef smac_prefix_list_node *pmac_prefix_list_node;
 
 typedef struct {
 
-    bool is_running;
-
-    /* The RSSI to determine whether the object is too close to the LBeacon in
-       the perimeter or the LBeacon in the fence. */
-    int decision_threshold;
-
-    /* UDP for receiving or sending message from and to the BOT server */
-    sudp_config udp_config;
-
-    /* The port number which use for receiving message from the BOT server */
-    int recv_port;
-
-    /* The port number which is use for the api module to receive message from
-       modules such as Geo-Fencing. */
-    int api_recv_port;
-
-    char server_ip[NETWORK_ADDR_LENGTH];
-
-    char geo_fence_ip[NETWORK_ADDR_LENGTH];
-
-    /* Worker threads for processing data from the BOT server by assign a
-       worker thread. */
-    Threadpool worker_thread;
-
-    Memory_Pool pkt_content_mempool;
+    bool is_initialized;
 
     Memory_Pool tracked_mac_list_head_mempool;
 
@@ -150,16 +126,9 @@ typedef struct {
 
     Memory_Pool geo_fence_mac_prefix_list_node_mempool;
 
-    /* Number of schedule_worker allow to use */
-    int number_worker_threads;
+    BufferListHead *GeoFence_alert_list_head;
 
-    int geo_fence_alert_data_owner_id;
-
-    int geo_fence_data_subscribe_id;
-
-    int tracked_object_data_subscribe_id;
-
-    pthread_t process_api_recv_thread;
+    Memory_Pool *GeoFence_alert_list_node_mempool;
 
     sgeo_fence_list_node geo_fence_list_head;
 
@@ -169,30 +138,16 @@ typedef struct {
 
 typedef sgeo_fence_config *pgeo_fence_config;
 
-
-typedef struct {
-
-    char ip_address[NETWORK_ADDR_LENGTH];
-
-    int port;
-
-    char content[WIFI_MESSAGE_LENGTH];
-
-    int content_size;
-
-    pgeo_fence_config geo_fence_config;
-
-} spkt_content;
-
-typedef spkt_content *ppkt_content;
-
+emum {
+      Perimeter = 1,
+      Fence = 2
+      };
 
 /*
-  geo_fence_routine:
+  init_geo_fence:
 
-     The function is executed by the main thread. Initialize API and sockets for
-     the Geo-Fence system.
-     * Sockets including UDP sender and receiver.
+     The function initialize the mempool and worker threads for the Geo-Fence 
+     system.
 
   Parameters:
 
@@ -209,46 +164,77 @@ typedef spkt_content *ppkt_content;
 
   Return value:
 
-     NULL
+     ErrorCode
 
  */
-void *geo_fence_routine(void *_geo_fence_config);
+ErrorCode init_geo_fence(pgeo_fence_config geo_fence_config);
 
 
 /*
-  process_geo_fence_routine:
+  release_geo_fence:
+
+     The function release the mempool and worker threads for the Geo-Fence 
+     system.
+
+  Parameters:
+
+     _geo_fence_config - The pointer points to the geo_fence_config.
+
+     * Need to set the following member of the geo_fence_config before starting
+       the thread.
+            number_worker_threads
+            geo_fence_ip
+            server_ip
+            recv_port
+            api_recv_port
+            decision_threshold
+
+  Return value:
+
+     ErrorCode
+
+ */
+ErrorCode release_geo_fence(pgeo_fence_config geo_fence_config);
+
+
+/*
+  geo_fence_check_tracked_object_data_routine:
 
      This function is executed by worker threads when processing filtering of
      invalid mac addresses.
 
   Parameters:
 
-     _pkt_content - The pointer points to the pkt content.
+     buffer_node - The pointer points to the buffer node.
 
   Return value:
 
-     None
+     ErrorCode
 
  */
-static void *process_geo_fence_routine(void *_pkt_content);
+ErrorCode geo_fence_check_tracked_object_data_routine(
+                                           pgeo_fence_config geo_fence_config,
+                                           int check_type, 
+                                           BufferNode* buffer_node);
 
 
 /*
-  check_tracking_object_data_routine:
+  check_geo_fence_routine:
 
      This function is executed by worker threads when processing filtering of
      invalid mac addresses.
 
   Parameters:
 
-     _pkt_content - The pointer points to the pkt content.
+     buffer_node - The pointer points to the buffer node.
 
   Return value:
 
-     None
+     ErrorCode
 
  */
-static void *check_tracking_object_data_routine(void *_pkt_content);
+static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config, 
+                                         BufferNode* buffer_node);
 
 
 /*
@@ -259,32 +245,15 @@ static void *check_tracking_object_data_routine(void *_pkt_content);
 
   Parameters:
 
-     _pkt_content - The pointer points to the pkt content.
+     buffer_node - The pointer points to the buffer node.
 
   Return value:
 
-     None
+     ErrorCode
 
  */
-static void *update_geo_fence(void *_pkt_content);
-
-
-/*
-  process_api_recv:
-
-     This function is executed by worker threads when receiving msgs from the
-     BOT server.
-
-  Parameters:
-
-     _geo_fence_config - The pointer points to the geo fence config.
-
-  Return value:
-
-     None
-
- */
-static void *process_api_recv(void *_geo_fence_config);
+ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config, 
+                           BufferNode* buffer_node);
 
 
 /*
