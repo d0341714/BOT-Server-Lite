@@ -972,10 +972,6 @@ void *process_GeoFence_routine(void *_buffer_node)
     {
         case tracked_object_data:
             geo_fence_check_tracked_object_data_routine( &geo_fence_config, 
-                                                        Fence,
-                                                        current_node);
-            geo_fence_check_tracked_object_data_routine( &geo_fence_config, 
-                                                        Perimeter,
                                                         current_node);
             break;
 
