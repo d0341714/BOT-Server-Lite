@@ -151,7 +151,7 @@ enum {
 
   Parameters:
 
-     _geo_fence_config - The pointer points to the geo_fence_config.
+     geo_fence_config - The pointer points to the geo_fence_config.
 
      * Need to set the following member of the geo_fence_config before 
        initializing.
@@ -174,7 +174,7 @@ ErrorCode init_geo_fence(pgeo_fence_config geo_fence_config);
 
   Parameters:
 
-     _geo_fence_config - The pointer points to the geo_fence_config.
+     geo_fence_config - The pointer points to the geo_fence_config.
 
   Return value:
 
@@ -192,6 +192,7 @@ ErrorCode release_geo_fence(pgeo_fence_config geo_fence_config);
 
   Parameters:
 
+     geo_fence_config - The pointer points to the geo fence config.
      buffer_node - The pointer points to the buffer node.
 
   Return value:
@@ -201,7 +202,6 @@ ErrorCode release_geo_fence(pgeo_fence_config geo_fence_config);
  */
 ErrorCode geo_fence_check_tracked_object_data_routine(
                                            pgeo_fence_config geo_fence_config,
-                                           int check_type, 
                                            BufferNode* buffer_node);
 
 
@@ -213,6 +213,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
 
   Parameters:
 
+     geo_fence_config - The pointer points to the geo fence config.
      buffer_node - The pointer points to the buffer node.
 
   Return value:
@@ -232,6 +233,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
 
   Parameters:
 
+     geo_fence_config - The pointer points to the geo fence config.
      buffer_node - The pointer points to the buffer node.
 
   Return value:

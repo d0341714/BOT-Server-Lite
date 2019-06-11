@@ -107,7 +107,6 @@ ErrorCode release_geo_fence(pgeo_fence_config geo_fence_config)
 
 ErrorCode geo_fence_check_tracked_object_data_routine(
                                           pgeo_fence_config geo_fence_config, 
-                                          int check_type, 
                                           BufferNode *buffer_node)
 {
 
@@ -163,115 +162,92 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
                                      geo_fence_list_entry);
 
         current_uuid_list_entry = NULL;
-
-        switch(check_type)
+                
+        list_for_each(current_uuid_list_entry, &current_list_ptr ->
+                      fence_uuid_list_head)
         {
-            case Fence:
-                
-                list_for_each(current_uuid_list_entry, &current_list_ptr ->
-                              fence_uuid_list_head)
-                {
-                    current_uuid_list_ptr = ListEntry(current_uuid_list_entry,
-                                                      suuid_list_node,
-                                                      uuid_list_entry);
+            current_uuid_list_ptr = ListEntry(current_uuid_list_entry,
+                                              suuid_list_node,
+                                              uuid_list_entry);
 
-                    if(strncmp(uuid, current_uuid_list_ptr -> uuid, UUID_LENGTH)
-                       == 0)
-                    {
-                        memset( &temp_buffer_node, 0, sizeof(BufferNode));
+            if(strncmp(uuid, current_uuid_list_ptr -> uuid, UUID_LENGTH) == 0)
+            {
+                memset( &temp_buffer_node, 0, sizeof(BufferNode));
 
-                        temp_buffer_node.pkt_direction = buffer_node -> 
-                                                                pkt_direction;
-                        temp_buffer_node.pkt_type = buffer_node -> pkt_type;
-                        temp_buffer_node.port = buffer_node -> port;
+                temp_buffer_node.pkt_direction = buffer_node -> pkt_direction;
+                temp_buffer_node.pkt_type = buffer_node -> pkt_type;
+                temp_buffer_node.port = buffer_node -> port;
 
-                        sprintf(temp_buffer_node.content, 
-                                "%d;%s;%d;%s", 
-                                current_list_ptr -> id, 
-                                "Fence",
-                                current_uuid_list_ptr -> 
-                                threshold,
-                                buffer_node -> content);
+                sprintf(temp_buffer_node.content, "%d;%s;%d;%s", 
+                                                  current_list_ptr -> id, 
+                                                  "Fence",
+                                                  current_uuid_list_ptr -> 
+                                                  threshold,
+                                                  buffer_node -> content);
 
 #ifdef debugging
-                        printf("[GeoFence] Content: %s\n", 
-                                             temp_buffer_node.content);
+                printf("[GeoFence] Content: %s\n", temp_buffer_node.content);
 #endif
 
-                        temp_buffer_node.content_size = strlen(
-                                             temp_buffer_node.content);
+                temp_buffer_node.content_size = strlen(
+                                                      temp_buffer_node.content);
 
 #ifdef debugging
-                        printf("[GeoFence] Size: %d\n", 
-                                       temp_buffer_node.content_size);
+                printf("[GeoFence] Size: %d\n", temp_buffer_node.content_size);
 #endif
 
-                        memcpy(temp_buffer_node.net_address, 
-                               buffer_node-> net_address,
-                               NETWORK_ADDR_LENGTH);
+                memcpy(temp_buffer_node.net_address, buffer_node-> net_address,
+                       NETWORK_ADDR_LENGTH);
 
-                        check_geo_fence_routine(geo_fence_config, 
-                                                 &temp_buffer_node);
-                    }
-                
-                    break;
-                }
-                break;
-
-            case Perimeter:
-
-                list_for_each(current_uuid_list_entry, &current_list_ptr ->
-                              perimeters_uuid_list_head)
-                {
-                    current_uuid_list_ptr = ListEntry(current_uuid_list_entry,
-                                                      suuid_list_node,
-                                                      uuid_list_entry);
-
-                    if(strncmp(uuid, current_uuid_list_ptr -> uuid, UUID_LENGTH)
-                       ==  0)
-                    {
-                        memset( &temp_buffer_node, 0, sizeof(BufferNode));
-
-                        temp_buffer_node.pkt_direction = buffer_node -> 
-                                                                pkt_direction;
-                        temp_buffer_node.pkt_type = buffer_node -> pkt_type;
-                        temp_buffer_node.port = buffer_node -> port;
-
-                        sprintf(temp_buffer_node.content, 
-                                "%d;%s;%d;%s", 
-                                current_list_ptr -> id, 
-                                "Perimeter",
-                                current_uuid_list_ptr -> 
-                                threshold,
-                                buffer_node -> content);
-
-#ifdef debugging
-                        printf("[GeoFence] Content: %s\n", 
-                                             temp_buffer_node.content);
-#endif
-
-                        temp_buffer_node.content_size = strlen(
-                                             temp_buffer_node.content);
-
-#ifdef debugging
-                        printf("[GeoFence] Size: %d\n", 
-                                       temp_buffer_node.content_size);
-#endif
-
-                        memcpy(temp_buffer_node.net_address, 
-                               buffer_node-> net_address,
-                               NETWORK_ADDR_LENGTH);
-
-                        check_geo_fence_routine(geo_fence_config, 
-                                                 &temp_buffer_node);
-                    }
-                    
-                    break;
-                }
+                check_geo_fence_routine(geo_fence_config, &temp_buffer_node);
 
                 break;
+            }
         }
 
+        current_uuid_list_entry = NULL;
+
+        list_for_each(current_uuid_list_entry, &current_list_ptr ->
+                      perimeters_uuid_list_head)
+        {
+            current_uuid_list_ptr = ListEntry(current_uuid_list_entry,
+                                              suuid_list_node,
+                                              uuid_list_entry);
+
+            if(strncmp(uuid, current_uuid_list_ptr -> uuid, UUID_LENGTH) ==  0)
+            {
+                memset( &temp_buffer_node, 0, sizeof(BufferNode));
+
+                temp_buffer_node.pkt_direction = buffer_node -> pkt_direction;
+                temp_buffer_node.pkt_type = buffer_node -> pkt_type;
+                temp_buffer_node.port = buffer_node -> port;
+
+                sprintf(temp_buffer_node.content, "%d;%s;%d;%s", 
+                                                  current_list_ptr -> id, 
+                                                  "Perimeter",
+                                                  current_uuid_list_ptr -> 
+                                                  threshold,
+                                                  buffer_node -> content);
+
+#ifdef debugging
+                printf("[GeoFence] Content: %s\n", temp_buffer_node.content);
+#endif
+
+                temp_buffer_node.content_size = strlen(
+                                                      temp_buffer_node.content);
+
+#ifdef debugging
+                printf("[GeoFence] Size: %d\n", temp_buffer_node.content_size);
+#endif
+
+                memcpy(temp_buffer_node.net_address, buffer_node -> net_address,
+                       NETWORK_ADDR_LENGTH);
+
+                check_geo_fence_routine(geo_fence_config, &temp_buffer_node);
+
+                break;
+            }
+        }
     }
 
     pthread_mutex_unlock( &geo_fence_config -> geo_fence_list_lock);
