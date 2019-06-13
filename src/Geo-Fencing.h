@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190606
+     1.0, 20190613
 
   Abstract:
 
@@ -52,19 +52,26 @@
 
 typedef struct {
 
-    int id;
+   /* The id of the geo fence record in the database */
+   int id;
 
-    char name[WIFI_MESSAGE_LENGTH];
+   /* The name of the geo fence record in the database */
+   char name[WIFI_MESSAGE_LENGTH];
 
-    pthread_mutex_t list_lock;
+   /* The list_lock when read or modify the geo fence */
+   pthread_mutex_t list_lock;
 
-    List_Entry perimeters_uuid_list_head;
+   /* The list head records the perimeter LBeacon */
+   List_Entry perimeters_uuid_list_head;
 
-    List_Entry fence_uuid_list_head;
+   /* The list head records the fence LBeacon */
+   List_Entry fence_uuid_list_head;
 
-    List_Entry mac_prefix_list_head;
+   /* The list head records the prefix of the mac address to be monitored */
+   List_Entry mac_prefix_list_head;
 
-    List_Entry geo_fence_list_entry;
+   /* The list head records the list of the geo fence */
+   List_Entry geo_fence_list_entry;
 
 } sgeo_fence_list_node;
 
@@ -73,11 +80,15 @@ typedef sgeo_fence_list_node *pgeo_fence_list_node;
 
 typedef struct {
 
-    char uuid[UUID_LENGTH];
+   /* The UUID of the LBeacon */
+   char uuid[UUID_LENGTH];
 
-    int threshold;
-
-    List_Entry uuid_list_entry;
+   /* The threshold of the LBeacon to check whether the object is in this 
+      LBeacon */
+   int threshold;
+    
+   /* The entry of the uuid list */
+   List_Entry uuid_list_entry;
 
 } suuid_list_node;
 
@@ -86,13 +97,13 @@ typedef suuid_list_node *puuid_list_node;
 
 typedef struct {
 
-    char mac_address[LENGTH_OF_MAC_ADDRESS];
+   char mac_address[LENGTH_OF_MAC_ADDRESS];
 
-    /* The entry of the mac list */
-    List_Entry mac_list_entry;
+   /* The entry of the mac list */
+   List_Entry mac_list_entry;
 
-    /* The entry of the rssi list */
-    List_Entry rssi_list_entry;
+   /* The entry of the rssi list */
+   List_Entry rssi_list_entry;
 
 } stracked_mac_list_node;
 
@@ -101,9 +112,11 @@ typedef stracked_mac_list_node *ptracked_mac_list_node;
 
 typedef struct {
 
-    char mac_prefix[LENGTH_OF_MAC_ADDRESS];
+   /* The prefix of the mac address */
+   char mac_prefix[LENGTH_OF_MAC_ADDRESS];
 
-    List_Entry mac_prefix_list_entry;
+   /* The entry of the mac prefix list */
+   List_Entry mac_prefix_list_entry;
 
 } smac_prefix_list_node;
 
@@ -112,26 +125,29 @@ typedef smac_prefix_list_node *pmac_prefix_list_node;
 
 typedef struct {
 
-    bool is_initialized;
+   /* The flag to check the geo fence config is initialized */
+   bool is_initialized;
 
-    Memory_Pool mempool;
+   /* The mempool for geo fence */
+   Memory_Pool mempool;
 
-    BufferListHead *GeoFence_alert_list_head;
+   /* The pointer points to the GeoFence_alert_list_head is used to storing  
+    * the alert message */
+   BufferListHead *GeoFence_alert_list_head;
 
-    Memory_Pool *GeoFence_alert_list_node_mempool;
+   /* The pointer points to the mempool for geo fence alert message
+    * This mempool should be manage by the main thread*/
+   Memory_Pool *GeoFence_alert_list_node_mempool;
 
-    sgeo_fence_list_node geo_fence_list_head;
+   /* The list head of the geo gence list */
+   sgeo_fence_list_node geo_fence_list_head;
 
-    pthread_mutex_t geo_fence_list_lock;
+   /* The list lock when the geo fence list is in processing */
+   pthread_mutex_t geo_fence_list_lock;
 
 } sgeo_fence_config;
 
 typedef sgeo_fence_config *pgeo_fence_config;
-
-enum {
-      Perimeter = 1,
-      Fence = 2
-      };
 
 /*
   init_geo_fence:
@@ -177,8 +193,8 @@ ErrorCode release_geo_fence(pgeo_fence_config geo_fence_config);
 /*
   geo_fence_check_tracked_object_data_routine:
 
-     This function is executed by worker threads when processing filtering of
-     invalid mac addresses.
+     This function is executed by worker threads is to filter the tracked 
+     object data if the UUID is in monitor.
 
   Parameters:
 
@@ -198,8 +214,8 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
 /*
   check_geo_fence_routine:
 
-     This function is executed by worker threads when processing filtering of
-     invalid mac addresses.
+     This function is to filter  mac addresses when the object is not allow to 
+     be in the fence or in the perimeter.
 
   Parameters:
 

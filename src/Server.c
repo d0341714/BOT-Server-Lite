@@ -348,26 +348,18 @@ int main(int argc, char **argv)
 
             SQL_get_geo_fence(Server_db, content);
 
-            printf("update_geo_fence: [%s]\n", content);
-
-            current_node -> pkt_type = GeoFence_data;
-            
-            printf("update_geo_fence insert to tail\n");
+            current_node -> pkt_type = GeoFence_data;    
             current_node -> pkt_direction = from_server;
             
-            printf("update_geo_fence insert to tail\n");
             memcpy(current_node -> content, content, strlen(content));
+            
             //current_node->net_address
             //current_node->port
-
-            printf("update_geo_fence insert to tail\n");
 
             pthread_mutex_lock( &GeoFence_receive_buffer_list_head.list_lock);
             insert_list_tail( &current_node -> buffer_entry,
                                   &GeoFence_receive_buffer_list_head.list_head);
             pthread_mutex_unlock( &GeoFence_receive_buffer_list_head.list_lock);
-
-            printf("update_geo_fence insert to tail success\n");
 
             last_update_geo_fence = get_system_time();
         }

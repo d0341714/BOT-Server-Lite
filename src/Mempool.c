@@ -187,6 +187,8 @@ void *mp_alloc(Memory_Pool *mp){
 
     pthread_mutex_unlock( &mp->mem_lock);
 
+    memset(temp, 0, mp->size);
+
     /* return the first address */
     return temp;
 
