@@ -149,11 +149,9 @@ typedef struct thpool_{
 
     /* Memory pools for the allocation of all variable in the thpool
        including thread, bsem and job */
-    Memory_Pool thread_mempool;
+    Memory_Pool mempool;
 
-    Memory_Pool job_mempool;
-
-    Memory_Pool bsem_mempool;
+    int mempool_size;
 
 } thpool_;
 

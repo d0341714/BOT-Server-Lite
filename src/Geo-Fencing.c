@@ -423,6 +423,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
                     {
                         GeoFence_alert_buffer_node = mp_alloc(geo_fence_config 
                                            -> GeoFence_alert_list_node_mempool);
+                        Sleep(WAITING_TIME);
                     }
 
                     memset(GeoFence_alert_buffer_node, 0, sizeof(BufferNode));
@@ -566,17 +567,18 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
 
         if(geo_fence_list_node == NULL)
         {
-            geo_fence_list_node = mp_alloc( &geo_fence_config ->
+            while(geo_fence_list_node == NULL){
+                geo_fence_list_node = mp_alloc( &geo_fence_config ->
                                            geo_fence_list_node_mempool);
+                Sleep(WAITING_TIME);
+            }
 
-            if(geo_fence_list_node != NULL)
-            {
-                init_geo_fence_list_node(geo_fence_list_node);
+            init_geo_fence_list_node(geo_fence_list_node);
 
 #ifdef debugging
-                printf("[GeoFence] Not Exists\n");
+            printf("[GeoFence] Not Exists\n");
 #endif
-            }
+
         }
         else
         {
@@ -641,30 +643,29 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
 #ifdef debugging
             printf("[GeoFence] Threshold: %d\n", threshold);
 #endif
+            while(uuid_list_node == NULL){
+                uuid_list_node = mp_alloc( &geo_fence_config ->
+                                                          uuid_list_node_mempool);
+                Sleep(WAITING_TIME);
+            }
 
-            uuid_list_node = mp_alloc( &geo_fence_config ->
-                                      uuid_list_node_mempool);
-            if(uuid_list_node != NULL)
-            {
-                init_uuid_list_node(uuid_list_node);
+            init_uuid_list_node(uuid_list_node);
 
-                memcpy(uuid_list_node -> uuid, uuid, UUID_LENGTH);
+            memcpy(uuid_list_node -> uuid, uuid, UUID_LENGTH);
 
-#ifdef debugging
-                printf("[GeoFence] uuid_list_node -> uuid: %s\n", 
+#ifdef debugging 
+            printf("[GeoFence] uuid_list_node -> uuid: %s\n", 
                                                      uuid_list_node -> uuid);
 #endif
-                uuid_list_node -> threshold = threshold;
+            uuid_list_node -> threshold = threshold;
 
 #ifdef debugging
-                printf("[GeoFence] uuid_list_node -> threshold: %d\n",
+            printf("[GeoFence] uuid_list_node -> threshold: %d\n",
                                                 uuid_list_node -> threshold);
 #endif
 
-                insert_list_tail( &uuid_list_node -> uuid_list_entry,
-                                  &geo_fence_list_node -> 
-                                 perimeters_uuid_list_head);
-            }
+            insert_list_tail( &uuid_list_node -> uuid_list_entry,
+                              &geo_fence_list_node -> perimeters_uuid_list_head);
         }
 
         current_ptr = NULL;
@@ -698,20 +699,20 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
 #ifdef debugging
             printf("[GeoFence] Threshold: %d\n", threshold);
 #endif
-
-            uuid_list_node = mp_alloc( &geo_fence_config ->
-                                      uuid_list_node_mempool);
-            if(uuid_list_node != NULL)
-            {
-                init_uuid_list_node(uuid_list_node);
-
-                memcpy(uuid_list_node -> uuid, uuid, UUID_LENGTH);
-
-                uuid_list_node -> threshold = threshold;
-
-                insert_list_tail( &uuid_list_node -> uuid_list_entry,
-                                  &geo_fence_list_node -> fence_uuid_list_head);
+            while(uuid_list_node == NULL){
+                uuid_list_node = mp_alloc( &geo_fence_config ->
+                                                          uuid_list_node_mempool);
+                Sleep(WAITING_TIME);
             }
+                
+            init_uuid_list_node(uuid_list_node);
+
+            memcpy(uuid_list_node -> uuid, uuid, UUID_LENGTH);
+
+            uuid_list_node -> threshold = threshold;
+
+            insert_list_tail( &uuid_list_node -> uuid_list_entry,
+                                  &geo_fence_list_node -> fence_uuid_list_head);
         }
 
         current_ptr = NULL;
@@ -732,9 +733,12 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
             mac_prefix_node = NULL;
 
             current_ptr = strtok_save(NULL, DELIMITER_COMMA, &save_current_ptr);
-
-            mac_prefix_node = mp_alloc( &geo_fence_config ->
-                                       mac_prefix_list_node_mempool);
+            
+            while(mac_prefix_node == NULL){
+                mac_prefix_node = mp_alloc( &geo_fence_config ->
+                                                  mac_prefix_list_node_mempool);
+                Sleep(WAITING_TIME);
+            }
             if(mac_prefix_node != NULL)
             {
                 init_mac_prefix_node(mac_prefix_node);

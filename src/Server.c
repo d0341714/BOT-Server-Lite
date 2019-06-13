@@ -340,7 +340,11 @@ int main(int argc, char **argv)
         if(current_time - last_update_geo_fence > 
            period_between_update_geo_fence)
         {
-            current_node = mp_alloc( &node_mempool);
+
+            while(current_node == NULL){
+                current_node = mp_alloc( &node_mempool);
+                Sleep(WAITING_TIME);
+            }
 
             SQL_get_geo_fence(Server_db, content);
 
@@ -1176,6 +1180,7 @@ void *process_wifi_receive()
 
         while( new_node == NULL){
             new_node = mp_alloc( &node_mempool);
+            Sleep(WAITING_TIME);
         }
 
 
@@ -1254,6 +1259,8 @@ void *process_wifi_receive()
                         forward_node = NULL;
                         while(forward_node == NULL){
                             forward_node = mp_alloc( &node_mempool);
+                            Sleep(WAITING_TIME);
+
                         }
                         memcpy(forward_node, new_node, sizeof(BufferNode));
 
