@@ -73,7 +73,7 @@ struct thpool_ *thpool_init(int num_threads){
 
     thpool_p->threads_keepalive = 1;
 
-    thpool_p->mempool_size = sizeof(thpool_) * 1.5;
+    thpool_p->mempool_size = 512;
 
     /* Initialize the memory pool */
     if(mp_init(&thpool_p->mempool, thpool_p->mempool_size,
@@ -262,7 +262,7 @@ static void *thread_do(thread *thread_p){
                 arg_buff  = job_p -> arg;
 
                 func_buff(arg_buff);
-                mp_free(&thread_p->thpool_p->job_mempool ,job_p);
+                mp_free(&thread_p->thpool_p->mempool ,job_p);
             }
 
             pthread_mutex_lock(&thpool_p -> thcount_lock);

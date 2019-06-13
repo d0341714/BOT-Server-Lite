@@ -50,21 +50,8 @@ ErrorCode init_geo_fence(pgeo_fence_config geo_fence_config)
     printf("[GeoFence] Allicating Memory\n");
 #endif
 
-    if(mp_init( &(geo_fence_config -> tracked_mac_list_head_mempool),
-       sizeof(smac_prefix_list_node), SLOTS_IN_MEM_POOL) !=
+    if(mp_init( &(geo_fence_config -> mempool), 512, SLOTS_IN_MEM_POOL) !=
               MEMORY_POOL_SUCCESS)
-        return E_MALLOC;
-
-    if(mp_init( &(geo_fence_config -> geo_fence_list_node_mempool),
-       sizeof(sgeo_fence_list_node), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
-        return E_MALLOC;
-
-    if(mp_init( &(geo_fence_config -> uuid_list_node_mempool),
-       sizeof(suuid_list_node), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
-        return E_MALLOC;
-
-    if(mp_init( &(geo_fence_config -> mac_prefix_list_node_mempool),
-       sizeof(smac_prefix_list_node), SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
         return E_MALLOC;
 
     init_entry( &(geo_fence_config -> geo_fence_list_head.geo_fence_list_entry))
@@ -89,17 +76,7 @@ ErrorCode release_geo_fence(pgeo_fence_config geo_fence_config)
 
     pthread_mutex_destroy( &geo_fence_config -> geo_fence_list_lock);
 
-    mp_destroy( &geo_fence_config -> tracked_mac_list_head_mempool);
-
-    mp_destroy( &geo_fence_config -> rssi_list_node_mempool);
-
-    mp_destroy( &geo_fence_config -> geo_fence_list_node_mempool);
-
-    mp_destroy( &geo_fence_config -> uuid_list_node_mempool);
-
-    mp_destroy( &geo_fence_config -> mac_prefix_list_node_mempool);
-
-    mp_destroy( &geo_fence_config -> geo_fence_mac_prefix_list_node_mempool);
+    mp_destroy( &geo_fence_config -> mempool);
 
     return WORK_SUCCESSFULLY;
 }
@@ -422,7 +399,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
                     while(GeoFence_alert_buffer_node == NULL)
                     {
                         GeoFence_alert_buffer_node = mp_alloc(geo_fence_config 
-                                           -> GeoFence_alert_list_node_mempool);
+                                                              -> mempool);
                         Sleep(WAITING_TIME);
                     }
 
@@ -492,8 +469,6 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
         return E_API_INITIALLZATION;
     }
 
-    pthread_mutex_lock( &geo_fence_config -> geo_fence_list_lock);
-
     number_of_geo_fence = -1;
     current_ptr = NULL;
     saveptr = NULL;
@@ -542,6 +517,8 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
         printf("[GeoFence] Current Proceccing Geo Fence NAME: %s\n", name);
 #endif
 
+        pthread_mutex_lock( &geo_fence_config -> geo_fence_list_lock);
+
         list_for_each(current_list_entry, &geo_fence_config ->
                                       geo_fence_list_head.geo_fence_list_entry)
         {
@@ -568,8 +545,7 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
         if(geo_fence_list_node == NULL)
         {
             while(geo_fence_list_node == NULL){
-                geo_fence_list_node = mp_alloc( &geo_fence_config ->
-                                           geo_fence_list_node_mempool);
+                geo_fence_list_node = mp_alloc( &geo_fence_config -> mempool);
                 Sleep(WAITING_TIME);
             }
 
@@ -590,7 +566,7 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
         }
 
         perimeters = strtok_save(NULL, DELIMITER_SEMICOLON,
-                              &saveptr);
+                                 &saveptr);
 
         geo_fence_list_node->id = geo_fence_id;
 
@@ -644,8 +620,7 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
             printf("[GeoFence] Threshold: %d\n", threshold);
 #endif
             while(uuid_list_node == NULL){
-                uuid_list_node = mp_alloc( &geo_fence_config ->
-                                                          uuid_list_node_mempool);
+                uuid_list_node = mp_alloc( &geo_fence_config -> mempool);
                 Sleep(WAITING_TIME);
             }
 
@@ -700,8 +675,7 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
             printf("[GeoFence] Threshold: %d\n", threshold);
 #endif
             while(uuid_list_node == NULL){
-                uuid_list_node = mp_alloc( &geo_fence_config ->
-                                                          uuid_list_node_mempool);
+                uuid_list_node = mp_alloc( &geo_fence_config -> mempool);
                 Sleep(WAITING_TIME);
             }
                 
@@ -735,8 +709,7 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
             current_ptr = strtok_save(NULL, DELIMITER_COMMA, &save_current_ptr);
             
             while(mac_prefix_node == NULL){
-                mac_prefix_node = mp_alloc( &geo_fence_config ->
-                                                  mac_prefix_list_node_mempool);
+                mac_prefix_node = mp_alloc( &geo_fence_config -> mempool);
                 Sleep(WAITING_TIME);
             }
             if(mac_prefix_node != NULL)
@@ -758,9 +731,10 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
         insert_list_tail( &geo_fence_list_node -> geo_fence_list_entry,
                           &geo_fence_list_head -> geo_fence_list_entry);
 
-    }
+        
+        pthread_mutex_unlock( &geo_fence_config -> geo_fence_list_lock);
 
-    pthread_mutex_unlock( &geo_fence_config -> geo_fence_list_lock);
+    }
 
     return WORK_SUCCESSFULLY;
 }
@@ -819,8 +793,7 @@ static ErrorCode free_geo_fence_list_node(
 
         free_uuid_list_node(current_uuid_list_node);
 
-        mp_free( &geo_fence_config -> uuid_list_node_mempool,
-                current_uuid_list_node);
+        mp_free( &geo_fence_config -> mempool, current_uuid_list_node);
 
     }
 
@@ -834,8 +807,7 @@ static ErrorCode free_geo_fence_list_node(
 
         free_uuid_list_node(current_uuid_list_node);
 
-        mp_free( &geo_fence_config -> uuid_list_node_mempool,
-                current_uuid_list_node);
+        mp_free( &geo_fence_config -> mempool, current_uuid_list_node);
 
     }
 
@@ -849,8 +821,7 @@ static ErrorCode free_geo_fence_list_node(
 
         free_mac_prefix_node(current_mac_prefix_list_node);
 
-        mp_free( &geo_fence_config -> mac_prefix_list_node_mempool,
-                current_mac_prefix_list_node);
+        mp_free( &geo_fence_config -> mempool, current_mac_prefix_list_node);
 
     }
 

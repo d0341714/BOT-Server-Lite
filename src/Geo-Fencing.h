@@ -114,17 +114,7 @@ typedef struct {
 
     bool is_initialized;
 
-    Memory_Pool tracked_mac_list_head_mempool;
-
-    Memory_Pool rssi_list_node_mempool;
-
-    Memory_Pool geo_fence_list_node_mempool;
-
-    Memory_Pool uuid_list_node_mempool;
-
-    Memory_Pool mac_prefix_list_node_mempool;
-
-    Memory_Pool geo_fence_mac_prefix_list_node_mempool;
+    Memory_Pool mempool;
 
     BufferListHead *GeoFence_alert_list_head;
 
