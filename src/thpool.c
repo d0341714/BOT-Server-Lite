@@ -73,7 +73,7 @@ struct thpool_ *thpool_init(int num_threads){
 
     thpool_p->threads_keepalive = 1;
 
-    thpool_p->mempool_size = 512;
+    thpool_p->mempool_size = SIZE_OF_SLOT;
 
     /* Initialize the memory pool */
     if(mp_init(&thpool_p->mempool, thpool_p->mempool_size,
