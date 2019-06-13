@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190514
+     1.0, 20190613
 
   Abstract:
 
@@ -378,8 +378,6 @@ ErrorCode SQL_update_object_tracking_data(void *db,
             number_of_geo_fence;id;name;number_of_perimeters,perimeters_lbeacon1
             ,throshold1, ...;number_of_fence,fence_lbeacon1,throshold1,...;
             number_of_mac_prefix,mac_prefix1,...;
-
-     buf_len - Length in number of bytes of buf
 
   Return Value:
 
