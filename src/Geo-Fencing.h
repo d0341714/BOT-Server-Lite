@@ -60,15 +60,9 @@ typedef struct {
 
    /* The list_lock when read or modify the geo fence */
    pthread_mutex_t list_lock;
-
-   /* The list head records the perimeter LBeacon */
-   List_Entry perimeters_uuid_list_head;
-
-   /* The list head records the fence LBeacon */
-   List_Entry fence_uuid_list_head;
-
-   /* The list head records the prefix of the mac address to be monitored */
-   List_Entry mac_prefix_list_head;
+    
+   /* A string stored all Fences, Perimeters and Mac_pre */
+   char geo_fence_content[WIFI_MESSAGE_LENGTH];
 
    /* The list head records the list of the geo fence */
    List_Entry geo_fence_list_entry;
@@ -80,52 +74,7 @@ typedef sgeo_fence_list_node *pgeo_fence_list_node;
 
 typedef struct {
 
-   /* The UUID of the LBeacon */
-   char uuid[UUID_LENGTH];
-
-   /* The threshold of the LBeacon to check whether the object is in this 
-      LBeacon */
-   int threshold;
-    
-   /* The entry of the uuid list */
-   List_Entry uuid_list_entry;
-
-} suuid_list_node;
-
-typedef suuid_list_node *puuid_list_node;
-
-
-typedef struct {
-
-   char mac_address[LENGTH_OF_MAC_ADDRESS];
-
-   /* The entry of the mac list */
-   List_Entry mac_list_entry;
-
-   /* The entry of the rssi list */
-   List_Entry rssi_list_entry;
-
-} stracked_mac_list_node;
-
-typedef stracked_mac_list_node *ptracked_mac_list_node;
-
-
-typedef struct {
-
-   /* The prefix of the mac address */
-   char mac_prefix[LENGTH_OF_MAC_ADDRESS];
-
-   /* The entry of the mac prefix list */
-   List_Entry mac_prefix_list_entry;
-
-} smac_prefix_list_node;
-
-typedef smac_prefix_list_node *pmac_prefix_list_node;
-
-
-typedef struct {
-
-   /* The flag to check the geo fence config is initialized */
+   /* The flag to check whether the GeoFence is initialized */
    bool is_initialized;
 
    /* The mempool for geo fence */
@@ -148,6 +97,7 @@ typedef struct {
 } sgeo_fence_config;
 
 typedef sgeo_fence_config *pgeo_fence_config;
+
 
 /*
   init_geo_fence:
@@ -193,8 +143,8 @@ ErrorCode release_geo_fence(pgeo_fence_config geo_fence_config);
 /*
   geo_fence_check_tracked_object_data_routine:
 
-     This function is executed by worker threads is to filter the tracked 
-     object data if the UUID is in monitor.
+     This function is executed by worker threads when processing filtering of
+     invalid mac addresses.
 
   Parameters:
 
@@ -214,8 +164,8 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
 /*
   check_geo_fence_routine:
 
-     This function is to filter  mac addresses when the object is not allow to 
-     be in the fence or in the perimeter.
+     This function is executed by worker threads when processing filtering of
+     invalid mac addresses.
 
   Parameters:
 
@@ -291,116 +241,6 @@ static ErrorCode init_geo_fence_list_node(
 static ErrorCode free_geo_fence_list_node(
                                       pgeo_fence_list_node geo_fence_list_node,
                                       pgeo_fence_config geo_fence_config);
-
-
-/*
-  init_tracked_mac_list_node:
-
-     This function initialize the tracked mac list head by initializing mac list
-     entry and lbeacon list head;
-
-  Parameters:
-
-     tracked_mac_list_head - The pointer points to the tracked mac list head.
-
-  Return value:
-
-     ErrorCode
-
- */
-static ErrorCode init_tracked_mac_list_node(ptracked_mac_list_node
-                                                         tracked_mac_list_head);
-
-
-/*
-  free_tracked_mac_list_node:
-
-     This function free the tracked mac list head by initializing mac list
-     entry and lbeacon list head;
-
-  Parameters:
-
-     tracked_mac_list_head - The pointer points to the tracked mac list head.
-
-  Return value:
-
-     ErrorCode
-
- */
-static ErrorCode free_tracked_mac_list_node(
-                                  ptracked_mac_list_node tracked_mac_list_head);
-
-
-/*
-  init_uuid_list_node:
-
-     This function initialize uuid list node by initializing uuid list entry and
-     geo fence uuid list entry.
-
-  Parameters:
-
-     uuid_list_node - The pointer points to the uuid list node.
-
-  Return value:
-
-     ErrorCode
-
- */
-static ErrorCode init_uuid_list_node(puuid_list_node uuid_list_node);
-
-
-/*
-  free_uuid_list_node:
-
-     This function free the uuid list node by initializing uuid list entry and
-     geo fence uuid list entry.
-
-  Parameters:
-
-     uuid_list_node - The pointer points to the uuid list node.
-
-  Return value:
-
-     ErrorCode
-
- */
-static ErrorCode free_uuid_list_node(puuid_list_node uuid_list_node);
-
-
-/*
-  init_mac_prefix_node:
-
-     This function initialize mac prefix node by initializing mac prefix list
-     entry and geo fence mac prefix list node.
-
-  Parameters:
-
-     geo_fence_list_node - The pointer points to the geo fence list node.
-
-  Return value:
-
-     ErrorCode
-
- */
-static ErrorCode init_mac_prefix_node(pmac_prefix_list_node mac_prefix_node);
-
-
-/*
-  free_mac_prefix_node:
-
-     This function free the mac prefix node by initializing mac prefix list
-     entry and geo fence mac prefix list node.
-
-  Parameters:
-
-     geo_fence_list_node - The pointer points to the geo fence list node.
-
-  Return value:
-
-     ErrorCode
-
- */
-static ErrorCode free_mac_prefix_node(pmac_prefix_list_node mac_prefix_node);
 
 
 #endif
