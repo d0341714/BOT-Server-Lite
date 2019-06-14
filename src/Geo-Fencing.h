@@ -62,7 +62,11 @@ typedef struct {
    pthread_mutex_t list_lock;
     
    /* A string stored all Fences, Perimeters and Mac_pre */
-   char geo_fence_content[WIFI_MESSAGE_LENGTH];
+   char fences[WIFI_MESSAGE_LENGTH];
+
+   char perimeters[WIFI_MESSAGE_LENGTH];
+
+   char mac_prefix[WIFI_MESSAGE_LENGTH];
 
    /* The list head records the list of the geo fence */
    List_Entry geo_fence_list_entry;
