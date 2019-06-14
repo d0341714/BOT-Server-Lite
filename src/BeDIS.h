@@ -537,7 +537,8 @@ ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
 /*
   strtok_save:
      
-     This function breaks string str into a series of tokens using the delimiter delim.
+     This function breaks string str into a series of tokens using the 
+     delimiter delim.
      
      Windows uses strtok_s()
 

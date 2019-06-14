@@ -860,7 +860,8 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
                                                 PQgetvalue(res, current_row, 1),
                                                 PQgetvalue(res, current_row, 2),
                                                 PQgetvalue(res, current_row, 3),
-                                                PQgetvalue(res, current_row, 4));
+                                                PQgetvalue(res, current_row, 4))
+                                                ;
             else
                 sprintf(buf, "%d;%s;%s;%s;%s;%s;",
                                                 rows,
@@ -921,8 +922,9 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
 
     memcpy(content_temp, buf, buf_len);
 
-    number_of_geo_fence_alert_str = strtok_save(content_temp, DELIMITER_SEMICOLON,
-                                              &saved_ptr);
+    number_of_geo_fence_alert_str = strtok_save(content_temp, 
+                                                DELIMITER_SEMICOLON,
+                                                 &saved_ptr);
     sscanf(number_of_geo_fence_alert_str, "%d", &number_of_geo_fence_alert);
 
     SQL_begin_transaction(db);

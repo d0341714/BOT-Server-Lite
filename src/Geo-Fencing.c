@@ -56,7 +56,8 @@ ErrorCode init_geo_fence(pgeo_fence_config geo_fence_config)
                SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
         return E_MALLOC;
 
-    init_entry( &(geo_fence_config -> geo_fence_list_head.geo_fence_list_entry));
+    init_entry( &(geo_fence_config -> geo_fence_list_head.geo_fence_list_entry))
+    ;
 
 #ifdef debugging
     printf("[GeoFence] Allicating Memory success\n");
@@ -174,12 +175,14 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
             geo_fence_uuid = NULL;
             threshold_str = NULL;
 
-            geo_fence_uuid = strtok_save(NULL, DELIMITER_COMMA, &save_current_ptr);
+            geo_fence_uuid = strtok_save(NULL, DELIMITER_COMMA, 
+                                          &save_current_ptr);
 
 #ifdef debugging
             printf("[GeoFence] UUID: %s\n", geo_fence_uuid);
 #endif
-            threshold_str = strtok_save(NULL, DELIMITER_COMMA, &save_current_ptr);
+            threshold_str = strtok_save(NULL, DELIMITER_COMMA,
+                                         &save_current_ptr);
 
             sscanf(threshold_str, "%d", &threshold);
 
@@ -229,7 +232,8 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
         current_ptr = NULL;
         save_current_ptr = NULL;
 
-        current_ptr = strtok_save(perimeter, DELIMITER_COMMA, &save_current_ptr);
+        current_ptr = strtok_save(perimeter, DELIMITER_COMMA, 
+                                   &save_current_ptr);
         sscanf(current_ptr, "%d", &number_of_perimeters);
 
 #ifdef debugging
@@ -244,12 +248,14 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
             geo_fence_uuid = NULL;
             threshold_str = NULL;
 
-            geo_fence_uuid = strtok_save(NULL, DELIMITER_COMMA, &save_current_ptr);
+            geo_fence_uuid = strtok_save(NULL, DELIMITER_COMMA,
+                                          &save_current_ptr);
 
 #ifdef debugging
             printf("[GeoFence] UUID: %s\n", uuid);
 #endif
-            threshold_str = strtok_save(NULL, DELIMITER_COMMA, &save_current_ptr);
+            threshold_str = strtok_save(NULL, DELIMITER_COMMA,
+                                         &save_current_ptr);
 
             sscanf(threshold_str, "%d", &threshold);
 
@@ -400,7 +406,8 @@ ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
         while(number_of_objects --)
         {
             /* The part of the format of the tracked object data:
-             * mac_address;initial_timestamp;final_timestamp;rssi;panic_button; */
+             * mac_address;initial_timestamp;final_timestamp;rssi;panic_button; 
+             */
 
             mac_address = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
@@ -420,17 +427,22 @@ ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
             mac_prefix_save_ptr = NULL;
 
             memset(content_for_mac_prefix, 0, WIFI_MESSAGE_LENGTH);
-            memcpy(content_for_mac_prefix, mac_prefix, strlen(mac_prefix) * sizeof(char));
+            memcpy(content_for_mac_prefix, mac_prefix, strlen(mac_prefix) * 
+                   sizeof(char));
 
-            current_mac_prefix = strtok_save(content_for_mac_prefix, DELIMITER_COMMA, &mac_prefix_save_ptr);
+            current_mac_prefix = strtok_save(content_for_mac_prefix, 
+                                             DELIMITER_COMMA, 
+                                              &mac_prefix_save_ptr);
 
             sscanf(current_mac_prefix, "%d", &number_of_mac_prefix);
 
             while(number_of_mac_prefix --)
             {
-                current_mac_prefix = strtok_save(NULL, DELIMITER_COMMA, &mac_prefix_save_ptr);
+                current_mac_prefix = strtok_save(NULL, DELIMITER_COMMA,
+                                                  &mac_prefix_save_ptr);
 
-                if((strncmp_caseinsensitive(mac_address, current_mac_prefix, strlen(current_mac_prefix)) == 0)
+                if((strncmp_caseinsensitive(mac_address, current_mac_prefix, 
+                                            strlen(current_mac_prefix)) == 0)
                                          && rssi >= threshold)
                 {
 
@@ -449,8 +461,8 @@ ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
 
                     while(GeoFence_alert_buffer_node == NULL)
                     {
-                        GeoFence_alert_buffer_node = mp_alloc(geo_fence_config 
-                                                              -> GeoFence_alert_list_node_mempool);
+                        GeoFence_alert_buffer_node = mp_alloc(
+                        geo_fence_config -> GeoFence_alert_list_node_mempool);
                         Sleep(WAITING_TIME);
                     }
 

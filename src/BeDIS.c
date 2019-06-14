@@ -157,7 +157,8 @@ int strncmp_caseinsensitive(char const *str_a, char const *str_b, size_t len){
 
 	for(index = 0; index < len; index++){
 		
-		diff = tolower((unsigned char)str_a[index]) - tolower((unsigned char)str_b[index]);
+		diff = tolower((unsigned char)str_a[index]) - 
+               tolower((unsigned char)str_b[index]);
 		if(0 != diff){
 			return -1;
 		}
