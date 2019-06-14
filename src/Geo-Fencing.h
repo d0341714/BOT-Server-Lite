@@ -174,6 +174,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
   Parameters:
 
      geo_fence_config - The pointer points to the geo fence config.
+     geo_fence_list_ptr - The pointer points to the geo fence list node.
      buffer_node - The pointer points to the buffer node.
 
   Return value:
@@ -181,8 +182,9 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
      ErrorCode
 
  */
-static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config, 
-                                         BufferNode* buffer_node);
+ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config, 
+                                  pgeo_fence_list_node geo_fence_list_ptr,
+                                  BufferNode *buffer_node);
 
 
 /*
