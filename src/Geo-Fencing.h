@@ -179,9 +179,10 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
      ErrorCode
 
  */
-ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config, 
-                                  pgeo_fence_list_node geo_fence_list_ptr,
-                                  BufferNode *buffer_node);
+static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config, 
+                                         pgeo_fence_list_node 
+                                         geo_fence_list_ptr,
+                                         BufferNode *buffer_node);
 
 
 /*
@@ -200,8 +201,8 @@ ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
      ErrorCode
 
  */
-static ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config, 
-                                  BufferNode* buffer_node);
+ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config, 
+                           BufferNode* buffer_node);
 
 
 /*

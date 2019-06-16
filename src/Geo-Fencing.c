@@ -56,7 +56,7 @@ ErrorCode init_geo_fence(pgeo_fence_config geo_fence_config)
                SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
         return E_MALLOC;
 
-    init_entry( &(geo_fence_config -> geo_fence_list_head.geo_fence_list_entry);
+    init_entry( &(geo_fence_config -> geo_fence_list_head.geo_fence_list_entry));
 
 #ifdef debugging
     printf("[GeoFence] Allicating Memory success\n");
@@ -301,7 +301,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
 }
 
 
-ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
+static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
                                          pgeo_fence_list_node 
                                          geo_fence_list_ptr,
                                          BufferNode *buffer_node)
@@ -473,11 +473,6 @@ ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
 
                     GeoFence_alert_buffer_node = NULL;
 
-                    printf("[GeoFence-Alert] alloc time [%d]\n",    
-                                            geo_fence_config -> 
-                                            GeoFence_alert_list_node_mempool -> 
-                                            alloc_time);
-
                     while(GeoFence_alert_buffer_node == NULL)
                     {
                         GeoFence_alert_buffer_node = mp_alloc(
@@ -522,8 +517,8 @@ ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
 }
 
 
-static ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config, 
-                                  BufferNode* buffer_node)
+ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config, 
+                           BufferNode* buffer_node)
 {
     pgeo_fence_list_node geo_fence_list_head = &geo_fence_config ->
                                                geo_fence_list_head;
@@ -551,8 +546,6 @@ static ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
     fences = NULL;
     perimeters = NULL;
     mac_prefix = NULL;
-
-    printf("buffer_node -> content [%s]\n", buffer_node -> content);
 
     current_ptr = strtok_save(buffer_node -> content,
                               DELIMITER_SEMICOLON, &saveptr);
