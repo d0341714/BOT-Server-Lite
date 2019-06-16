@@ -22,7 +22,7 @@
 
   Version:
 
-     1.0, 20190608
+     1.0, 20190617
 
   Abstract:
 
@@ -50,9 +50,6 @@
 int main(int argc, char **argv)
 {
     int return_value;
-
-    /* The flag is to know if any routines are processed in this while loop */
-    bool did_work;
 
     /* The type of the packet */
     int send_pkt_type;
@@ -102,6 +99,7 @@ int main(int argc, char **argv)
     {
         return E_MALLOC;
     }
+
 #ifdef debugging
     printf("Mempool Initialized\n");
 #endif
@@ -278,8 +276,6 @@ int main(int argc, char **argv)
     /* The while loop that keeps the program running */
     while(ready_to_work == true)
     {
-        did_work = false;
-
         current_time = get_system_time();
 
         /* If it is the time to poll health reports from LBeacons, get a
@@ -307,13 +303,14 @@ int main(int argc, char **argv)
 
             /* Update the last_polling_object_tracking_time */
             last_polling_object_tracking_time = current_time;
-
-            did_work = true;
         }
-        else if(current_time - last_polling_LBeacon_for_HR_time >=
+
+        /* Since period_between_RFTOD is too frequent, we only allow one type 
+           of data to be sent at the same time except for tracked object data. 
+         */
+        if(current_time - last_polling_LBeacon_for_HR_time >=
                 serverconfig.period_between_RFHR)
         {
-
             /* Polling for health reports. */
             /* set the pkt type */
             send_pkt_type = ((from_server & 0x0f) << 4) +
@@ -333,15 +330,14 @@ int main(int argc, char **argv)
 
             /* Update the last_polling_LBeacon_for_HR_time */
             last_polling_LBeacon_for_HR_time = get_system_time();
-
-            did_work = true;
         }
-
-        if(current_time - last_update_geo_fence > 
-           period_between_update_geo_fence)
+        else if(current_time - last_update_geo_fence > 
+                period_between_update_geo_fence)
         {
+            current_node = NULL;
 
-            while(current_node == NULL){
+            while(current_node == NULL)
+            {
                 current_node = mp_alloc( &node_mempool);
                 Sleep(WAITING_TIME);
             }
@@ -358,17 +354,15 @@ int main(int argc, char **argv)
 
             pthread_mutex_lock( &GeoFence_receive_buffer_list_head.list_lock);
             insert_list_tail( &current_node -> buffer_entry,
-                                  &GeoFence_receive_buffer_list_head.list_head);
+                              &GeoFence_receive_buffer_list_head.list_head);
             pthread_mutex_unlock( &GeoFence_receive_buffer_list_head.list_lock);
 
             last_update_geo_fence = get_system_time();
         }
-
-        if(did_work == false)
+        else
         {
             Sleep(WAITING_TIME);
         }
-
     }
 
     release_geo_fence( &geo_fence_config);
@@ -391,16 +385,13 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name)
     
     if (file == NULL) 
     {
-
 #ifdef debugging
         printf("Load serverconfig fail\n");
 #endif
-
         return E_OPEN_FILE;
     }
     else 
     {
-
         /* Create spaces for storing the string in the current line being read*/
         char config_setting[CONFIG_BUFFER_SIZE];
         char *config_message = NULL;
@@ -613,7 +604,6 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name)
 
 void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head)
 {
-
     List_Entry *list_pointer,
                *next_list_pointer;
 
@@ -695,7 +685,6 @@ void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head)
 
 void *CommUnit_routine()
 {
-
     /* The last reset time */
     int init_time;
 
@@ -725,10 +714,16 @@ void *CommUnit_routine()
             return (void *)NULL;
         }
     }
-
+#ifdef debugging
+    printf("[CommUnit] thread pool Initializing\n");
+#endif
     /* Initialize the threadpool with specified number of worker threads
        according to the data stored in the serverconfig file. */
     thpool = thpool_init(serverconfig.number_worker_threads);
+
+#ifdef debugging
+    printf("[CommUnit] thread pool Initialized\n");
+#endif
 
     current_time = get_system_time();
 
@@ -759,7 +754,6 @@ void *CommUnit_routine()
             list_for_each(current_entry,
                           &priority_list_head.priority_list_entry)
             {
-
                 current_head = ListEntry(current_entry, BufferListHead,
                                          priority_list_entry);
 
@@ -767,7 +761,6 @@ void *CommUnit_routine()
 
                 if (is_entry_list_empty( &current_head->list_head) == true)
                 {
-
                     pthread_mutex_unlock( &current_head -> list_lock);
                     /* Go to check the next buffer list in the priority list */
 
@@ -776,7 +769,6 @@ void *CommUnit_routine()
                 }
                 else 
                 {
-
                     list_entry = current_head -> list_head.next;
 
                     remove_list_node(list_entry);
@@ -794,15 +786,12 @@ void *CommUnit_routine()
                                                      current_node,
                                                      current_head ->
                                                      priority_nice);
-
                     did_work = true;
                     break;
                 }
             }
-
             current_time = get_system_time();
             pthread_mutex_unlock( &priority_list_head.list_lock);
-
         }
 
         /* Scan the priority list in reverse order to prevent starving the
@@ -813,7 +802,6 @@ void *CommUnit_routine()
         list_for_each_reverse(current_entry,
                               &priority_list_head.priority_list_entry)
         {
-
             current_head = ListEntry(current_entry, BufferListHead,
                                      priority_list_entry);
 
@@ -821,16 +809,13 @@ void *CommUnit_routine()
 
             if (is_entry_list_empty( &current_head->list_head) == true)
             {
-
                 pthread_mutex_unlock( &current_head -> list_lock);
-                /* Go to check the next buffer list in the priority list */
 
                 Sleep(WAITING_TIME);
                 continue;
             }
             else 
             {
-
                 list_entry = current_head -> list_head.next;
 
                 remove_list_node(list_entry);
@@ -847,7 +832,6 @@ void *CommUnit_routine()
                                                      current_node,
                                                      current_head ->
                                                      priority_nice);
-
                 did_work = true;
                 break;
             }
@@ -874,9 +858,7 @@ void *CommUnit_routine()
 
 void *NSI_routine(void *_buffer_node)
 {
-
     BufferNode *current_node = (BufferNode *)_buffer_node;
-
 
     char gateway_record[WIFI_MESSAGE_LENGTH];
 
@@ -961,7 +943,6 @@ void *LBeacon_routine(void *_buffer_node)
 
 void *process_GeoFence_routine(void *_buffer_node)
 {
-
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
     switch (current_node->pkt_type)
@@ -986,8 +967,8 @@ void *process_GeoFence_routine(void *_buffer_node)
 }
 
 
-void *process_GeoFence_alert_routine(void *_buffer_node){
-
+void *process_GeoFence_alert_routine(void *_buffer_node)
+{
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
 #ifdef debugging
@@ -1247,29 +1228,36 @@ void *process_wifi_receive()
 #ifdef debugging
                         display_time();
                         printf("Get Tracked Object Data from LBeacon\n");
-#endif
+#endif                  
                         forward_node = NULL;
                         while(forward_node == NULL){
                             forward_node = mp_alloc( &node_mempool);
                             Sleep(WAITING_TIME);
 
                         }
-                        memcpy(forward_node, new_node, sizeof(BufferNode));
 
+                        forward_node -> pkt_type = new_node -> pkt_type;
+                        forward_node -> pkt_direction = new_node -> pkt_direction;
+                        memcpy(forward_node -> net_address, new_node -> net_address, strlen(new_node -> net_address) * sizeof(char));
+                        forward_node -> port = new_node -> port;
+                        memcpy(forward_node -> content, new_node -> content, strlen(new_node -> content) * sizeof(char));
+                        forward_node -> content_size = new_node -> content_size;
+                        init_entry( &forward_node -> buffer_entry);
+                        
                         pthread_mutex_lock(
                                    &LBeacon_receive_buffer_list_head.list_lock);
                         insert_list_tail( &new_node -> buffer_entry,
                                    &LBeacon_receive_buffer_list_head.list_head);
                         pthread_mutex_unlock(
                                    &LBeacon_receive_buffer_list_head.list_lock);
-
+                        
                         pthread_mutex_lock(
                                   &GeoFence_receive_buffer_list_head.list_lock);
                         insert_list_tail( &forward_node -> buffer_entry,
                                   &GeoFence_receive_buffer_list_head.list_head);
                         pthread_mutex_unlock(
                                   &GeoFence_receive_buffer_list_head.list_lock);
-
+                       
                         break;
 
                     case health_report:

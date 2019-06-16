@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190608
+     1.0, 20190617
 
   Abstract:
 
@@ -63,7 +63,9 @@
 /* The category of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
 
-#define period_between_update_geo_fence 120
+/* The time interval in seconds for the Server sending the GeoFence table to 
+   the GeoFence module (must exceed 1200 seconds) */
+#define period_between_update_geo_fence 1200
 
 #ifdef debugging
 
@@ -172,6 +174,7 @@ BufferListHead GeoFence_alert_buffer_list_head;
    order. */
 BufferListHead priority_list_head;
 
+/* The struct for storing necessary objects for geo fence */
 sgeo_fence_config geo_fence_config;
 
 
@@ -192,6 +195,7 @@ bool initialization_failed;
 int last_polling_LBeacon_for_HR_time;
 int last_polling_object_tracking_time;
 
+/* Variables for storing the last updating times in second*/
 int last_update_geo_fence;
 
 
@@ -204,7 +208,7 @@ int last_update_geo_fence;
 
   Parameters:
 
-     file_name - the name of the config file that stores the Server data
+     file_name - The name of the config file that stores the Server data
 
   Return value:
 
@@ -313,7 +317,7 @@ void *LBeacon_routine(void *_buffer_node);
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer list head.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 
@@ -331,7 +335,7 @@ void *process_GeoFence_routine(void *_buffer_node);
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer list head.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 
@@ -359,8 +363,7 @@ void *process_GeoFence_alert_routine(void *_buffer_node);
             false : Fail to join
 
  */
-bool Gateway_join_request(AddressMapArray *address_map, char *address
-                         );
+bool Gateway_join_request(AddressMapArray *address_map, char *address);
 
 
 /*
@@ -391,7 +394,7 @@ void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size);
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer list head.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 

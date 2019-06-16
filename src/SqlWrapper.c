@@ -24,7 +24,7 @@
 
   Version:
 
-     1.0, 20190613
+     1.0, 20190617
 
   Abstract:
 
@@ -808,9 +808,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                 SQL_rollback_transaction(db);
                 return E_SQL_EXECUTE;
             }
-
         }
-
     }
 
     SQL_commit_transaction(db);
@@ -903,7 +901,7 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
                          "%s, %s, NOW());";
 
     int number_of_geo_fence_alert = 0;
-    char *number_of_geo_fence_alert_str;
+    char *number_of_geo_fence_alert_str = NULL;
     char *mac_address = NULL;
     char *type = NULL;
     char *uuid = NULL;
@@ -920,10 +918,11 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
 
     saved_ptr = NULL;
 
+    memset(content_temp, 0, WIFI_MESSAGE_LENGTH);
     memcpy(content_temp, buf, buf_len);
 
     number_of_geo_fence_alert_str = strtok_save(content_temp, 
-                                                DELIMITER_SEMICOLON,
+                                                DELIMITER_SEMICOLON, 
                                                  &saved_ptr);
     sscanf(number_of_geo_fence_alert_str, "%d", &number_of_geo_fence_alert);
 
@@ -939,7 +938,7 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
         geo_fence_id = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
         /* Create SQL statement */
-        memset(sql, 0, sizeof(sql));
+        memset(sql, 0, strlen(sql) * sizeof(char));
 
         pqescape_mac_address = PQescapeLiteral(conn, mac_address,
                                                strlen(mac_address));

@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190613
+     1.0, 20190617
 
   Abstract:
 
@@ -78,9 +78,6 @@ typedef sgeo_fence_list_node *pgeo_fence_list_node;
 
 typedef struct {
 
-   /* The flag to check whether the GeoFence is initialized */
-   bool is_initialized;
-
    /* The mempool for geo fence */
    Memory_Pool mempool;
 
@@ -106,7 +103,7 @@ typedef sgeo_fence_config *pgeo_fence_config;
 /*
   init_geo_fence:
 
-     The function initialize the mempool and worker threads for the Geo-Fence 
+     The function initialize the mempool and mutex for the Geo-Fence 
      system.
 
   Parameters:
@@ -203,8 +200,8 @@ ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
      ErrorCode
 
  */
-ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config, 
-                           BufferNode* buffer_node);
+static ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config, 
+                                  BufferNode* buffer_node);
 
 
 /*
@@ -237,7 +234,6 @@ static ErrorCode init_geo_fence_list_node(
   Parameters:
 
      geo_fence_list_node - The pointer points to the geo fence list node.
-     geo_fence_config - The pointer points to the geo fence config.
 
   Return value:
 
@@ -245,8 +241,7 @@ static ErrorCode init_geo_fence_list_node(
 
  */
 static ErrorCode free_geo_fence_list_node(
-                                      pgeo_fence_list_node geo_fence_list_node,
-                                      pgeo_fence_config geo_fence_config);
+                                      pgeo_fence_list_node geo_fence_list_node);
 
 
 #endif

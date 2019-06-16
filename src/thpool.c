@@ -25,7 +25,7 @@
 
   Version:
 
-     2.0, 20190613
+     2.0, 20190617
 
   Abstract:
 
@@ -105,8 +105,8 @@ struct thpool_ *thpool_init(int num_threads){
         return NULL;
     }
 
-    pthread_mutex_init(&(thpool_p -> thcount_lock), NULL);
-    pthread_cond_init(&(thpool_p->thcount_lock), NULL);
+    pthread_mutex_init(&(thpool_p -> thcount_lock), 0);
+    pthread_cond_init(&(thpool_p->thcount_lock), 0);
 
     /* Thread init */
     for (n = 0; n < num_threads; n ++){
@@ -303,7 +303,7 @@ static int jobqueue_init(thpool_ *thpool_p, jobqueue *jobqueue_p){
         return -1;
     }
 
-    pthread_mutex_init(&(jobqueue_p -> rwmutex), NULL);
+    pthread_mutex_init(&(jobqueue_p -> rwmutex), 0);
     bsem_init(jobqueue_p -> has_jobs, 0);
 
     return 0;
@@ -405,8 +405,8 @@ static void bsem_init(bsem *bsem_p, int value) {
         err("bsem_init(): Binary semaphore can take only values 1 or 0");
         exit(1);
     }
-    pthread_mutex_init(&(bsem_p -> mutex), NULL);
-    pthread_cond_init(&(bsem_p -> cond), NULL);
+    pthread_mutex_init(&(bsem_p -> mutex), 0);
+    pthread_cond_init(&(bsem_p -> cond), 0);
     bsem_p -> v = value;
 }
 
