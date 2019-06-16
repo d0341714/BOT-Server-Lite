@@ -380,7 +380,6 @@ int main(int argc, char **argv)
 
 ErrorCode get_config(ServerConfig *serverconfig, char *file_name) 
 {
-
     FILE *file = fopen(file_name, "r");
     
     if (file == NULL) 
@@ -679,7 +678,6 @@ void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head)
 
 
     return (void *)NULL;
-
 }
 
 
@@ -963,7 +961,6 @@ void *process_GeoFence_routine(void *_buffer_node)
     mp_free( &node_mempool, current_node);
 
     return (void *)NULL;
-
 }
 
 
@@ -981,14 +978,12 @@ void *process_GeoFence_alert_routine(void *_buffer_node)
     mp_free( &node_mempool, current_node);
 
     return (void *)NULL;
-
 }
 
 
 
 bool Gateway_join_request(AddressMapArray *address_map, char *address)
 {
-
     int not_in_use = -1;
     int n;
     int answer;
@@ -1008,8 +1003,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     printf("Check whether joined\n");
 #endif
 
-    if(answer = is_in_Address_Map(address_map, address) >=0){
-
+    if(answer = is_in_Address_Map(address_map, address) >=0)
+    {
         strncpy(address_map -> address_map_list[answer].net_address,
                 address, NETWORK_ADDR_LENGTH);
 
@@ -1025,7 +1020,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     }
 
     for(n = 0 ; n < MAX_NUMBER_NODES ; n ++){
-        if(address_map -> in_use[n] == false && not_in_use == -1){
+        if(address_map -> in_use[n] == false && not_in_use == -1)
+        {
             not_in_use = n;
             break;
         }
@@ -1038,7 +1034,6 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     /* If still has space for the LBeacon to register */
     if (not_in_use != -1)
     {
-
         AddressMap *tmp =  &address_map -> address_map_list[not_in_use];
 
         address_map -> in_use[not_in_use] = true;
@@ -1067,7 +1062,6 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
 
 void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size)
 {
-
     /* The counter for for-loop*/
     int current_index;
 
@@ -1077,7 +1071,6 @@ void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size)
     {
         for(current_index = 0;current_index < MAX_NUMBER_NODES;current_index ++)
         {
-
             if (address_map -> in_use[current_index] == true)
             {
                 /* Add the content of tje buffer node to the UDP to be sent to
@@ -1098,7 +1091,6 @@ void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size)
 
 void *process_wifi_send(void *_buffer_node)
 {
-
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
 #ifdef debugging
@@ -1151,7 +1143,8 @@ void *process_wifi_receive()
            and copy the data from Wi-Fi receive queue to the node. */
         new_node = NULL;
 
-        while( new_node == NULL){
+        while( new_node == NULL)
+        {
             new_node = mp_alloc( &node_mempool);
             Sleep(WAITING_TIME);
         }
@@ -1230,10 +1223,10 @@ void *process_wifi_receive()
                         printf("Get Tracked Object Data from LBeacon\n");
 #endif                  
                         forward_node = NULL;
-                        while(forward_node == NULL){
+                        while(forward_node == NULL)
+                        {
                             forward_node = mp_alloc( &node_mempool);
                             Sleep(WAITING_TIME);
-
                         }
 
                         forward_node -> pkt_type = new_node -> pkt_type;
