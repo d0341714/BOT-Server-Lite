@@ -272,8 +272,8 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
                          "DO UPDATE SET health_status = \'%d\', " \
                          "last_report_timestamp = NOW();";
     HealthStatus health_status = S_NORMAL_STATUS;
-	char *ip_address = NULL;
-	char *pqescape_ip_address = NULL;
+    char *ip_address = NULL;
+    char *pqescape_ip_address = NULL;
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -297,7 +297,7 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
         *string_end = '\0';
 
         /* Create SQL statement */
-		pqescape_ip_address =
+        pqescape_ip_address =
             PQescapeLiteral(conn, ip_address, strlen(ip_address));
 
         memset(sql, 0, sizeof(sql));
@@ -305,7 +305,7 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
                 pqescape_ip_address,
                 health_status, health_status);
 
-		PQfreemem(pqescape_ip_address);
+        PQfreemem(pqescape_ip_address);
 
         /* Execute SQL statement */
         ret_val = SQL_execute(db, sql);
@@ -438,11 +438,11 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
                          "gateway_ip_address = %s, " \
                          "last_report_timestamp = NOW() ;";
     HealthStatus health_status = S_NORMAL_STATUS;
-	char *uuid = NULL;
+    char *uuid = NULL;
     char *lbeacon_ip = NULL;
     char *gateway_ip = NULL;
     char *registered_timestamp_GMT = NULL;
-	char *pqescape_uuid = NULL;
+    char *pqescape_uuid = NULL;
     char *pqescape_lbeacon_ip = NULL;
     char *pqescape_gateway_ip = NULL;
     char *pqescape_registered_timestamp_GMT = NULL;
@@ -869,7 +869,7 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
                                                 PQgetvalue(res, current_row, 3),
                                                 PQgetvalue(res, current_row, 4))
                                                 ;
-	    }
+        }
     }else{
         sprintf(buf, "0;");
     }

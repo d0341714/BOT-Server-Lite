@@ -504,8 +504,8 @@ void ctrlc_handler(int stop);
   Parameters:
 
      str_a - the first string to be compared
-	 str_b - the second string to be comapred
-	 len - number of characters in the strings to be compared
+     str_b - the second string to be comapred
+     len - number of characters in the strings to be compared
 
   Return value:
      0: if the two strings exactly match

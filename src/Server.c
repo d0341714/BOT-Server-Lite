@@ -915,7 +915,7 @@ void *BHM_routine(void *_buffer_node)
                                      lbeacon_record,
                                      strlen(lbeacon_record));
 
-	mp_free( &node_mempool, current_node);
+    mp_free( &node_mempool, current_node);
 
     return (void *)NULL;
 }
