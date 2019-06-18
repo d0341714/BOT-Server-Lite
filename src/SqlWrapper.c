@@ -823,6 +823,7 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
     char sql[SQL_TEMP_BUFFER_LENGTH];
     PGresult *res;
     int rows, current_row;
+    int total_fields;
 
     char *sql_select_template = "SELECT id, name, perimeter, fence, " \
                                 "mac_prefix FROM geo_fence;";
@@ -847,9 +848,10 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
 
     }
 
+    total_fields = PQnfields(res);
     rows = PQntuples(res);
 
-    if(rows > 0){
+    if(rows > 0 && total_fields == 5){
         for(current_row=0;current_row < rows;current_row++){
             if(strlen(buf) > 0)
                 sprintf(buf, "%s;%s;%s;%s;%s;%s;",
