@@ -816,7 +816,6 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     return WORK_SUCCESSFULLY;
 }
 
-
 ErrorCode SQL_get_geo_fence(void *db, char *buf){
 
     PGconn *conn = (PGconn *) db;
