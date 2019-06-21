@@ -25,7 +25,7 @@
 
   Version:
 
-     2.0, 20190415
+     2.0, 20190617
 
   Abstract:
 
@@ -73,16 +73,10 @@ struct thpool_ *thpool_init(int num_threads){
 
     thpool_p->threads_keepalive = 1;
 
+    thpool_p->mempool_size = SIZE_OF_SLOT;
+
     /* Initialize the memory pool */
-    if(mp_init(&thpool_p->thread_mempool, sizeof(thread),
-       num_threads * SLOTS_FOR_MEM_POOL_PER_THREAD) != MEMORY_POOL_SUCCESS)
-        return NULL;
-
-    if(mp_init(&thpool_p->job_mempool, sizeof(job),
-       num_threads * SLOTS_FOR_MEM_POOL_PER_THREAD) != MEMORY_POOL_SUCCESS)
-        return NULL;
-
-    if(mp_init(&thpool_p->bsem_mempool, sizeof(bsem),
+    if(mp_init(&thpool_p->mempool, thpool_p->mempool_size,
        num_threads * SLOTS_FOR_MEM_POOL_PER_THREAD) != MEMORY_POOL_SUCCESS)
         return NULL;
 
@@ -90,30 +84,29 @@ struct thpool_ *thpool_init(int num_threads){
     if (jobqueue_init(thpool_p, &thpool_p -> jobqueue) == -1){
         err("thpool_init(): Could not allocate memory for job queue\n");
 
-        mp_destroy(&thpool_p->thread_mempool);
-        mp_destroy(&thpool_p->job_mempool);
-        mp_destroy(&thpool_p->bsem_mempool);
+        mp_destroy(&thpool_p->mempool);
 
         free(thpool_p);
         return NULL;
     }
 
     /* Make threads in pool */
-    thpool_p -> threads = (thread **)mp_alloc(&thpool_p->thread_mempool);
+    thpool_p ->threads = (thread **)malloc((sizeof(struct thread *) * 
+                         num_threads));
+
     if (thpool_p -> threads == NULL){
         err("thpool_init(): Could not allocate memory for threads\n");
         jobqueue_destroy(thpool_p, &thpool_p -> jobqueue);
 
-        mp_destroy(&thpool_p->thread_mempool);
-        mp_destroy(&thpool_p->job_mempool);
-        mp_destroy(&thpool_p->bsem_mempool);
+        mp_destroy(&thpool_p->mempool);
 
         free(thpool_p);
 
         return NULL;
     }
 
-    pthread_mutex_init(&(thpool_p -> thcount_lock), NULL);
+    pthread_mutex_init(&(thpool_p -> thcount_lock), 0);
+    pthread_cond_init(&(thpool_p->thcount_lock), 0);
 
     /* Thread init */
     for (n = 0; n < num_threads; n ++){
@@ -135,7 +128,7 @@ int thpool_add_work(thpool_ *thpool_p, void (*function_p)(void *),
                     void *arg_p, int priority){
     job *newjob;
 
-    newjob = (job *)mp_alloc(&thpool_p->job_mempool);
+    newjob = (job *)mp_alloc(&thpool_p->mempool);
 
     if (newjob == NULL){
         err("thpool_add_work(): Could not allocate memory for new job\n");
@@ -195,12 +188,12 @@ void thpool_destroy(thpool_ *thpool_p){
     for (n = 0; n < threads_total; n ++){
         thread_destroy(thpool_p -> threads[n]);
     }
-    mp_free(&thpool_p->thread_mempool, thpool_p -> threads);
 
-    mp_destroy(&thpool_p->thread_mempool);
-    mp_destroy(&thpool_p->job_mempool);
-    mp_destroy(&thpool_p->bsem_mempool);
+    free(thpool_p -> threads);
 
+    mp_destroy(&thpool_p->mempool);
+
+    free(thpool_p -> threads);
     free(thpool_p);
 
     thpool_p = NULL;
@@ -217,7 +210,7 @@ int thpool_num_threads_working(thpool_ *thpool_p){
 
 static int thread_init (thpool_ *thpool_p, thread **thread_p, int id){
 
-    *thread_p = (thread *)mp_alloc(&thpool_p -> thread_mempool);
+    *thread_p = (thread *)mp_alloc(&thpool_p -> mempool);
 
     if (thread_p == NULL){
         err("thread_init(): Could not allocate memory for thread\n");
@@ -269,7 +262,7 @@ static void *thread_do(thread *thread_p){
                 arg_buff  = job_p -> arg;
 
                 func_buff(arg_buff);
-                mp_free(&thread_p->thpool_p->job_mempool ,job_p);
+                mp_free(&thread_p->thpool_p->mempool ,job_p);
             }
 
             pthread_mutex_lock(&thpool_p -> thcount_lock);
@@ -288,7 +281,8 @@ static void *thread_do(thread *thread_p){
 
 /* Frees a thread  */
 static void thread_destroy (thread *thread_p){
-    mp_free(&thread_p->thpool_p->thread_mempool, thread_p);
+    
+    mp_free(&thread_p->thpool_p->mempool, thread_p);
 
     thread_p = NULL;
 }
@@ -303,13 +297,13 @@ static int jobqueue_init(thpool_ *thpool_p, jobqueue *jobqueue_p){
     jobqueue_p -> front = NULL;
     jobqueue_p -> rear  = NULL;
 
-    jobqueue_p -> has_jobs = (bsem *)mp_alloc(&thpool_p-> bsem_mempool);
+    jobqueue_p -> has_jobs = (bsem *)mp_alloc(&thpool_p-> mempool);
 
     if (jobqueue_p -> has_jobs == NULL){
         return -1;
     }
 
-    pthread_mutex_init(&(jobqueue_p -> rwmutex), NULL);
+    pthread_mutex_init(&(jobqueue_p -> rwmutex), 0);
     bsem_init(jobqueue_p -> has_jobs, 0);
 
     return 0;
@@ -320,7 +314,7 @@ static int jobqueue_init(thpool_ *thpool_p, jobqueue *jobqueue_p){
 static void jobqueue_clear(thpool_ *thpool_p, jobqueue *jobqueue_p){
 
     while(jobqueue_p -> len){
-        mp_free(&thpool_p->job_mempool, jobqueue_pull(jobqueue_p));
+        mp_free(&thpool_p->mempool, jobqueue_pull(jobqueue_p));
     }
 
     jobqueue_p -> front = NULL;
@@ -398,7 +392,7 @@ static job *jobqueue_pull(jobqueue *jobqueue_p){
 /* Free all queue resources back to the system */
 static void jobqueue_destroy(thpool_ *thpool_p, jobqueue *jobqueue_p){
     jobqueue_clear(thpool_p, jobqueue_p);
-    mp_free(&thpool_p->bsem_mempool, jobqueue_p -> has_jobs);
+    mp_free(&thpool_p->mempool, jobqueue_p -> has_jobs);
 }
 
 
@@ -411,8 +405,8 @@ static void bsem_init(bsem *bsem_p, int value) {
         err("bsem_init(): Binary semaphore can take only values 1 or 0");
         exit(1);
     }
-    pthread_mutex_init(&(bsem_p -> mutex), NULL);
-    pthread_cond_init(&(bsem_p -> cond), NULL);
+    pthread_mutex_init(&(bsem_p -> mutex), 0);
+    pthread_cond_init(&(bsem_p -> cond), 0);
     bsem_p -> v = value;
 }
 

@@ -20,7 +20,7 @@
 
   Version:
 
-     2.0, 20190606
+     2.0, 20190617
 
   Abstract:
 
@@ -46,14 +46,89 @@
 #include "BeDIS.h"
 
 
-unsigned int twoc(int in, int t) {
-
+unsigned int twoc(int in, int t) 
+{
     return (in < 0) ? (in + (2 << (t - 1))) : in;
 }
 
 
-void trim_string_tail(char *message) {
+void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
+                 int priority_nice)
+{
+    init_entry( &(buffer_list_head -> list_head));
 
+    init_entry( &(buffer_list_head -> priority_list_entry));
+
+    pthread_mutex_init( &buffer_list_head -> list_lock, 0);
+
+    buffer_list_head -> function = function_p;
+
+    buffer_list_head -> arg = (void *) buffer_list_head;
+
+    buffer_list_head -> priority_nice = priority_nice;
+}
+
+
+void init_Address_Map(AddressMapArray *address_map)
+{
+    int n;
+
+    pthread_mutex_init( &address_map -> list_lock, 0);
+
+    memset(address_map -> address_map_list, 0,
+           sizeof(address_map -> address_map_list));
+
+    for(n = 0; n < MAX_NUMBER_NODES; n ++)
+        address_map -> in_use[n] = false;
+}
+
+
+int is_in_Address_Map(AddressMapArray *address_map, char *net_address)
+{
+    int n;
+
+    for(n = 0;n < MAX_NUMBER_NODES;n ++)
+    {
+        if (address_map -> in_use[n] == true && strncmp(address_map ->
+            address_map_list[n].net_address, net_address, NETWORK_ADDR_LENGTH)
+            == 0)
+        {
+                return n;
+        }
+    }
+    return -1;
+}
+
+
+int udp_sendpkt(pudp_config udp_config, BufferNode *buffer_node)
+{
+    int pkt_type;
+
+    char content[WIFI_MESSAGE_LENGTH];
+
+    pkt_type = ((buffer_node->pkt_direction << 4) & 0xf0) + 
+               (buffer_node->pkt_type & 0x0f);
+
+    memset(content, 0, WIFI_MESSAGE_LENGTH);
+
+    sprintf(content, "%c%s", (char)pkt_type, buffer_node ->content);
+
+    buffer_node -> content_size =  buffer_node -> content_size + 1;
+  
+    /* Add the content of the buffer node to the UDP to be sent to the 
+       destination */
+    udp_addpkt(udp_config, 
+               buffer_node -> net_address, 
+               buffer_node -> port,
+               content,
+               buffer_node -> content_size);
+
+    return WORK_SUCCESSFULLY;
+}
+
+
+void trim_string_tail(char *message) 
+{
     int idx = 0;
 
     /* discard the whitespace, newline, carry-return characters at the end */
@@ -73,29 +148,32 @@ void trim_string_tail(char *message) {
 
 void ctrlc_handler(int stop) { ready_to_work = false; }
 
-int strncmp_caseinsensitive(char const *str_a, char const *str_b, size_t len){
+int strncmp_caseinsensitive(char const *str_a, char const *str_b, size_t len)
+{
     int index = 0;
     int diff = 0;
 
-	for(index = 0; index < len; index++){
-		
-		diff = tolower((unsigned char)str_a[index]) - tolower((unsigned char)str_b[index]);
-		if(0 != diff){
-			return -1;
-		}
-	}
-	return 0;
+    for(index = 0; index < len; index++)
+    {
+        diff = tolower((unsigned char)str_a[index]) - 
+               tolower((unsigned char)str_b[index]);
+        if(0 != diff)
+        {
+            return -1;
+        }
+    }
+    return 0;
 }
 
 ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
-                      void *arg){
-
+                      void *arg)
+{
     pthread_attr_t attr;
 
     if ( pthread_attr_init( &attr) != 0 ||
          pthread_create(thread, &attr, start_routine, arg) != 0 ||
-         pthread_detach( *thread)){
-
+         pthread_detach( *thread))
+    {
           printf("Start Thread Error.\n");
           return E_START_THREAD;
     }
@@ -105,7 +183,8 @@ ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
 }
 
 
-int get_system_time(){
+int get_system_time()
+{
     /* Return value as a long long type */
     int system_time;
 
@@ -118,31 +197,31 @@ int get_system_time(){
 }
 
 
-char *strtok_save(char *str, char *delim, char **saveptr){
-    
+char *strtok_save(char *str, char *delim, char **saveptr)
+{
     char *tmp;
 
-    if(str == NULL){
+    if(str == NULL)
+    {
         tmp = *saveptr;
     }
-    else{
+    else
+    {
         tmp = str;
     }
 
-    if(strncmp(tmp, delim, strlen(delim)) == 0){
-        
+    if(strncmp(tmp, delim, strlen(delim)) == 0)
+    {
         *saveptr += strlen(delim) * sizeof(char);
         return NULL;
-
     }
 
     return strtok_s(str, delim, saveptr);
-
 }
 
 
-int display_time(void){
-
+int display_time(void)
+{
     // variables to store date and time components
     int hours, minutes, seconds, day, month, year;
 

@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190608
+     1.0, 20190617
 
   Abstract:
 
@@ -63,26 +63,16 @@
 /* The category of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
 
+/* The time interval in seconds for the Server sending the GeoFence table to 
+   the GeoFence module (must exceed 1200 seconds) */
+#define period_between_update_geo_fence 1200
+
 #ifdef debugging
 
 /* The category of the printf during debugging */
 #define LOG_CATEGORY_DEBUG "LBeacon_Debug"
 
 #endif
-
-#define MAXIMUM_DATABASE_INFO 1024
-
-/* Maximum number of nodes (Gateways) per star network rooted at a Server */
-#define MAX_NUMBER_NODES 32
-
-/* Maximum number of times to retry mp_alloc() */
-#define TEST_MALLOC_MAX_NUMBER_TIMES 5
-
-/*
-  Maximum length of time in seconds low priority message lists are starved
-  of attention. */
-#define MAX_STARVATION_TIME 600
-
 
 /* The configuration file structure */
 typedef struct {
@@ -136,75 +126,6 @@ typedef struct {
 } ServerConfig;
 
 
-/*  A struct for recording a Gateway and it's last update time */
-typedef struct {
-
-    /* The network address of wifi link to the Gateway */
-    char net_address[NETWORK_ADDR_LENGTH];
-
-    /* The last join request time */
-    int last_request_time;
-
-} AddressMap;
-
-
-typedef struct {
-
-    /* A per array lock for the AddressMapArray when reading and update data */
-    pthread_mutex_t list_lock;
-
-    /* A Boolean array in which ith element records whether the ith address map
-       is in use. */
-    bool in_use[MAX_NUMBER_NODES];
-
-    AddressMap address_map_list[MAX_NUMBER_NODES];
-
-} AddressMapArray;
-
-
-/* A node of buffer to store received data and/or data to be send */
-typedef struct {
-
-    struct List_Entry buffer_entry;
-
-    /* The network address of the packet received or the packet to be sent */
-    char net_address[NETWORK_ADDR_LENGTH];
-
-   /* The port of the packet received or the packet to be sent */
-    unsigned int port;
-
-    /* The pointer points to the content. */
-    char content[WIFI_MESSAGE_LENGTH];
-
-   /* The size of the content */
-    int content_size;
-
-} BufferNode;
-
-
-/* A Head of a list of msg buffers */
-typedef struct {
-
-    /* A per list lock */
-    pthread_mutex_t list_lock;
-
-    struct List_Entry list_head;
-
-    struct List_Entry priority_list_entry;
-
-    /* The nice is a value relative to the normal priority (i.e. nice = 0) */
-    int priority_nice;
-
-    /* The pointer point to the function to be called to process buffer nodes in
-       the list. */
-    void (*function)(void *arg);
-
-    /* The argument of the function */
-    void *arg;
-
-} BufferListHead;
-
-
 /* Global variables */
 
 /* The Server config struct for storing config parameters from the config file 
@@ -220,13 +141,8 @@ sudp_config udp_config;
 /* The mempool for the buffer node structure to allocate memory */
 Memory_Pool node_mempool;
 
-sgeo_fence_config geo_fence_config;
-
 /* An array of address maps */
 AddressMapArray Gateway_address_map;
-
-/* The head of a list of buffers of data from Gateway */
-BufferListHead Gateway_receive_buffer_list_head;
 
 /* The head of a list of buffers of data from LBeacons */
 BufferListHead LBeacon_receive_buffer_list_head;
@@ -247,12 +163,19 @@ BufferListHead BHM_send_buffer_list_head;
 /* The head of a list of buffers holding health reports from LBeacons */
 BufferListHead BHM_receive_buffer_list_head;
 
-/* The head of a list of buffers holding message from modulse */
-BufferListHead API_receive_buffer_list_head;
+/* The head of a list of buffers holding message from LBeacons specified by 
+   GeoFence */
+BufferListHead GeoFence_receive_buffer_list_head;
+
+/* The head of a list of buffers holding GeoFence alert from GeoFence */
+BufferListHead GeoFence_alert_buffer_list_head;
 
 /* The head of a list of buffers for the buffer list head in the priority 
    order. */
 BufferListHead priority_list_head;
+
+/* The struct for storing necessary objects for geo fence */
+sgeo_fence_config geo_fence_config;
 
 
 /* Flags */
@@ -272,9 +195,9 @@ bool initialization_failed;
 int last_polling_LBeacon_for_HR_time;
 int last_polling_object_tracking_time;
 
-/* API data owner id */
-int geo_fence_data_topic_id;
-int tracked_object_data_topic_id;
+/* Variables for storing the last updating times in second*/
+int last_update_geo_fence;
+
 
 /*
   get_config:
@@ -285,7 +208,7 @@ int tracked_object_data_topic_id;
 
   Parameters:
 
-     file_name - the name of the config file that stores the Server data
+     file_name - The name of the config file that stores the Server data
 
   Return value:
 
@@ -293,29 +216,6 @@ int tracked_object_data_topic_id;
                  E_OPEN_FILE: config file  fail to open.
  */
 ErrorCode get_config(ServerConfig *config, char *file_name);
-
-
-/*
-  init_buffer:
-
-     The function fills the attributes of a specified buffer to be called by
-     another threads to process the buffer content, including the function, the
-     argument of the function and the priority level which the function is to be
-     executed.
-
-  Parameters:
-
-     buffer - A pointer points to the buffer to be modified.
-     buff_id - The index of the buffer for the priority array.
-     function - The pointer points to the function be assigned to the buffer.
-     priority - The priority nice of the buffer when processing the buffer.
-
-  Return value:
-
-     None
- */
-void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
-                                int priority_nice);
 
 
 /*
@@ -364,7 +264,7 @@ void *CommUnit_routine();
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer to be modified.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 
@@ -381,7 +281,7 @@ void *NSI_routine(void *_buffer_node);
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer to be modified.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 
@@ -399,7 +299,7 @@ void *BHM_routine(void *_buffer_node);
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer to be modified.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 
@@ -410,73 +310,39 @@ void *LBeacon_routine(void *_buffer_node);
 
 
 /*
-  Gateway_routine:
-
-     This function is executed by worker threads when they process the buffer
-     nodes in Command_msg_buffer_list and broadcast to Gateway.
-
-  Parameters:
-
-     _buffer_list_head - The pointer points to the buffer to be modified.
-
-  Return value:
-
-     None
-
- */
-void *Gateway_routine(void *_buffer_node);
-
-
-/*
-  process_api_routine:
+  process_GeoFence_routine:
 
      This function is executed by worker threads when processing
-     the buffer node in the API receive buffer list.
+     the buffer node in the GeoFence receive buffer list.
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer list head.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 
      None
 
  */
-void *process_api_routine(void *_buffer_node);
+void *process_GeoFence_routine(void *_buffer_node);
 
 
 /*
-  init_Address_Map:
+  process_GeoFence_alert_routine:
 
-     This function initialize the head of the AddressMap.
+     This function is executed by worker threads when processing
+     the buffer node in the GeoFence alert buffer list.
 
   Parameters:
 
-     address_map - The head of the AddressMap.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 
      None
+
  */
-void init_Address_Map(AddressMapArray *address_map);
-
-
-/*
-  is_in_Address_Map:
-
-     This function check whether the network address is in Gateway_address_map.
-
-  Parameters:
-
-     address_map - The pointer points to the head of the AddressMap.
-     net_address - The pointer points to the  network address we decide to 
-                   compare.
-
-  Return value:
-
-     int: If not find, return -1, else return its array number.
- */
-int is_in_Address_Map(AddressMapArray *address_map, char *net_address);
+void *process_GeoFence_alert_routine(void *_buffer_node);
 
 
 /*
@@ -497,8 +363,7 @@ int is_in_Address_Map(AddressMapArray *address_map, char *net_address);
             false : Fail to join
 
  */
-bool Gateway_join_request(AddressMapArray *address_map, char *address
-                         );
+bool Gateway_join_request(AddressMapArray *address_map, char *address);
 
 
 /*
@@ -522,40 +387,6 @@ void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size);
 
 
 /*
-  Wifi_init:
-
-     This function initializes the Wifi's necessory object.
-
-  Parameters:
-
-     IPaddress - The IP address of the server.
-
-  Return value:
-
-      ErrorCode
-
- */
-ErrorCode Wifi_init(char *IPaddress);
-
-
-/*
-  Wifi_free:
-
-     This function frees the queue of the Wi-Fi pkts and sockets.
-
-  Parameters:
-
-     None
-
-  Return value:
-
-     None
-
- */
-void Wifi_free();
-
-
-/*
   process_wifi_send:
 
      This function sends the message in the buffer list to the destination via 
@@ -563,7 +394,7 @@ void Wifi_free();
 
   Parameters:
 
-     _buffer_list_head - The pointer points to the buffer list head.
+     _buffer_node - The pointer points to the buffer node.
 
   Return value:
 

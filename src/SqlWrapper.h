@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190514
+     1.0, 20190617
 
   Abstract:
 
@@ -364,150 +364,6 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
 
 /*
-  SQL_update_api_data_owner
-
-     Updates the data owner for the BOT system to maintain and check whether the
-     provider is still alive.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     buf - pointer to an input string with the format below.
-
-           topic_name;ip_address;
-
-     buf_len - Length in number of bytes of buf input string
-
-  Return Value:
-
-     int - If the data owner update successfully, it will return it's id in the
-           database. If failed, it will return -1.
-*/
-int SQL_update_api_data_owner(void *db, char *buf, size_t buf_len);
-
-
-/*
-  SQL_remove_api_data_owner
-
-     Remove the data owner when the provider not alive or the provider send the
-     request to remove the topic.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     buf - pointer to an input string with the format below.
-
-           topic_id;
-
-     buf_len - Length in number of bytes of buf input string
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-ErrorCode SQL_remove_api_data_owner(void *db, char *buf, size_t buf_len);
-
-
-/*
-  SQL_get_api_data_owner_id
-
-     This function uses name to get the id of the data in the database.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     buf - pointer to an input string with the format below.
-
-           topic_name;
-
-     buf_len - Length in number of bytes of buf input string
-
-  Return Value:
-
-     int - If the function executed successfully, it will return it's id of the
-           data owner. If failed, it will return -1.
-*/
-int SQL_get_api_data_owner_id(void *db, char *buf, size_t buf_len);
-
-
-/*
-  SQL_update_api_subscription
-
-     Updates the subscriber for the BOT system to maintain and check where the
-     message needs to send when the data update.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     buf - pointer to an input string with the format below.
-
-           topic_id;ip_address;
-
-     buf_len - Length in number of bytes of buf input string
-
-  Return Value:
-
-     int - If the topic update successfully, it will return it's id of the
-           subscriber. If failed, it will return -1.
-*/
-int SQL_update_api_subscription(void *db, char *buf, size_t buf_len);
-
-
-/*
-  SQL_remove_api_subscription
-
-     Remove the subscriber when the subscriber do not want get the message when
-     the data update.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     buf - pointer to an input string with the format below.
-
-           subscriber_id;
-
-     buf_len - Length in number of bytes of buf input string
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-ErrorCode SQL_remove_api_subscription(void *db, char *buf, size_t buf_len);
-
-
-/*
-  SQL_get_api_subscribers
-
-     This function uses data owner id to get subscribers.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     buf - The pointer points to an input string with the format below. After
-           collecting the ip address of subscribers, it will use for storing the
-           string of the list of the ip address
-
-           data_owner_id;
-
-     buf_len - Length in number of bytes of the buf string
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len);
-
-
-/*
   SQL_get_geo_fence
 
      This function get geo fence table.
@@ -522,8 +378,6 @@ ErrorCode SQL_get_api_subscribers(void *db, char *buf, size_t buf_len);
             number_of_geo_fence;id;name;number_of_perimeters,perimeters_lbeacon1
             ,throshold1, ...;number_of_fence,fence_lbeacon1,throshold1,...;
             number_of_mac_prefix,mac_prefix1,...;
-
-     buf_len - Length in number of bytes of buf
 
   Return Value:
 

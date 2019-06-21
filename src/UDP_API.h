@@ -111,7 +111,8 @@ enum{
 
   Parameter:
 
-     udp_config: The pointer points to the structure contains all variables for             the UDP connection.
+     udp_config: The pointer points to the structure contains all variables for 
+                 the UDP connection.
 
   Return Value:
 
@@ -168,7 +169,8 @@ sPkt udp_getrecv(pudp_config udp_config);
 
   Parameter:
 
-     udpconfig: The pointer points to the structure contains all variables for             the UDP connection.
+     udpconfig: The pointer points to the structure contains all variables for 
+                the UDP connection.
 
   Return Value:
 

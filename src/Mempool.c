@@ -64,41 +64,27 @@ size_t get_current_size_mempool(Memory_Pool *mp){
 int mp_init(Memory_Pool *mp, size_t size, size_t slots){
 
     char *end;
-
     char *ite;
-
     void *temp;
-
-    pthread_mutex_init( &mp->mem_lock, 0);
-
-    /* allocate memory */
-    if((mp->memory[0] = malloc(size * slots)) == NULL)
-        return MEMORY_POOL_ERROR;
-
-    memset(mp->memory[0], 0, size * slots);
+    int return_value;
 
     /* initialize and set parameters */
     mp->head = NULL;
     mp->size = size;
     mp->slots = slots;
-    mp->alloc_time = 1;
+    mp->alloc_time = 0;
+    mp->blocks = 0;
 
-    /* add every slot to the free list */
-    end = (char *)mp->memory[0] + size * slots;
+    pthread_mutex_init( &mp->mem_lock, 0);
 
-    for(ite = mp->memory[0]; ite < end; ite += size){
+    return_value = mp_expand(mp);
 
-        /* store first address */
-        temp = mp->head;
+#ifdef debugging
+    printf("[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]\n", 
+                                                              mp, mp->blocks);
+#endif
 
-        /* link the new node */
-        mp->head = (void *)ite;
-
-        /* link to the list from new node */
-        *mp->head = temp;
-    }
-
-    return MEMORY_POOL_SUCCESS;
+    return return_value;
 }
 
 
@@ -109,20 +95,20 @@ int mp_expand(Memory_Pool *mp){
     void *temp;
     char *ite;
 
-
     alloc_count = mp->alloc_time;
 
     if(alloc_count == MAX_EXP_TIME)
         return MEMORY_POOL_ERROR;
 
     mp->memory[alloc_count] = malloc(mp->size * mp->slots);
+    
     if(mp->memory[alloc_count] == NULL )
         return MEMORY_POOL_ERROR;
 
     memset(mp->memory[alloc_count], 0, mp->size * mp->slots);
 
     /* add every slot to the free list */
-    end = (char *) mp->memory[alloc_count] + mp->size * mp->slots;
+    end = (char *)mp->memory[alloc_count] + mp->size * mp->slots;
 
     for(ite = mp->memory[alloc_count]; ite < end; ite += mp->size){
 
@@ -135,9 +121,16 @@ int mp_expand(Memory_Pool *mp){
         /* link to the list from new node */
         *mp->head = temp;
 
+        mp->blocks ++;
+
     }
 
-    mp->alloc_time = mp->alloc_time + 1;
+    mp->alloc_time ++;
+
+#ifdef debugging
+    printf("[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]\n", 
+                                                              mp, mp->blocks);
+#endif
 
     return MEMORY_POOL_SUCCESS;
 }
@@ -155,6 +148,17 @@ void mp_destroy(Memory_Pool *mp){
         free(mp->memory[i]);
     }
 
+    mp->head = NULL;
+    mp->size = 0;
+    mp->slots = 0;
+    mp->alloc_time = 0;
+    mp->blocks = 0;
+
+#ifdef debugging
+    printf("[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]\n", 
+                                                              mp, mp->blocks);
+#endif
+
     pthread_mutex_unlock( &mp->mem_lock);
 
     pthread_mutex_destroy( &mp->mem_lock);
@@ -168,7 +172,7 @@ void *mp_alloc(Memory_Pool *mp){
 
     pthread_mutex_lock(&mp->mem_lock);
 
-    if(*mp->head == NULL){
+    if(mp->head == NULL){
 
         /* If the next position which mp->head is pointing to is NULL,
            expand the memory pool. */
@@ -184,6 +188,15 @@ void *mp_alloc(Memory_Pool *mp){
 
     /* link one past it */
     mp->head = *mp->head;
+
+    mp->blocks --;
+
+#ifdef debugging
+    printf("[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]\n", 
+                                                              mp, mp->blocks);
+#endif
+
+    memset(temp, 0, mp->size);
 
     pthread_mutex_unlock( &mp->mem_lock);
 
@@ -227,6 +240,13 @@ int mp_free(Memory_Pool *mp, void *mem){
     mp->head = mem;
     /* link to the list from new node */
     *mp->head = temp;
+
+    mp->blocks ++;
+
+#ifdef debugging
+    printf("[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]\n", 
+                                                              mp, mp->blocks);
+#endif
 
     pthread_mutex_unlock(&mp->mem_lock);
 

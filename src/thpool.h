@@ -25,7 +25,7 @@
 
   Version:
 
-     2.0, 20190415
+     2.0, 20190617
 
   Abstract:
 
@@ -63,6 +63,9 @@
 
 /* The number of slots for the memory pool */
 #define SLOTS_FOR_MEM_POOL_PER_THREAD 20
+/* The size of the slot for the memory pool */
+#define SIZE_OF_SLOT 512
+
 #define WAITING_TIME 1
 
 #define err(str) fprintf(stderr, str)
@@ -123,7 +126,7 @@ typedef struct thread{
 
     pthread_t pthread;
 
-    /* A pointer point to the curret thread pool */
+    /* A pointer points to the curret thread pool */
     struct thpool_ *thpool_p;
 
 } thread;
@@ -149,11 +152,9 @@ typedef struct thpool_{
 
     /* Memory pools for the allocation of all variable in the thpool
        including thread, bsem and job */
-    Memory_Pool thread_mempool;
+    Memory_Pool mempool;
 
-    Memory_Pool job_mempool;
-
-    Memory_Pool bsem_mempool;
+    int mempool_size;
 
 } thpool_;
 

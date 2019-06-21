@@ -52,6 +52,8 @@
 #include <string.h>
 #include <windows.h>
 
+/* When debugging is needed */
+//#define debugging
 
 #define MEMORY_POOL_SUCCESS 1
 #define MEMORY_POOL_ERROR 0
@@ -77,6 +79,8 @@ typedef struct {
 
     /* The number of slots is made each time the mempool expand */
     int slots;
+
+    int blocks;
 
 } Memory_Pool;
 

@@ -21,7 +21,7 @@
 
   Version:
 
-     2.0, 20190606
+     2.0, 20190617
 
   Abstract:
 
@@ -105,18 +105,22 @@
 /* Length of the IP address in Hex */
 #define NETWORK_ADDR_LENGTH_HEX 8
 
-/* Maximum length of message to be sent over WiFi in bytes */
+/* The size of message to be sent over WiFi in bytes */
 #define WIFI_MESSAGE_LENGTH 4096
+
+/* Maximum length of the message allow to set to WIFI_MESSAGE_LENGTH */
+#define MAXIMUM_WIFI_MESSAGE_LENGTH 65507
+
+/* Minimum length of the message 
+   (One byte for data type and one byte for a space) 
+ */
+#define MINIMUM_WIFI_MESSAGE_LENGTH 2
 
 /* Number of characters in a Bluetooth MAC address */
 #define LENGTH_OF_MAC_ADDRESS 18
 
 /* Maximum length of message to communicate with SQL wrapper API in bytes */
 #define SQL_TEMP_BUFFER_LENGTH 4096
-
-/* Minimum Wi-Fi message size (One byte for data type and one byte for a space)
- */
-#define MINIMUM_WIFI_MESSAGE_LENGTH 2
 
 /* The size of array to store Wi-Fi SSID */
 #define WIFI_SSID_LENGTH 10
@@ -142,9 +146,15 @@
 /* Timeout interval in ms */
 #define WAITING_TIME 5
 
-#define GEO_FENCE_TOPIC "GEO_FENCE"
-#define GEO_FENCE_ALERT_TOPIC "GEO_FENCE_ALERT"
-#define TRACKED_OBJECT_DATA_TOPIC "TRACKED_OBJECT_DATA"
+#define MAXIMUM_DATABASE_INFO 1024
+
+/* Maximum number of nodes per star network */
+#define MAX_NUMBER_NODES 16
+
+/*
+  Maximum length of time in seconds low priority message lists are starved
+  of attention. */
+#define MAX_STARVATION_TIME 600
 
 
 typedef enum _ErrorCode{
@@ -210,15 +220,6 @@ typedef enum _HealthStatus {
 } HealthStatus;
 
 
-typedef struct coordinates{
-
-    char X_coordinates[COORDINATE_LENGTH];
-    char Y_coordinates[COORDINATE_LENGTH];
-    char Z_coordinates[COORDINATE_LENGTH];
-
-} Coordinates;
-
-
 typedef enum pkt_types {
     /* Unknown type of pkt type */
     undefined = 0,
@@ -241,25 +242,12 @@ typedef enum pkt_types {
     /* A pkt for LBeacon */
     data_for_LBeacon = 6,
 
-    /* For server */
+    /* GeoFence */
 
-    /* For the Gateway polling tracked object data from LBeacons */
-    poll_for_tracked_object_data_from_server = 9,
-    /* A polling request for health report from server */
-    RFHR_from_server = 10,
-
-    /* For api */
-
-    /* Public */
-    add_data_owner = 11,
-    remove_data_owner = 12,
-    update_topic_data = 13,
-
-    /* Subscription */
-    add_subscriber = 14,
-    del_subscriber = 15,
-    request_data = 8
-
+    /* A pkt containing GeoFence data */
+    GeoFence_data = 7,
+    /* A pkt containing GeoFence alert data */
+    GeoFence_alert_data = 8
 
 } PktType;
 
@@ -288,6 +276,88 @@ typedef enum DeviceType {
 } DeviceType;
 
 
+/* A node of buffer to store received data and/or data to be send */
+typedef struct {
+
+    struct List_Entry buffer_entry;
+
+    unsigned int pkt_direction;
+
+    unsigned int pkt_type;
+
+    /* The network address of the packet received or the packet to be sent */
+    char net_address[NETWORK_ADDR_LENGTH];
+
+    /* The port of the packet received or the packet to be sent */
+    unsigned int port;
+
+    /* The pointer points to the content. */
+    char content[WIFI_MESSAGE_LENGTH];
+
+    /* The size of the content */
+    int content_size;
+
+} BufferNode;
+
+
+/* A Head of a list of msg buffers */
+typedef struct {
+
+    /* A per list lock */
+    pthread_mutex_t list_lock;
+
+    struct List_Entry list_head;
+
+    struct List_Entry priority_list_entry;
+
+    /* The nice is a value relative to the normal priority (i.e. nice = 0) */
+    int priority_nice;
+
+    /* The pointer point to the function to be called to process buffer nodes in
+       the list. */
+    void (*function)(void *arg);
+
+    /* The argument of the function */
+    void *arg;
+
+} BufferListHead;
+
+
+/*  A struct for recording the network address and it's last update time */
+typedef struct {
+
+    /* The network address of wifi link to the Gateway */
+    char net_address[NETWORK_ADDR_LENGTH];
+
+    /* The last join request time */
+    int last_request_time;
+
+} AddressMap;
+
+
+typedef struct {
+
+    /* A per array lock for the AddressMapArray when reading and update data */
+    pthread_mutex_t list_lock;
+
+    /* A Boolean array in which ith element records whether the ith address map
+       is in use. */
+    bool in_use[MAX_NUMBER_NODES];
+
+    AddressMap address_map_list[MAX_NUMBER_NODES];
+
+} AddressMapArray;
+
+
+typedef struct coordinates{
+
+    char X_coordinates[COORDINATE_LENGTH];
+    char Y_coordinates[COORDINATE_LENGTH];
+    char Z_coordinates[COORDINATE_LENGTH];
+
+} Coordinates;
+
+
 /* A global flag that is initially set to true by the main thread. It is set
    to false by any thread when the thread encounters a fatal error,
    indicating that it is about to exit. In addition, if user presses Ctrl+C,
@@ -312,6 +382,83 @@ bool ready_to_work;
      data - @todo
  */
 unsigned int twoc(int in, int t);
+
+
+/*
+  init_buffer:
+
+     The function fills the attributes of a specified buffer to be called by
+     another threads to process the buffer content, including the function, the
+     argument of the function and the priority level which the function is to be
+     executed.
+
+  Parameters:
+
+     buffer - A pointer points to the buffer to be modified.
+     buff_id - The index of the buffer for the priority array.
+     function - The pointer points to the function be assigned to the buffer.
+     priority - The priority nice of the buffer when processing the buffer.
+
+  Return value:
+
+     None
+ */
+void init_buffer(BufferListHead *buffer_list_head, void (*function_p)(void *),
+                 int priority_nice);
+
+
+/*
+  init_Address_Map:
+
+     This function initialize the head of the AddressMap.
+
+  Parameters:
+
+     address_map - The head of the AddressMap.
+
+  Return value:
+
+     None
+ */
+void init_Address_Map(AddressMapArray *address_map);
+
+
+/*
+  is_in_Address_Map:
+
+     This function check whether the network address is in the AddressMap.
+
+  Parameters:
+
+     address_map - The pointer points to the head of the AddressMap.
+     net_address - The pointer points to the  network address we decide to 
+                   compare.
+
+  Return value:
+
+     int: If not find, return -1, else return its array number.
+ */
+int is_in_Address_Map(AddressMapArray *address_map, char *net_address);
+
+
+/*
+  udp_sendpkt
+
+     This function is used to send the packet to the destination via UDP 
+     connection.
+
+  Parameter:
+
+     udp_config  : The pointer points to the structure contains all variables 
+                   for the UDP connection.
+     buffer_node : The pointer points to the buffer node.
+
+  Return Value:
+
+     int : If return 0, everything work successfully.
+           If not 0   , something wrong.
+ */
+int udp_sendpkt(pudp_config udp_config, BufferNode *buffer_node);
 
 
 /*
@@ -357,8 +504,8 @@ void ctrlc_handler(int stop);
   Parameters:
 
      str_a - the first string to be compared
-	 str_b - the second string to be comapred
-	 len - number of characters in the strings to be compared
+     str_b - the second string to be comapred
+     len - number of characters in the strings to be compared
 
   Return value:
      0: if the two strings exactly match
@@ -390,7 +537,8 @@ ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
 /*
   strtok_save:
      
-     This function breaks string str into a series of tokens using the delimiter delim.
+     This function breaks string str into a series of tokens using the 
+     delimiter delim.
      
      Windows uses strtok_s()
 

@@ -251,7 +251,6 @@ void *udp_recv_pkt_routine(void *udpconfig)
 #endif
             addpkt(&udp_config -> Received_Queue, address_ntoa, port,
                    recv_buf, recv_len);
-			
         }
 #ifdef debugging
         else
