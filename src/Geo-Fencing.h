@@ -47,7 +47,7 @@
 #include "BeDIS.h"
 
 /* When debugging is needed */
-//#define debugging
+#define debugging
 
 
 typedef struct {

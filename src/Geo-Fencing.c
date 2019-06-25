@@ -473,12 +473,12 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
 
                     GeoFence_alert_buffer_node = NULL;
 
-                    while(GeoFence_alert_buffer_node == NULL)
-                    {
-                        GeoFence_alert_buffer_node = mp_alloc(
-                                            geo_fence_config ->   
-                                            GeoFence_alert_list_node_mempool);
-                        Sleep(WAITING_TIME);
+                    GeoFence_alert_buffer_node = 
+                        mp_alloc(geo_fence_config -> GeoFence_alert_list_node_mempool);
+
+                    if(NULL == GeoFence_alert_buffer_node){
+                        printf("[GeoFence-Alert] mp_alloc failed, abort this data\n");
+                        continue;
                     }
 
                     memset(GeoFence_alert_buffer_node, 0, sizeof(BufferNode));
@@ -612,18 +612,19 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
 #endif
         }
        
-        geo_fence_list_node = NULL;
-
-        while(geo_fence_list_node == NULL)
-        {
-            geo_fence_list_node = mp_alloc( &geo_fence_config -> mempool);
-            Sleep(WAITING_TIME);
-        }
-
-        init_geo_fence_list_node(geo_fence_list_node);
-
         if(sizeof(saveptr) > 0)
         {
+            geo_fence_list_node = NULL;
+
+            geo_fence_list_node = mp_alloc( &geo_fence_config -> mempool);
+           
+            if(NULL == geo_fence_list_node){
+                printf("[GeoFence] mp_alloc failed, abort this data\n");
+                continue;
+            }
+
+            init_geo_fence_list_node(geo_fence_list_node);
+
             perimeters = strtok_save(NULL, DELIMITER_SEMICOLON, 
                                      &saveptr);
 

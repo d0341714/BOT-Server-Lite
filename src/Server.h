@@ -53,7 +53,7 @@
 #include "Geo-Fencing.h"
 
 /* When debugging is needed */
-//#define debugging
+#define debugging
 
 /* Server config file location and the config file definition. */
 
