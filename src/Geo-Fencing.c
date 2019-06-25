@@ -52,7 +52,7 @@ ErrorCode init_geo_fence(pgeo_fence_config geo_fence_config)
 
     /* Initialize the mempool for the buffer node using in the GeoFence */
     if(mp_init( &(geo_fence_config -> mempool), 
-               (sizeof(sgeo_fence_list_node) * 2), 
+               sizeof(sgeo_fence_list_node), 
                SLOTS_IN_MEM_POOL) != MEMORY_POOL_SUCCESS)
         return E_MALLOC;
 
