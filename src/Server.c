@@ -336,10 +336,11 @@ int main(int argc, char **argv)
         {
             current_node = NULL;
 
-            while(current_node == NULL)
-            {
-                current_node = mp_alloc( &node_mempool);
-                Sleep(WAITING_TIME);
+            current_node = mp_alloc( &node_mempool);
+           
+            if(NULL == current_node){
+                printf("mp_alloc failed, abort this data\n");
+                continue;
             }
 
             SQL_get_geo_fence(Server_db, content);
@@ -896,7 +897,7 @@ void *NSI_routine(void *_buffer_node)
 #ifdef debugging
     printf("%s join success\n", current_node -> net_address);
 #endif
-
+    
     return (void *)NULL;
 }
 
@@ -1136,19 +1137,16 @@ void *process_wifi_receive()
             continue;
         }
 
-        /* counting test time for mp_alloc(). */
-        test_times = 0;
-
         /* Allocate memory from node_mempool a buffer node for received data
            and copy the data from Wi-Fi receive queue to the node. */
         new_node = NULL;
 
-        while( new_node == NULL)
-        {
-            new_node = mp_alloc( &node_mempool);
-            Sleep(WAITING_TIME);
+        new_node = mp_alloc( &node_mempool);
+        
+        if(NULL == new_node){
+             printf("mp_alloc failed, abort this data\n");
+             continue;
         }
-
 
         memset(new_node, 0, sizeof(BufferNode));
 
@@ -1223,10 +1221,13 @@ void *process_wifi_receive()
                         printf("Get Tracked Object Data from LBeacon\n");
 #endif                  
                         forward_node = NULL;
-                        while(forward_node == NULL)
-                        {
-                            forward_node = mp_alloc( &node_mempool);
-                            Sleep(WAITING_TIME);
+                        
+                        forward_node = mp_alloc( &node_mempool);
+                        
+                        if(NULL == forward_node){
+                            printf("mp_alloc failed, abort this data and mp_free new_node\n");
+                            mp_free( &node_mempool, new_node);
+                            continue;
                         }
 
                         forward_node -> pkt_type = new_node -> pkt_type;
