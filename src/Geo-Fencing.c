@@ -612,7 +612,7 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
 #endif
         }
        
-        if(sizeof(saveptr) > 0)
+        if(strlen(saveptr) > 0)
         {
             geo_fence_list_node = NULL;
 
