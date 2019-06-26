@@ -343,6 +343,10 @@ int main(int argc, char **argv)
                 continue;
             }
 
+            memset(current_node, 0, sizeof(BufferNode));
+
+            init_entry( &current_node -> buffer_entry);
+
             SQL_get_geo_fence(Server_db, content);
 
             current_node -> pkt_type = GeoFence_data;    

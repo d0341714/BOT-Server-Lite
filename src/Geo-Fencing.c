@@ -483,6 +483,8 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
 
                     memset(GeoFence_alert_buffer_node, 0, sizeof(BufferNode));
 
+                    init_entry( &GeoFence_alert_buffer_node -> buffer_entry);
+
                     sprintf(GeoFence_alert_buffer_node -> content, 
                             "%d;%s;%s;%s;%s;%d;%d;", 1, mac_address, 
                             lbeacon_type, uuid, final_timestamp, rssi, 
