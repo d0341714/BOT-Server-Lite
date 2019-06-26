@@ -1234,13 +1234,16 @@ void *process_wifi_receive()
                             continue;
                         }
 
+                        memset(forward_node, 0, sizeof(BufferNode));
+
+                        init_entry( &forward_node -> buffer_entry);
+                        
                         forward_node -> pkt_type = new_node -> pkt_type;
                         forward_node -> pkt_direction = new_node -> pkt_direction;
                         memcpy(forward_node -> net_address, new_node -> net_address, strlen(new_node -> net_address) * sizeof(char));
                         forward_node -> port = new_node -> port;
                         memcpy(forward_node -> content, new_node -> content, strlen(new_node -> content) * sizeof(char));
                         forward_node -> content_size = new_node -> content_size;
-                        init_entry( &forward_node -> buffer_entry);
                         
                         pthread_mutex_lock(
                                    &LBeacon_receive_buffer_list_head.list_lock);

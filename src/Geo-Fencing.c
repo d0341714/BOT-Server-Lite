@@ -625,6 +625,8 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
                 continue;
             }
 
+            memset(geo_fence_list_node, 0, sizeof(sgeo_fence_list_node));
+
             init_geo_fence_list_node(geo_fence_list_node);
 
             perimeters = strtok_save(NULL, DELIMITER_SEMICOLON, 
