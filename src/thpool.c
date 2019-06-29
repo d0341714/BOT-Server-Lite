@@ -76,9 +76,10 @@ struct thpool_ *thpool_init(int num_threads){
     thpool_p->mempool_size = SIZE_OF_SLOT;
 
     /* Initialize the memory pool */
-    if(mp_init(&thpool_p->mempool, thpool_p->mempool_size,
+    if(mp_init(&thpool_p->mempool, SIZE_OF_SLOT,
        num_threads * SLOTS_FOR_MEM_POOL_PER_THREAD) != MEMORY_POOL_SUCCESS)
         return NULL;
+
 
     /* Initialise the job queue */
     if (jobqueue_init(thpool_p, &thpool_p -> jobqueue) == -1){
@@ -126,7 +127,7 @@ struct thpool_ *thpool_init(int num_threads){
 /* Add work to the thread pool */
 int thpool_add_work(thpool_ *thpool_p, void (*function_p)(void *),
                     void *arg_p, int priority){
-    job *newjob;
+    job *newjob = NULL;
 
     newjob = (job *)mp_alloc(&thpool_p->mempool);
 
@@ -210,6 +211,8 @@ int thpool_num_threads_working(thpool_ *thpool_p){
 
 static int thread_init (thpool_ *thpool_p, thread **thread_p, int id){
 
+    *thread_p = NULL;
+    
     *thread_p = (thread *)mp_alloc(&thpool_p -> mempool);
 
     if (thread_p == NULL){

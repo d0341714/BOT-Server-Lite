@@ -170,6 +170,7 @@ void *mp_alloc(Memory_Pool *mp){
 
     void *temp;
 
+    printf("[mp_alloc] Attemp to mp_alloc, current blocks = [%d], current alloc times = [%d]\n", mp->blocks, mp->alloc_time);
     pthread_mutex_lock(&mp->mem_lock);
 
     if(mp->head == NULL){

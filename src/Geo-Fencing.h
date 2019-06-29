@@ -93,7 +93,7 @@ typedef struct {
    sgeo_fence_list_node geo_fence_list_head;
 
    /* The list lock when the geo fence list is in processing */
-   pthread_mutex_t geo_fence_list_lock;
+   //pthread_mutex_t geo_fence_list_lock;
 
 } sgeo_fence_config;
 
