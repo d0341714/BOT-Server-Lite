@@ -339,7 +339,7 @@ int main(int argc, char **argv)
             current_node = mp_alloc( &node_mempool);
            
             if(NULL == current_node){
-                printf("mp_alloc failed, abort this data\n");
+                printf("Server main() mp_alloc failed, abort this data\n");
                 continue;
             }
 
@@ -347,6 +347,7 @@ int main(int argc, char **argv)
 
             init_entry( &current_node -> buffer_entry);
 
+            memset(content, 0, sizeof(content));
             SQL_get_geo_fence(Server_db, content);
 
             current_node -> pkt_type = GeoFence_data;    
@@ -962,7 +963,7 @@ void *process_GeoFence_routine(void *_buffer_node)
         default:
             break;
     }
-
+  
     mp_free( &node_mempool, current_node);
 
     return (void *)NULL;
@@ -1148,7 +1149,7 @@ void *process_wifi_receive()
         new_node = mp_alloc( &node_mempool);
         
         if(NULL == new_node){
-             printf("mp_alloc failed, abort this data\n");
+             printf("process_wifi_receive (new_node) mp_alloc failed, abort this data\n");
              continue;
         }
 
@@ -1229,7 +1230,7 @@ void *process_wifi_receive()
                         forward_node = mp_alloc( &node_mempool);
                         
                         if(NULL == forward_node){
-                            printf("mp_alloc failed, abort this data and mp_free new_node\n");
+                            printf("process_wifi_receive (forward_node) mp_alloc failed, abort this data and mp_free new_node\n");
                             mp_free( &node_mempool, new_node);
                             continue;
                         }

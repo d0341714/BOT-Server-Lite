@@ -835,6 +835,18 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
 
     res = PQexec(conn, sql);
 
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+
+#ifdef debugging
+        printf("SQL_execute failed: %s", PQerrorMessage(conn));
+#endif
+
+        SQL_rollback_transaction(db);
+
+        return E_SQL_EXECUTE;
+    }
+
     SQL_commit_transaction(db);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
@@ -844,7 +856,6 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
 #endif
         sprintf(buf, "0;");
         return E_SQL_EXECUTE;
-
     }
 
     total_fields = PQnfields(res);
@@ -852,7 +863,7 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
 
     if(rows > 0 && total_fields == 5){
         for(current_row=0;current_row < rows;current_row++){
-            if(strlen(buf) > 0)
+            if(current_row > 0){
                 sprintf(buf, "%s;%s;%s;%s;%s;%s;",
                                                 buf,
                                                 PQgetvalue(res, current_row, 0),
@@ -861,15 +872,16 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
                                                 PQgetvalue(res, current_row, 3),
                                                 PQgetvalue(res, current_row, 4))
                                                 ;
-            else
+            }else{
                 sprintf(buf, "%d;%s;%s;%s;%s;%s;",
                                                 rows,
                                                 PQgetvalue(res, current_row, 0),
                                                 PQgetvalue(res, current_row, 1),
                                                 PQgetvalue(res, current_row, 2),
                                                 PQgetvalue(res, current_row, 3),
-                                                PQgetvalue(res, current_row, 4))
+                                                PQgetvalue(res, current_row, 4))   
                                                 ;
+            }
         }
     }else{
         sprintf(buf, "0;");
