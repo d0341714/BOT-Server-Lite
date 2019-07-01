@@ -192,9 +192,9 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
     PGconn *conn = (PGconn *) db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char *table_name[3] = {"lbeacon_table", "gateway_table", "tracking_table"};
+    char *table_name[1] = {"geo_fence_alert"};
     char *sql_template = "DELETE FROM %s WHERE " \
-                         "last_report_timestamp < " \
+                         "receive_time < " \
                          "NOW() - INTERVAL \'%d HOURS\';";
     int idx = 0;
     char *tsdb_table_name[1] = {"tracking_table"};
@@ -204,7 +204,7 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
 
     SQL_begin_transaction(db);
 
-    for(idx = 0; idx<3; idx++){
+    for(idx = 0; idx< 1; idx++){
 
         memset(sql, 0, sizeof(sql));
 
