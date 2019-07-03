@@ -141,18 +141,23 @@ int main(int argc, char **argv)
 
     /* Initialize buffer_list_heads and add to the head in to the priority list.
      */
-
     init_buffer( &priority_list_head, (void *) sort_priority_list,
                 serverconfig.high_priority);
 
-    init_buffer( &time_critical_Gateway_receive_buffer_list_head,
-                (void *) NULL, serverconfig.high_priority);
-    insert_list_tail( &time_critical_Gateway_receive_buffer_list_head
-                     .priority_list_entry,
+     init_buffer( &Geo_fence_alert_buffer_list_head,
+                (void *) process_GeoFence_alert_routine, 
+                serverconfig.time_critical_priority);
+    insert_list_tail( &Geo_fence_alert_buffer_list_head.priority_list_entry,
+                      &priority_list_head.priority_list_entry);
+
+    init_buffer( &Geo_fence_receive_buffer_list_head,
+                (void *) process_GeoFence_routine, 
+                serverconfig.time_critical_priority);
+    insert_list_tail( &Geo_fence_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &LBeacon_receive_buffer_list_head,
-                (void *) LBeacon_routine, serverconfig.high_priority);
+                (void *) LBeacon_routine, serverconfig.normal_priority);
     insert_list_tail( &LBeacon_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
@@ -174,17 +179,6 @@ int main(int argc, char **argv)
     init_buffer( &BHM_send_buffer_list_head,
                 (void *) process_wifi_send, serverconfig.low_priority);
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
-                      &priority_list_head.priority_list_entry);
-
-    init_buffer( &GeoFence_receive_buffer_list_head,
-                (void *) process_GeoFence_routine, serverconfig.normal_priority);
-    insert_list_tail( &GeoFence_receive_buffer_list_head.priority_list_entry,
-                      &priority_list_head.priority_list_entry);
-
-    init_buffer( &GeoFence_alert_buffer_list_head,
-                (void *) process_GeoFence_alert_routine, 
-                serverconfig.high_priority);
-    insert_list_tail( &GeoFence_alert_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     sort_priority_list(&serverconfig, &priority_list_head);
@@ -277,7 +271,8 @@ int main(int argc, char **argv)
 
     geo_fence_config.GeoFence_alert_list_node_mempool = &node_mempool;
     geo_fence_config.GeoFence_alert_list_head =
-                                               &GeoFence_alert_buffer_list_head;
+        &Geo_fence_alert_buffer_list_head;
+
     init_geo_fence(&geo_fence_config);
 
     last_polling_object_tracking_time = 0;
@@ -370,10 +365,10 @@ int main(int argc, char **argv)
             //current_node->net_address
             //current_node->port
 
-            pthread_mutex_lock( &GeoFence_receive_buffer_list_head.list_lock);
+            pthread_mutex_lock( &Geo_fence_receive_buffer_list_head.list_lock);
             insert_list_tail( &current_node -> buffer_entry,
-                              &GeoFence_receive_buffer_list_head.list_head);
-            pthread_mutex_unlock( &GeoFence_receive_buffer_list_head.list_lock);
+                              &Geo_fence_receive_buffer_list_head.list_head);
+            pthread_mutex_unlock( &Geo_fence_receive_buffer_list_head.list_lock);
 
             last_update_geo_fence = get_system_time();
         }
@@ -579,11 +574,11 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name)
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->critical_priority = atoi(config_message);
+        serverconfig->time_critical_priority = atoi(config_message);
 
 #ifdef debugging
-        printf("The nice of critical priority is [%d]\n",
-               serverconfig->critical_priority);
+        printf("The nice of time critical priority is [%d]\n",
+               serverconfig->time_critical_priority);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -652,7 +647,7 @@ void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head)
         current_head = ListEntry(list_pointer, BufferListHead,
                                  priority_list_entry);
 
-        if(current_head -> priority_nice == serverconfig -> critical_priority)
+        if(current_head -> priority_nice == serverconfig -> time_critical_priority)
 
             insert_list_tail( list_pointer, &critical_priority_head);
 
@@ -1290,11 +1285,11 @@ void *process_wifi_receive()
                                    &LBeacon_receive_buffer_list_head.list_lock);
                         
                         pthread_mutex_lock(
-                                  &GeoFence_receive_buffer_list_head.list_lock);
+                                  &Geo_fence_receive_buffer_list_head.list_lock);
                         insert_list_tail( &forward_node -> buffer_entry,
-                                  &GeoFence_receive_buffer_list_head.list_head);
+                                  &Geo_fence_receive_buffer_list_head.list_head);
                         pthread_mutex_unlock(
-                                  &GeoFence_receive_buffer_list_head.list_lock);
+                                  &Geo_fence_receive_buffer_list_head.list_lock);
                        
                         break;
 

@@ -121,7 +121,7 @@ typedef struct {
 
     /* Priority levels at which buffer lists are processed by the worker threads
      */
-    int critical_priority;
+    int time_critical_priority;
     int high_priority;
     int normal_priority;
     int low_priority;
@@ -150,9 +150,6 @@ AddressMapArray Gateway_address_map;
 /* The head of a list of buffers of data from LBeacons */
 BufferListHead LBeacon_receive_buffer_list_head;
 
-/* The head of a list of buffers for time critical messages */
-BufferListHead time_critical_Gateway_receive_buffer_list_head;
-
 /* The head of a list of the return message for the Gateway join requests */
 BufferListHead NSI_send_buffer_list_head;
 
@@ -168,10 +165,10 @@ BufferListHead BHM_receive_buffer_list_head;
 
 /* The head of a list of buffers holding message from LBeacons specified by 
    GeoFence */
-BufferListHead GeoFence_receive_buffer_list_head;
+BufferListHead Geo_fence_receive_buffer_list_head;
 
 /* The head of a list of buffers holding GeoFence alert from GeoFence */
-BufferListHead GeoFence_alert_buffer_list_head;
+BufferListHead Geo_fence_alert_buffer_list_head;
 
 /* The head of a list of buffers for the buffer list head in the priority 
    order. */
