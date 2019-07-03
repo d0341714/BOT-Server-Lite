@@ -155,10 +155,11 @@ ErrorCode SQL_close_database_connection(void *db){
 
 ErrorCode SQL_vacuum_database(void *db){
     PGconn *conn = (PGconn *) db;
-    char *table_name[4] = {"tracking_table",
+    char *table_name[5] = {"tracking_table",
                            "lbeacon_table",
                            "gateway_table",
-                           "object_table"};
+                           "object_table",
+                           "geo_fence_alert"};
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "VACUUM %s;";
@@ -166,7 +167,7 @@ ErrorCode SQL_vacuum_database(void *db){
 
     SQL_begin_transaction(db);
 
-    for(idx = 0; idx< 4 ; idx++){
+    for(idx = 0; idx< 5 ; idx++){
 
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_template, table_name[idx]);

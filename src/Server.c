@@ -65,6 +65,9 @@ int main(int argc, char **argv)
     /* The main thread of the communication Unit */
     pthread_t CommUnit_thread;
 
+    /* The thread of maintenance database */
+    pthread_t database_maintenance_thread;
+
     /* The thread to listen for messages from Wi-Fi interface */
     pthread_t wifi_listener_thread;
 
@@ -238,6 +241,15 @@ int main(int argc, char **argv)
     {
         return return_value;
     }
+
+    /* Create thread to main database */
+    return_value = startThread( &database_maintenance_thread, maintain_database, NULL);
+
+    if(return_value != WORK_SUCCESSFULLY)
+    {
+        return return_value;
+    }
+
 
 #ifdef debugging
     printf("Start Communication\n");
@@ -552,10 +564,17 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name)
         memcpy(serverconfig->database_password, config_message, 
                config_message_size);
 
-#ifdef debugging
-        printf("Database Password [%s]\n", serverconfig->database_password);
-#endif
 
+        fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        serverconfig->database_keep_days = atoi(config_message);
+
+#ifdef debugging
+        printf("Database database_keep_days [%d]\n", serverconfig->database_keep_days);
+#endif
+        
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
@@ -856,6 +875,23 @@ void *CommUnit_routine()
     /* Destroy the thread pool */
     thpool_destroy(thpool);
 
+    return (void *)NULL;
+}
+
+void *maintain_database()
+{
+    printf(">>maintain_database\n");
+    while(true == ready_to_work){
+        printf("SQL_retain_data with database_keep_days=[%d]\n", serverconfig.database_keep_days); 
+        SQL_retain_data(Server_db, serverconfig.database_keep_days * 24);
+
+        printf("SQL_vacuum_database\n");
+        SQL_vacuum_database(Server_db);
+
+        // Sleep one day before next check
+        Sleep(86400 * 1000);
+    }
+    printf("<<maintain_database\n");
     return (void *)NULL;
 }
 

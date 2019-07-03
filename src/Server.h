@@ -116,6 +116,9 @@ typedef struct {
     /* The password for accessing to the database */
     char database_password[MAXIMUM_DATABASE_INFO];
 
+    /* The number of days in which we want to keep the data in the database */
+    int database_keep_days;
+
     /* Priority levels at which buffer lists are processed by the worker threads
      */
     int critical_priority;
@@ -255,6 +258,25 @@ void *sort_priority_list(ServerConfig *config, BufferListHead *list_head);
 
  */
 void *CommUnit_routine();
+
+
+/*
+  maintain_database:
+
+     This function is executed as a dedicated thread and it maintains database 
+     records by retaining old data from database and doing vacuum on all the 
+     tables.
+
+  Parameters:
+
+     None
+
+  Return value:
+
+     None
+
+ */
+void *maintain_database();
 
 /*
   NSI_routine:
