@@ -386,7 +386,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address);
 
 
 /*
-  Gateway_Broadcast:
+  Broadcast_to_Gateway:
 
      This function is executed when a command needs to be broadcast to Gateways.
      When called, this function sends msg to all Gateways registered in the
@@ -402,7 +402,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address);
      None
 
  */
-void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size);
+void Broadcast_to_Gateway(AddressMapArray *address_map, char *msg, int size);
 
 
 /*

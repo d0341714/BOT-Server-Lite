@@ -60,7 +60,9 @@ int main(int argc, char **argv)
     /* The database argument for opening database */
     char database_argument[SQL_TEMP_BUFFER_LENGTH];
 
-    int current_time, content_size;
+    int current_time;
+
+    int content_size;
 
     /* The main thread of the communication Unit */
     pthread_t CommUnit_thread;
@@ -249,10 +251,8 @@ int main(int argc, char **argv)
     printf("Start Communication\n");
 #endif
 
-    /* The while loop waiting for NSI routine and CommUnit routine to be ready 
-     */
-    while(NSI_initialization_complete == false ||
-          CommUnit_initialization_complete == false)
+    /* The while loop waiting for CommUnit routine to be ready */
+    while(CommUnit_initialization_complete == false)
     {
         Sleep(WAITING_TIME);
 
@@ -304,8 +304,8 @@ int main(int argc, char **argv)
             printf("Send Request for Tracked Object Data\n");
 #endif
 
-            /* broadcast to LBeacons */
-            Gateway_Broadcast(&Gateway_address_map, command_msg,
+            /* broadcast to gateways */
+            Broadcast_to_Gateway(&Gateway_address_map, command_msg,
                              MINIMUM_WIFI_MESSAGE_LENGTH);
 
             /* Update the last_polling_object_tracking_time */
@@ -331,8 +331,8 @@ int main(int argc, char **argv)
             printf("Send Request for Health Report\n");
 #endif
 
-            /* broadcast to LBeacons */
-            Gateway_Broadcast(&Gateway_address_map, command_msg,
+            /* broadcast to gateways */
+            Broadcast_to_Gateway(&Gateway_address_map, command_msg,
                               MINIMUM_WIFI_MESSAGE_LENGTH);
 
             /* Update the last_polling_LBeacon_for_HR_time */
@@ -712,7 +712,7 @@ void *CommUnit_routine()
 
     int return_error_value;
 
-    /* The flag is to know if buffer nodes are processed in this while loop */
+    /* The flag indicates whether buffer nodes were processed in this while loop */
     bool did_work;
 
     /* The pointer point to the current priority buffer list entry */
@@ -1097,7 +1097,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
 }
 
 
-void Gateway_Broadcast(AddressMapArray *address_map, char *msg, int size)
+void Broadcast_to_Gateway(AddressMapArray *address_map, char *msg, int size)
 {
     /* The counter for for-loop*/
     int current_index;

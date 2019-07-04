@@ -89,9 +89,9 @@ int is_in_Address_Map(AddressMapArray *address_map, char *net_address)
 
     for(n = 0;n < MAX_NUMBER_NODES;n ++)
     {
-        if (address_map -> in_use[n] == true && strncmp(address_map ->
-            address_map_list[n].net_address, net_address, NETWORK_ADDR_LENGTH)
-            == 0)
+        if (address_map -> in_use[n] == true && 
+            strncmp(address_map -> address_map_list[n].net_address, 
+            net_address, NETWORK_ADDR_LENGTH)== 0)
         {
                 return n;
         }

@@ -71,7 +71,7 @@
 /* Parameter that marks the start of the config file */
 #define DELIMITER "="
 
-/* Parameter that marks the start of fraction part of float number */
+/* Parameter that marks the start of the fraction part of float number */
 #define FRACTION_DOT "."
 
 /* Parameter that marks the separator of differnt records communicated with
@@ -86,15 +86,15 @@
 
 /* Number of times to retry open file, because file openning operation may have
    transient failure. */
-#define FILE_OPEN_RETRY 5
+#define FILE_OPEN_RETRIES 5
 
 /* Number of times to retry getting a dongle, because this operation may have
    transient failure. */
-#define DONGLE_GET_RETRY 5
+#define DONGLE_GET_RETRIES 5
 
 /* Number of times to retry opening socket, because socket openning operation
    may have transient failure. */
-#define SOCKET_OPEN_RETRY 5
+#define SOCKET_OPEN_RETRIES 5
 
 /* The number of slots in the memory pool */
 #define SLOTS_IN_MEM_POOL 1024
@@ -108,10 +108,10 @@
 /* The size of message to be sent over WiFi in bytes */
 #define WIFI_MESSAGE_LENGTH 4096
 
-/* Maximum length of the message allow to set to WIFI_MESSAGE_LENGTH */
+/* Maximum length of the message in bytes allow to set to WIFI_MESSAGE_LENGTH */
 #define MAXIMUM_WIFI_MESSAGE_LENGTH 65507
 
-/* Minimum length of the message 
+/* Minimum length of the message in bytes
    (One byte for data type and one byte for a space) 
  */
 #define MINIMUM_WIFI_MESSAGE_LENGTH 2
@@ -146,6 +146,7 @@
 /* Timeout interval in ms */
 #define WAITING_TIME 5
 
+/* Maximum length for each array of database information */
 #define MAXIMUM_DATABASE_INFO 1024
 
 /* Maximum number of nodes per star network */
@@ -387,17 +388,17 @@ unsigned int twoc(int in, int t);
 /*
   init_buffer:
 
-     The function fills the attributes of a specified buffer to be called by
-     another threads to process the buffer content, including the function, the
-     argument of the function and the priority level which the function is to be
-     executed.
+     The function fills the attributes of a specified buffer content will 
+     be process by another thread, including the function need to process 
+     the content, the argument of the function and the priority level at 
+     which the function is to be executed.
 
   Parameters:
 
-     buffer - A pointer points to the buffer to be modified.
+     buffer - A pointer points to the buffer to be processed.
      buff_id - The index of the buffer for the priority array.
-     function - The pointer points to the function be assigned to the buffer.
-     priority - The priority nice of the buffer when processing the buffer.
+     function - The pointer to the function as way the attributes of the buffer.
+     priority - The priority nice of the thread when processing the buffer.
 
   Return value:
 
@@ -430,9 +431,8 @@ void init_Address_Map(AddressMapArray *address_map);
 
   Parameters:
 
-     address_map - The pointer points to the head of the AddressMap.
-     net_address - The pointer points to the  network address we decide to 
-                   compare.
+     address_map - A pointer to the head of the AddressMap.
+     net_address - The pointer to the network address to compare.
 
   Return value:
 
@@ -444,14 +444,14 @@ int is_in_Address_Map(AddressMapArray *address_map, char *net_address);
 /*
   udp_sendpkt
 
-     This function is used to send the packet to the destination via UDP 
+     This function is called to send a packet to the destination via UDP 
      connection.
 
   Parameter:
 
-     udp_config  : The pointer points to the structure contains all variables 
+     udp_config  : A pointer to the structure contains all variables 
                    for the UDP connection.
-     buffer_node : The pointer points to the buffer node.
+     buffer_node : A pointer to the buffer node.
 
   Return Value:
 
@@ -464,12 +464,12 @@ int udp_sendpkt(pudp_config udp_config, BufferNode *buffer_node);
 /*
   trim_string_tail:
 
-     This function trim whitespace, newline and carry-return at the end of
+     This function trims whitespace, newline and carry-return at the end of
      the string when reading config messages.
 
   Parameters:
 
-     message - The pointer points to the character array containing the input
+     message - A pointer to the character array containing the input
                string.
 
   Return value:
@@ -522,9 +522,9 @@ int strncasecmp(char const *str_a, char const *str_b, size_t len);
 
   Parameters:
 
-     thread        - The pointer of the thread.
-     start_routine - routine to be executed by the thread.
-     arg           - the argument for the start_routine.
+     thread        - A pointer of the thread.
+     start_routine - Routine to be executed by the thread.
+     arg           - The argument for the start_routine.
 
   Return value:
 
@@ -537,19 +537,17 @@ ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
 /*
   strtok_save:
      
-     This function breaks string str into a series of tokens using the 
+     This function breaks a specified string into a series of tokens using the 
      delimiter delim.
      
      Windows uses strtok_s()
 
   Parameters:
 
-     str - The contents of this string are modified and broken into smaller    
-           strings (tokens).
-     delim - This is the C string containing the delimiters. These may vary 
-             from one call to another.
-
-     saveptr - The pointer points to the next char of the searched char.
+     str     - A pointer to the string to be modified and broken into smaller    
+               strings (tokens).
+     delim   - The C string containing the delimiters.
+     saveptr - A pointer to the next char of the searched character.
 
   Return value:
 
