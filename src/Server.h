@@ -53,7 +53,7 @@
 #include "Geo-Fencing.h"
 
 /* When debugging is needed */
-//#define debugging
+#define debugging
 
 /* Server config file location and the config file definition. */
 
@@ -386,7 +386,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address);
 
 
 /*
-  Broadcast_to_Gateway:
+  Broadcast_to_gateway:
 
      This function is executed when a command needs to be broadcast to Gateways.
      When called, this function sends msg to all Gateways registered in the
@@ -402,7 +402,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address);
      None
 
  */
-void Broadcast_to_Gateway(AddressMapArray *address_map, char *msg, int size);
+void Broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size);
 
 
 /*

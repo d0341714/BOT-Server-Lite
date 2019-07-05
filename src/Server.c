@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 {
     int return_value;
 
-    /* The type of the packet */
+    /* The type of the packet sent by the server */
     int send_pkt_type;
 
     /* The command message to be sent */
@@ -62,6 +62,7 @@ int main(int argc, char **argv)
 
     int current_time;
 
+    /* Number of character bytes in the packet content */
     int content_size;
 
     /* The main thread of the communication Unit */
@@ -285,8 +286,8 @@ int main(int argc, char **argv)
     {
         current_time = get_system_time();
 
-        /* If it is the time to poll health reports from LBeacons, get a
-           thread to do this work */
+        /* If it is the time to poll track object data from LBeacons, 
+           get a thread to do this work */
         if(current_time - last_polling_object_tracking_time >=
            serverconfig.period_between_RFTOD)
         {
@@ -299,13 +300,14 @@ int main(int argc, char **argv)
 
             command_msg[0] = (char)send_pkt_type;
 
+
 #ifdef debugging
             display_time();
             printf("Send Request for Tracked Object Data\n");
 #endif
 
-            /* broadcast to gateways */
-            Broadcast_to_Gateway(&Gateway_address_map, command_msg,
+            /* Broadcast poll messenge to gateways */
+            Broadcast_to_gateway(&Gateway_address_map, command_msg,
                              MINIMUM_WIFI_MESSAGE_LENGTH);
 
             /* Update the last_polling_object_tracking_time */
@@ -332,7 +334,7 @@ int main(int argc, char **argv)
 #endif
 
             /* broadcast to gateways */
-            Broadcast_to_Gateway(&Gateway_address_map, command_msg,
+            Broadcast_to_gateway(&Gateway_address_map, command_msg,
                               MINIMUM_WIFI_MESSAGE_LENGTH);
 
             /* Update the last_polling_LBeacon_for_HR_time */
@@ -376,7 +378,7 @@ int main(int argc, char **argv)
         {
             Sleep(WAITING_TIME);
         }
-    }
+    }/* End while(ready_to_work == true) */
 
     release_geo_fence( &geo_fence_config);
 
@@ -712,7 +714,8 @@ void *CommUnit_routine()
 
     int return_error_value;
 
-    /* The flag indicates whether buffer nodes were processed in this while loop */
+    /* A flag to indicate whether any buffer nodes were processed in 
+    this iteration of the while loop */
     bool did_work;
 
     /* The pointer point to the current priority buffer list entry */
@@ -782,7 +785,7 @@ void *CommUnit_routine()
                     pthread_mutex_unlock( &current_head -> list_lock);
                     /* Go to check the next buffer list in the priority list */
 
-                    Sleep(WAITING_TIME);
+                    //Sleep(WAITING_TIME);
                     continue;
                 }
                 else 
@@ -796,9 +799,8 @@ void *CommUnit_routine()
                     current_node = ListEntry(list_entry, BufferNode,
                                              buffer_entry);
 
-                    /* If there is a node in the buffer and the buffer is not be
-                       occupied, do the work according to the function pointer
-                     */
+                    /* Call the function specified by the function pointer to 
+                       the work */
                     return_error_value = thpool_add_work(thpool,
                                                      current_head -> function,
                                                      current_node,
@@ -829,7 +831,7 @@ void *CommUnit_routine()
             {
                 pthread_mutex_unlock( &current_head -> list_lock);
 
-                Sleep(WAITING_TIME);
+                //Sleep(WAITING_TIME);
                 continue;
             }
             else 
@@ -843,8 +845,8 @@ void *CommUnit_routine()
                 current_node = ListEntry(list_entry, BufferNode,
                                          buffer_entry);
 
-                /* If there is a node in the buffer and the buffer is not be
-                   occupied, do the work according to the function pointer */
+                /* Call the function pointed to by the function pointer to do 
+                   the work */
                 return_error_value = thpool_add_work(thpool,
                                                      current_head -> function,
                                                      current_node,
@@ -860,13 +862,16 @@ void *CommUnit_routine()
 
         pthread_mutex_unlock( &priority_list_head.list_lock);
 
+        /* If during this iteration of while loop no work were done, 
+           sleep before starting the next iteration */
+        if(did_work == false)
+        {
+            Sleep(WAITING_TIME);
+        }
+
     } /* End while(ready_to_work == true) */
 
-    if(did_work == false)
-    {
-        Sleep(WAITING_TIME);
-    }
-
+    
     /* Destroy the thread pool */
     thpool_destroy(thpool);
 
@@ -1097,7 +1102,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
 }
 
 
-void Broadcast_to_Gateway(AddressMapArray *address_map, char *msg, int size)
+void Broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size)
 {
     /* The counter for for-loop*/
     int current_index;
@@ -1110,7 +1115,7 @@ void Broadcast_to_Gateway(AddressMapArray *address_map, char *msg, int size)
         {
             if (address_map -> in_use[current_index] == true)
             {
-                /* Add the content of tje buffer node to the UDP to be sent to
+                /* Add the content of the buffer node to the UDP to be sent to
                    the server */
                 udp_addpkt( &udp_config,
                             address_map ->
@@ -1138,7 +1143,7 @@ void *process_wifi_send(void *_buffer_node)
                                                     current_node->content_size);
 #endif
 
-    /* Add the content of tje buffer node to the UDP to be sent to the
+    /* Add the content of the buffer node to the UDP to be sent to the
        server */
     udp_sendpkt( &udp_config, current_node -> net_address,
                 serverconfig.send_port, current_node -> content, 
