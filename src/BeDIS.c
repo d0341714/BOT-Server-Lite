@@ -223,7 +223,7 @@ char *strtok_save(char *str, char *delim, char **saveptr)
 int display_time(void)
 {
     // variables to store date and time components
-    int hours, minutes, seconds, day, month, year;
+    //int hours, minutes, seconds, day, month, year;
 
     // time_t is arithmetic time type
     time_t now;

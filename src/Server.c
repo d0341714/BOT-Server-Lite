@@ -255,7 +255,7 @@ int main(int argc, char **argv)
     /* The while loop waiting for CommUnit routine to be ready */
     while(CommUnit_initialization_complete == false)
     {
-        Sleep(WAITING_TIME);
+        Sleep(BUSY_WAITING_TIME);
 
         if(initialization_failed == true)
         {
@@ -376,7 +376,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            Sleep(WAITING_TIME);
+            Sleep(BUSY_WAITING_TIME);
         }
     }/* End while(ready_to_work == true) */
 
@@ -729,7 +729,7 @@ void *CommUnit_routine()
     /* wait for NSI get ready */
     while(NSI_initialization_complete == false)
     {
-        Sleep(WAITING_TIME);
+        Sleep(BUSY_WAITING_TIME);
         if(initialization_failed == true)
         {
             return (void *)NULL;
@@ -785,7 +785,7 @@ void *CommUnit_routine()
                     pthread_mutex_unlock( &current_head -> list_lock);
                     /* Go to check the next buffer list in the priority list */
 
-                    //Sleep(WAITING_TIME);
+                    //Sleep(BUSY_WAITING_TIME);
                     continue;
                 }
                 else 
@@ -831,7 +831,7 @@ void *CommUnit_routine()
             {
                 pthread_mutex_unlock( &current_head -> list_lock);
 
-                //Sleep(WAITING_TIME);
+                //Sleep(BUSY_WAITING_TIME);
                 continue;
             }
             else 
@@ -866,7 +866,7 @@ void *CommUnit_routine()
            sleep before starting the next iteration */
         if(did_work == false)
         {
-            Sleep(WAITING_TIME);
+            Sleep(BUSY_WAITING_TIME);
         }
 
     } /* End while(ready_to_work == true) */
@@ -1145,9 +1145,8 @@ void *process_wifi_send(void *_buffer_node)
 
     /* Add the content of the buffer node to the UDP to be sent to the
        server */
-    udp_sendpkt( &udp_config, current_node -> net_address,
-                serverconfig.send_port, current_node -> content, 
-                current_node -> content_size);
+    //udp_sendpkt(&udp_config, current_node -> net_address,serverconfig.send_port, current_node -> content, current_node -> content_size);
+    udp_sendpkt(&udp_config, current_node);
 
     mp_free( &node_mempool, current_node);
 
@@ -1174,7 +1173,7 @@ void *process_wifi_receive()
         /* If there is no pkt received */
         if(temppkt.is_null == true)
         {
-            Sleep(WAITING_TIME);
+            Sleep(BUSY_WAITING_TIME);
             continue;
         }
 
