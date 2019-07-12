@@ -43,8 +43,8 @@
 
  */
 
-#ifndef GATEWAY_H
-#define GATEWAY_H
+#ifndef SERVER_H
+#define SERVER_H
 
 #define _GNU_SOURCE
 
@@ -74,66 +74,12 @@
 
 #endif
 
-/* The configuration file structure */
-typedef struct {
-
-    /* The IP address of the Server for WiFi netwok connection. */
-    char server_ip[NETWORK_ADDR_LENGTH];
-
-    /* The IP address of database for the Server to connect. */
-    char db_ip[NETWORK_ADDR_LENGTH];
-
-    /* The maximum number of Gateway nodes allowed in the star network of this Server */
-    int allowed_number_nodes;
-
-    /* The time interval in seconds for the Server sending request for health
-       reports from LBeacon */
-    int period_between_RFHR;
-
-    /* The time interval in seconds for the Server sending request for tracked
-       object data from LBeacon */
-    int period_between_RFTOD;
-
-    /* The number of worker threads used by the communication unit for sending
-      and receiving packets to and from LBeacons and the sever. */
-    int number_worker_threads;
-
-    /* A port that Gateways are listening on and for the Server to send to. */
-    int send_port;
-
-    /* A port that the Server is listening for Gateways to send to */
-    int recv_port;
-
-    /* A port that the database is listening on for the Server to send to */
-    int database_port;
-
-    /* The name of the database */
-    char database_name[MAXIMUM_DATABASE_INFO];
-
-    /* The account for accessing to the database */
-    char database_account[MAXIMUM_DATABASE_INFO];
-
-    /* The password for accessing to the database */
-    char database_password[MAXIMUM_DATABASE_INFO];
-
-    /* The number of days in which we want to keep the data in the database */
-    int database_keep_days;
-
-    /* Priority levels at which buffer lists are processed by the worker threads
-     */
-    int time_critical_priority;
-    int high_priority;
-    int normal_priority;
-    int low_priority;
-
-} ServerConfig;
-
 
 /* Global variables */
 
 /* The Server config struct for storing config parameters from the config file 
  */
-ServerConfig serverconfig;
+extern ServerConfig serverconfig;
 
 /* The pointer points to the db cursor */
 void *Server_db;
@@ -178,19 +124,6 @@ BufferListHead priority_list_head;
 sgeo_fence_config geo_fence_config;
 
 
-/* Flags */
-
-/*
-  Initialization of the Server components involves network activates that may
-  take time. These flags enable each module to inform the main thread when its
-  initialization completes.
- */
-bool NSI_initialization_complete;
-bool CommUnit_initialization_complete;
-
-/* The flag is to identify whether any component fail to initialize */
-bool initialization_failed;
-
 /* Variables for storing the last polling times in second*/
 int last_polling_LBeacon_for_HR_time;
 int last_polling_object_tracking_time;
@@ -200,7 +133,7 @@ int last_update_geo_fence;
 
 
 /*
-  get_config:
+  get_server_config:
 
      This function reads the specified config file line by line until the
      end of file and copies the data in each line into an element of the
@@ -215,46 +148,7 @@ int last_update_geo_fence;
      ErrorCode - WORK_SUCCESSFULLY: work successfully.
                  E_OPEN_FILE: config file  fail to open.
  */
-ErrorCode get_config(ServerConfig *config, char *file_name);
-
-
-/*
-  sort_priority_list:
-
-     The function arrange entries in the priority list in nonincreasing
-     order of the priority nice.
-
-  Parameters:
-
-     config - The pointer points to the structure which stored config for
-              gateway.
-     list_head - The pointer points to the priority list head.
-
-  Return value:
-
-     None
- */
-void *sort_priority_list(ServerConfig *config, BufferListHead *list_head);
-
-
-/*
-  CommUnit_routine:
-
-     The function is executed by the main thread of the communication unit that
-     is responsible for sending and receiving packets to and from the sever and
-     LBeacons after the NSI module has initialized WiFi networks. It creates
-     threads to carry out the communication process.
-
-  Parameters:
-
-     None
-
-  Return value:
-
-     None
-
- */
-void *CommUnit_routine();
+ErrorCode get_server_config(ServerConfig *config, char *file_name);
 
 
 /*
@@ -276,7 +170,7 @@ void *CommUnit_routine();
 void *maintain_database();
 
 /*
-  NSI_routine:
+  Server_NSI_routine:
 
      This function is executed by worker threads when they process the buffer
      nodes in NSI receive buffer list.
@@ -290,7 +184,7 @@ void *maintain_database();
      None
 
  */
-void *NSI_routine(void *_buffer_node);
+void *Server_NSI_routine(void *_buffer_node);
 
 /*
   BHM_routine:
@@ -307,7 +201,7 @@ void *NSI_routine(void *_buffer_node);
      None
 
  */
-void *BHM_routine(void *_buffer_node);
+void *Server_BHM_routine(void *_buffer_node);
 
 
 /*

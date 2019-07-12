@@ -68,6 +68,7 @@
 #include "thpool.h"
 
 
+
 /* Parameter that marks the start of the config file */
 #define DELIMITER "="
 
@@ -359,6 +360,82 @@ typedef struct coordinates{
 } Coordinates;
 
 
+/* The configuration file structure */
+typedef struct {
+
+    /* The IP address of the Server for WiFi netwok connection. */
+    char server_ip[NETWORK_ADDR_LENGTH];
+
+    /* The IP address of database for the Server to connect. */
+    char db_ip[NETWORK_ADDR_LENGTH];
+
+    /* The maximum number of Gateway nodes allowed in the star network of this Server */
+    int allowed_number_nodes;
+
+    /* The time interval in seconds for the Server sending request for health
+       reports from LBeacon */
+    int period_between_RFHR;
+
+    /* The time interval in seconds for the Server sending request for tracked
+       object data from LBeacon */
+    int period_between_RFTOD;
+
+    /* The number of worker threads used by the communication unit for sending
+      and receiving packets to and from LBeacons and the sever. */
+    int number_worker_threads;
+
+    /* A port that Gateways are listening on and for the Server to send to. */
+    int send_port;
+
+    /* A port that the Server is listening for Gateways to send to */
+    int recv_port;
+
+    /* A port that the database is listening on for the Server to send to */
+    int database_port;
+
+    /* The name of the database */
+    char database_name[MAXIMUM_DATABASE_INFO];
+
+    /* The account for accessing to the database */
+    char database_account[MAXIMUM_DATABASE_INFO];
+
+    /* The password for accessing to the database */
+    char database_password[MAXIMUM_DATABASE_INFO];
+
+    /* The number of days in which we want to keep the data in the database */
+    int database_keep_days;
+
+    /* Priority levels at which buffer lists are processed by the worker threads
+     */
+    int time_critical_priority;
+    int high_priority;
+    int normal_priority;
+    int low_priority;
+
+} ServerConfig;
+
+/* The Server config struct for storing config parameters from the config file 
+ */
+ServerConfig serverconfig;
+
+/* The head of a list of buffers for the buffer list head in the priority 
+   order. */
+extern BufferListHead priority_list_head;
+
+/* Flags */
+
+/*
+  Initialization of the Server components involves network activates that may
+  take time. These flags enable each module to inform the main thread when its
+  initialization completes.
+ */
+bool NSI_initialization_complete;
+bool CommUnit_initialization_complete;
+
+/* The flag is to identify whether any component fail to initialize */
+bool initialization_failed;
+
+
 /* A global flag that is initially set to true by the main thread. It is set
    to false by any thread when the thread encounters a fatal error,
    indicating that it is about to exit. In addition, if user presses Ctrl+C,
@@ -439,6 +516,45 @@ void init_Address_Map(AddressMapArray *address_map);
      int: If not find, return -1, else return its array number.
  */
 int is_in_Address_Map(AddressMapArray *address_map, char *net_address);
+
+
+/*
+  sort_priority_list:
+
+     The function arrange entries in the priority list in nonincreasing
+     order of the priority nice.
+
+  Parameters:
+
+     config - The pointer points to the structure which stored config for
+              gateway.
+     list_head - The pointer points to the priority list head.
+
+  Return value:
+
+     None
+ */
+void *sort_priority_list(ServerConfig *config, BufferListHead *list_head);
+
+
+/*
+  CommUnit_routine:
+
+     The function is executed by the main thread of the communication unit that
+     is responsible for sending and receiving packets to and from the sever and
+     LBeacons after the NSI module has initialized WiFi networks. It creates
+     threads to carry out the communication process.
+
+  Parameters:
+
+     None
+
+  Return value:
+
+     None
+
+ */
+void *CommUnit_routine();
 
 
 /*

@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 
     /* Create the serverconfig from input serverconfig file */
 
-    if(get_config( &serverconfig, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY)
+    if(get_server_config( &serverconfig, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY)
     {
         return E_OPEN_FILE;
     }
@@ -170,12 +170,12 @@ int main(int argc, char **argv)
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &NSI_receive_buffer_list_head,
-                (void *) NSI_routine, serverconfig.normal_priority);
+                (void *) Server_NSI_routine, serverconfig.normal_priority);
     insert_list_tail( &NSI_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &BHM_receive_buffer_list_head,
-                (void *) BHM_routine, serverconfig.low_priority);
+                (void *) Server_BHM_routine, serverconfig.low_priority);
     insert_list_tail( &BHM_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
@@ -393,7 +393,7 @@ int main(int argc, char **argv)
 }
 
 
-ErrorCode get_config(ServerConfig *serverconfig, char *file_name) 
+ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name) 
 {
     FILE *file = fopen(file_name, "r");
     
@@ -623,261 +623,6 @@ ErrorCode get_config(ServerConfig *serverconfig, char *file_name)
 }
 
 
-void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head)
-{
-    List_Entry *list_pointer,
-               *next_list_pointer;
-
-    List_Entry critical_priority_head, high_priority_head,
-               normal_priority_head, low_priority_head;
-
-    BufferListHead *current_head, *next_head;
-
-    init_entry( &critical_priority_head);
-    init_entry( &high_priority_head);
-    init_entry( &normal_priority_head);
-    init_entry( &low_priority_head);
-
-    pthread_mutex_lock( &list_head -> list_lock);
-
-    list_for_each_safe(list_pointer, next_list_pointer,
-                       &list_head -> priority_list_entry)
-    {
-
-        remove_list_node(list_pointer);
-
-        current_head = ListEntry(list_pointer, BufferListHead,
-                                 priority_list_entry);
-
-        if(current_head -> priority_nice == serverconfig -> time_critical_priority)
-
-            insert_list_tail( list_pointer, &critical_priority_head);
-
-        else if(current_head -> priority_nice == serverconfig -> high_priority)
-
-            insert_list_tail( list_pointer, &high_priority_head);
-
-        else if(current_head -> priority_nice == serverconfig -> 
-                normal_priority)
-
-            insert_list_tail( list_pointer, &normal_priority_head);
-
-        else if(current_head -> priority_nice == serverconfig -> low_priority)
-
-            insert_list_tail( list_pointer, &low_priority_head);
-
-    }
-
-    if(is_entry_list_empty(&critical_priority_head) == false)
-    {
-        list_pointer = critical_priority_head.next;
-        remove_list_node(list_pointer -> prev);
-        concat_list( &list_head -> priority_list_entry, list_pointer);
-    }
-
-    if(is_entry_list_empty(&high_priority_head) == false)
-    {
-        list_pointer = high_priority_head.next;
-        remove_list_node(list_pointer -> prev);
-        concat_list( &list_head -> priority_list_entry, list_pointer);
-    }
-
-    if(is_entry_list_empty(&normal_priority_head) == false)
-    {
-        list_pointer = normal_priority_head.next;
-        remove_list_node(list_pointer -> prev);
-        concat_list( &list_head -> priority_list_entry, list_pointer);
-    }
-
-    if(is_entry_list_empty(&low_priority_head) == false)
-    {
-        list_pointer = low_priority_head.next;
-        remove_list_node(list_pointer -> prev);
-        concat_list( &list_head -> priority_list_entry, list_pointer);
-    }
-
-    pthread_mutex_unlock( &list_head -> list_lock);
-
-
-    return (void *)NULL;
-}
-
-
-void *CommUnit_routine()
-{
-    /* The last reset time */
-    int init_time;
-
-    int current_time;
-
-    Threadpool thpool;
-
-    int return_error_value;
-
-    /* A flag to indicate whether any buffer nodes were processed in 
-    this iteration of the while loop */
-    bool did_work;
-
-    /* The pointer point to the current priority buffer list entry */
-    List_Entry *current_entry, *list_entry;
-
-    BufferNode *current_node;
-
-    /* The pointer point to the current buffer list head */
-    BufferListHead *current_head;
-
-    /* wait for NSI get ready */
-    while(NSI_initialization_complete == false)
-    {
-        Sleep(BUSY_WAITING_TIME);
-        if(initialization_failed == true)
-        {
-            return (void *)NULL;
-        }
-    }
-#ifdef debugging
-    printf("[CommUnit] thread pool Initializing\n");
-#endif
-    /* Initialize the threadpool with specified number of worker threads
-       according to the data stored in the serverconfig file. */
-    thpool = thpool_init(serverconfig.number_worker_threads);
-
-#ifdef debugging
-    printf("[CommUnit] thread pool Initialized\n");
-#endif
-
-    current_time = get_system_time();
-
-    /* Set the initial time. */
-    init_time = current_time;
-
-    /* All the buffers lists have been are initialized and the thread pool
-       initialized. Set the flag to true. */
-    CommUnit_initialization_complete = true;
-
-    /* When there is no dead thead, do the work. */
-    while(ready_to_work == true)
-    {
-        did_work = false;
-
-        current_time = get_system_time();
-
-        /* In the normal situation, the scanning starts from the high priority
-           to lower priority. When the timer expired for MAX_STARVATION_TIME,
-           reverse the scanning process */
-        while(current_time - init_time < MAX_STARVATION_TIME)
-        {
-            /* Scan the priority_list to get the buffer list with the highest
-               priority among all lists that are not empty. */
-
-            pthread_mutex_lock( &priority_list_head.list_lock);
-
-            list_for_each(current_entry,
-                          &priority_list_head.priority_list_entry)
-            {
-                current_head = ListEntry(current_entry, BufferListHead,
-                                         priority_list_entry);
-
-                pthread_mutex_lock( &current_head -> list_lock);
-
-                if (is_entry_list_empty( &current_head->list_head) == true)
-                {
-                    pthread_mutex_unlock( &current_head -> list_lock);
-                    /* Go to check the next buffer list in the priority list */
-
-                    //Sleep(BUSY_WAITING_TIME);
-                    continue;
-                }
-                else 
-                {
-                    list_entry = current_head -> list_head.next;
-
-                    remove_list_node(list_entry);
-
-                    pthread_mutex_unlock( &current_head -> list_lock);
-
-                    current_node = ListEntry(list_entry, BufferNode,
-                                             buffer_entry);
-
-                    /* Call the function specified by the function pointer to 
-                       the work */
-                    return_error_value = thpool_add_work(thpool,
-                                                     current_head -> function,
-                                                     current_node,
-                                                     current_head ->
-                                                     priority_nice);
-                    did_work = true;
-                    break;
-                }
-            }
-            current_time = get_system_time();
-            pthread_mutex_unlock( &priority_list_head.list_lock);
-        }
-
-        /* Scan the priority list in reverse order to prevent starving the
-           lowest priority buffer list. */
-
-        pthread_mutex_lock( &priority_list_head.list_lock);
-
-        list_for_each_reverse(current_entry,
-                              &priority_list_head.priority_list_entry)
-        {
-            current_head = ListEntry(current_entry, BufferListHead,
-                                     priority_list_entry);
-
-            pthread_mutex_lock( &current_head -> list_lock);
-
-            if (is_entry_list_empty( &current_head->list_head) == true)
-            {
-                pthread_mutex_unlock( &current_head -> list_lock);
-
-                //Sleep(BUSY_WAITING_TIME);
-                continue;
-            }
-            else 
-            {
-                list_entry = current_head -> list_head.next;
-
-                remove_list_node(list_entry);
-
-                pthread_mutex_unlock( &current_head -> list_lock);
-
-                current_node = ListEntry(list_entry, BufferNode,
-                                         buffer_entry);
-
-                /* Call the function pointed to by the function pointer to do 
-                   the work */
-                return_error_value = thpool_add_work(thpool,
-                                                     current_head -> function,
-                                                     current_node,
-                                                     current_head ->
-                                                     priority_nice);
-                did_work = true;
-                break;
-            }
-        }
-
-        /* Update the init_time */
-        init_time = get_system_time();
-
-        pthread_mutex_unlock( &priority_list_head.list_lock);
-
-        /* If during this iteration of while loop no work were done, 
-           sleep before starting the next iteration */
-        if(did_work == false)
-        {
-            Sleep(BUSY_WAITING_TIME);
-        }
-
-    } /* End while(ready_to_work == true) */
-
-    
-    /* Destroy the thread pool */
-    thpool_destroy(thpool);
-
-    return (void *)NULL;
-}
-
 void *maintain_database()
 {
     printf(">>maintain_database\n");
@@ -896,7 +641,7 @@ void *maintain_database()
 }
 
 
-void *NSI_routine(void *_buffer_node)
+void *Server_NSI_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
@@ -943,7 +688,7 @@ void *NSI_routine(void *_buffer_node)
 }
 
 
-void *BHM_routine(void *_buffer_node)
+void *Server_BHM_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
