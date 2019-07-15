@@ -416,7 +416,7 @@ typedef struct {
 
 /* The Server config struct for storing config parameters from the config file 
  */
-ServerConfig serverconfig;
+extern ServerConfig serverconfig;
 
 /* The head of a list of buffers for the buffer list head in the priority 
    order. */
@@ -429,11 +429,11 @@ extern BufferListHead priority_list_head;
   take time. These flags enable each module to inform the main thread when its
   initialization completes.
  */
-bool NSI_initialization_complete;
-bool CommUnit_initialization_complete;
+extern bool NSI_initialization_complete;
+extern bool CommUnit_initialization_complete;
 
 /* The flag is to identify whether any component fail to initialize */
-bool initialization_failed;
+extern bool initialization_failed;
 
 
 /* A global flag that is initially set to true by the main thread. It is set

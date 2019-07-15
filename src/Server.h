@@ -79,7 +79,7 @@
 
 /* The Server config struct for storing config parameters from the config file 
  */
-extern ServerConfig serverconfig;
+ServerConfig serverconfig;
 
 /* The pointer points to the db cursor */
 void *Server_db;
@@ -123,6 +123,16 @@ BufferListHead priority_list_head;
 /* The struct for storing necessary objects for geo fence */
 sgeo_fence_config geo_fence_config;
 
+/*
+  Initialization of the Server components involves network activates that may
+  take time. These flags enable each module to inform the main thread when its
+  initialization completes.
+ */
+bool NSI_initialization_complete;
+bool CommUnit_initialization_complete;
+
+/* The flag is to identify whether any component fail to initialize */
+bool initialization_failed;
 
 /* Variables for storing the last polling times in second*/
 int last_polling_LBeacon_for_HR_time;
@@ -187,7 +197,7 @@ void *maintain_database();
 void *Server_NSI_routine(void *_buffer_node);
 
 /*
-  BHM_routine:
+  Server_BHM_routine:
 
      This function is executed by worker threads when they process the buffer
      nodes in BHM receive buffer list.
@@ -205,7 +215,7 @@ void *Server_BHM_routine(void *_buffer_node);
 
 
 /*
-  LBeacon_routine:
+  Server_LBeacon_routine:
 
      This function is executed by worker threads when they process the buffer
      nodes in LBeacon receive buffer list and send to the server directly.
@@ -219,7 +229,7 @@ void *Server_BHM_routine(void *_buffer_node);
      None
 
  */
-void *LBeacon_routine(void *_buffer_node);
+void *Server_LBeacon_routine(void *_buffer_node);
 
 
 /*
@@ -300,7 +310,7 @@ void Broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size);
 
 
 /*
-  process_wifi_send:
+  Server_process_wifi_send:
 
      This function sends the message in the buffer list to the destination via 
      Wi-Fi.
@@ -313,11 +323,11 @@ void Broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size);
 
      None
  */
-void *process_wifi_send(void *_buffer_node);
+void *Server_process_wifi_send(void *_buffer_node);
 
 
 /*
-  process_wifi_receive:
+  Server_process_wifi_receive:
 
      This function listens for messages or command received from the server or
      LBeacons. After getting the message, push the received data into the 
@@ -331,7 +341,7 @@ void *process_wifi_send(void *_buffer_node);
 
      None
  */
-void *process_wifi_receive();
+void *Server_process_wifi_receive();
 
 
 #endif

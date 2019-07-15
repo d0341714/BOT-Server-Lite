@@ -147,7 +147,7 @@ int main(int argc, char **argv)
     init_buffer( &priority_list_head, (void *) sort_priority_list,
                 serverconfig.high_priority);
 
-     init_buffer( &Geo_fence_alert_buffer_list_head,
+    init_buffer( &Geo_fence_alert_buffer_list_head,
                 (void *) process_GeoFence_alert_routine, 
                 serverconfig.time_critical_priority);
     insert_list_tail( &Geo_fence_alert_buffer_list_head.priority_list_entry,
@@ -160,12 +160,12 @@ int main(int argc, char **argv)
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &LBeacon_receive_buffer_list_head,
-                (void *) LBeacon_routine, serverconfig.normal_priority);
+                (void *) Server_LBeacon_routine, serverconfig.normal_priority);
     insert_list_tail( &LBeacon_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &NSI_send_buffer_list_head,
-                (void *) process_wifi_send, serverconfig.normal_priority);
+                (void *) Server_process_wifi_send, serverconfig.normal_priority);
     insert_list_tail( &NSI_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &BHM_send_buffer_list_head,
-                (void *) process_wifi_send, serverconfig.low_priority);
+                (void *) Server_process_wifi_send, serverconfig.low_priority);
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
     }
 
     return_value = startThread( &wifi_listener_thread, 
-                               (void *)process_wifi_receive,
+                               (void *)Server_process_wifi_receive,
                                NULL);
 
     if(return_value != WORK_SUCCESSFULLY)
@@ -286,6 +286,11 @@ int main(int argc, char **argv)
     {
         current_time = get_system_time();
 
+        /*  time : period_between_RFTOD 7
+                 < period_between_update_geo_fence 1200
+                 < period_between_RFHR 3600
+         */
+
         /* If it is the time to poll track object data from LBeacons, 
            get a thread to do this work */
         if(current_time - last_polling_object_tracking_time >=
@@ -314,32 +319,9 @@ int main(int argc, char **argv)
             last_polling_object_tracking_time = current_time;
         }
 
-        /* Since period_between_RFTOD is too frequent, we only allow one type 
+        /* Since period_between_RFTOD is short, we only allow one type 
            of data to be sent at the same time except for tracked object data. 
          */
-        if(current_time - last_polling_LBeacon_for_HR_time >=
-                serverconfig.period_between_RFHR)
-        {
-            /* Polling for health reports. */
-            /* set the pkt type */
-            send_pkt_type = ((from_server & 0x0f) << 4) +
-                             (health_report & 0x0f);
-            memset(command_msg, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
-
-            command_msg[0] = (char)send_pkt_type;
-
-#ifdef debugging
-            display_time();
-            printf("Send Request for Health Report\n");
-#endif
-
-            /* broadcast to gateways */
-            Broadcast_to_gateway(&Gateway_address_map, command_msg,
-                              MINIMUM_WIFI_MESSAGE_LENGTH);
-
-            /* Update the last_polling_LBeacon_for_HR_time */
-            last_polling_LBeacon_for_HR_time = get_system_time();
-        }
         else if(current_time - last_update_geo_fence > 
                 period_between_update_geo_fence)
         {
@@ -373,6 +355,29 @@ int main(int argc, char **argv)
             pthread_mutex_unlock( &Geo_fence_receive_buffer_list_head.list_lock);
 
             last_update_geo_fence = get_system_time();
+        }
+        else if(current_time - last_polling_LBeacon_for_HR_time >=
+                serverconfig.period_between_RFHR)
+        {
+            /* Polling for health reports. */
+            /* set the pkt type */
+            send_pkt_type = ((from_server & 0x0f) << 4) +
+                             (health_report & 0x0f);
+            memset(command_msg, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
+
+            command_msg[0] = (char)send_pkt_type;
+
+#ifdef debugging
+            display_time();
+            printf("Send Request for Health Report\n");
+#endif
+
+            /* broadcast to gateways */
+            Broadcast_to_gateway(&Gateway_address_map, command_msg,
+                              MINIMUM_WIFI_MESSAGE_LENGTH);
+
+            /* Update the last_polling_LBeacon_for_HR_time */
+            last_polling_LBeacon_for_HR_time = get_system_time();
         }
         else
         {
@@ -708,7 +713,7 @@ void *Server_BHM_routine(void *_buffer_node)
 }
 
 
-void *LBeacon_routine(void *_buffer_node)
+void *Server_LBeacon_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
@@ -876,7 +881,7 @@ void Broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size)
 }
 
 
-void *process_wifi_send(void *_buffer_node)
+void *Server_process_wifi_send(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
@@ -903,7 +908,7 @@ void *process_wifi_send(void *_buffer_node)
 }
 
 
-void *process_wifi_receive()
+void *Server_process_wifi_receive()
 {
     BufferNode *new_node, *forward_node;
 
@@ -929,7 +934,7 @@ void *process_wifi_receive()
         new_node = mp_alloc( &node_mempool);
         
         if(NULL == new_node){
-             printf("process_wifi_receive (new_node) mp_alloc failed, abort this data\n");
+             printf("Server_process_wifi_receive (new_node) mp_alloc failed, abort this data\n");
              continue;
         }
 
@@ -1010,7 +1015,7 @@ void *process_wifi_receive()
                         forward_node = mp_alloc( &node_mempool);
                         
                         if(NULL == forward_node){
-                            printf("process_wifi_receive (forward_node) mp_alloc failed, abort this data and mp_free new_node\n");
+                            printf("Server_process_wifi_receive (forward_node) mp_alloc failed, abort this data and mp_free new_node\n");
                             mp_free( &node_mempool, new_node);
                             continue;
                         }
