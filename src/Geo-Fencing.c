@@ -47,7 +47,7 @@
 ErrorCode init_geo_fence(pgeo_fence_config geo_fence_config)
 {
 #ifdef debugging
-    printf("[GeoFence] Allicating Memory\n");
+    zlog_info(category_debug, "[GeoFence] Allicating Memory");
 #endif
 
     /* Initialize the mempool for the buffer node using in the GeoFence */
@@ -59,7 +59,7 @@ ErrorCode init_geo_fence(pgeo_fence_config geo_fence_config)
     init_entry( &(geo_fence_config -> geo_fence_list_head.geo_fence_list_entry));
 
 #ifdef debugging
-    printf("[GeoFence] Allicating Memory success\n");
+    zlog_info(category_debug, "[GeoFence] Allicating Memory success");
 #endif
 
 //    pthread_mutex_init(&geo_fence_config -> geo_fence_list_lock, 0);
@@ -133,7 +133,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
     uuid = strtok_save( content_temp, DELIMITER_SEMICOLON, &save_ptr);
 
 #ifdef debugging
-    printf("[GeoFence] Current processing UUID: %s\n", uuid);
+    zlog_info(category_debug, "[GeoFence] Current processing UUID: %s", uuid);
 #endif
 
     lbeacon_datetime = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
@@ -165,7 +165,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
         sscanf(current_ptr, "%d", &number_of_fence);
 
 #ifdef debugging
-        printf("[GeoFence] number_of_fence: %d\n", number_of_fence);
+        zlog_info(category_debug, "[GeoFence] number_of_fence: %d", number_of_fence);
 #endif
 
         /* Go through the fence list */
@@ -179,7 +179,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
                                           &save_current_ptr);
 
 #ifdef debugging
-            printf("[GeoFence] UUID: %s\n", geo_fence_uuid);
+            zlog_info(category_debug, "[GeoFence] UUID: %s", geo_fence_uuid);
 #endif
             threshold_str = strtok_save(NULL, DELIMITER_COMMA,
                                          &save_current_ptr);
@@ -187,7 +187,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
             sscanf(threshold_str, "%d", &threshold);
 
 #ifdef debugging
-            printf("[GeoFence] Threshold: %d\n", threshold);
+            zlog_info(category_debug, "[GeoFence] Threshold: %d", threshold);
 #endif
             if(strncmp(geo_fence_uuid, uuid, UUID_LENGTH) == 0)
             {
@@ -206,14 +206,16 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
                                                   buffer_node -> content);
 
 #ifdef debugging
-                printf("[GeoFence] Content: %s\n", temp_buffer_node.content);
+                zlog_info(category_debug, "[GeoFence] Content: %s", 
+                            temp_buffer_node.content);
 #endif
 
                 temp_buffer_node.content_size = strlen(
                                                       temp_buffer_node.content);
 
 #ifdef debugging
-                printf("[GeoFence] Size: %d\n", temp_buffer_node.content_size);
+                zlog_info(category_debug, "[GeoFence] Size: %d", 
+                            temp_buffer_node.content_size);
 #endif
 
                 memcpy(temp_buffer_node.net_address, buffer_node-> net_address,
@@ -234,7 +236,8 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
         sscanf(current_ptr, "%d", &number_of_perimeters);
 
 #ifdef debugging
-        printf("[GeoFence] number_of_perimeters: %d\n", number_of_perimeters);
+        zlog_info(category_debug, "[GeoFence] number_of_perimeters: %d", 
+                    number_of_perimeters);
 #endif
 
         /* Go through the perimeter list */
@@ -248,7 +251,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
                                           &save_current_ptr);
 
 #ifdef debugging
-            printf("[GeoFence] UUID: %s\n", uuid);
+            zlog_info(category_debug, "[GeoFence] UUID: %s", uuid);
 #endif
             threshold_str = strtok_save(NULL, DELIMITER_COMMA,
                                          &save_current_ptr);
@@ -256,7 +259,7 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
             sscanf(threshold_str, "%d", &threshold);
 
 #ifdef debugging
-            printf("[GeoFence] Threshold: %d\n", threshold);
+            zlog_info(category_debug, "[GeoFence] Threshold: %d", threshold);
 #endif
             if(strncmp(geo_fence_uuid, uuid, UUID_LENGTH) == 0)
             {
@@ -276,14 +279,16 @@ ErrorCode geo_fence_check_tracked_object_data_routine(
                                                   buffer_node -> content);
 
 #ifdef debugging
-                printf("[GeoFence] Content: %s\n", temp_buffer_node.content);
+                zlog_info(category_debug, "[GeoFence] Content: %s", 
+                            temp_buffer_node.content);
 #endif
 
                 temp_buffer_node.content_size = strlen(
                                                       temp_buffer_node.content);
 
 #ifdef debugging
-                printf("[GeoFence] Size: %d\n", temp_buffer_node.content_size);
+                zlog_info(category_debug, "[GeoFence] Size: %d", 
+                            temp_buffer_node.content_size);
 #endif
 
                 memcpy(temp_buffer_node.net_address, buffer_node-> net_address,
@@ -366,13 +371,13 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
     sscanf(current_ptr, "%d", &geo_fence_id);
 
 #ifdef debugging
-    printf("[GeoFence] Start detect mac address\n");
+    zlog_info(category_debug, "[GeoFence] Start detect mac address");
 #endif
 
     lbeacon_type = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
 #ifdef debugging
-    printf("[GeoFence] LBeacon Fence Type: %s\n", lbeacon_type);
+    zlog_info(category_debug, "[GeoFence] LBeacon Fence Type: %s", lbeacon_type);
 #endif
 
     current_ptr = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
@@ -380,7 +385,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
     sscanf(current_ptr, "%d", &threshold);
 
 #ifdef debugging
-    printf("[GeoFence] Threshold: %d\n", threshold);
+    zlog_info(category_debug, "[GeoFence] Threshold: %d", threshold);
 #endif
     
     mac_prefix = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
@@ -388,7 +393,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
     uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
 #ifdef debugging
-    printf("[GeoFence] UUID: %s\n", uuid);
+    zlog_info(category_debug, "[GeoFence] UUID: %s", uuid);
 #endif
 
     current_ptr = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
@@ -396,7 +401,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
 
 #ifdef debugging
-    printf("[GeoFence] LBeacon IP: %s\n", lbeacon_ip);
+    zlog_info(category_debug, "[GeoFence] LBeacon IP: %s", lbeacon_ip);
 #endif
 
     // Start processing received tracked object data
@@ -408,7 +413,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
         sscanf(current_ptr, "%d", &object_type);
 
 #ifdef debugging
-        printf("[GeoFence] Object Type: %d\n", object_type);
+        zlog_info(category_debug, "[GeoFence] Object Type: %d", object_type);
 #endif
 
         current_ptr = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
@@ -416,7 +421,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
         sscanf(current_ptr, "%d", &number_of_objects);
 
 #ifdef debugging
-        printf("[GeoFence] Number of Objects: %d\n", number_of_objects);
+        zlog_info(category_debug, "[GeoFence] Number of Objects: %d", number_of_objects);
 #endif
 
         while(number_of_objects --)
@@ -462,7 +467,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
                                             rssi >= threshold)
                 {
 
-                    printf("[GeoFence-Alert] timestamp %d - %s %s %s %d\n",
+                    zlog_info(category_debug, "[GeoFence-Alert] timestamp %d - %s %s %s %d",
                            get_system_time(), uuid, lbeacon_ip, mac_address,
                            rssi);
 
@@ -478,7 +483,7 @@ static ErrorCode check_geo_fence_routine(pgeo_fence_config geo_fence_config,
                         mp_alloc(geo_fence_config -> GeoFence_alert_list_node_mempool);
 
                     if(NULL == GeoFence_alert_buffer_node){
-                        printf("[GeoFence-Alert] mp_alloc failed, abort this data\n");
+                        zlog_info(category_debug, "[GeoFence-Alert] mp_alloc failed, abort this data");
                         continue;
                     }
 
@@ -530,7 +535,7 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
 
     char *name, *saveptr, *current_ptr, *fences, *perimeters, *mac_prefix;
 
-    printf(">>update_geo_fence\n");
+    zlog_info(category_debug, ">>update_geo_fence");
     
     geo_fence_list_node = NULL;
     current_list_ptr = NULL;
@@ -552,7 +557,7 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
 
     sscanf(current_ptr, "%d", &number_of_geo_fence);
 #ifdef debugging
-    printf("[GeoFence] number_of_geo_fence: %d\n", number_of_geo_fence);
+    zlog_info(category_debug, "[GeoFence] number_of_geo_fence: %d", number_of_geo_fence);
 #endif
 
     for (counter = 0; counter < number_of_geo_fence; counter ++)
@@ -569,14 +574,14 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
 
 
 #ifdef debugging
-        printf("[GeoFence] Current Proceccing Geo Fence ID: %d\n", geo_fence_id)
+        zlog_info(category_debug, "[GeoFence] Current Proceccing Geo Fence ID: %d\n", geo_fence_id)
         ;
 #endif
 
         name = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
 #ifdef debugging
-        printf("[GeoFence] Current Proceccing Geo Fence NAME: %s\n", name);
+        zlog_info(category_debug, "[GeoFence] Current Proceccing Geo Fence NAME: %s", name);
 #endif
         pthread_mutex_lock(&(geo_fence_config -> geo_fence_list_head.list_lock));
         
@@ -588,8 +593,8 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
                                          geo_fence_list_entry);
 
 #ifdef debugging
-            printf("[GeoFence] current_list_ptr->id: %d\n[GeoFence] "\
-                   "geo_fence_id: %d\n", current_list_ptr->id, geo_fence_id);
+            zlog_info(category_debug, "[GeoFence] current_list_ptr->id: %d\n[GeoFence] "\
+                   "geo_fence_id: %d", current_list_ptr->id, geo_fence_id);
 #endif
 
             if(current_list_ptr->id == geo_fence_id)
@@ -598,7 +603,7 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
                 free_geo_fence_list_node(current_list_ptr);
                 mp_free( &geo_fence_config -> mempool, current_list_ptr);
 #ifdef debugging
-            printf("[GeoFence] Exists\n");
+            zlog_info(category_debug, "[GeoFence] Exists");
 #endif
                 break;
             }
@@ -614,7 +619,7 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
             geo_fence_list_node = mp_alloc( &geo_fence_config -> mempool);
            
             if(NULL == geo_fence_list_node){
-                printf("[GeoFence] mp_alloc failed, abort this data\n");
+                zlog_info(category_debug, "[GeoFence] mp_alloc failed, abort this data");
                 continue;
             }
             memset(geo_fence_list_node, 0, sizeof(sgeo_fence_list_node));
@@ -625,19 +630,19 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
                                      &saveptr);
 
 #ifdef debugging
-            printf("[GeoFence] Perimeters: [%s]\n", perimeters);
+            zlog_info(category_debug, "[GeoFence] Perimeters: [%s]", perimeters);
 #endif
 
             fences = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
 #ifdef debugging
-            printf("[GeoFence] Fences: [%s]\n", fences);
+            zlog_info(category_debug, "[GeoFence] Fences: [%s]", fences);
 #endif
 
             mac_prefix = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
 #ifdef debugging
-            printf("[GeoFence] Mac_Prefix: [%s]\n", mac_prefix);
+            zlog_info(category_debug, "[GeoFence] Mac_Prefix: [%s]", mac_prefix);
 #endif
             geo_fence_list_node->id = geo_fence_id;
 
@@ -664,7 +669,7 @@ ErrorCode update_geo_fence(pgeo_fence_config geo_fence_config,
         }
     }
     
-    printf("<<update_geo_fence\n");
+    zlog_info(category_debug, "<<update_geo_fence");
     return WORK_SUCCESSFULLY;
 }
 

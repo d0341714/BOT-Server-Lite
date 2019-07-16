@@ -213,14 +213,14 @@ void *CommUnit_routine()
         }
     }
 #ifdef debugging
-    printf("[CommUnit] thread pool Initializing\n");
+    zlog_info(category_debug, "[CommUnit] thread pool Initializing\n");
 #endif
     /* Initialize the threadpool with specified number of worker threads
        according to the data stored in the serverconfig file. */
     thpool = thpool_init(serverconfig.number_worker_threads);
 
 #ifdef debugging
-    printf("[CommUnit] thread pool Initialized\n");
+    zlog_info(category_debug, "[CommUnit] thread pool Initialized\n");
 #endif
 
     current_time = get_system_time();
@@ -426,7 +426,7 @@ ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
          pthread_create(thread, &attr, start_routine, arg) != 0 ||
          pthread_detach( *thread))
     {
-          printf("Start Thread Error.\n");
+          zlog_info(category_debug, "Start Thread Error.\n");
           return E_START_THREAD;
     }
 

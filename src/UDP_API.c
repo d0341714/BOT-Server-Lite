@@ -153,11 +153,11 @@ void *udp_send_pkt_routine(void *udpconfig)
                 si_send.sin_addr.s_addr   = inet_addr(current_send_pkt.address);
 
 #ifdef debugging
-                printf("Start Send pkts\n(sendto [%s] msg [", 
+                zlog_info(category_debug, "Start Send pkts\n(sendto [%s] msg [", 
                                                       current_send_pkt.address);
                 print_content(current_send_pkt.content,   
                                                  current_send_pkt.content_size);
-                printf("])\n");
+                zlog_info(category_debug, "])\n");
 #endif
 
                 if (sendto(udp_config -> send_socket, current_send_pkt.content, 
@@ -165,13 +165,13 @@ void *udp_send_pkt_routine(void *udpconfig)
                     (struct sockaddr *)&si_send, sizeof(struct sockaddr)) == -1)
                 {
 #ifdef debugging
-                    printf("sendto error.[%s]\n", strerror(errno));
+                    zlog_info(category_debug, "sendto error.[%s]\n", strerror(errno));
 #endif
                 }
                 else
                 {
 #ifdef debugging
-                    printf("Send pkt success\n");
+                    zlog_info(category_debug, "Send pkt success\n");
 #endif
                 }
             }
@@ -217,7 +217,7 @@ void *udp_recv_pkt_routine(void *udpconfig)
 
         recv_len = 0;
 #ifdef debugging
-        printf("recv pkt.\n");
+        zlog_info(category_debug, "recv pkt.");
 #endif
         /* try to receive some data, this is a non-blocking call */
         if ((recv_len = recvfrom(udp_config -> recv_socket, recv_buf,
@@ -225,7 +225,7 @@ void *udp_recv_pkt_routine(void *udpconfig)
              (socklen_t *)&socketaddr_len)) == -1)
         {
 #ifdef debugging
-            printf("No data received.\n");
+            zlog_info(category_debug, "No data received.");
 #endif
             Sleep(SEND_THREAD_IDLE_SLEEP_TIME);
         }
@@ -254,11 +254,11 @@ void *udp_recv_pkt_routine(void *udpconfig)
         }
 #ifdef debugging
         else
-            printf("else recvfrom error.\n");
+            zlog_info(category_debug, "else recvfrom error.");
 #endif
     }
 #ifdef debugging
-    printf("Exit Receive.\n");
+    zlog_info(category_debug, "Exit Receive.");
 #endif
     
     return (void *)NULL;

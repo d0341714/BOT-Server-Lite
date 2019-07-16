@@ -78,25 +78,47 @@ int main(int argc, char **argv)
 
     char content[WIFI_MESSAGE_LENGTH];
 
+	//zlog variables
+    int n=10;
+
     /* Initialize flags */
     NSI_initialization_complete      = false;
     CommUnit_initialization_complete = false;
     initialization_failed            = false;
     ready_to_work                    = true;
 
-#ifdef debugging
-    printf("Start Server\n");
-#endif
+   
 
-    /* Create the serverconfig from input serverconfig file */
-
-    if(get_server_config( &serverconfig, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY)
+    /* Initialize zlog */
+	if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0)
     {
-        return E_OPEN_FILE;
+        category_health_report = zlog_get_category(LOG_CATEGORY_HEALTH_REPORT);
+
+        if (!category_health_report)
+            zlog_fini();
+
+        category_debug = zlog_get_category(LOG_CATEGORY_DEBUG);
+        if (!category_debug)
+            zlog_fini();
     }
 
 #ifdef debugging
-    printf("Mempool Initializing\n");
+    zlog_info(category_debug,"Start Server");
+#endif
+	
+    /* Create the serverconfig from input serverconfig file */
+    if(get_server_config( &serverconfig, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY)
+    {
+        zlog_error(category_health_report, "Opening config file Fail");
+#ifdef debugging
+        zlog_error(category_debug, "Opening config file Fail");
+#endif
+        return E_OPEN_FILE;
+    }
+
+
+#ifdef debugging
+    zlog_info(category_debug,"Mempool Initializing");
 #endif
 
     /* Initialize the memory pool */
@@ -107,11 +129,11 @@ int main(int argc, char **argv)
     }
 
 #ifdef debugging
-    printf("Mempool Initialized\n");
+    zlog_info(category_debug,"Mempool Initialized");
 #endif
 
 #ifdef debugging
-    printf("Start connect to Database\n");
+    zlog_info(category_debug,"Start connect to Database");
 #endif
 
     /* Open DB */
@@ -126,17 +148,17 @@ int main(int argc, char **argv)
                                serverconfig.database_port );
 
 #ifdef debugging
-    printf("Database Argument [%s]\n", database_argument);
+    zlog_info(category_debug,"Database Argument [%s]", database_argument);
 #endif
 
     SQL_open_database_connection(database_argument, &Server_db);
 
 #ifdef debugging
-    printf("Database connected\n");
+    zlog_info(category_debug,"Database connected");
 #endif
 
 #ifdef debugging
-    printf("Initialize buffer lists\n");
+    zlog_info(category_debug,"Initialize buffer lists");
 #endif
 
     /* Initialize the address map*/
@@ -187,11 +209,11 @@ int main(int argc, char **argv)
     sort_priority_list(&serverconfig, &priority_list_head);
 
 #ifdef debugging
-    printf("Buffer lists initialized\n");
+    zlog_info(category_debug, "Buffer lists initialized");
 #endif
 
 #ifdef debugging
-    printf("Initialize sockets\n");
+    zlog_info(category_debug, "Initialize sockets");
 #endif
 
     /* Initialize the Wifi connection */
@@ -199,9 +221,10 @@ int main(int argc, char **argv)
 
         /* Error handling and return */
         initialization_failed = true;
-
+        zlog_error(category_health_report, "Fail to initialize sockets");
+        
 #ifdef debugging
-        printf("Fail to initialize sockets\n");
+        zlog_error(category_debug, "Fail to initialize sockets");
 #endif
 
         return E_WIFI_INIT_FAIL;
@@ -218,17 +241,17 @@ int main(int argc, char **argv)
     }
 
 #ifdef debugging
-    printf("Sockets initialized\n");
+    zlog_info(category_debug, "Sockets initialized");
 #endif
 
     NSI_initialization_complete = true;
 
 #ifdef debugging
-    printf("Network Setup and Initialize success\n");
+    zlog_info(category_debug, "Network Setup and Initialize success");
 #endif
 
 #ifdef debugging
-    printf("Initialize Communication Unit\n");
+    zlog_info(category_debug, "Initialize Communication Unit");
 #endif
 
     /* Create the main thread of Communication Unit  */
@@ -236,6 +259,10 @@ int main(int argc, char **argv)
 
     if(return_value != WORK_SUCCESSFULLY)
     {
+        zlog_error(category_health_report, "CommUnit_thread Create Fail");
+#ifdef debugging
+        zlog_error(category_debug, "CommUnit_thread Create Fail");
+#endif
         return return_value;
     }
 
@@ -244,12 +271,16 @@ int main(int argc, char **argv)
 
     if(return_value != WORK_SUCCESSFULLY)
     {
+        zlog_error(category_health_report, "Maintain database fail");
+#ifdef debugging
+        zlog_error(category_debug, "Maintain database fail");
+#endif
         return return_value;
     }
 
 
 #ifdef debugging
-    printf("Start Communication\n");
+    zlog_info(category_debug, "Start Communication");
 #endif
 
     /* The while loop waiting for CommUnit routine to be ready */
@@ -308,7 +339,7 @@ int main(int argc, char **argv)
 
 #ifdef debugging
             display_time();
-            printf("Send Request for Tracked Object Data\n");
+            zlog_info(category_debug, "Send Request for Tracked Object Data");
 #endif
 
             /* Broadcast poll messenge to gateways */
@@ -330,7 +361,8 @@ int main(int argc, char **argv)
             current_node = mp_alloc( &node_mempool);
            
             if(NULL == current_node){
-                printf("Server main() mp_alloc failed, abort this data\n");
+                zlog_info(category_debug,
+                        "Server main() mp_alloc failed, abort this data");
                 continue;
             }
 
@@ -369,7 +401,7 @@ int main(int argc, char **argv)
 
 #ifdef debugging
             display_time();
-            printf("Send Request for Health Report\n");
+            zlog_info(category_debug, "Send Request for Health Report");
 #endif
 
             /* broadcast to gateways */
@@ -404,9 +436,8 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
     
     if (file == NULL) 
     {
-#ifdef debugging
-        printf("Load serverconfig fail\n");
-#endif
+        zlog_error(category_health_report, "Load serverconfig fail");
+        zlog_info(category_debug, "Load serverconfig fail");
         return E_OPEN_FILE;
     }
     else 
@@ -429,7 +460,7 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         memcpy(serverconfig->server_ip, config_message, config_message_size);
 
 #ifdef debugging
-        printf("Server IP [%s]\n", serverconfig->server_ip);
+        zlog_info(category_debug,"Server IP [%s]", serverconfig->server_ip);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -444,7 +475,7 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         memcpy(serverconfig->db_ip, config_message, config_message_size);
 
 #ifdef debugging
-        printf("Database IP [%s]\n", serverconfig->db_ip);
+        zlog_info(category_debug,"Database IP [%s]", serverconfig->db_ip);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -454,7 +485,7 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->allowed_number_nodes = atoi(config_message);
 
 #ifdef debugging
-        printf("Allow Number of Nodes [%d]\n", 
+        zlog_info(category_debug,"Allow Number of Nodes [%d]", 
                serverconfig->allowed_number_nodes);
 #endif
 
@@ -465,8 +496,9 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->period_between_RFHR = atoi(config_message);
 
 #ifdef debugging
-        printf("Periods between request for health report [%d]\n",
-               serverconfig->period_between_RFHR);
+        zlog_info(category_debug,
+                    "Periods between request for health report [%d]",
+                    serverconfig->period_between_RFHR);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -476,8 +508,9 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->period_between_RFTOD = atoi(config_message);
 
 #ifdef debugging
-        printf("Periods between request for tracked object data [%d]\n",
-                serverconfig->period_between_RFTOD);
+        zlog_info(category_debug,
+                    "Periods between request for tracked object data [%d]",
+                    serverconfig->period_between_RFTOD);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -487,8 +520,9 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->number_worker_threads = atoi(config_message);
 
 #ifdef debugging
-        printf("Number of worker threads [%d]\n",
-               serverconfig->number_worker_threads);
+        zlog_info(category_debug,
+                    "Number of worker threads [%d]",
+                    serverconfig->number_worker_threads);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -498,8 +532,9 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->send_port = atoi(config_message);
 
 #ifdef debugging
-        printf("The destination port when sending [%d]\n", 
-               serverconfig->send_port);
+        zlog_info(category_debug,
+                    "The destination port when sending [%d]", 
+                    serverconfig->send_port);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -509,7 +544,8 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->recv_port = atoi(config_message);
 
 #ifdef debugging
-        printf("The received port [%d]\n", serverconfig->recv_port);
+       zlog_info(category_debug,"The received port [%d]", 
+                    serverconfig->recv_port);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -519,7 +555,8 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->database_port = atoi(config_message);
 
 #ifdef debugging
-        printf("The database port [%d]\n", serverconfig->database_port);
+        zlog_info(category_debug,"The database port [%d]", 
+                    serverconfig->database_port);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -535,7 +572,8 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         ;
 
 #ifdef debugging
-        printf("Database Name [%s]\n", serverconfig->database_name);
+        zlog_info(category_debug, "Database Name [%s]", 
+                    serverconfig->database_name);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -551,7 +589,8 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
                config_message_size);
 
 #ifdef debugging
-        printf("Database Account [%s]\n", serverconfig->database_account);
+        zlog_info(category_debug, "Database Account [%s]", 
+                    serverconfig->database_account);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -574,7 +613,8 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->database_keep_days = atoi(config_message);
 
 #ifdef debugging
-        printf("Database database_keep_days [%d]\n", serverconfig->database_keep_days);
+        zlog_info(category_debug,"Database database_keep_days [%d]", 
+                    serverconfig->database_keep_days);
 #endif
         
         fgets(config_setting, sizeof(config_setting), file);
@@ -584,8 +624,9 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->time_critical_priority = atoi(config_message);
 
 #ifdef debugging
-        printf("The nice of time critical priority is [%d]\n",
-               serverconfig->time_critical_priority);
+        zlog_info(category_debug, 
+                    "The nice of time critical priority is [%d]",
+                    serverconfig->time_critical_priority);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -595,7 +636,7 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->high_priority = atoi(config_message);
 
 #ifdef debugging
-        printf("The nice of high priority is [%d]\n", 
+        zlog_info(category_debug, "The nice of high priority is [%d]", 
                serverconfig->high_priority);
 #endif
 
@@ -606,7 +647,7 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->normal_priority = atoi(config_message);
 
 #ifdef debugging
-        printf("The nice of normal priority is [%d]\n",
+        zlog_info(category_debug, "The nice of normal priority is [%d]",
                serverconfig->normal_priority);
 #endif
 
@@ -617,8 +658,8 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         serverconfig->low_priority = atoi(config_message);
 
 #ifdef debugging
-        printf("The nice of low priority is [%d]\n", serverconfig->low_priority)
-        ;
+        zlog_info(category_debug, "The nice of low priority is [%d]", 
+                    serverconfig->low_priority);
 #endif
 
         fclose(file);
@@ -630,18 +671,19 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
 
 void *maintain_database()
 {
-    printf(">>maintain_database\n");
+    zlog_info(category_debug, ">>maintain_database");
     while(true == ready_to_work){
-        printf("SQL_retain_data with database_keep_days=[%d]\n", serverconfig.database_keep_days); 
+        zlog_info(category_debug, "SQL_retain_data with database_keep_days=[%d]", 
+                    serverconfig.database_keep_days); 
         SQL_retain_data(Server_db, serverconfig.database_keep_days * 24);
 
-        printf("SQL_vacuum_database\n");
+        zlog_info(category_debug, "SQL_vacuum_database");
         SQL_vacuum_database(Server_db);
 
         // Sleep one day before next check
         Sleep(86400 * 1000);
     }
-    printf("<<maintain_database\n");
+    zlog_info(category_debug, "<<maintain_database");
     return (void *)NULL;
 }
 
@@ -655,7 +697,7 @@ void *Server_NSI_routine(void *_buffer_node)
     current_node -> pkt_direction = from_server;
 
 #ifdef debugging
-    printf("Start join...(%s)\n", current_node -> net_address);
+    zlog_info(category_debug, "Start join...(%s)", current_node -> net_address);
 #endif
 
     /* Put the address into Gateway_address_map and set the return pkt type
@@ -686,7 +728,8 @@ void *Server_NSI_routine(void *_buffer_node)
     pthread_mutex_unlock( &NSI_send_buffer_list_head.list_lock);
 
 #ifdef debugging
-    printf("%s join success\n", current_node -> net_address);
+    zlog_info(category_debug, "%s join success", 
+                current_node -> net_address);
 #endif
     
     return (void *)NULL;
@@ -761,7 +804,8 @@ void *process_GeoFence_alert_routine(void *_buffer_node)
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
 #ifdef debugging
-    printf("Process GeoFence alert [%s]\n", current_node -> content);
+    zlog_info(category_debug, "Process GeoFence alert [%s]", 
+                current_node -> content);
 #endif
 
     SQL_insert_geo_fence_alert(Server_db, current_node -> content, 
@@ -781,7 +825,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     int answer;
 
 #ifdef debugging
-    printf("Enter Gateway_join_request address [%s]\n", address);
+    zlog_info(category_debug, 
+                "Enter Gateway_join_request address [%s]", address);
 #endif
 
     pthread_mutex_lock( &address_map -> list_lock);
@@ -792,7 +837,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
        the new joined LBeacon. */
 
 #ifdef debugging
-    printf("Check whether joined\n");
+    zlog_info(category_debug, "Check whether joined");
 #endif
 
     if(answer = is_in_Address_Map(address_map, address) >=0)
@@ -805,7 +850,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
         pthread_mutex_unlock( &address_map -> list_lock);
 
 #ifdef debugging
-        printf("Exist and Return\n");
+        zlog_info(category_debug, "Exist and Return");
 #endif
 
         return true;
@@ -820,7 +865,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     }
 
 #ifdef debugging
-    printf("Start join...(%s)\n", address);
+    zlog_info(category_debug, "Start join...(%s)", address);
 #endif
 
     /* If still has space for the LBeacon to register */
@@ -835,7 +880,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
         pthread_mutex_unlock( &address_map -> list_lock);
 
 #ifdef debugging
-        printf("Join Success\n");
+        zlog_info(category_debug, "Join Success");
 #endif
 
         return true;
@@ -845,7 +890,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
         pthread_mutex_unlock( &address_map -> list_lock);
 
 #ifdef debugging
-        printf("Join maximum\n");
+        zlog_info(category_debug, "Join maximum");
 #endif
         return false;
     }
@@ -886,11 +931,12 @@ void *Server_process_wifi_send(void *_buffer_node)
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
 #ifdef debugging
-    printf("Start Send pkt\naddress [%s]\nport [%d]\nmsg [%s]\nsize [%d]\n",
-                                                    current_node->net_address,
-                                                    serverconfig.send_port,
-                                                    current_node->content,
-                                                    current_node->content_size);
+    zlog_info(category_debug, 
+              "Start Send pkt\naddress [%s]\nport [%d]\nmsg [%s]\nsize [%d]\n",
+              current_node->net_address,
+              serverconfig.send_port,
+              current_node->content,
+              current_node->content_size);
 #endif
 
     /* Add the content of the buffer node to the UDP to be sent to the
@@ -901,7 +947,7 @@ void *Server_process_wifi_send(void *_buffer_node)
     mp_free( &node_mempool, current_node);
 
 #ifdef debugging
-    printf("Send Success\n");
+    zlog_info(category_debug, "Send Success");
 #endif
 
     return (void *)NULL;
@@ -934,7 +980,8 @@ void *Server_process_wifi_receive()
         new_node = mp_alloc( &node_mempool);
         
         if(NULL == new_node){
-             printf("Server_process_wifi_receive (new_node) mp_alloc failed, abort this data\n");
+             zlog_info(category_debug, 
+             "Server_process_wifi_receive (new_node) mp_alloc failed, abort this data");
              continue;
         }
 
@@ -971,7 +1018,7 @@ void *Server_process_wifi_receive()
                     case request_to_join:
 #ifdef debugging
                         display_time();
-                        printf("Get Join request from Gateway.\n");
+                        zlog_info(category_debug, "Get Join request from Gateway.");
 #endif
                         pthread_mutex_lock( 
                                        &NSI_receive_buffer_list_head.list_lock);
@@ -984,7 +1031,7 @@ void *Server_process_wifi_receive()
                     case health_report:
 #ifdef debugging
                         display_time();
-                        printf("Get Health Report from Gateway\n");
+                        zlog_info(category_debug, "Get Health Report from Gateway");
 #endif
                         pthread_mutex_lock( 
                                        &BHM_receive_buffer_list_head.list_lock);
@@ -1008,14 +1055,14 @@ void *Server_process_wifi_receive()
                     case tracked_object_data:
 #ifdef debugging
                         display_time();
-                        printf("Get Tracked Object Data from LBeacon\n");
+                        zlog_info(category_debug, "Get Tracked Object Data from LBeacon");
 #endif                  
                         forward_node = NULL;
                         
                         forward_node = mp_alloc( &node_mempool);
                         
                         if(NULL == forward_node){
-                            printf("Server_process_wifi_receive (forward_node) mp_alloc failed, abort this data and mp_free new_node\n");
+                            printf("Server_process_wifi_receive (forward_node) mp_alloc failed, abort this data and mp_free new_node");
                             mp_free( &node_mempool, new_node);
                             continue;
                         }
@@ -1050,7 +1097,7 @@ void *Server_process_wifi_receive()
                     case health_report:
 #ifdef debugging
                         display_time();
-                        printf("Get Health Report from LBeacon\n");
+                        zlog_info(category_debug, "Get Health Report from LBeacon");
 #endif
                         pthread_mutex_lock(&BHM_receive_buffer_list_head
                                                    .list_lock);

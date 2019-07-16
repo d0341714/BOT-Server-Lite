@@ -66,6 +66,8 @@
 #include "UDP_API.h"
 #include "LinkedList.h"
 #include "thpool.h"
+#include "zlog.h"
+#include <windows.h>
 
 
 
@@ -416,11 +418,11 @@ typedef struct {
 
 /* The Server config struct for storing config parameters from the config file 
  */
-extern ServerConfig serverconfig;
+ServerConfig serverconfig;
 
 /* The head of a list of buffers for the buffer list head in the priority 
    order. */
-extern BufferListHead priority_list_head;
+BufferListHead priority_list_head;
 
 /* Flags */
 
@@ -429,11 +431,11 @@ extern BufferListHead priority_list_head;
   take time. These flags enable each module to inform the main thread when its
   initialization completes.
  */
-extern bool NSI_initialization_complete;
-extern bool CommUnit_initialization_complete;
+bool NSI_initialization_complete;
+bool CommUnit_initialization_complete;
 
 /* The flag is to identify whether any component fail to initialize */
-extern bool initialization_failed;
+bool initialization_failed;
 
 
 /* A global flag that is initially set to true by the main thread. It is set
@@ -442,6 +444,8 @@ extern bool initialization_failed;
    the ready_to_work flag will be set as false to stop all threads. */
 bool ready_to_work;
 
+/* The pointer to the category of the log file */
+zlog_category_t *category_health_report, *category_debug;
 
 /* FUNCTIONS */
 

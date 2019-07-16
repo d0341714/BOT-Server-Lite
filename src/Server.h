@@ -60,8 +60,16 @@
 /* File path of the config file of the Server */
 #define CONFIG_FILE_NAME "./config/server.conf"
 
+/* File path of the config file of the Server */
+#define ZLOG_CONFIG_FILE_NAME \
+      "C:\\Users\\ls\\Desktop\\BOT-Server-Lite\\modules\\BOT-Server-Lite\\x64\\Release\\config\\zlog.conf"
+
 /* The category of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
+
+/* The category of the printf during debugging */
+#define LOG_CATEGORY_DEBUG "LBeacon_Debug"
+
 
 /* The time interval in seconds for the Server sending the GeoFence table to 
    the GeoFence module (must exceed 1200 seconds) */
@@ -79,7 +87,7 @@
 
 /* The Server config struct for storing config parameters from the config file 
  */
-ServerConfig serverconfig;
+//ServerConfig serverconfig;
 
 /* The pointer points to the db cursor */
 void *Server_db;
@@ -118,21 +126,24 @@ BufferListHead Geo_fence_alert_buffer_list_head;
 
 /* The head of a list of buffers for the buffer list head in the priority 
    order. */
-BufferListHead priority_list_head;
+//BufferListHead priority_list_head;
 
 /* The struct for storing necessary objects for geo fence */
 sgeo_fence_config geo_fence_config;
+
+
 
 /*
   Initialization of the Server components involves network activates that may
   take time. These flags enable each module to inform the main thread when its
   initialization completes.
  */
-bool NSI_initialization_complete;
-bool CommUnit_initialization_complete;
+ 
+//bool NSI_initialization_complete;
+//bool CommUnit_initialization_complete;
 
 /* The flag is to identify whether any component fail to initialize */
-bool initialization_failed;
+//bool initialization_failed;
 
 /* Variables for storing the last polling times in second*/
 int last_polling_LBeacon_for_HR_time;

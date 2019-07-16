@@ -80,7 +80,8 @@ int mp_init(Memory_Pool *mp, size_t size, size_t slots){
     return_value = mp_expand(mp);
 
 #ifdef debugging
-    printf("[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]\n", 
+    zlog_info(category_debug, 
+                "[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]", 
                                                               mp, mp->blocks);
 #endif
 
@@ -128,7 +129,8 @@ int mp_expand(Memory_Pool *mp){
     mp->alloc_time ++;
 
 #ifdef debugging
-    printf("[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]\n", 
+    zlog_info(category_debug, 
+                "[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]", 
                                                               mp, mp->blocks);
 #endif
 
@@ -155,7 +157,8 @@ void mp_destroy(Memory_Pool *mp){
     mp->blocks = 0;
 
 #ifdef debugging
-    printf("[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]\n", 
+    zlog_info(category_debug, 
+                "[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]", 
                                                               mp, mp->blocks);
 #endif
 
@@ -170,7 +173,7 @@ void *mp_alloc(Memory_Pool *mp){
 
     void *temp;
 
-    //printf("[mp_alloc] Attemp to mp_alloc, current blocks = [%d], current alloc times = [%d]\n", mp->blocks, mp->alloc_time);
+    //zlog_info(category_debug, "[mp_alloc] Attemp to mp_alloc, current blocks = [%d], current alloc times = [%d]", mp->blocks, mp->alloc_time);
     pthread_mutex_lock(&mp->mem_lock);
 
     if(mp->head == NULL){
@@ -193,7 +196,8 @@ void *mp_alloc(Memory_Pool *mp){
     mp->blocks --;
 
 #ifdef debugging
-    printf("[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]\n", 
+    zlog_info(category_debug, 
+                "[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]", 
                                                               mp, mp->blocks);
 #endif
 
@@ -245,7 +249,8 @@ int mp_free(Memory_Pool *mp, void *mem){
     mp->blocks ++;
 
 #ifdef debugging
-    printf("[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]\n", 
+    zlog_info(category_debug, 
+                "[Mempool] Current MemPool [%d]\n[Mempool] Remain blocks [%d]", 
                                                               mp, mp->blocks);
 #endif
 

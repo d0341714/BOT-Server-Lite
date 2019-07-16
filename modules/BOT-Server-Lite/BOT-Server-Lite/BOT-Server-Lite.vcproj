@@ -120,7 +120,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDIR)\..\..\pthreads-win\include&quot;;&quot;$(SolutionDIR)\..\..\3rd_party\PostgreSQL\11\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDIR)\..\..\pthreads-win\include&quot;;&quot;$(SolutionDIR)\..\..\3rd_party\PostgreSQL\11\include&quot;;&quot;$(SolutionDIR)\..\..\3rd_party\zlog\head\&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -140,9 +140,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="pthreadVC2.lib libpq.lib"
+				AdditionalDependencies="pthreadVC2.lib libpq.lib zlog.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(SolutionDIR)\..\..\3rd_party\PostgreSQL\11\lib\&quot;;&quot;$(SolutionDIR)..\..\pthreads-win\lib\&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDIR)\..\..\3rd_party\PostgreSQL\11\lib\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\lib\x64\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\json-c\lib\&quot;;&quot;$(SolutionDIR)\..\..\3rd_party\zlog\lib\x64\&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="17"
@@ -271,7 +271,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\inc\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\json-c\inc\&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\inc\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\json-c\inc\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\zlog\head\&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -291,9 +291,9 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="pthreadVC2.lib libpq.lib json-c.lib"
+				AdditionalDependencies="pthreadVC2.lib libpq.lib json-c.lib zlog.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\lib\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\lib\x64\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\json-c\lib\&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\lib\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\lib\x64\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\json-c\lib\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\zlog\lib\x64\&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -409,6 +409,10 @@
 				RelativePath="..\..\..\src\UDP_API.h"
 				>
 			</File>
+			<File
+				RelativePath="..\..\..\3rd_party\zlog\head\zlog.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -421,7 +425,23 @@
 			</File>
 		</Filter>
 		<File
+			RelativePath=".\ClassDiagram1.cd"
+			>
+		</File>
+		<File
 			RelativePath="..\..\..\3rd_party\PostgreSQL\11\lib\libpq.dll"
+			>
+		</File>
+		<File
+			RelativePath="..\..\..\3rd_party\zlog\bin\x64\pthreadGC2.dll"
+			>
+		</File>
+		<File
+			RelativePath="..\..\..\3rd_party\zlog\bin\x64\pthreadVC2.dll"
+			>
+		</File>
+		<File
+			RelativePath="..\..\..\3rd_party\zlog\bin\x64\zlog.dll"
 			>
 		</File>
 	</Files>

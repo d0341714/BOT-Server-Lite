@@ -51,7 +51,7 @@ static ErrorCode SQL_execute(void *db, char *sql_statement){
     PGresult *res;
 
 #ifdef debugging
-    printf("SQL command = [%s]\n", sql_statement);
+    zlog_info(category_debug, "SQL command = [%s]\n", sql_statement);
 #endif
 
     res = PQexec(conn, sql_statement);
@@ -59,7 +59,7 @@ static ErrorCode SQL_execute(void *db, char *sql_statement){
     if(PQresultStatus(res) != PGRES_COMMAND_OK){
 
 #ifdef debugging
-        printf("SQL_execute failed [%d]: %s", res, PQerrorMessage(conn));
+        zlog_info(category_debug, "SQL_execute failed [%d]: %s", res, PQerrorMessage(conn));
 #endif
 
         PQclear(res);
@@ -131,7 +131,7 @@ ErrorCode SQL_open_database_connection(char *conninfo, void **db){
     {
 
 #ifdef debugging
-        printf("Connection to database failed: %s", PQerrorMessage(*db));
+        zlog_info(category_debug, "Connection to database failed: %s", PQerrorMessage(*db));
 #endif
 
         return E_SQL_OPEN_DATABASE;
@@ -230,14 +230,14 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
         /* Execute SQL statement */
 
 #ifdef debugging
-        printf("SQL command = [%s]\n", sql);
+        zlog_info(category_debug, "SQL command = [%s]\n", sql);
 #endif
 
         res = PQexec(conn, sql);
         if(PQresultStatus(res) != PGRES_TUPLES_OK){
 
             PQclear(res);
-            printf("SQL_execute failed: %s", PQerrorMessage(conn));
+            zlog_info(category_debug, "SQL_execute failed: %s", PQerrorMessage(conn));
             SQL_rollback_transaction(db);
 
             return E_SQL_EXECUTE;
@@ -360,7 +360,7 @@ ErrorCode SQL_query_registered_gateways(void *db,
     SQL_begin_transaction(db);
 
 #ifdef debugging
-    printf("SQL command = [%s]\n", sql);
+    zlog_info(category_debug, "SQL command = [%s]\n", sql);
 #endif
 
     res = PQexec(conn, sql);
@@ -369,7 +369,7 @@ ErrorCode SQL_query_registered_gateways(void *db,
         PQclear(res);
 
 #ifdef debugging
-        printf("SQL_execute failed: %s", PQerrorMessage(conn));
+        zlog_info(category_debug, "SQL_execute failed: %s", PQerrorMessage(conn));
 #endif
 
         SQL_rollback_transaction(db);
@@ -389,7 +389,7 @@ ErrorCode SQL_query_registered_gateways(void *db,
         if(output_len < strlen(output) + strlen(temp_buf)){
 
 #ifdef debugging
-            printf("String concatenation failed due to output buffer size\n");
+            zlog_info(category_debug, "String concatenation failed due to output buffer size\n");
 #endif
 
             PQclear(res);
@@ -840,7 +840,7 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
         PQclear(res);
 
 #ifdef debugging
-        printf("SQL_execute failed: %s", PQerrorMessage(conn));
+        zlog_info(category_debug, "SQL_execute failed: %s", PQerrorMessage(conn));
 #endif
 
         SQL_rollback_transaction(db);
@@ -853,7 +853,7 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf){
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
         PQclear(res);
 #ifdef debugging
-        printf("SQL_execute failed: %s\n", PQerrorMessage(conn));
+        zlog_info(category_debug, "SQL_execute failed: %s\n", PQerrorMessage(conn));
 #endif
         sprintf(buf, "0;");
         return E_SQL_EXECUTE;
