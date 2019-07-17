@@ -291,9 +291,9 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
      db - a pointer pointing to the connection to the database backend server
 
      buf - pointer to an input string with the format below to specify the
-           health status of gateways
+           health status of gateway
 
-           length;gateway_ip_1;health_status;gateway_ip_2;health_status;
+           gateway_ip;health_status;
 
      buf_len - Length in number of bytes of buf input string
 
@@ -317,10 +317,9 @@ ErrorCode SQL_update_gateway_health_status(void *db,
      db - a pointer pointing to the connection to the database backend server
 
      buf - pointer to an input string with the format below to specify the
-           health status of gateways
+           health status of lbeacon
 
-           length;lbeacon_uuid_1;gateway_ip;health_status_1; \
-           lbeacon_uuid_2;gateway_ip;health_status_2;
+           lbeacon_uuid;lbeacon_datetime;lbeacon_ip;health_status;
 
      buf_len - Length in number of bytes of buf input string
 
@@ -362,31 +361,6 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                                           char *buf,
                                           size_t buf_len);
 
-
-/*
-  SQL_get_geo_fence
-
-     This function get geo fence table.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     buf - pointer to an array to receive the returned geo fence information.
-           The returned message format is below.
-
-            number_of_geo_fence;id;name;number_of_perimeters,perimeters_lbeacon1
-            ,throshold1, ...;number_of_fence,fence_lbeacon1,throshold1,...;
-            number_of_mac_prefix,mac_prefix1,...;
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-ErrorCode SQL_get_geo_fence(void *db, char *buf);
-
-
 /*
   SQL_insert_geo_fence_alert
 
@@ -400,8 +374,7 @@ ErrorCode SQL_get_geo_fence(void *db, char *buf);
            The returned message format is below.
 
             number_of_geo_fence_alert;mac_address1;type1;uuid1;alert_time1;
-            rssi1;geo_fence_id1;mac_address2;type2;uuid2;alert_time2;
-            rssi2;geo_fence_id2;
+            rssi1;mac_address2;type2;uuid2;alert_time2;rssi2;
 
      buf_len - Length in number of bytes of buf
 

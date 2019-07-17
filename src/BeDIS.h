@@ -82,7 +82,7 @@
 #define DELIMITER_COMMA ","
 
 /* Maximum number of characters in each line of config file */
-#define CONFIG_BUFFER_SIZE 64
+#define CONFIG_BUFFER_SIZE 4096
 
 /* Number of times to retry open file, because file openning operation may have
    transient failure. */
@@ -116,6 +116,9 @@
  */
 #define MINIMUM_WIFI_MESSAGE_LENGTH 2
 
+/* Length of geo_fence name in byte */
+#define LENGTH_OF_GEO_FENCE_NAME 32
+
 /* Number of characters in a Bluetooth MAC address */
 #define LENGTH_OF_MAC_ADDRESS 18
 
@@ -129,7 +132,7 @@
 #define WIFI_PASS_LENGTH 10
 
 /* Length of the LBeacon's UUID in number of characters */
-#define UUID_LENGTH 32
+#define LENGTH_OF_UUID 33
 
 /* Length of coordinates in number of bits */
 #define COORDINATE_LENGTH 64
@@ -241,15 +244,7 @@ typedef enum pkt_types {
     /* A pkt containing health report */
     health_report = 5,
     /* A pkt for LBeacon */
-    data_for_LBeacon = 6,
-
-    /* GeoFence */
-
-    /* A pkt containing GeoFence data */
-    GeoFence_data = 7,
-    /* A pkt containing GeoFence alert data */
-    GeoFence_alert_data = 8
-
+    data_for_LBeacon = 6
 } PktType;
 
 
@@ -260,10 +255,7 @@ typedef enum pkt_direction {
     /* pkt from server */
     from_server = 8,
     /* pkt from beacon */
-    from_beacon = 0,
-    /* pkt from modules */
-    from_modules = 12
-
+    from_beacon = 0
 } PktDirection;
 
 
@@ -572,6 +564,22 @@ char *strtok_save(char *str, char *delim, char **saveptr);
      system_time - system time in seconds
 */
 int get_system_time();
+
+
+/*
+  clock_gettime:
+
+     This helper function gets the monotonic time.
+
+  Parameters:
+
+     None
+
+  Return value:
+
+     int - uptime of MONOTONIC time in seconds
+*/
+int clock_gettime();
 
 
 #endif

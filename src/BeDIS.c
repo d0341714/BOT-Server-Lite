@@ -196,6 +196,11 @@ int get_system_time()
     return system_time;
 }
 
+int clock_gettime()
+{
+    return GetTickCount() / 1000;
+}
+
 
 char *strtok_save(char *str, char *delim, char **saveptr)
 {

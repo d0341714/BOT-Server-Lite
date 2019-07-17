@@ -50,10 +50,9 @@
 
 #include "BeDIS.h"
 #include "SqlWrapper.h"
-#include "Geo-Fencing.h"
 
 /* When debugging is needed */
-#define debugging
+//#define debugging
 
 /* Server config file location and the config file definition. */
 
@@ -63,16 +62,34 @@
 /* The category of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
 
-/* The time interval in seconds for the Server sending the GeoFence table to 
-   the GeoFence module (must exceed 1200 seconds) */
-#define period_between_update_geo_fence 1200
-
 #ifdef debugging
 
 /* The category of the printf during debugging */
 #define LOG_CATEGORY_DEBUG "LBeacon_Debug"
 
 #endif
+
+typedef struct {
+   /* The name of the geo fence */
+   char name[LENGTH_OF_GEO_FENCE_NAME];
+
+   int number_perimeters;
+   int number_fences;
+   int number_mac_prefixes;
+
+   int rssi_of_perimeters;
+   int rssi_of_fences;
+
+   char perimeters[20][LENGTH_OF_UUID];
+   char fences[20][LENGTH_OF_UUID];
+   char mac_prefixes[20][LENGTH_OF_MAC_ADDRESS];
+
+   /* The list head records the list of the geo fence */
+   List_Entry geo_fence_list_entry;
+
+} GeoFenceListNode;
+
+
 
 /* The configuration file structure */
 typedef struct {
@@ -126,8 +143,10 @@ typedef struct {
     int normal_priority;
     int low_priority;
 
-} ServerConfig;
+    /* The list head of the geo gence list */
+    struct List_Entry geo_fence_list_head;
 
+} ServerConfig;
 
 /* Global variables */
 
@@ -143,6 +162,9 @@ sudp_config udp_config;
 
 /* The mempool for the buffer node structure to allocate memory */
 Memory_Pool node_mempool;
+
+/* The mempool for the GeoFence node structure to allocate memory */
+Memory_Pool geofence_mempool;
 
 /* An array of address maps */
 AddressMapArray Gateway_address_map;
@@ -173,9 +195,6 @@ BufferListHead Geo_fence_alert_buffer_list_head;
 /* The head of a list of buffers for the buffer list head in the priority 
    order. */
 BufferListHead priority_list_head;
-
-/* The struct for storing necessary objects for geo fence */
-sgeo_fence_config geo_fence_config;
 
 
 /* Flags */
@@ -329,7 +348,7 @@ void *LBeacon_routine(void *_buffer_node);
 
 
 /*
-  process_GeoFence_routine:
+  process_tracked_data_from_geofence_gateway:
 
      This function is executed by worker threads when processing
      the buffer node in the GeoFence receive buffer list.
@@ -343,7 +362,7 @@ void *LBeacon_routine(void *_buffer_node);
      None
 
  */
-void *process_GeoFence_routine(void *_buffer_node);
+void *process_tracked_data_from_geofence_gateway(void *_buffer_node);
 
 
 /*
@@ -438,6 +457,76 @@ void *process_wifi_send(void *_buffer_node);
      None
  */
 void *process_wifi_receive();
+
+/*
+  add_geo_fence_setting:
+
+     This function parses one configuraion of geo-fence and stores the 
+     geo-fence setting structure into the geo-fence setting buffer list.
+
+  Parameters:
+
+     geo_fence_list_head - The pointer points to the geo-fence setting 
+                           buffer list head.
+     buf - The pointer points to the buffer containing one configuraion of 
+           geo-fence setting. 
+
+  Return value:
+
+     ErrorCode
+
+ */
+ErrorCode add_geo_fence_setting(struct List_Entry * geo_fence_list_head,
+                                char *buf);
+
+
+/*
+  detect_geo_fence_violations:
+
+     This function checks the object tracking data forwarded by Geo-Fence 
+     Gateway. It compares the tracking data against geo-fence settings and 
+     detects if the objects violates the geo-fence settings.
+
+  Parameters:
+
+     buffer_node - The pointer points to the buffer node.
+
+  Return value:
+
+     ErrorCode
+
+ */
+
+
+ErrorCode check_geo_fence_violations(BufferNode* buffer_node);
+
+/*
+  insert_into_geo_fence_alert_list:
+
+     This function inserts geo-fence alert log into geo-fence alert buffer 
+     list
+
+  Parameters:
+
+     mac_address - MAC address of detected object.
+     fence_type - Type of geo-fence setting. The possible values are 
+                  perimeter and fence.
+     lbeacon_uuid - UUID of the LBeacon scanned the detected object.
+     final_timestamp - Timestamp at which the lbeacon_uuid scanned this 
+                       detected object.
+     rssi - RSSI of the detected object seen by lbeacon_uuid.
+
+  Return value:
+
+     ErrorCode
+
+*/
+
+ErrorCode insert_into_geo_fence_alert_list(char *mac_address, 
+                                           char *fence_type, 
+                                           char *lbeacon_uuid, 
+                                           char *final_timestamp, 
+                                           char *rssi);
 
 
 #endif
