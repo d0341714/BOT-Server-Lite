@@ -78,8 +78,6 @@ int main(int argc, char **argv)
 
     char content[WIFI_MESSAGE_LENGTH];
 
-	//zlog variables
-    int n=10;
 
     /* Initialize flags */
     NSI_initialization_complete      = false;
@@ -88,7 +86,6 @@ int main(int argc, char **argv)
     ready_to_work                    = true;
 
    
-
     /* Initialize zlog */
 	if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0)
     {
