@@ -1,0 +1,975 @@
+2019-07-17 17:04:23.977 INFO   [0x27911c0](..\..\..\src\Server.c:102 main) - Start Server
+2019-07-17 17:04:24.044 INFO   [0x27911c0](..\..\..\src\Server.c:106 main) - Mempool Initializing
+2019-07-17 17:04:24.121 INFO   [0x27911c0](..\..\..\src\Server.c:124 main) - Mempool Initialized
+2019-07-17 17:04:24.189 INFO   [0x27911c0](..\..\..\src\Server.c:427 get_config) - Server IP [10.0.3.15]
+2019-07-17 17:04:24.254 INFO   [0x27911c0](..\..\..\src\Server.c:442 get_config) - Database IP [127.0.0.1]
+2019-07-17 17:04:24.320 INFO   [0x27911c0](..\..\..\src\Server.c:453 get_config) - Allow Number of Nodes [16]
+2019-07-17 17:04:24.387 INFO   [0x27911c0](..\..\..\src\Server.c:465 get_config) - Periods between request for health report [3600]
+2019-07-17 17:04:24.453 INFO   [0x27911c0](..\..\..\src\Server.c:477 get_config) - Periods between request for tracked object data [7]
+2019-07-17 17:04:24.520 INFO   [0x27911c0](..\..\..\src\Server.c:489 get_config) - Number of worker threads [20]
+2019-07-17 17:04:24.587 INFO   [0x27911c0](..\..\..\src\Server.c:501 get_config) - The destination port when sending [8888]
+2019-07-17 17:04:24.654 INFO   [0x27911c0](..\..\..\src\Server.c:512 get_config) - The received port [9999]
+2019-07-17 17:04:24.720 INFO   [0x27911c0](..\..\..\src\Server.c:523 get_config) - The database port [5432]
+2019-07-17 17:04:24.785 INFO   [0x27911c0](..\..\..\src\Server.c:540 get_config) - Database Name [botdb]
+2019-07-17 17:04:24.849 INFO   [0x27911c0](..\..\..\src\Server.c:557 get_config) - Database Account [postgres]
+2019-07-17 17:04:24.915 INFO   [0x27911c0](..\..\..\src\Server.c:582 get_config) - Database database_keep_days [7]
+2019-07-17 17:04:24.982 INFO   [0x27911c0](..\..\..\src\Server.c:594 get_config) - The nice of time critical priority is [-6]
+2019-07-17 17:04:25.048 INFO   [0x27911c0](..\..\..\src\Server.c:606 get_config) - The nice of high priority is [-4]
+2019-07-17 17:04:25.123 INFO   [0x27911c0](..\..\..\src\Server.c:618 get_config) - The nice of normal priority is [-2]
+2019-07-17 17:04:25.190 INFO   [0x27911c0](..\..\..\src\Server.c:630 get_config) - The nice of low priority is [0]
+2019-07-17 17:04:25.254 INFO   [0x27911c0](..\..\..\src\Server.c:634 get_config) - Initialize geo-fence list
+2019-07-17 17:04:25.319 INFO   [0x27911c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:04:25.386 INFO   [0x27911c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Front door;1,00000018000000006660000000011900,-50,;1,00000018000000006060000000009500,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:04:25.453 INFO   [0x27911c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Front door], perimeters=[1,00000018000000006660000000011900,-50,], fences=[1,00000018000000006060000000009500,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:04:25.519 INFO   [0x27911c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:04:25.585 INFO   [0x27911c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:04:25.652 INFO   [0x27911c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Storage;0,;2,00000018000000002460000000002300,00000018000000006060000000002300,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:04:25.718 INFO   [0x27911c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Storage], perimeters=[0,], fences=[2,00000018000000002460000000002300,00000018000000006060000000002300,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:04:25.785 INFO   [0x27911c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:04:25.851 INFO   [0x27911c0](..\..\..\src\Server.c:662 get_config) - name=[Front door]
+2019-07-17 17:04:25.917 INFO   [0x27911c0](..\..\..\src\Server.c:665 get_config) - [perimeters] count=1
+2019-07-17 17:04:25.984 INFO   [0x27911c0](..\..\..\src\Server.c:669 get_config) - perimeter=[00000018000000006660000000011900], rssi=[-50]
+2019-07-17 17:04:26.050 INFO   [0x27911c0](..\..\..\src\Server.c:672 get_config) - [fences] count=1
+2019-07-17 17:04:26.124 INFO   [0x27911c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000006060000000009500], rssi=[-50]
+2019-07-17 17:04:26.191 INFO   [0x27911c0](..\..\..\src\Server.c:679 get_config) - [mac_prefixes] count=2
+2019-07-17 17:04:26.257 INFO   [0x27911c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:04:26.322 INFO   [0x27911c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:04:26.390 INFO   [0x27911c0](..\..\..\src\Server.c:662 get_config) - name=[Storage]
+2019-07-17 17:04:26.457 INFO   [0x27911c0](..\..\..\src\Server.c:665 get_config) - [perimeters] count=0
+2019-07-17 17:04:26.524 INFO   [0x27911c0](..\..\..\src\Server.c:672 get_config) - [fences] count=2
+2019-07-17 17:04:26.591 INFO   [0x27911c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000002460000000002300], rssi=[-50]
+2019-07-17 17:04:26.658 INFO   [0x27911c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000006060000000002300], rssi=[-50]
+2019-07-17 17:04:26.726 INFO   [0x27911c0](..\..\..\src\Server.c:679 get_config) - [mac_prefixes] count=2
+2019-07-17 17:04:26.793 INFO   [0x27911c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:04:26.858 INFO   [0x27911c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:04:26.925 INFO   [0x27911c0](..\..\..\src\Server.c:687 get_config) - geo-fence list initialized
+2019-07-17 17:04:26.992 INFO   [0x27911c0](..\..\..\src\Server.c:139 main) - Start connect to Database
+2019-07-17 17:04:27.059 INFO   [0x27911c0](..\..\..\src\Server.c:154 main) - Database Argument [dbname=botdb user=postgres password=bedis402 host=127.0.0.1 port=5432]
+2019-07-17 17:04:27.211 INFO   [0x27911c0](..\..\..\src\Server.c:160 main) - Database connected
+2019-07-17 17:04:27.278 INFO   [0x27911c0](..\..\..\src\Server.c:164 main) - Initialize buffer lists
+2019-07-17 17:04:27.344 INFO   [0x27911c0](..\..\..\src\Server.c:215 main) - Buffer lists initialize
+2019-07-17 17:04:27.411 INFO   [0x27911c0](..\..\..\src\Server.c:219 main) - Initialize sockets
+2019-07-17 17:04:27.480 INFO   [0x27911c0](..\..\..\src\Server.c:247 main) - Sockets initialized
+2019-07-17 17:04:27.545 INFO   [0x27911c0](..\..\..\src\Server.c:253 main) - Network Setup and Initialize success
+2019-07-17 17:04:27.609 INFO   [0x27911c0](..\..\..\src\Server.c:257 main) - Initialize Communication Unit
+2019-07-17 17:04:27.698 INFO   [0x27911c0](..\..\..\src\Server.c:286 main) - Start Communication
+2019-07-17 17:04:27.762 INFO   [0x282d460](..\..\..\src\Server.c:810 CommUnit_routine) - [CommUnit] thread pool Initializing
+2019-07-17 17:04:27.801 INFO   [0x282dcd0](..\..\..\src\Server.c:999 maintain_database) - SQL_retain_data with database_keep_days=[7]
+2019-07-17 17:04:27.865 INFO   [0x282d460](..\..\..\src\Server.c:817 CommUnit_routine) - [CommUnit] thread pool Initialized
+2019-07-17 17:04:27.915 INFO   [0x282dcd0](..\..\..\src\Server.c:1002 maintain_database) - SQL_vacuum_database
+2019-07-17 17:04:28.004 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:04:28.081 INFO   [0x27911c0](..\..\..\src\Server.c:363 main) - Send Request for Health Report
+2019-07-17 17:04:32.774 INFO   [0x282d2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:04:34.164 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:04:41.161 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:04:48.165 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:04:55.164 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:05:02.164 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:05:09.169 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:05:16.167 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:05:23.171 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:05:23.380 INFO   [0x282d2a0](..\..\..\src\Server.c:1346 process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:05:23.443 INFO   [0x2835fb0](..\..\..\src\Server.c:1022 NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:05:23.507 INFO   [0x2835fb0](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:05:23.571 INFO   [0x2835fb0](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:05:23.635 INFO   [0x2835fb0](..\..\..\src\Server.c:1188 Gateway_join_request) - Start join...(140.109.22.130)
+2019-07-17 17:05:23.699 INFO   [0x2835fb0](..\..\..\src\Server.c:1203 Gateway_join_request) - Join Success
+2019-07-17 17:05:23.778 INFO   [0x2835fb0](..\..\..\src\Server.c:1053 NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:05:23.829 INFO   [0x2836440](..\..\..\src\Server.c:1261 process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:05:23.892 INFO   [0x2836440](..\..\..\src\Server.c:1274 process_wifi_send) - Send Success
+2019-07-17 17:05:30.171 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:05:30.905 INFO   [0x282d2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:05:37.174 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:05:37.904 INFO   [0x282d2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:05:44.173 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:05:44.915 INFO   [0x282d2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:05:51.169 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:05:51.837 INFO   [0x282d2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:05:58.169 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:05:58.810 INFO   [0x282d2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:06:05.172 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:06:05.817 INFO   [0x282d2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:06:12.172 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:06:12.761 INFO   [0x282d2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:06:19.169 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:06:19.810 INFO   [0x282d2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:06:26.188 INFO   [0x27911c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:06:26.784 INFO   [0x282d2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:06:40.338 INFO   [0x33611c0](..\..\..\src\Server.c:102 main) - Start Server
+2019-07-17 17:06:40.405 INFO   [0x33611c0](..\..\..\src\Server.c:106 main) - Mempool Initializing
+2019-07-17 17:06:40.476 INFO   [0x33611c0](..\..\..\src\Server.c:124 main) - Mempool Initialized
+2019-07-17 17:06:40.543 INFO   [0x33611c0](..\..\..\src\Server.c:427 get_config) - Server IP [10.0.3.15]
+2019-07-17 17:06:40.609 INFO   [0x33611c0](..\..\..\src\Server.c:442 get_config) - Database IP [127.0.0.1]
+2019-07-17 17:06:40.676 INFO   [0x33611c0](..\..\..\src\Server.c:453 get_config) - Allow Number of Nodes [16]
+2019-07-17 17:06:40.747 INFO   [0x33611c0](..\..\..\src\Server.c:465 get_config) - Periods between request for health report [3600]
+2019-07-17 17:06:40.813 INFO   [0x33611c0](..\..\..\src\Server.c:477 get_config) - Periods between request for tracked object data [7]
+2019-07-17 17:06:40.880 INFO   [0x33611c0](..\..\..\src\Server.c:489 get_config) - Number of worker threads [20]
+2019-07-17 17:06:40.947 INFO   [0x33611c0](..\..\..\src\Server.c:501 get_config) - The destination port when sending [8888]
+2019-07-17 17:06:41.014 INFO   [0x33611c0](..\..\..\src\Server.c:512 get_config) - The received port [9999]
+2019-07-17 17:06:41.082 INFO   [0x33611c0](..\..\..\src\Server.c:523 get_config) - The database port [5432]
+2019-07-17 17:06:41.149 INFO   [0x33611c0](..\..\..\src\Server.c:540 get_config) - Database Name [botdb]
+2019-07-17 17:06:41.221 INFO   [0x33611c0](..\..\..\src\Server.c:557 get_config) - Database Account [postgres]
+2019-07-17 17:06:41.286 INFO   [0x33611c0](..\..\..\src\Server.c:582 get_config) - Database database_keep_days [7]
+2019-07-17 17:06:41.354 INFO   [0x33611c0](..\..\..\src\Server.c:594 get_config) - The nice of time critical priority is [-6]
+2019-07-17 17:06:41.420 INFO   [0x33611c0](..\..\..\src\Server.c:606 get_config) - The nice of high priority is [-4]
+2019-07-17 17:06:41.488 INFO   [0x33611c0](..\..\..\src\Server.c:618 get_config) - The nice of normal priority is [-2]
+2019-07-17 17:06:41.554 INFO   [0x33611c0](..\..\..\src\Server.c:630 get_config) - The nice of low priority is [0]
+2019-07-17 17:06:41.621 INFO   [0x33611c0](..\..\..\src\Server.c:634 get_config) - Initialize geo-fence list
+2019-07-17 17:06:41.688 INFO   [0x33611c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:06:41.755 INFO   [0x33611c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Front door;1,00000018000000006660000000011900,-50,;1,00000018000000006060000000009500,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:06:41.822 INFO   [0x33611c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Front door], perimeters=[1,00000018000000006660000000011900,-50,], fences=[1,00000018000000006060000000009500,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:06:41.889 INFO   [0x33611c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:06:41.956 INFO   [0x33611c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:06:42.023 INFO   [0x33611c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Storage;0,;2,00000018000000002460000000002300,00000018000000006060000000002300,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:06:42.090 INFO   [0x33611c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Storage], perimeters=[0,], fences=[2,00000018000000002460000000002300,00000018000000006060000000002300,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:06:42.157 INFO   [0x33611c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:06:42.230 INFO   [0x33611c0](..\..\..\src\Server.c:662 get_config) - name=[Front door]
+2019-07-17 17:06:42.296 INFO   [0x33611c0](..\..\..\src\Server.c:665 get_config) - [perimeters] count=1
+2019-07-17 17:06:42.363 INFO   [0x33611c0](..\..\..\src\Server.c:669 get_config) - perimeter=[00000018000000006660000000011900], rssi=[-50]
+2019-07-17 17:06:42.430 INFO   [0x33611c0](..\..\..\src\Server.c:672 get_config) - [fences] count=1
+2019-07-17 17:06:42.498 INFO   [0x33611c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000006060000000009500], rssi=[-50]
+2019-07-17 17:06:42.565 INFO   [0x33611c0](..\..\..\src\Server.c:679 get_config) - [mac_prefixes] count=2
+2019-07-17 17:06:42.632 INFO   [0x33611c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:06:42.699 INFO   [0x33611c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:06:42.766 INFO   [0x33611c0](..\..\..\src\Server.c:662 get_config) - name=[Storage]
+2019-07-17 17:06:42.834 INFO   [0x33611c0](..\..\..\src\Server.c:665 get_config) - [perimeters] count=0
+2019-07-17 17:06:42.901 INFO   [0x33611c0](..\..\..\src\Server.c:672 get_config) - [fences] count=2
+2019-07-17 17:06:42.971 INFO   [0x33611c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000002460000000002300], rssi=[-50]
+2019-07-17 17:06:43.036 INFO   [0x33611c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000006060000000002300], rssi=[-50]
+2019-07-17 17:06:43.103 INFO   [0x33611c0](..\..\..\src\Server.c:679 get_config) - [mac_prefixes] count=2
+2019-07-17 17:06:43.179 INFO   [0x33611c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:06:43.246 INFO   [0x33611c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:06:43.313 INFO   [0x33611c0](..\..\..\src\Server.c:687 get_config) - geo-fence list initialized
+2019-07-17 17:06:43.378 INFO   [0x33611c0](..\..\..\src\Server.c:139 main) - Start connect to Database
+2019-07-17 17:06:43.444 INFO   [0x33611c0](..\..\..\src\Server.c:154 main) - Database Argument [dbname=botdb user=postgres password=bedis402 host=127.0.0.1 port=5432]
+2019-07-17 17:06:43.606 INFO   [0x33611c0](..\..\..\src\Server.c:160 main) - Database connected
+2019-07-17 17:06:43.672 INFO   [0x33611c0](..\..\..\src\Server.c:164 main) - Initialize buffer lists
+2019-07-17 17:06:43.738 INFO   [0x33611c0](..\..\..\src\Server.c:215 main) - Buffer lists initialize
+2019-07-17 17:06:43.805 INFO   [0x33611c0](..\..\..\src\Server.c:219 main) - Initialize sockets
+2019-07-17 17:06:43.875 INFO   [0x33611c0](..\..\..\src\Server.c:247 main) - Sockets initialized
+2019-07-17 17:06:43.939 INFO   [0x33611c0](..\..\..\src\Server.c:253 main) - Network Setup and Initialize success
+2019-07-17 17:06:44.002 INFO   [0x33611c0](..\..\..\src\Server.c:257 main) - Initialize Communication Unit
+2019-07-17 17:06:44.091 INFO   [0x33611c0](..\..\..\src\Server.c:286 main) - Start Communication
+2019-07-17 17:06:44.155 INFO   [0x33fd460](..\..\..\src\Server.c:810 CommUnit_routine) - [CommUnit] thread pool Initializing
+2019-07-17 17:06:44.201 INFO   [0x33fdcd0](..\..\..\src\Server.c:999 maintain_database) - SQL_retain_data with database_keep_days=[7]
+2019-07-17 17:06:44.264 INFO   [0x33fd460](..\..\..\src\Server.c:817 CommUnit_routine) - [CommUnit] thread pool Initialized
+2019-07-17 17:06:44.315 INFO   [0x33fdcd0](..\..\..\src\Server.c:1002 maintain_database) - SQL_vacuum_database
+2019-07-17 17:06:44.404 INFO   [0x33611c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:06:44.480 INFO   [0x33611c0](..\..\..\src\Server.c:363 main) - Send Request for Health Report
+2019-07-17 17:06:51.162 INFO   [0x33611c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:06:58.166 INFO   [0x33611c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:07:05.161 INFO   [0x33611c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:07:12.164 INFO   [0x33611c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:07:19.162 INFO   [0x33611c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:07:24.363 INFO   [0x33fd2a0](..\..\..\src\Server.c:1346 process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:07:24.425 INFO   [0x33fdf60](..\..\..\src\Server.c:1022 NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:07:24.489 INFO   [0x33fdf60](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:07:24.553 INFO   [0x33fdf60](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:07:24.616 INFO   [0x33fdf60](..\..\..\src\Server.c:1188 Gateway_join_request) - Start join...(140.109.22.130)
+2019-07-17 17:07:24.680 INFO   [0x33fdf60](..\..\..\src\Server.c:1203 Gateway_join_request) - Join Success
+2019-07-17 17:07:24.765 INFO   [0x33fdf60](..\..\..\src\Server.c:1053 NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:07:24.816 INFO   [0x3405fb0](..\..\..\src\Server.c:1261 process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:07:24.880 INFO   [0x3405fb0](..\..\..\src\Server.c:1274 process_wifi_send) - Send Success
+2019-07-17 17:07:26.166 INFO   [0x33611c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:07:26.669 INFO   [0x33fd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:07:33.163 INFO   [0x33611c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:07:33.678 INFO   [0x33fd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:09:09.264 INFO   [0x2f011c0](..\..\..\src\Server.c:102 main) - Start Server
+2019-07-17 17:09:09.331 INFO   [0x2f011c0](..\..\..\src\Server.c:106 main) - Mempool Initializing
+2019-07-17 17:09:09.402 INFO   [0x2f011c0](..\..\..\src\Server.c:124 main) - Mempool Initialized
+2019-07-17 17:09:09.469 INFO   [0x2f011c0](..\..\..\src\Server.c:427 get_config) - Server IP [10.0.3.15]
+2019-07-17 17:09:09.535 INFO   [0x2f011c0](..\..\..\src\Server.c:442 get_config) - Database IP [127.0.0.1]
+2019-07-17 17:09:09.602 INFO   [0x2f011c0](..\..\..\src\Server.c:453 get_config) - Allow Number of Nodes [16]
+2019-07-17 17:09:09.668 INFO   [0x2f011c0](..\..\..\src\Server.c:465 get_config) - Periods between request for health report [3600]
+2019-07-17 17:09:09.735 INFO   [0x2f011c0](..\..\..\src\Server.c:477 get_config) - Periods between request for tracked object data [7]
+2019-07-17 17:09:09.802 INFO   [0x2f011c0](..\..\..\src\Server.c:489 get_config) - Number of worker threads [20]
+2019-07-17 17:09:09.869 INFO   [0x2f011c0](..\..\..\src\Server.c:501 get_config) - The destination port when sending [8888]
+2019-07-17 17:09:09.934 INFO   [0x2f011c0](..\..\..\src\Server.c:512 get_config) - The received port [9999]
+2019-07-17 17:09:09.999 INFO   [0x2f011c0](..\..\..\src\Server.c:523 get_config) - The database port [5432]
+2019-07-17 17:09:10.063 INFO   [0x2f011c0](..\..\..\src\Server.c:540 get_config) - Database Name [botdb]
+2019-07-17 17:09:10.128 INFO   [0x2f011c0](..\..\..\src\Server.c:557 get_config) - Database Account [postgres]
+2019-07-17 17:09:10.194 INFO   [0x2f011c0](..\..\..\src\Server.c:582 get_config) - Database database_keep_days [7]
+2019-07-17 17:09:10.267 INFO   [0x2f011c0](..\..\..\src\Server.c:594 get_config) - The nice of time critical priority is [-6]
+2019-07-17 17:09:10.334 INFO   [0x2f011c0](..\..\..\src\Server.c:606 get_config) - The nice of high priority is [-4]
+2019-07-17 17:09:10.402 INFO   [0x2f011c0](..\..\..\src\Server.c:618 get_config) - The nice of normal priority is [-2]
+2019-07-17 17:09:10.469 INFO   [0x2f011c0](..\..\..\src\Server.c:630 get_config) - The nice of low priority is [0]
+2019-07-17 17:09:10.536 INFO   [0x2f011c0](..\..\..\src\Server.c:634 get_config) - Initialize geo-fence list
+2019-07-17 17:09:10.603 INFO   [0x2f011c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:09:10.670 INFO   [0x2f011c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Front door;1,00000018000000006660000000011900,-50,;1,00000018000000006060000000009500,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:09:10.738 INFO   [0x2f011c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Front door], perimeters=[1,00000018000000006660000000011900,-50,], fences=[1,00000018000000006060000000009500,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:09:10.805 INFO   [0x2f011c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:09:10.871 INFO   [0x2f011c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:09:10.938 INFO   [0x2f011c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Storage;0,;2,00000018000000002460000000002300,00000018000000006060000000002300,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:09:11.004 INFO   [0x2f011c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Storage], perimeters=[0,], fences=[2,00000018000000002460000000002300,00000018000000006060000000002300,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:09:11.071 INFO   [0x2f011c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:09:11.138 INFO   [0x2f011c0](..\..\..\src\Server.c:662 get_config) - name=[Front door]
+2019-07-17 17:09:11.203 INFO   [0x2f011c0](..\..\..\src\Server.c:665 get_config) - [perimeters] count=1
+2019-07-17 17:09:11.274 INFO   [0x2f011c0](..\..\..\src\Server.c:669 get_config) - perimeter=[00000018000000006660000000011900], rssi=[-50]
+2019-07-17 17:09:11.340 INFO   [0x2f011c0](..\..\..\src\Server.c:672 get_config) - [fences] count=1
+2019-07-17 17:09:11.408 INFO   [0x2f011c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000006060000000009500], rssi=[-50]
+2019-07-17 17:09:11.474 INFO   [0x2f011c0](..\..\..\src\Server.c:679 get_config) - [mac_prefixes] count=2
+2019-07-17 17:09:11.540 INFO   [0x2f011c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:09:11.607 INFO   [0x2f011c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:09:11.674 INFO   [0x2f011c0](..\..\..\src\Server.c:662 get_config) - name=[Storage]
+2019-07-17 17:09:11.740 INFO   [0x2f011c0](..\..\..\src\Server.c:665 get_config) - [perimeters] count=0
+2019-07-17 17:09:11.807 INFO   [0x2f011c0](..\..\..\src\Server.c:672 get_config) - [fences] count=2
+2019-07-17 17:09:11.873 INFO   [0x2f011c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000002460000000002300], rssi=[-50]
+2019-07-17 17:09:11.940 INFO   [0x2f011c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000006060000000002300], rssi=[-50]
+2019-07-17 17:09:12.007 INFO   [0x2f011c0](..\..\..\src\Server.c:679 get_config) - [mac_prefixes] count=2
+2019-07-17 17:09:12.073 INFO   [0x2f011c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:09:12.140 INFO   [0x2f011c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:09:12.206 INFO   [0x2f011c0](..\..\..\src\Server.c:687 get_config) - geo-fence list initialized
+2019-07-17 17:09:12.277 INFO   [0x2f011c0](..\..\..\src\Server.c:139 main) - Start connect to Database
+2019-07-17 17:09:12.341 INFO   [0x2f011c0](..\..\..\src\Server.c:154 main) - Database Argument [dbname=botdb user=postgres password=bedis402 host=127.0.0.1 port=5432]
+2019-07-17 17:09:12.475 INFO   [0x2f011c0](..\..\..\src\Server.c:160 main) - Database connected
+2019-07-17 17:09:12.541 INFO   [0x2f011c0](..\..\..\src\Server.c:164 main) - Initialize buffer lists
+2019-07-17 17:09:12.607 INFO   [0x2f011c0](..\..\..\src\Server.c:215 main) - Buffer lists initialize
+2019-07-17 17:09:12.672 INFO   [0x2f011c0](..\..\..\src\Server.c:219 main) - Initialize sockets
+2019-07-17 17:09:12.741 INFO   [0x2f011c0](..\..\..\src\Server.c:247 main) - Sockets initialized
+2019-07-17 17:09:12.806 INFO   [0x2f011c0](..\..\..\src\Server.c:253 main) - Network Setup and Initialize success
+2019-07-17 17:09:12.870 INFO   [0x2f011c0](..\..\..\src\Server.c:257 main) - Initialize Communication Unit
+2019-07-17 17:09:12.959 INFO   [0x2f011c0](..\..\..\src\Server.c:286 main) - Start Communication
+2019-07-17 17:09:13.022 INFO   [0x2f9d460](..\..\..\src\Server.c:810 CommUnit_routine) - [CommUnit] thread pool Initializing
+2019-07-17 17:09:13.061 INFO   [0x2f9dcd0](..\..\..\src\Server.c:999 maintain_database) - SQL_retain_data with database_keep_days=[7]
+2019-07-17 17:09:13.125 INFO   [0x2f9d460](..\..\..\src\Server.c:817 CommUnit_routine) - [CommUnit] thread pool Initialized
+2019-07-17 17:09:13.176 INFO   [0x2f9dcd0](..\..\..\src\Server.c:1002 maintain_database) - SQL_vacuum_database
+2019-07-17 17:09:13.273 INFO   [0x2f011c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:09:13.349 INFO   [0x2f011c0](..\..\..\src\Server.c:363 main) - Send Request for Health Report
+2019-07-17 17:09:20.164 INFO   [0x2f011c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:09:25.349 INFO   [0x2f9d2a0](..\..\..\src\Server.c:1346 process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:09:25.412 INFO   [0x2f9df60](..\..\..\src\Server.c:1022 NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:09:25.475 INFO   [0x2f9df60](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:09:25.539 INFO   [0x2f9df60](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:09:25.603 INFO   [0x2f9df60](..\..\..\src\Server.c:1188 Gateway_join_request) - Start join...(140.109.22.130)
+2019-07-17 17:09:25.667 INFO   [0x2f9df60](..\..\..\src\Server.c:1203 Gateway_join_request) - Join Success
+2019-07-17 17:09:25.752 INFO   [0x2f9df60](..\..\..\src\Server.c:1053 NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:09:25.803 INFO   [0x2fa5fb0](..\..\..\src\Server.c:1261 process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:09:25.868 INFO   [0x2fa5fb0](..\..\..\src\Server.c:1274 process_wifi_send) - Send Success
+2019-07-17 17:09:27.163 INFO   [0x2f011c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:09:27.834 INFO   [0x2f9d2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:10:13.133 INFO   [0x2f311c0](..\..\..\src\Server.c:102 main) - Start Server
+2019-07-17 17:10:13.199 INFO   [0x2f311c0](..\..\..\src\Server.c:106 main) - Mempool Initializing
+2019-07-17 17:10:13.277 INFO   [0x2f311c0](..\..\..\src\Server.c:124 main) - Mempool Initialized
+2019-07-17 17:10:13.344 INFO   [0x2f311c0](..\..\..\src\Server.c:427 get_config) - Server IP [10.0.3.15]
+2019-07-17 17:10:13.411 INFO   [0x2f311c0](..\..\..\src\Server.c:442 get_config) - Database IP [127.0.0.1]
+2019-07-17 17:10:13.478 INFO   [0x2f311c0](..\..\..\src\Server.c:453 get_config) - Allow Number of Nodes [16]
+2019-07-17 17:10:13.545 INFO   [0x2f311c0](..\..\..\src\Server.c:465 get_config) - Periods between request for health report [3600]
+2019-07-17 17:10:13.611 INFO   [0x2f311c0](..\..\..\src\Server.c:477 get_config) - Periods between request for tracked object data [7]
+2019-07-17 17:10:13.677 INFO   [0x2f311c0](..\..\..\src\Server.c:489 get_config) - Number of worker threads [20]
+2019-07-17 17:10:13.743 INFO   [0x2f311c0](..\..\..\src\Server.c:501 get_config) - The destination port when sending [8888]
+2019-07-17 17:10:13.809 INFO   [0x2f311c0](..\..\..\src\Server.c:512 get_config) - The received port [9999]
+2019-07-17 17:10:13.875 INFO   [0x2f311c0](..\..\..\src\Server.c:523 get_config) - The database port [5432]
+2019-07-17 17:10:13.942 INFO   [0x2f311c0](..\..\..\src\Server.c:540 get_config) - Database Name [botdb]
+2019-07-17 17:10:14.008 INFO   [0x2f311c0](..\..\..\src\Server.c:557 get_config) - Database Account [postgres]
+2019-07-17 17:10:14.071 INFO   [0x2f311c0](..\..\..\src\Server.c:582 get_config) - Database database_keep_days [7]
+2019-07-17 17:10:14.135 INFO   [0x2f311c0](..\..\..\src\Server.c:594 get_config) - The nice of time critical priority is [-6]
+2019-07-17 17:10:14.201 INFO   [0x2f311c0](..\..\..\src\Server.c:606 get_config) - The nice of high priority is [-4]
+2019-07-17 17:10:14.274 INFO   [0x2f311c0](..\..\..\src\Server.c:618 get_config) - The nice of normal priority is [-2]
+2019-07-17 17:10:14.341 INFO   [0x2f311c0](..\..\..\src\Server.c:630 get_config) - The nice of low priority is [0]
+2019-07-17 17:10:14.407 INFO   [0x2f311c0](..\..\..\src\Server.c:634 get_config) - Initialize geo-fence list
+2019-07-17 17:10:14.473 INFO   [0x2f311c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:10:14.538 INFO   [0x2f311c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Front door;1,00000018000000006660000000011900,-50,;1,00000018000000006060000000009500,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:10:14.605 INFO   [0x2f311c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Front door], perimeters=[1,00000018000000006660000000011900,-50,], fences=[1,00000018000000006060000000009500,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:10:14.672 INFO   [0x2f311c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:10:14.739 INFO   [0x2f311c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:10:14.806 INFO   [0x2f311c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Storage;0,;2,00000018000000002460000000002300,00000018000000006060000000002300,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:10:14.875 INFO   [0x2f311c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Storage], perimeters=[0,], fences=[2,00000018000000002460000000002300,00000018000000006060000000002300,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:10:14.942 INFO   [0x2f311c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:10:15.007 INFO   [0x2f311c0](..\..\..\src\Server.c:662 get_config) - name=[Front door]
+2019-07-17 17:10:15.072 INFO   [0x2f311c0](..\..\..\src\Server.c:665 get_config) - [perimeters] count=1
+2019-07-17 17:10:15.137 INFO   [0x2f311c0](..\..\..\src\Server.c:669 get_config) - perimeter=[00000018000000006660000000011900], rssi=[-50]
+2019-07-17 17:10:15.201 INFO   [0x2f311c0](..\..\..\src\Server.c:672 get_config) - [fences] count=1
+2019-07-17 17:10:15.272 INFO   [0x2f311c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000006060000000009500], rssi=[-50]
+2019-07-17 17:10:15.336 INFO   [0x2f311c0](..\..\..\src\Server.c:679 get_config) - [mac_prefixes] count=2
+2019-07-17 17:10:15.402 INFO   [0x2f311c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:10:15.467 INFO   [0x2f311c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:10:15.533 INFO   [0x2f311c0](..\..\..\src\Server.c:662 get_config) - name=[Storage]
+2019-07-17 17:10:15.599 INFO   [0x2f311c0](..\..\..\src\Server.c:665 get_config) - [perimeters] count=0
+2019-07-17 17:10:15.665 INFO   [0x2f311c0](..\..\..\src\Server.c:672 get_config) - [fences] count=2
+2019-07-17 17:10:15.731 INFO   [0x2f311c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000002460000000002300], rssi=[-50]
+2019-07-17 17:10:15.796 INFO   [0x2f311c0](..\..\..\src\Server.c:676 get_config) - fence=[00000018000000006060000000002300], rssi=[-50]
+2019-07-17 17:10:15.863 INFO   [0x2f311c0](..\..\..\src\Server.c:679 get_config) - [mac_prefixes] count=2
+2019-07-17 17:10:15.929 INFO   [0x2f311c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:10:15.996 INFO   [0x2f311c0](..\..\..\src\Server.c:682 get_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:10:16.062 INFO   [0x2f311c0](..\..\..\src\Server.c:687 get_config) - geo-fence list initialized
+2019-07-17 17:10:16.128 INFO   [0x2f311c0](..\..\..\src\Server.c:139 main) - Start connect to Database
+2019-07-17 17:10:16.194 INFO   [0x2f311c0](..\..\..\src\Server.c:154 main) - Database Argument [dbname=botdb user=postgres password=bedis402 host=127.0.0.1 port=5432]
+2019-07-17 17:10:16.386 INFO   [0x2f311c0](..\..\..\src\Server.c:160 main) - Database connected
+2019-07-17 17:10:16.449 INFO   [0x2f311c0](..\..\..\src\Server.c:164 main) - Initialize buffer lists
+2019-07-17 17:10:16.513 INFO   [0x2f311c0](..\..\..\src\Server.c:215 main) - Buffer lists initialize
+2019-07-17 17:10:16.578 INFO   [0x2f311c0](..\..\..\src\Server.c:219 main) - Initialize sockets
+2019-07-17 17:10:16.647 INFO   [0x2f311c0](..\..\..\src\Server.c:247 main) - Sockets initialized
+2019-07-17 17:10:16.711 INFO   [0x2f311c0](..\..\..\src\Server.c:253 main) - Network Setup and Initialize success
+2019-07-17 17:10:16.775 INFO   [0x2f311c0](..\..\..\src\Server.c:257 main) - Initialize Communication Unit
+2019-07-17 17:10:16.864 INFO   [0x2f311c0](..\..\..\src\Server.c:286 main) - Start Communication
+2019-07-17 17:10:16.926 INFO   [0x2fcd460](..\..\..\src\Server.c:810 CommUnit_routine) - [CommUnit] thread pool Initializing
+2019-07-17 17:10:16.965 INFO   [0x2fcdcd0](..\..\..\src\Server.c:999 maintain_database) - SQL_retain_data with database_keep_days=[7]
+2019-07-17 17:10:17.029 INFO   [0x2fcd460](..\..\..\src\Server.c:817 CommUnit_routine) - [CommUnit] thread pool Initialized
+2019-07-17 17:10:17.080 INFO   [0x2fcdcd0](..\..\..\src\Server.c:1002 maintain_database) - SQL_vacuum_database
+2019-07-17 17:10:17.169 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:10:17.246 INFO   [0x2f311c0](..\..\..\src\Server.c:363 main) - Send Request for Health Report
+2019-07-17 17:10:23.161 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:10:26.735 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:10:30.160 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:10:37.161 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:10:44.164 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:10:51.162 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:10:58.163 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:11:05.165 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:11:12.160 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:11:19.161 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:11:26.165 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:11:26.436 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1346 process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:11:26.500 INFO   [0x2fd5fb0](..\..\..\src\Server.c:1022 NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:11:26.564 INFO   [0x2fd5fb0](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:11:26.628 INFO   [0x2fd5fb0](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:11:26.691 INFO   [0x2fd5fb0](..\..\..\src\Server.c:1188 Gateway_join_request) - Start join...(140.109.22.130)
+2019-07-17 17:11:26.768 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:11:26.806 INFO   [0x2fd5fb0](..\..\..\src\Server.c:1203 Gateway_join_request) - Join Success
+2019-07-17 17:11:26.910 INFO   [0x2fd5fb0](..\..\..\src\Server.c:1053 NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:11:26.961 INFO   [0x2fd68d0](..\..\..\src\Server.c:1261 process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:11:27.025 INFO   [0x2fd68d0](..\..\..\src\Server.c:1274 process_wifi_send) - Send Success
+2019-07-17 17:11:33.164 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:11:33.747 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:11:40.160 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:11:40.556 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:11:47.164 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:11:47.571 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:11:54.165 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:11:54.588 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:12:01.163 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:12:01.598 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:12:08.160 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:12:08.615 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:12:15.162 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:12:15.725 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:12:22.162 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:12:22.738 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:12:29.160 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:12:29.647 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:12:36.165 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:12:36.657 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:12:43.165 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:12:43.668 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:12:50.163 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:12:50.681 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:12:57.165 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:12:57.697 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:13:04.160 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:13:04.700 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:13:11.165 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:13:11.620 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:13:18.164 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:13:18.522 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:13:25.162 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:13:25.536 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:13:27.433 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1346 process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:13:27.496 INFO   [0x2fd6440](..\..\..\src\Server.c:1022 NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:13:27.560 INFO   [0x2fd6440](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:13:27.624 INFO   [0x2fd6440](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:13:27.687 INFO   [0x2fd6440](..\..\..\src\Server.c:1173 Gateway_join_request) - Exist and Return
+2019-07-17 17:13:27.766 INFO   [0x2fd6440](..\..\..\src\Server.c:1053 NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:13:27.778 INFO   [0x2fd5fb0](..\..\..\src\Server.c:1261 process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:13:27.879 INFO   [0x2fd5fb0](..\..\..\src\Server.c:1274 process_wifi_send) - Send Success
+2019-07-17 17:13:32.161 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:13:32.549 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:13:39.164 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:13:39.560 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:13:46.164 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:13:46.571 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:13:53.362 INFO   [0x2f311c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:13:53.782 INFO   [0x2fcd2a0](..\..\..\src\Server.c:1396 process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:14:09.482 INFO   [0x2d711c0](..\..\..\src\Server.c:102 main) - Start Server
+2019-07-17 17:14:09.548 INFO   [0x2d711c0](..\..\..\src\Server.c:106 main) - Mempool Initializing
+2019-07-17 17:14:09.619 INFO   [0x2d711c0](..\..\..\src\Server.c:124 main) - Mempool Initialized
+2019-07-17 17:14:09.685 INFO   [0x2d711c0](..\..\..\src\Server.c:427 get_server_config) - Server IP [10.0.3.15]
+2019-07-17 17:14:09.751 INFO   [0x2d711c0](..\..\..\src\Server.c:442 get_server_config) - Database IP [127.0.0.1]
+2019-07-17 17:14:09.818 INFO   [0x2d711c0](..\..\..\src\Server.c:453 get_server_config) - Allow Number of Nodes [16]
+2019-07-17 17:14:09.885 INFO   [0x2d711c0](..\..\..\src\Server.c:465 get_server_config) - Periods between request for health report [3600]
+2019-07-17 17:14:09.951 INFO   [0x2d711c0](..\..\..\src\Server.c:477 get_server_config) - Periods between request for tracked object data [7]
+2019-07-17 17:14:10.017 INFO   [0x2d711c0](..\..\..\src\Server.c:489 get_server_config) - Number of worker threads [20]
+2019-07-17 17:14:10.083 INFO   [0x2d711c0](..\..\..\src\Server.c:501 get_server_config) - The destination port when sending [8888]
+2019-07-17 17:14:10.148 INFO   [0x2d711c0](..\..\..\src\Server.c:512 get_server_config) - The received port [9999]
+2019-07-17 17:14:10.212 INFO   [0x2d711c0](..\..\..\src\Server.c:523 get_server_config) - The database port [5432]
+2019-07-17 17:14:10.278 INFO   [0x2d711c0](..\..\..\src\Server.c:540 get_server_config) - Database Name [botdb]
+2019-07-17 17:14:10.344 INFO   [0x2d711c0](..\..\..\src\Server.c:557 get_server_config) - Database Account [postgres]
+2019-07-17 17:14:10.415 INFO   [0x2d711c0](..\..\..\src\Server.c:582 get_server_config) - Database database_keep_days [7]
+2019-07-17 17:14:10.481 INFO   [0x2d711c0](..\..\..\src\Server.c:594 get_server_config) - The nice of time critical priority is [-6]
+2019-07-17 17:14:10.546 INFO   [0x2d711c0](..\..\..\src\Server.c:606 get_server_config) - The nice of high priority is [-4]
+2019-07-17 17:14:10.611 INFO   [0x2d711c0](..\..\..\src\Server.c:618 get_server_config) - The nice of normal priority is [-2]
+2019-07-17 17:14:10.677 INFO   [0x2d711c0](..\..\..\src\Server.c:630 get_server_config) - The nice of low priority is [0]
+2019-07-17 17:14:10.743 INFO   [0x2d711c0](..\..\..\src\Server.c:634 get_server_config) - Initialize geo-fence list
+2019-07-17 17:14:10.810 INFO   [0x2d711c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:14:10.876 INFO   [0x2d711c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Front door;1,00000018000000006660000000011900,-50,;1,00000018000000006060000000009500,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:14:10.942 INFO   [0x2d711c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Front door], perimeters=[1,00000018000000006660000000011900,-50,], fences=[1,00000018000000006060000000009500,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:14:11.008 INFO   [0x2d711c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:14:11.075 INFO   [0x2d711c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:14:11.141 INFO   [0x2d711c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Storage;0,;2,00000018000000002460000000002300,00000018000000006060000000002300,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:14:11.206 INFO   [0x2d711c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Storage], perimeters=[0,], fences=[2,00000018000000002460000000002300,00000018000000006060000000002300,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:14:11.271 INFO   [0x2d711c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:14:11.335 INFO   [0x2d711c0](..\..\..\src\Server.c:662 get_server_config) - name=[Front door]
+2019-07-17 17:14:11.409 INFO   [0x2d711c0](..\..\..\src\Server.c:665 get_server_config) - [perimeters] count=1
+2019-07-17 17:14:11.476 INFO   [0x2d711c0](..\..\..\src\Server.c:669 get_server_config) - perimeter=[00000018000000006660000000011900], rssi=[-50]
+2019-07-17 17:14:11.541 INFO   [0x2d711c0](..\..\..\src\Server.c:672 get_server_config) - [fences] count=1
+2019-07-17 17:14:11.606 INFO   [0x2d711c0](..\..\..\src\Server.c:676 get_server_config) - fence=[00000018000000006060000000009500], rssi=[-50]
+2019-07-17 17:14:11.672 INFO   [0x2d711c0](..\..\..\src\Server.c:679 get_server_config) - [mac_prefixes] count=2
+2019-07-17 17:14:11.737 INFO   [0x2d711c0](..\..\..\src\Server.c:682 get_server_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:14:11.802 INFO   [0x2d711c0](..\..\..\src\Server.c:682 get_server_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:14:11.868 INFO   [0x2d711c0](..\..\..\src\Server.c:662 get_server_config) - name=[Storage]
+2019-07-17 17:14:11.934 INFO   [0x2d711c0](..\..\..\src\Server.c:665 get_server_config) - [perimeters] count=0
+2019-07-17 17:14:11.999 INFO   [0x2d711c0](..\..\..\src\Server.c:672 get_server_config) - [fences] count=2
+2019-07-17 17:14:12.066 INFO   [0x2d711c0](..\..\..\src\Server.c:676 get_server_config) - fence=[00000018000000002460000000002300], rssi=[-50]
+2019-07-17 17:14:12.132 INFO   [0x2d711c0](..\..\..\src\Server.c:676 get_server_config) - fence=[00000018000000006060000000002300], rssi=[-50]
+2019-07-17 17:14:12.198 INFO   [0x2d711c0](..\..\..\src\Server.c:679 get_server_config) - [mac_prefixes] count=2
+2019-07-17 17:14:12.263 INFO   [0x2d711c0](..\..\..\src\Server.c:682 get_server_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:14:12.328 INFO   [0x2d711c0](..\..\..\src\Server.c:682 get_server_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:14:12.401 INFO   [0x2d711c0](..\..\..\src\Server.c:687 get_server_config) - geo-fence list initialized
+2019-07-17 17:14:12.467 INFO   [0x2d711c0](..\..\..\src\Server.c:139 main) - Start connect to Database
+2019-07-17 17:14:12.532 INFO   [0x2d711c0](..\..\..\src\Server.c:154 main) - Database Argument [dbname=botdb user=postgres password=bedis402 host=127.0.0.1 port=5432]
+2019-07-17 17:14:12.774 INFO   [0x2d711c0](..\..\..\src\Server.c:160 main) - Database connected
+2019-07-17 17:14:12.839 INFO   [0x2d711c0](..\..\..\src\Server.c:164 main) - Initialize buffer lists
+2019-07-17 17:14:12.907 INFO   [0x2d711c0](..\..\..\src\Server.c:215 main) - Buffer lists initialize
+2019-07-17 17:14:12.972 INFO   [0x2d711c0](..\..\..\src\Server.c:219 main) - Initialize sockets
+2019-07-17 17:14:13.041 INFO   [0x2d711c0](..\..\..\src\Server.c:247 main) - Sockets initialized
+2019-07-17 17:14:13.105 INFO   [0x2d711c0](..\..\..\src\Server.c:253 main) - Network Setup and Initialize success
+2019-07-17 17:14:13.168 INFO   [0x2d711c0](..\..\..\src\Server.c:257 main) - Initialize Communication Unit
+2019-07-17 17:14:13.258 INFO   [0x2d711c0](..\..\..\src\Server.c:286 main) - Start Communication
+2019-07-17 17:14:13.322 INFO   [0x2e0dcd0](..\..\..\src\Server.c:999 maintain_database) - SQL_retain_data with database_keep_days=[7]
+2019-07-17 17:14:13.360 INFO   [0x2e0d460](..\..\..\src\Server.c:810 CommUnit_routine) - [CommUnit] thread pool Initializing
+2019-07-17 17:14:13.432 INFO   [0x2e0dcd0](..\..\..\src\Server.c:1002 maintain_database) - SQL_vacuum_database
+2019-07-17 17:14:13.482 INFO   [0x2e0d460](..\..\..\src\Server.c:817 CommUnit_routine) - [CommUnit] thread pool Initialized
+2019-07-17 17:14:13.575 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:14:13.652 INFO   [0x2d711c0](..\..\..\src\Server.c:363 main) - Send Request for Health Report
+2019-07-17 17:14:20.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:14:27.160 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:14:34.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:14:41.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:14:48.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:14:53.567 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:14:55.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:15:02.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:15:09.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:15:16.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:15:23.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:15:28.437 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1346 Server_process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:15:28.501 INFO   [0x2e16440](..\..\..\src\Server.c:1022 Server_NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:15:28.565 INFO   [0x2e16440](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:15:28.629 INFO   [0x2e16440](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:15:28.693 INFO   [0x2e16440](..\..\..\src\Server.c:1188 Gateway_join_request) - Start join...(140.109.22.130)
+2019-07-17 17:15:28.756 INFO   [0x2e16440](..\..\..\src\Server.c:1203 Gateway_join_request) - Join Success
+2019-07-17 17:15:28.836 INFO   [0x2e16440](..\..\..\src\Server.c:1053 Server_NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:15:28.887 INFO   [0x2e15fb0](..\..\..\src\Server.c:1261 Server_process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:15:28.951 INFO   [0x2e15fb0](..\..\..\src\Server.c:1274 Server_process_wifi_send) - Send Success
+2019-07-17 17:15:30.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:15:30.629 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:15:37.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:15:37.640 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:15:44.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:15:44.650 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:15:51.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:15:51.665 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:15:58.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:15:58.677 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:16:05.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:16:05.783 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:16:12.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:16:12.807 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:16:19.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:16:19.714 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:16:26.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:16:26.630 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:16:33.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:16:33.741 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:16:40.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:16:40.752 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:16:47.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:16:47.758 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:16:54.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:16:54.772 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:17:01.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:17:01.789 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:17:08.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:17:08.691 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:17:15.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:17:15.600 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:17:22.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:17:22.612 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:17:29.160 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:17:29.421 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1346 Server_process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:17:29.493 INFO   [0x2e0dad0](..\..\..\src\Server.c:1022 Server_NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:17:29.557 INFO   [0x2e0dad0](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:17:29.621 INFO   [0x2e0dad0](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:17:29.685 INFO   [0x2e0dad0](..\..\..\src\Server.c:1173 Gateway_join_request) - Exist and Return
+2019-07-17 17:17:29.761 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:17:29.812 INFO   [0x2e0dad0](..\..\..\src\Server.c:1053 Server_NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:17:29.825 INFO   [0x2e16440](..\..\..\src\Server.c:1261 Server_process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:17:29.950 INFO   [0x2e16440](..\..\..\src\Server.c:1274 Server_process_wifi_send) - Send Success
+2019-07-17 17:17:36.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:17:36.735 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:17:43.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:17:43.747 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:17:50.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:17:50.755 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:17:57.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:17:57.767 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:18:04.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:18:04.777 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:18:11.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:18:11.692 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:18:18.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:18:18.696 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:18:25.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:18:25.618 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:18:32.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:18:32.621 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:18:39.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:18:39.635 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:18:46.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:18:46.647 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:18:53.160 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:18:53.658 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:19:00.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:19:00.572 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:19:07.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:19:07.582 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:19:14.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:19:14.587 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:19:21.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:19:21.700 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:19:28.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:19:28.715 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:19:30.414 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1346 Server_process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:19:30.478 INFO   [0x2e15fb0](..\..\..\src\Server.c:1022 Server_NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:19:30.549 INFO   [0x2e15fb0](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:19:30.613 INFO   [0x2e15fb0](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:19:30.677 INFO   [0x2e15fb0](..\..\..\src\Server.c:1173 Gateway_join_request) - Exist and Return
+2019-07-17 17:19:30.755 INFO   [0x2e15fb0](..\..\..\src\Server.c:1053 Server_NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:19:30.767 INFO   [0x2e0dad0](..\..\..\src\Server.c:1261 Server_process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:19:30.869 INFO   [0x2e0dad0](..\..\..\src\Server.c:1274 Server_process_wifi_send) - Send Success
+2019-07-17 17:19:35.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:19:35.727 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:19:42.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:19:42.548 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:19:49.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:19:49.561 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:19:56.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:19:56.765 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:20:03.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:20:03.775 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:20:10.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:20:10.783 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:20:17.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:20:17.791 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:20:24.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:20:24.805 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:20:31.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:20:31.720 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:20:38.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:20:38.731 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:20:45.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:20:45.743 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:20:52.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:20:52.754 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:20:59.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:20:59.762 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:21:06.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:21:06.775 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:21:13.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:21:13.684 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:21:20.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:21:20.697 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:21:27.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:21:27.707 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:21:31.412 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1346 Server_process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:21:31.477 INFO   [0x2e18490](..\..\..\src\Server.c:1022 Server_NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:21:31.541 INFO   [0x2e18490](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:21:31.613 INFO   [0x2e18490](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:21:31.677 INFO   [0x2e18490](..\..\..\src\Server.c:1173 Gateway_join_request) - Exist and Return
+2019-07-17 17:21:31.756 INFO   [0x2e18490](..\..\..\src\Server.c:1053 Server_NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:21:31.769 INFO   [0x2e15fb0](..\..\..\src\Server.c:1261 Server_process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:21:31.871 INFO   [0x2e15fb0](..\..\..\src\Server.c:1274 Server_process_wifi_send) - Send Success
+2019-07-17 17:21:34.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:21:34.718 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:21:41.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:21:41.726 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:21:48.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:21:48.740 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:21:55.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:21:55.657 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:22:02.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:22:02.667 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:22:09.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:22:09.679 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:22:16.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:22:16.584 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:22:23.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:22:23.600 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:22:30.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:22:30.605 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:22:37.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:22:37.625 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:22:44.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:22:44.537 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:22:51.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:22:51.553 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:22:58.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:22:58.557 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:23:05.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:23:05.573 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:23:12.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:23:12.688 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:23:19.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:23:19.698 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:23:26.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:23:26.707 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:23:32.413 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1346 Server_process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:23:32.478 INFO   [0x2e1fc20](..\..\..\src\Server.c:1022 Server_NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:23:32.541 INFO   [0x2e1fc20](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:23:32.606 INFO   [0x2e1fc20](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:23:32.678 INFO   [0x2e1fc20](..\..\..\src\Server.c:1173 Gateway_join_request) - Exist and Return
+2019-07-17 17:23:32.755 INFO   [0x2e1fc20](..\..\..\src\Server.c:1053 Server_NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:23:32.768 INFO   [0x2e18490](..\..\..\src\Server.c:1261 Server_process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:23:32.870 INFO   [0x2e18490](..\..\..\src\Server.c:1274 Server_process_wifi_send) - Send Success
+2019-07-17 17:23:33.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:23:33.616 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:23:40.160 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:23:40.628 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:23:47.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:23:47.542 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:23:54.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:23:54.557 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:24:01.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:24:01.765 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:24:08.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:24:08.786 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:24:15.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:24:15.791 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:24:22.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:24:22.706 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:24:29.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:24:29.718 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:24:36.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:24:36.725 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:24:43.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:24:43.736 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:24:50.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:24:50.760 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:24:57.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:24:57.764 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:25:04.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:25:04.684 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:25:11.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:25:11.691 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:25:18.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:25:18.706 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:25:25.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:25:25.722 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:25:32.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:25:32.737 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:25:33.425 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1346 Server_process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:25:33.490 INFO   [0x2e1fc20](..\..\..\src\Server.c:1022 Server_NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:25:33.554 INFO   [0x2e1fc20](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:25:33.619 INFO   [0x2e1fc20](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:25:33.682 INFO   [0x2e1fc20](..\..\..\src\Server.c:1173 Gateway_join_request) - Exist and Return
+2019-07-17 17:25:33.767 INFO   [0x2e1fc20](..\..\..\src\Server.c:1053 Server_NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:25:33.779 INFO   [0x2e18490](..\..\..\src\Server.c:1261 Server_process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:25:33.882 INFO   [0x2e18490](..\..\..\src\Server.c:1274 Server_process_wifi_send) - Send Success
+2019-07-17 17:25:39.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:25:39.742 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:25:46.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:25:46.759 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:25:53.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:25:53.658 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:26:00.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:26:00.672 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:26:07.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:26:07.687 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:26:14.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:26:14.700 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:26:21.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:26:21.708 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:26:28.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:26:28.720 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:26:35.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:26:35.635 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:26:42.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:26:42.545 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:26:49.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:26:49.568 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:26:56.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:26:56.573 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:27:03.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:27:03.581 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:27:10.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:27:10.592 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:27:17.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:27:17.503 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:27:24.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:27:24.714 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:27:31.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:27:31.731 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:27:34.420 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1346 Server_process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:27:34.484 INFO   [0x2e17d30](..\..\..\src\Server.c:1022 Server_NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:27:34.548 INFO   [0x2e17d30](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:27:34.611 INFO   [0x2e17d30](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:27:34.675 INFO   [0x2e17d30](..\..\..\src\Server.c:1173 Gateway_join_request) - Exist and Return
+2019-07-17 17:27:34.753 INFO   [0x2e17d30](..\..\..\src\Server.c:1053 Server_NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:27:34.766 INFO   [0x2e1fc20](..\..\..\src\Server.c:1261 Server_process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:27:34.875 INFO   [0x2e1fc20](..\..\..\src\Server.c:1274 Server_process_wifi_send) - Send Success
+2019-07-17 17:27:38.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:27:38.731 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:27:45.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:27:45.747 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:27:52.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:27:52.657 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:27:59.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:27:59.566 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:28:06.160 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:28:06.573 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:28:13.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:28:13.594 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:28:20.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:28:20.600 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:28:27.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:28:27.612 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:28:34.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:28:34.620 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:28:41.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:28:41.644 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:28:48.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:28:48.646 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:28:55.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:28:55.656 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:29:02.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:29:02.667 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:29:09.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:29:09.576 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:29:16.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:29:16.592 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:29:23.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:29:23.597 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:29:30.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:29:30.608 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:29:35.529 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1346 Server_process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:29:35.593 INFO   [0x2e1f6e0](..\..\..\src\Server.c:1022 Server_NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:29:35.656 INFO   [0x2e1f6e0](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:29:35.719 INFO   [0x2e1f6e0](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:29:35.782 INFO   [0x2e1f6e0](..\..\..\src\Server.c:1173 Gateway_join_request) - Exist and Return
+2019-07-17 17:29:35.866 INFO   [0x2e1f6e0](..\..\..\src\Server.c:1053 Server_NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:29:35.878 INFO   [0x2e17d30](..\..\..\src\Server.c:1261 Server_process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:29:35.980 INFO   [0x2e17d30](..\..\..\src\Server.c:1274 Server_process_wifi_send) - Send Success
+2019-07-17 17:29:37.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:29:37.523 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:29:44.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:29:44.532 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:29:51.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:29:51.547 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:29:58.160 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:29:58.568 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:30:05.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:30:05.563 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:30:12.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:30:12.575 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:30:19.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:30:19.485 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:30:26.163 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:30:26.397 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:30:33.160 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:30:33.510 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:30:40.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:30:40.619 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:30:47.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:30:47.630 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:30:54.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:30:54.744 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:31:01.160 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:31:01.755 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:31:08.165 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:31:08.664 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:31:15.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:31:15.881 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:31:22.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:31:22.900 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:31:29.160 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:31:29.803 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:31:36.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:31:36.514 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1346 Server_process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:31:36.578 INFO   [0x2e1fa60](..\..\..\src\Server.c:1022 Server_NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:31:36.642 INFO   [0x2e1fa60](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:31:36.706 INFO   [0x2e1fa60](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:31:36.769 INFO   [0x2e1fa60](..\..\..\src\Server.c:1173 Gateway_join_request) - Exist and Return
+2019-07-17 17:31:36.846 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:31:36.905 INFO   [0x2e1fa60](..\..\..\src\Server.c:1053 Server_NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:31:36.917 INFO   [0x2e1f6e0](..\..\..\src\Server.c:1261 Server_process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:31:37.044 INFO   [0x2e1f6e0](..\..\..\src\Server.c:1274 Server_process_wifi_send) - Send Success
+2019-07-17 17:31:43.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:31:43.731 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:31:50.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:31:50.539 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:31:57.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:31:57.653 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:32:04.164 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:32:04.663 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:32:11.166 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:32:11.874 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:32:18.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:32:18.883 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:32:25.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:32:25.811 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:32:32.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:32:32.932 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:32:39.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:32:39.824 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:32:46.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:32:46.739 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:32:53.167 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:32:53.657 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:33:00.162 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:33:00.665 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:33:07.161 INFO   [0x2d711c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:33:07.688 INFO   [0x2e0d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:33:26.036 INFO   [0x32a11c0](..\..\..\src\Server.c:102 main) - Start Server
+2019-07-17 17:33:26.103 INFO   [0x32a11c0](..\..\..\src\Server.c:106 main) - Mempool Initializing
+2019-07-17 17:33:26.174 INFO   [0x32a11c0](..\..\..\src\Server.c:124 main) - Mempool Initialized
+2019-07-17 17:33:26.238 INFO   [0x32a11c0](..\..\..\src\Server.c:427 get_server_config) - Server IP [10.0.3.15]
+2019-07-17 17:33:26.304 INFO   [0x32a11c0](..\..\..\src\Server.c:442 get_server_config) - Database IP [127.0.0.1]
+2019-07-17 17:33:26.371 INFO   [0x32a11c0](..\..\..\src\Server.c:453 get_server_config) - Allow Number of Nodes [16]
+2019-07-17 17:33:26.438 INFO   [0x32a11c0](..\..\..\src\Server.c:465 get_server_config) - Periods between request for health report [3600]
+2019-07-17 17:33:26.505 INFO   [0x32a11c0](..\..\..\src\Server.c:477 get_server_config) - Periods between request for tracked object data [7]
+2019-07-17 17:33:26.571 INFO   [0x32a11c0](..\..\..\src\Server.c:489 get_server_config) - Number of worker threads [20]
+2019-07-17 17:33:26.638 INFO   [0x32a11c0](..\..\..\src\Server.c:501 get_server_config) - The destination port when sending [8888]
+2019-07-17 17:33:26.706 INFO   [0x32a11c0](..\..\..\src\Server.c:512 get_server_config) - The received port [9999]
+2019-07-17 17:33:26.773 INFO   [0x32a11c0](..\..\..\src\Server.c:523 get_server_config) - The database port [5432]
+2019-07-17 17:33:26.841 INFO   [0x32a11c0](..\..\..\src\Server.c:540 get_server_config) - Database Name [botdb]
+2019-07-17 17:33:26.909 INFO   [0x32a11c0](..\..\..\src\Server.c:557 get_server_config) - Database Account [postgres]
+2019-07-17 17:33:26.984 INFO   [0x32a11c0](..\..\..\src\Server.c:582 get_server_config) - Database database_keep_days [7]
+2019-07-17 17:33:27.051 INFO   [0x32a11c0](..\..\..\src\Server.c:594 get_server_config) - The nice of time critical priority is [-6]
+2019-07-17 17:33:27.118 INFO   [0x32a11c0](..\..\..\src\Server.c:606 get_server_config) - The nice of high priority is [-4]
+2019-07-17 17:33:27.185 INFO   [0x32a11c0](..\..\..\src\Server.c:618 get_server_config) - The nice of normal priority is [-2]
+2019-07-17 17:33:27.249 INFO   [0x32a11c0](..\..\..\src\Server.c:630 get_server_config) - The nice of low priority is [0]
+2019-07-17 17:33:27.312 INFO   [0x32a11c0](..\..\..\src\Server.c:634 get_server_config) - Initialize geo-fence list
+2019-07-17 17:33:27.376 INFO   [0x32a11c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:33:27.443 INFO   [0x32a11c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Front door;1,00000018000000006660000000011900,-50,;1,00000018000000006060000000009500,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:33:27.510 INFO   [0x32a11c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Front door], perimeters=[1,00000018000000006660000000011900,-50,], fences=[1,00000018000000006060000000009500,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:33:27.576 INFO   [0x32a11c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:33:27.643 INFO   [0x32a11c0](..\..\..\src\Server.c:1452 add_geo_fence_setting) - >> add_geo_fence_setting
+2019-07-17 17:33:27.709 INFO   [0x32a11c0](..\..\..\src\Server.c:1453 add_geo_fence_setting) - GeoFence data=[Storage;0,;2,00000018000000002460000000002300,00000018000000006060000000002300,-50,;2,c1:0f:00:,c1:a0:,;]
+2019-07-17 17:33:27.775 INFO   [0x32a11c0](..\..\..\src\Server.c:1467 add_geo_fence_setting) - name=[Storage], perimeters=[0,], fences=[2,00000018000000002460000000002300,00000018000000006060000000002300,-50,], mac_prefixes=[2,c1:0f:00:,c1:a0:,]
+2019-07-17 17:33:27.842 INFO   [0x32a11c0](..\..\..\src\Server.c:1520 add_geo_fence_setting) - <<add_geo_fence_setting
+2019-07-17 17:33:27.909 INFO   [0x32a11c0](..\..\..\src\Server.c:662 get_server_config) - name=[Front door]
+2019-07-17 17:33:27.983 INFO   [0x32a11c0](..\..\..\src\Server.c:665 get_server_config) - [perimeters] count=1
+2019-07-17 17:33:28.050 INFO   [0x32a11c0](..\..\..\src\Server.c:669 get_server_config) - perimeter=[00000018000000006660000000011900], rssi=[-50]
+2019-07-17 17:33:28.117 INFO   [0x32a11c0](..\..\..\src\Server.c:672 get_server_config) - [fences] count=1
+2019-07-17 17:33:28.183 INFO   [0x32a11c0](..\..\..\src\Server.c:676 get_server_config) - fence=[00000018000000006060000000009500], rssi=[-50]
+2019-07-17 17:33:28.248 INFO   [0x32a11c0](..\..\..\src\Server.c:679 get_server_config) - [mac_prefixes] count=2
+2019-07-17 17:33:28.314 INFO   [0x32a11c0](..\..\..\src\Server.c:682 get_server_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:33:28.378 INFO   [0x32a11c0](..\..\..\src\Server.c:682 get_server_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:33:28.442 INFO   [0x32a11c0](..\..\..\src\Server.c:662 get_server_config) - name=[Storage]
+2019-07-17 17:33:28.505 INFO   [0x32a11c0](..\..\..\src\Server.c:665 get_server_config) - [perimeters] count=0
+2019-07-17 17:33:28.571 INFO   [0x32a11c0](..\..\..\src\Server.c:672 get_server_config) - [fences] count=2
+2019-07-17 17:33:28.638 INFO   [0x32a11c0](..\..\..\src\Server.c:676 get_server_config) - fence=[00000018000000002460000000002300], rssi=[-50]
+2019-07-17 17:33:28.705 INFO   [0x32a11c0](..\..\..\src\Server.c:676 get_server_config) - fence=[00000018000000006060000000002300], rssi=[-50]
+2019-07-17 17:33:28.772 INFO   [0x32a11c0](..\..\..\src\Server.c:679 get_server_config) - [mac_prefixes] count=2
+2019-07-17 17:33:28.838 INFO   [0x32a11c0](..\..\..\src\Server.c:682 get_server_config) - mac_prefix=[c1:0f:00:]
+2019-07-17 17:33:28.904 INFO   [0x32a11c0](..\..\..\src\Server.c:682 get_server_config) - mac_prefix=[c1:a0:]
+2019-07-17 17:33:28.976 INFO   [0x32a11c0](..\..\..\src\Server.c:687 get_server_config) - geo-fence list initialized
+2019-07-17 17:33:29.043 INFO   [0x32a11c0](..\..\..\src\Server.c:139 main) - Start connect to Database
+2019-07-17 17:33:29.111 INFO   [0x32a11c0](..\..\..\src\Server.c:154 main) - Database Argument [dbname=botdb user=postgres password=bedis402 host=127.0.0.1 port=5432]
+2019-07-17 17:33:29.250 INFO   [0x32a11c0](..\..\..\src\Server.c:160 main) - Database connected
+2019-07-17 17:33:29.317 INFO   [0x32a11c0](..\..\..\src\Server.c:164 main) - Initialize buffer lists
+2019-07-17 17:33:29.383 INFO   [0x32a11c0](..\..\..\src\Server.c:215 main) - Buffer lists initialize
+2019-07-17 17:33:29.450 INFO   [0x32a11c0](..\..\..\src\Server.c:219 main) - Initialize sockets
+2019-07-17 17:33:29.517 INFO   [0x32a11c0](..\..\..\src\Server.c:247 main) - Sockets initialized
+2019-07-17 17:33:29.580 INFO   [0x32a11c0](..\..\..\src\Server.c:253 main) - Network Setup and Initialize success
+2019-07-17 17:33:29.642 INFO   [0x32a11c0](..\..\..\src\Server.c:257 main) - Initialize Communication Unit
+2019-07-17 17:33:29.731 INFO   [0x32a11c0](..\..\..\src\Server.c:286 main) - Start Communication
+2019-07-17 17:33:29.795 INFO   [0x333cfd0](..\..\..\src\Server.c:810 CommUnit_routine) - [CommUnit] thread pool Initializing
+2019-07-17 17:33:29.833 INFO   [0x333dcd0](..\..\..\src\Server.c:999 maintain_database) - SQL_retain_data with database_keep_days=[7]
+2019-07-17 17:33:29.896 INFO   [0x333cfd0](..\..\..\src\Server.c:817 CommUnit_routine) - [CommUnit] thread pool Initialized
+2019-07-17 17:33:29.947 INFO   [0x333dcd0](..\..\..\src\Server.c:1002 maintain_database) - SQL_vacuum_database
+2019-07-17 17:33:30.045 INFO   [0x32a11c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:33:30.121 INFO   [0x32a11c0](..\..\..\src\Server.c:363 main) - Send Request for Health Report
+2019-07-17 17:33:36.165 INFO   [0x32a11c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:33:37.521 INFO   [0x333d2a0](..\..\..\src\Server.c:1346 Server_process_wifi_receive) - Get Join request from Gateway
+2019-07-17 17:33:37.585 INFO   [0x333df60](..\..\..\src\Server.c:1022 Server_NSI_routine) - Start join...(140.109.22.130)
+2019-07-17 17:33:37.647 INFO   [0x333df60](..\..\..\src\Server.c:1148 Gateway_join_request) - Enter Gateway_join_request address [140.109.22.130]
+2019-07-17 17:33:37.711 INFO   [0x333df60](..\..\..\src\Server.c:1159 Gateway_join_request) - Check whether joined
+2019-07-17 17:33:37.775 INFO   [0x333df60](..\..\..\src\Server.c:1188 Gateway_join_request) - Start join...(140.109.22.130)
+2019-07-17 17:33:37.838 INFO   [0x333df60](..\..\..\src\Server.c:1203 Gateway_join_request) - Join Success
+2019-07-17 17:33:37.918 INFO   [0x333df60](..\..\..\src\Server.c:1053 Server_NSI_routine) - 140.109.22.130 join success
+2019-07-17 17:33:37.976 INFO   [0x3347030](..\..\..\src\Server.c:1261 Server_process_wifi_send) - Start Send pkt
+address [140.109.22.130]
+port [8888]
+msg [;1;140.109.22.248;00000018000000004000000000007000;1563172820;140.109.22.130;]
+size [77]
+2019-07-17 17:33:38.040 INFO   [0x3347030](..\..\..\src\Server.c:1274 Server_process_wifi_send) - Send Success
+2019-07-17 17:33:43.163 INFO   [0x32a11c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:33:43.728 INFO   [0x333d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:33:50.164 INFO   [0x32a11c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:33:50.738 INFO   [0x333d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:33:57.164 INFO   [0x32a11c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:33:57.756 INFO   [0x333d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:34:04.162 INFO   [0x32a11c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:34:04.774 INFO   [0x333d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:34:11.163 INFO   [0x32a11c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:34:11.781 INFO   [0x333d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:34:18.164 INFO   [0x32a11c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:34:18.700 INFO   [0x333d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon
+2019-07-17 17:34:25.162 INFO   [0x32a11c0](..\..\..\src\Server.c:336 main) - Send Request for Tracked Object Data
+2019-07-17 17:34:25.800 INFO   [0x333d2a0](..\..\..\src\Server.c:1396 Server_process_wifi_receive) - Get Tracked Object Data from LBeacon

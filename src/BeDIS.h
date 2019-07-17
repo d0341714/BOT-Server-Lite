@@ -66,6 +66,7 @@
 #include "UDP_API.h"
 #include "LinkedList.h"
 #include "thpool.h"
+#include "zlog.h"
 
 
 /* Parameter that marks the start of the config file */
@@ -357,6 +358,8 @@ typedef struct coordinates{
    the ready_to_work flag will be set as false to stop all threads. */
 bool ready_to_work;
 
+/* The pointer to the category of the log file */
+zlog_category_t *category_health_report, *category_debug;
 
 /* FUNCTIONS */
 

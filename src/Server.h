@@ -43,8 +43,8 @@
 
  */
 
-#ifndef GATEWAY_H
-#define GATEWAY_H
+#ifndef SERVER_H
+#define SERVER_H
 
 #define _GNU_SOURCE
 
@@ -52,22 +52,23 @@
 #include "SqlWrapper.h"
 
 /* When debugging is needed */
-//#define debugging
+#define debugging
 
 /* Server config file location and the config file definition. */
 
 /* File path of the config file of the Server */
 #define CONFIG_FILE_NAME "./config/server.conf"
 
+/* File path of the config file of the Server */
+#define ZLOG_CONFIG_FILE_NAME ".\\config\\zlog.conf"
+
 /* The category of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
-
-#ifdef debugging
 
 /* The category of the printf during debugging */
 #define LOG_CATEGORY_DEBUG "LBeacon_Debug"
 
-#endif
+
 
 typedef struct {
    /* The name of the geo fence */
@@ -219,7 +220,7 @@ int last_update_geo_fence;
 
 
 /*
-  get_config:
+  get_server_config:
 
      This function reads the specified config file line by line until the
      end of file and copies the data in each line into an element of the
@@ -234,7 +235,7 @@ int last_update_geo_fence;
      ErrorCode - WORK_SUCCESSFULLY: work successfully.
                  E_OPEN_FILE: config file  fail to open.
  */
-ErrorCode get_config(ServerConfig *config, char *file_name);
+ErrorCode get_server_config(ServerConfig *config, char *file_name);
 
 
 /*
@@ -295,7 +296,7 @@ void *CommUnit_routine();
 void *maintain_database();
 
 /*
-  NSI_routine:
+  Server_NSI_routine:
 
      This function is executed by worker threads when they process the buffer
      nodes in NSI receive buffer list.
@@ -309,10 +310,10 @@ void *maintain_database();
      None
 
  */
-void *NSI_routine(void *_buffer_node);
+void *Server_NSI_routine(void *_buffer_node);
 
 /*
-  BHM_routine:
+  Server_BHM_routine:
 
      This function is executed by worker threads when they process the buffer
      nodes in BHM receive buffer list.
@@ -326,11 +327,11 @@ void *NSI_routine(void *_buffer_node);
      None
 
  */
-void *BHM_routine(void *_buffer_node);
+void *Server_BHM_routine(void *_buffer_node);
 
 
 /*
-  LBeacon_routine:
+  Server_LBeacon_routine:
 
      This function is executed by worker threads when they process the buffer
      nodes in LBeacon receive buffer list and send to the server directly.
@@ -344,7 +345,7 @@ void *BHM_routine(void *_buffer_node);
      None
 
  */
-void *LBeacon_routine(void *_buffer_node);
+void *Server_LBeacon_routine(void *_buffer_node);
 
 
 /*
@@ -425,7 +426,7 @@ void Broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size);
 
 
 /*
-  process_wifi_send:
+  Server_process_wifi_send:
 
      This function sends the message in the buffer list to the destination via 
      Wi-Fi.
@@ -438,11 +439,11 @@ void Broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size);
 
      None
  */
-void *process_wifi_send(void *_buffer_node);
+void *Server_process_wifi_send(void *_buffer_node);
 
 
 /*
-  process_wifi_receive:
+  Server_process_wifi_receive:
 
      This function listens for messages or command received from the server or
      LBeacons. After getting the message, push the received data into the 
@@ -456,7 +457,7 @@ void *process_wifi_send(void *_buffer_node);
 
      None
  */
-void *process_wifi_receive();
+void *Server_process_wifi_receive();
 
 /*
   add_geo_fence_setting:

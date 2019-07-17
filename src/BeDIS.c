@@ -174,7 +174,7 @@ ErrorCode startThread(pthread_t *thread, void *( *start_routine)(void *),
          pthread_create(thread, &attr, start_routine, arg) != 0 ||
          pthread_detach( *thread))
     {
-          printf("Start Thread Error.\n");
+          zlog_info(category_debug, "Start Thread Error.");
           return E_START_THREAD;
     }
 
@@ -238,7 +238,8 @@ int display_time(void)
     time(&now);
 
     // Convert to local time format and print to stdout
+    zlog_debug(category_debug, "%s", ctime(&now));
     printf("%s", ctime(&now));
-
+    
     return 0;
 }
