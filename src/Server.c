@@ -1872,11 +1872,13 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                                       lbeacon_uuid, mac_address);
 #endif
 
-                            insert_into_geo_fence_alert_list(mac_address,
-                                                             "perimeter",
-                                                             lbeacon_uuid,
-                                                             final_timestamp,
-                                                             rssi);
+                            insert_into_geo_fence_alert_list(
+                                mac_address,
+                                current_list_ptr->name, 
+                                GEO_FENCE_ALERT_TYPE_PERIMETER,
+                                lbeacon_uuid,
+                                final_timestamp,
+                                rssi);
                         }
                         if(is_fence_lbeacon && 
                            detected_rssi > 
@@ -1888,11 +1890,13 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                                       lbeacon_uuid, mac_address);
 #endif
 
-                            insert_into_geo_fence_alert_list(mac_address,
-                                                             "fence",
-                                                             lbeacon_uuid,
-                                                             final_timestamp,
-                                                             rssi);
+                            insert_into_geo_fence_alert_list(
+                                mac_address,
+                                current_list_ptr->name, 
+                                GEO_FENCE_ALERT_TYPE_FENCE,
+                                lbeacon_uuid,
+                                final_timestamp,
+                                rssi);
                         }
                         break;
                     }
@@ -1909,6 +1913,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
 }
 
 ErrorCode insert_into_geo_fence_alert_list(char *mac_address, 
+                                           char *fence_name,
                                            char *fence_type, 
                                            char *lbeacon_uuid, 
                                            char *final_timestamp, 
@@ -1931,8 +1936,9 @@ ErrorCode insert_into_geo_fence_alert_list(char *mac_address,
 
         init_entry( &new_node -> buffer_entry);
 
-        sprintf(new_node -> content, "%d;%s;%s;%s;%s;%s;", 1, 
+        sprintf(new_node -> content, "%d;%s;%s;%s;%s;%s;%s;", 1, 
                                                            mac_address, 
+                                                           fence_name,
                                                            fence_type, 
                                                            lbeacon_uuid, 
                                                            final_timestamp, 

@@ -56,7 +56,7 @@ static ErrorCode SQL_execute(void *db, char *sql_statement){
 
     if(PQresultStatus(res) != PGRES_COMMAND_OK){
 
-        zlog_info(category_debug, "SQL_execute failed [%d]: %s", res, PQerrorMessage(conn));
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", res, PQerrorMessage(conn));
 
         PQclear(res);
         return E_SQL_EXECUTE;
@@ -691,25 +691,28 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "INSERT INTO geo_fence_alert " \
                          "(mac_address, " \
+                         "name, " \
                          "type, " \
                          "uuid, " \
                          "alert_time, " \
                          "rssi, " \
                          "receive_time) " \
                          "VALUES " \
-                         "(%s, %s, %s, " \
+                         "(%s, %s, %s, %s, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
                          "%s, NOW());";
 
     int number_of_geo_fence_alert = 0;
     char *number_of_geo_fence_alert_str = NULL;
     char *mac_address = NULL;
+    char *name = NULL;
     char *type = NULL;
     char *uuid = NULL;
     char *alert_time = NULL;
     char *rssi = NULL;
 
     char *pqescape_mac_address = NULL;
+    char *pqescape_name = NULL;
     char *pqescape_type = NULL;
     char *pqescape_uuid = NULL;
     char *pqescape_alert_time = NULL;
@@ -730,6 +733,7 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
     while( number_of_geo_fence_alert-- ){
 
         mac_address = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
+        name = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
         type = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
         uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
         alert_time = strtok_save(NULL, DELIMITER_SEMICOLON, &saved_ptr);
@@ -740,6 +744,7 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
 
         pqescape_mac_address = PQescapeLiteral(conn, mac_address,
                                                strlen(mac_address));
+        pqescape_name = PQescapeLiteral(conn, name, strlen(name));
         pqescape_type = PQescapeLiteral(conn, type, strlen(type));
         pqescape_uuid = PQescapeLiteral(conn, uuid, strlen(uuid));
         pqescape_alert_time = PQescapeLiteral(conn, alert_time,
@@ -749,12 +754,14 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
 
         sprintf(sql, sql_template,
                 pqescape_mac_address,
+                pqescape_name,
                 pqescape_type,
                 pqescape_uuid,
                 pqescape_alert_time,
                 pqescape_rssi);
 
         PQfreemem(pqescape_mac_address);
+        PQfreemem(pqescape_name);
         PQfreemem(pqescape_type);
         PQfreemem(pqescape_uuid);
         PQfreemem(pqescape_alert_time);
@@ -1147,6 +1154,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_select_template = "SELECT mac_address, uuid, " \
                                 "ROUND( AVG(rssi), 2) as avg_rssi, " \
+                                "name, " \
                                 "type, " \
                                 "MAX(alert_time) as violation_timestamp " \
                                 "FROM geo_fence_alert " \
@@ -1154,7 +1162,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
                                 "receive_time >= " \
                                 "NOW() - INTERVAL '%d seconds' " \
                                 "GROUP BY " \
-                                "mac_address, uuid, type " \
+                                "mac_address, uuid, name, type " \
                                 "ORDER BY " \
                                 "mac_address ASC, type ASC, avg_rssi DESC";
     PGresult *res = NULL;
@@ -1167,11 +1175,13 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
 
     char *lbeacon_uuid = NULL;
     char *avg_rssi = NULL;
+    char *name = NULL;
     char *type = NULL;
     char *violation_timestamp = NULL;
 
     char *pqescape_mac_address = NULL;
     char *pqescape_lbeacon_uuid = NULL;
+    char *pqescape_name = NULL;
     char *pqescape_type = NULL;
     char *pqescape_violation_timestamp = NULL;
 
@@ -1191,6 +1201,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
         "rssi = %d, " \
         "first_seen_timestamp = %s, " \
         "last_seen_timestamp = %s," \
+        "geofence_name = %s, " \
         "geofence_type = %s, " \
         "geofence_violation_timestamp = %s " \
         "WHERE mac_address = %s";
@@ -1198,6 +1209,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
     char *sql_update_geo_fence_template = 
         "UPDATE object_summary_table " \
         "set rssi = %d, " \
+        "geofence_name = %s, " \
         "geofence_type = %s, " \
         "geofence_violation_timestamp = %s " \
         "WHERE mac_address = %s";
@@ -1224,7 +1236,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
     total_fields = PQnfields(res);
     total_rows = PQntuples(res);
 
-    if(total_rows > 0 && total_fields == 5){
+    if(total_rows > 0 && total_fields == 6){
 
         memset(prev_mac_address, 0, sizeof(prev_mac_address));
 
@@ -1245,8 +1257,9 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
 
                 lbeacon_uuid = PQgetvalue(res, current_row, 1);
                 avg_rssi = PQgetvalue(res, current_row, 2);
-                type = PQgetvalue(res, current_row, 3);
-                violation_timestamp = PQgetvalue(res, current_row, 4);
+                name = PQgetvalue(res, current_row, 3);
+                type = PQgetvalue(res, current_row, 4);
+                violation_timestamp = PQgetvalue(res, current_row, 5);
 
                 // first, check if the pair of mac_address and lbeacon_uuid 
                 // exists in the object_summary_table.
@@ -1289,6 +1302,9 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
                     pqescape_lbeacon_uuid = 
                         PQescapeLiteral(conn, lbeacon_uuid, 
                                         strlen(lbeacon_uuid));
+                    pqescape_name =
+                        PQescapeLiteral(conn, name,
+                                        strlen(name));
                     pqescape_type =
                         PQescapeLiteral(conn, type,
                                         strlen(type));
@@ -1302,6 +1318,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
                                  atoi(avg_rssi), 
                                  pqescape_violation_timestamp, 
                                  pqescape_violation_timestamp,
+                                 pqescape_name,
                                  pqescape_type,
                                  pqescape_violation_timestamp,
                                  pqescape_mac_address);
@@ -1310,6 +1327,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
 
                     PQfreemem(pqescape_mac_address);
                     PQfreemem(pqescape_lbeacon_uuid);
+                    PQfreemem(pqescape_name);
                     PQfreemem(pqescape_type);
                     PQfreemem(pqescape_violation_timestamp);
 
@@ -1334,10 +1352,12 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
                         pqescape_mac_address = 
                             PQescapeLiteral(conn, mac_address, 
                                             strlen(mac_address));
+                        pqescape_name = 
+                            PQescapeLiteral(conn, name,
+                                            strlen(name));
                         pqescape_type = 
                             PQescapeLiteral(conn, type,
                                             strlen(type));
-
                         pqescape_violation_timestamp = 
                             PQescapeLiteral(conn, violation_timestamp,
                                             strlen(violation_timestamp));
@@ -1346,6 +1366,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
                         memset(sql, 0, sizeof(sql));
                         sprintf(sql, sql_update_geo_fence_template,  
                                 atoi(avg_rssi), 
+                                pqescape_name,
                                 pqescape_type,
                                 pqescape_violation_timestamp,
                                 pqescape_mac_address);
@@ -1353,6 +1374,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
                         SQL_execute(db, sql);
 
                         PQfreemem(pqescape_mac_address);
+                        PQfreemem(pqescape_name);
                         PQfreemem(pqescape_type);
                         PQfreemem(pqescape_violation_timestamp);
 

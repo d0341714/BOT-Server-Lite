@@ -68,7 +68,11 @@
 /* The category of the printf during debugging */
 #define LOG_CATEGORY_DEBUG "LBeacon_Debug"
 
+/* The type term for geo-fence fence */
+#define GEO_FENCE_ALERT_TYPE_FENCE "fence"
 
+/* The type term for geo-fence perimeter */
+#define GEO_FENCE_ALERT_TYPE_PERIMETER "perimeter"
 
 typedef struct {
    /* The name of the geo fence */
