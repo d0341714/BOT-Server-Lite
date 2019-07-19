@@ -1029,17 +1029,19 @@ ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec){
     PGconn *conn = (PGconn *)db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_select_template = "SELECT object_mac_address, lbeacon_uuid, " \
-                                "MAX(panic_button) as panic_button, " \
-                                "MIN(final_timestamp) as final_timestamp " \
+                                "panic_button, " \
+                                "MAX(final_timestamp) as final_timestamp " \
                                 "FROM tracking_table " \
                                 "WHERE final_timestamp >= " \
                                 "NOW() - INTERVAL '%d seconds' AND " \
                                 "final_timestamp >= NOW() - " \
                                 "(server_time_offset|| 'seconds')::INTERVAL - " \
-                                "INTERVAL '%d seconds' GROUP BY " \
-                                "object_mac_address, lbeacon_uuid " \
-                                "HAVING MAX(panic_button) > 0 ORDER BY " \
-                                "object_mac_address ASC, panic_button DESC";
+                                "INTERVAL '%d seconds' AND " \
+                                "panic_button = 1 " \
+                                "GROUP BY " \
+                                "object_mac_address, lbeacon_uuid, panic_button " \
+                                "ORDER BY " \
+                                "object_mac_address ASC";
     PGresult *res = NULL;
     int current_row = 0;
     int total_fields = 0;
