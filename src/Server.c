@@ -57,9 +57,6 @@ int main(int argc, char **argv)
     /* The command message to be sent */
     char command_msg[MINIMUM_WIFI_MESSAGE_LENGTH];
 
-    /* The database argument for opening database */
-    char database_argument[SQL_TEMP_BUFFER_LENGTH];
-
     int uptime;
 
     /* Number of character bytes in the packet content */
@@ -70,6 +67,9 @@ int main(int argc, char **argv)
 
     /* The thread of maintenance database */
     pthread_t database_maintenance_thread;
+
+    /* The thread of summarizing location information */
+    pthread_t location_information_thread;
 
     /* The thread to listen for messages from Wi-Fi interface */
     pthread_t wifi_listener_thread;
@@ -149,16 +149,6 @@ int main(int argc, char **argv)
                                serverconfig.database_password, 
                                serverconfig.db_ip,
                                serverconfig.database_port );
-
-#ifdef debugging
-    zlog_info(category_debug,"Database Argument [%s]", database_argument);
-#endif
-
-    SQL_open_database_connection(database_argument, &Server_db);
-
-#ifdef debugging
-    zlog_info(category_debug,"Database connected");
-#endif
 
 #ifdef debugging
     zlog_info(category_debug,"Initialize buffer lists");
@@ -281,6 +271,17 @@ int main(int argc, char **argv)
         return return_value;
     }
 
+    /* Create thread to summarize location informtion */
+    return_value = startThread( &location_information_thread, summarize_location_information, NULL);
+
+    if(return_value != WORK_SUCCESSFULLY)
+    {
+        zlog_error(category_health_report, "summarize_location_information fail");
+#ifdef debugging
+        zlog_error(category_debug, "summarize_location_information fail");
+#endif
+        return return_value;
+    }
 
 #ifdef debugging
     zlog_info(category_debug,"Start Communication");
@@ -289,7 +290,7 @@ int main(int argc, char **argv)
     /* The while loop waiting for CommUnit routine to be ready */
     while(CommUnit_initialization_complete == false)
     {
-        Sleep(BUSY_WAITING_TIME);
+        Sleep(BUSY_WAITING_TIME_IN_MS);
 
         if(initialization_failed == true)
         {
@@ -297,8 +298,6 @@ int main(int argc, char **argv)
 
             /* Release the Wifi elements and close the connection. */
             udp_release( &udp_config);
-
-            SQL_close_database_connection(Server_db);
 
             return E_INITIALIZATION_FAIL;
         }
@@ -372,14 +371,12 @@ int main(int argc, char **argv)
         }
         else
         {
-            Sleep(BUSY_WAITING_TIME);
+            Sleep(BUSY_WAITING_TIME_IN_MS);
         }
     }/* End while(ready_to_work == true) */
 
     /* Release the Wifi elements and close the connection. */
     udp_release( &udp_config);
-
-    SQL_close_database_connection(Server_db);
 
     mp_destroy(&node_mempool);
 
@@ -461,7 +458,8 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
 
 #ifdef debugging
         zlog_info(category_debug,
-                  "Periods between request for health report [%d]",
+                  "Periods between request for health report " \
+                  "period_between_RFHR [%d]",
                   serverconfig->period_between_RFHR);
 #endif
 
@@ -473,8 +471,35 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
 
 #ifdef debugging
         zlog_info(category_debug,
-                  "Periods between request for tracked object data [%d]",
+                  "Periods between request for tracked object data " \
+                  "period_between_RFTOD [%d]",
                   serverconfig->period_between_RFTOD);
+#endif
+
+        fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        serverconfig->period_between_check_object_location = 
+            atoi(config_message);
+
+#ifdef debugging
+        zlog_info(category_debug,
+                  "period_between_check_object_location [%d]",
+                  serverconfig->period_between_check_object_location);
+#endif
+
+        fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        serverconfig->period_between_check_object_activity = 
+            atoi(config_message);
+
+#ifdef debugging
+        zlog_info(category_debug,
+                  "period_between_check_object_activity [%d]",
+                  serverconfig->period_between_check_object_activity);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -628,6 +653,78 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         zlog_info(category_debug,
                   "The nice of low priority is [%d]", 
                   serverconfig->low_priority);
+#endif
+
+        fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        serverconfig->location_time_interval_in_sec = atoi(config_message);
+
+#ifdef debugging
+        zlog_info(category_debug,
+                  "The location_time_interval_in_sec is [%d]", 
+                  serverconfig->location_time_interval_in_sec);
+#endif
+
+        fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        serverconfig->panic_time_interval_in_sec = atoi(config_message);
+
+#ifdef debugging
+        zlog_info(category_debug,
+                  "The panic_time_interval_in_sec is [%d]", 
+                  serverconfig->panic_time_interval_in_sec);
+#endif
+
+        fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        serverconfig->geo_fence_time_interval_in_sec = atoi(config_message);
+
+#ifdef debugging
+        zlog_info(category_debug,
+                  "The geo_fence_time_interval_in_sec is [%d]", 
+                  serverconfig->geo_fence_time_interval_in_sec);
+#endif
+
+        fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        serverconfig->inactive_time_interval_in_min = atoi(config_message);
+
+#ifdef debugging
+        zlog_info(category_debug,
+                  "The inactive_time_interval_in_min is [%d]", 
+                  serverconfig->inactive_time_interval_in_min);
+#endif
+
+        fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        serverconfig->inactive_each_time_slot_in_min = atoi(config_message);
+
+#ifdef debugging
+        zlog_info(category_debug,
+                  "The inactive_each_time_slot_in_min is [%d]", 
+                  serverconfig->inactive_each_time_slot_in_min);
+#endif
+
+        fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        serverconfig->inactive_rssi_delta = atoi(config_message);
+
+#ifdef debugging
+        zlog_info(category_debug,
+                  "The inactive_rssi_delta is [%d]", 
+                  serverconfig->inactive_rssi_delta);
 #endif
 
 #ifdef debugging
@@ -800,7 +897,7 @@ void *CommUnit_routine()
     /* wait for NSI get ready */
     while(NSI_initialization_complete == false)
     {
-        Sleep(BUSY_WAITING_TIME);
+        Sleep(BUSY_WAITING_TIME_IN_MS);
         if(initialization_failed == true)
         {
             return (void *)NULL;
@@ -979,7 +1076,7 @@ void *CommUnit_routine()
            sleep before starting the next iteration */
         if(did_work == false)
         {
-            Sleep(BUSY_WAITING_TIME);
+            Sleep(BUSY_WAITING_TIME_IN_MS);
         }
 
     } /* End while(ready_to_work == true) */
@@ -993,18 +1090,75 @@ void *CommUnit_routine()
 
 void *maintain_database()
 {
+    void *db = NULL;
+
+    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+        zlog_error(category_debug, 
+                  "cannot open database"); 
+        return (void *)NULL;
+    }
+
     while(true == ready_to_work){
         zlog_info(category_debug, 
                   "SQL_retain_data with database_keep_days=[%d]", 
                   serverconfig.database_keep_days); 
-        SQL_retain_data(Server_db, serverconfig.database_keep_days * 24);
+        SQL_retain_data(db, serverconfig.database_keep_days * 24);
 
         zlog_info(category_debug, "SQL_vacuum_database");
-        SQL_vacuum_database(Server_db);
+        SQL_vacuum_database(db);
 
-        // Sleep one day before next check
+        //Sleep one day before next check
         Sleep(86400 * 1000);
     }
+
+    SQL_close_database_connection(db);
+
+    return (void *)NULL;
+}
+
+void *summarize_location_information(){
+    void *db = NULL;
+    int uptime = 0;
+    int last_sync_location = 0;
+    int last_sync_activity = 0;
+
+    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+        zlog_error(category_debug, 
+                  "cannot open database"); 
+        return (void *)NULL;
+    }
+
+    uptime = clock_gettime();
+
+    while(true == ready_to_work){
+    
+        uptime = clock_gettime();
+        
+        if(uptime - last_sync_location >=
+            serverconfig.period_between_check_object_location){
+            
+            SQL_summarize_object_inforamtion(
+                db, 
+                serverconfig.location_time_interval_in_sec,
+                serverconfig.panic_time_interval_in_sec,
+                serverconfig.geo_fence_time_interval_in_sec);
+        }
+
+        if(uptime - last_sync_activity >= 
+            serverconfig.period_between_check_object_activity){
+        
+            SQL_identify_last_activity_status(
+                db, 
+                serverconfig.inactive_time_interval_in_min, 
+                serverconfig.inactive_each_time_slot_in_min,
+                serverconfig.inactive_rssi_delta);
+        }
+
+        Sleep(BUSY_WAITING_TIME_IN_MS);
+    }
+
+    SQL_close_database_connection(db);
+
     return (void *)NULL;
 }
 
@@ -1014,6 +1168,8 @@ void *Server_NSI_routine(void *_buffer_node)
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
     char gateway_record[WIFI_MESSAGE_LENGTH];
+
+    void *db = NULL;
 
     current_node -> pkt_direction = from_server;
 
@@ -1035,12 +1191,20 @@ void *Server_NSI_routine(void *_buffer_node)
     sprintf(gateway_record, "1;%s;%d;", current_node -> net_address,
             S_NORMAL_STATUS);
 
-    SQL_update_gateway_registration_status(Server_db, gateway_record,
+    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+        zlog_error(category_debug, 
+                  "cannot open database"); 
+        return (void *)NULL;
+    }
+
+    SQL_update_gateway_registration_status(db, gateway_record,
                                            strlen(gateway_record));
 
-    SQL_update_lbeacon_registration_status(Server_db,
+    SQL_update_lbeacon_registration_status(db,
                                            &current_node->content[1],
                                            strlen(&current_node->content[1]));
+
+    SQL_close_database_connection(db);
 
     pthread_mutex_lock(&NSI_send_buffer_list_head.list_lock);
 
@@ -1060,20 +1224,30 @@ void *Server_NSI_routine(void *_buffer_node)
 void *Server_BHM_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
+    
+    void *db = NULL;
+    
+    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+        zlog_error(category_debug, 
+                  "cannot open database"); 
+        return (void *)NULL;
+    }
 
     if(current_node->pkt_direction == from_gateway){
-
-        SQL_update_gateway_health_status(Server_db,
+    
+        SQL_update_gateway_health_status(db,
                                          current_node -> content,
                                          current_node -> content_size);
     
     }else if(current_node->pkt_direction == from_beacon){
 
-        SQL_update_lbeacon_health_status(Server_db,
+        SQL_update_lbeacon_health_status(db,
                                          current_node -> content,
                                          current_node -> content_size);
-
+    
     }
+    SQL_close_database_connection(db);
+    
 
     mp_free( &node_mempool, current_node);
 
@@ -1083,14 +1257,25 @@ void *Server_BHM_routine(void *_buffer_node)
 void *Server_LBeacon_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
+    
+    void *db = NULL;
+
+    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+        zlog_error(category_debug, 
+                  "cannot open database"); 
+        return (void *)NULL;
+    }
 
     if(current_node -> pkt_type == tracked_object_data)
     {
-        SQL_update_object_tracking_data(Server_db,
+
+        SQL_update_object_tracking_data(db,
                                         current_node -> content,
                                         strlen(current_node -> content));
 
     }
+
+    SQL_close_database_connection(db);
 
     mp_free( &node_mempool, current_node);
 
@@ -1101,17 +1286,27 @@ void *Server_LBeacon_routine(void *_buffer_node)
 void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
+   
+    void *db = NULL;
+
+    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+        zlog_error(category_debug, 
+                  "cannot open database"); 
+        return (void *)NULL;
+    }
 
     if(current_node -> pkt_type == tracked_object_data){
         
         check_geo_fence_violations(current_node);
 
-        SQL_update_object_tracking_data(Server_db,
+        SQL_update_object_tracking_data(db,
                                         current_node -> content,
                                         strlen(current_node -> content));
         
     }
-  
+
+    SQL_close_database_connection(db);
+
     mp_free( &node_mempool, current_node);
 
     return (void *)NULL;
@@ -1121,14 +1316,15 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 void *process_GeoFence_alert_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
+  
+    void *db = NULL;
 
-#ifdef debugging
-    zlog_info(category_debug, "Process GeoFence alert [%s]", 
-              current_node -> content);
-#endif
+    SQL_open_database_connection(database_argument, &db);
 
-    SQL_insert_geo_fence_alert(Server_db, current_node -> content, 
+    SQL_insert_geo_fence_alert(db, current_node -> content, 
                                current_node -> content_size);
+
+    SQL_close_database_connection(db);
     
     mp_free( &node_mempool, current_node);
 
@@ -1293,7 +1489,7 @@ void *Server_process_wifi_receive()
         /* If there is no pkt received */
         if(temppkt.is_null == true)
         {
-            Sleep(BUSY_WAITING_TIME);
+            Sleep(BUSY_WAITING_TIME_IN_MS);
             continue;
         }
 

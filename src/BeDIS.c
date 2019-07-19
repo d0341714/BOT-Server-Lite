@@ -239,7 +239,6 @@ int display_time(void)
 
     // Convert to local time format and print to stdout
     zlog_debug(category_debug, "%s", ctime(&now));
-    printf("%s", ctime(&now));
     
     return 0;
 }

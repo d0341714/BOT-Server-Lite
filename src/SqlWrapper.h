@@ -48,9 +48,6 @@
 /* When debugging is needed */
 //#define debugging
 
-/* db lock */
-pthread_mutex_t db_lock;
-
 /*
   SQL_execute
 
@@ -222,37 +219,6 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
                                                  char *buf,
                                                  size_t buf_len);
 
-
-/*
-  SQL_query_registered_gateways
-
-     Returns all the gateways with the corresponding health_status
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     health_status - the health_status to be queried
-
-     output - pointer to the output buffer to receive the query resutls. The
-              result string is in the format below.
-
-              length;gateway_ip_1;health_status_1;gateway_ip_2; \
-              health_status_2;gateway_ip_3;health_status_3;
-
-     output_len - The maximum length in number of bytes of output buffer.
-
-  Return Value:
-
-     ErrorCode - indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY
-*/
-ErrorCode SQL_query_registered_gateways(void *db,
-                                        HealthStatus health_status,
-                                        char *output,
-                                        size_t output_len);
-
-
 /*
   SQL_update_lbeacon_registration_status
 
@@ -385,5 +351,137 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 */
 ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len);
 
+/*
+  SQL_summarize_object_inforamtion
+
+     This function invokes sub-functions to summarize information of object 
+     list for BOT sysmte GUI. The summary informtion is updated to the summary 
+     table object_summary_table.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     location_time_interval_in_sec - the time window in which we treat this 
+                                     object as shown and visiable by BOT system
+
+     panic_time_interval_in_sec - the time window in which we treat this object 
+                                  as in panic situation if object (user) presses 
+                                  panic button within the interval.
+
+     geo_fence_time_interval_in_sec - the time window in which we treat this 
+                                      object as shown, visiable, and geofence 
+                                      violation.
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_summarize_object_inforamtion(void *db, 
+                                           int location_time_interval_in_sec, 
+                                           int panic_time_interval_in_sec,
+                                           int geo_fence_time_interval_in_sec);
+
+/*
+  SQL_summarize_object_location
+
+     This function queries tracking_table (Time-Series database) within time 
+     window to find out the lbeacon_uuid with the strongest RSSI value for each
+     object mac_address. It is also responsible for maintaining the first seen 
+     timestamp and last seen timestamp of the object mac_address and 
+     lbeacon_uuid pair. The summary information is updated to the summary table 
+     object_summary_table.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     time_interval_in_sec - the time window in which we treat this object as 
+                            shown and visiable by BOT system
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec);
+
+/*
+  SQL_identify_panic
+
+     This function queries tracking_table (Time-Series database) within time 
+     window to find out whether the object (user) has pressed panic_button 
+     in the past time interval. The panic button status is updated to the 
+     summary table object_summary_table.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     time_interval_in_sec - the time window in which we treat this object 
+                            as in panic situation if object (user) presses 
+                            panic button within the interval.
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec);
+
+/*
+  SQL_identify_geo_fence
+
+     This function queries geo_fence_alert table within time window to find 
+     out whether the object violated geo-fence in the past time interval. 
+     The geo-fence status is updated to the summary table object_summary_table.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     time_interval_in_sec - the time window in which we treat this object 
+                            as shown, visiable, and geofence violation.
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec);
+
+
+/*
+  SQL_identify_last_activity_status
+
+     This function use each pair of object mac_address and lbeacon_uuid from
+     the summary table object_summary_table to check the activity status 
+     records stored in tracking_table (Time-Series database). It uses the 
+     features called TIME_BUCKET and Delta provided by timescaleDB (TSDB) to
+     identify the activity status. The activity status is updated to the 
+     summary table object_summary_table.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     time_interval_in_min - the time window in which we want to monitor the 
+                            movement activity
+
+     each_time_slot_in_min - the time slot in minutes in which we calculate 
+                             the running average of RSSI for comparison
+
+     rssi_delta - the delta value of RSSI which we used as a criteria to 
+                  identify the movement of object
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_identify_last_activity_status(void *db, 
+                                            int time_interval_in_min, 
+                                            int each_time_slot_in_min,
+                                            unsigned int rssi_delta);
 
 #endif

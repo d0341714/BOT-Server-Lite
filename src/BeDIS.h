@@ -148,7 +148,10 @@
 #define INTERVAL_FOR_BUSY_WAITING_CHECK_IN_SEC 3
 
 /* Timeout interval in ms */
-#define BUSY_WAITING_TIME 5
+#define BUSY_WAITING_TIME_IN_MS 300
+
+/* Timeout interval in ms */
+#define DAILY_WAITING_TIME_IN_MS 86400000
 
 /* Maximum length for each array of database information */
 #define MAXIMUM_DATABASE_INFO 1024

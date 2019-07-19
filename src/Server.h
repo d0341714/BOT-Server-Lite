@@ -101,7 +101,8 @@ typedef struct {
     /* The IP address of database for the Server to connect. */
     char db_ip[NETWORK_ADDR_LENGTH];
 
-    /* The maximum number of Gateway nodes allowed in the star network of this Server */
+    /* The maximum number of Gateway nodes allowed in the star network of 
+    this Server */
     int allowed_number_nodes;
 
     /* The time interval in seconds for the Server sending request for health
@@ -111,6 +112,14 @@ typedef struct {
     /* The time interval in seconds for the Server sending request for tracked
        object data from LBeacon */
     int period_between_RFTOD;
+    
+    /* The time interval in seconds for the Server checking object location 
+    information */
+    int period_between_check_object_location;
+
+    /* The time interval in seconds for the Server checking object activity 
+    information */
+    int period_between_check_object_activity;
 
     /* The number of worker threads used by the communication unit for sending
       and receiving packets to and from LBeacons and the sever. */
@@ -144,6 +153,29 @@ typedef struct {
     int normal_priority;
     int low_priority;
 
+    /*the time window in which we treat this object as shown and visiable by 
+    BOT system*/
+    int location_time_interval_in_sec;
+
+    /*the time window in which we treat this object as in panic situation if 
+    object (user) presses panic button within the interval.*/
+    int panic_time_interval_in_sec;
+
+    /*the time window in which we treat this object as shown, visiable, and 
+    geofence violation.*/
+    int geo_fence_time_interval_in_sec;
+    
+    /*the time window in which we want to monitor the movement activity.*/
+    int inactive_time_interval_in_min;
+
+    /*the time slot in minutes in which we calculate the running average of 
+    RSSI for comparison.*/
+    int inactive_each_time_slot_in_min;
+
+    /*the delta value of RSSI which we used as a criteria to identify the 
+    movement of object.*/
+    int inactive_rssi_delta;
+    
     /* The list head of the geo gence list */
     struct List_Entry geo_fence_list_head;
 
@@ -155,8 +187,8 @@ typedef struct {
  */
 ServerConfig serverconfig;
 
-/* The pointer points to the db cursor */
-void *Server_db;
+/* The database argument for opening database */
+char database_argument[SQL_TEMP_BUFFER_LENGTH];
 
 /* The struct for storing necessary objects for the Wifi connection */
 sudp_config udp_config;
@@ -529,5 +561,6 @@ ErrorCode insert_into_geo_fence_alert_list(char *mac_address,
                                            char *final_timestamp, 
                                            char *rssi);
 
+void *summarize_location_information(); 
 
 #endif
