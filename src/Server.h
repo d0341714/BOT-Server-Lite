@@ -142,6 +142,26 @@ void *sort_priority_list(ServerConfig *config, BufferListHead *list_head);
 
 
 /*
+  udp_sendpkt
+
+     This function is called to send a packet to the destination via UDP 
+     connection.
+
+  Parameter:
+
+     udp_config  : A pointer to the structure contains all variables 
+                   for the UDP connection.
+     buffer_node : A pointer to the buffer node.
+
+  Return Value:
+
+     int : If return 0, everything work successfully.
+           If not 0   , something wrong.
+ */
+int udp_sendpkt(pudp_config udp_config, BufferNode *buffer_node);
+
+
+/*
   maintain_database:
 
      This function is executed as a dedicated thread and it maintains database 

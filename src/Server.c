@@ -290,7 +290,7 @@ int main(int argc, char **argv)
     /* The while loop waiting for CommUnit routine to be ready */
     while(CommUnit_initialization_complete == false)
     {
-        Sleep(BUSY_WAITING_TIME_IN_MS);
+        sleep_t(BUSY_WAITING_TIME_IN_MS);
 
         if(initialization_failed == true)
         {
@@ -311,7 +311,7 @@ int main(int argc, char **argv)
     /* The while loop that keeps the program running */
     while(ready_to_work == true)
     {
-        uptime = clock_gettime();
+        uptime = get_clock_time();
 
         /* Time: period_between_RFTOD 7 < period_between_RFHR 3600 */
 
@@ -371,7 +371,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            Sleep(BUSY_WAITING_TIME_IN_MS);
+            sleep_t(BUSY_WAITING_TIME_IN_MS);
         }
     }/* End while(ready_to_work == true) */
 
@@ -871,6 +871,32 @@ void *sort_priority_list(ServerConfig *config, BufferListHead *list_head)
 }
 
 
+int udp_sendpkt(pudp_config udp_config, BufferNode *buffer_node)
+{
+    int pkt_type;
+
+    char content[WIFI_MESSAGE_LENGTH];
+
+    pkt_type = ((buffer_node->pkt_direction << 4) & 0xf0) + 
+               (buffer_node->pkt_type & 0x0f);
+
+    memset(content, 0, WIFI_MESSAGE_LENGTH);
+
+    sprintf(content, "%c%s", (char)pkt_type, buffer_node ->content);
+
+    buffer_node -> content_size =  buffer_node -> content_size + 1;
+  
+    /* Add the content of the buffer node to the UDP to be sent to the 
+       destination */
+    udp_addpkt(udp_config, 
+               buffer_node -> net_address, 
+               buffer_node -> port,
+               content,
+               buffer_node -> content_size);
+
+    return WORK_SUCCESSFULLY;
+}
+
 
 void *maintain_database()
 {
@@ -892,7 +918,7 @@ void *maintain_database()
         SQL_vacuum_database(db);
 
         //Sleep one day before next check
-        Sleep(86400 * 1000);
+        sleep_t(86400 * 1000);
     }
 
     SQL_close_database_connection(db);
@@ -912,11 +938,11 @@ void *summarize_location_information(){
         return (void *)NULL;
     }
 
-    uptime = clock_gettime();
+    uptime = get_clock_time();
 
     while(true == ready_to_work){
     
-        uptime = clock_gettime();
+        uptime = get_clock_time();
         
         if(uptime - last_sync_location >=
             config.period_between_check_object_location){
@@ -938,7 +964,7 @@ void *summarize_location_information(){
                 config.inactive_rssi_delta);
         }
 
-        Sleep(BUSY_WAITING_TIME_IN_MS);
+        sleep_t(BUSY_WAITING_TIME_IN_MS);
     }
 
     SQL_close_database_connection(db);
@@ -1273,7 +1299,7 @@ void *Server_process_wifi_receive()
         /* If there is no pkt received */
         if(temppkt.is_null == true)
         {
-            Sleep(BUSY_WAITING_TIME_IN_MS);
+            sleep_t(BUSY_WAITING_TIME_IN_MS);
             continue;
         }
 

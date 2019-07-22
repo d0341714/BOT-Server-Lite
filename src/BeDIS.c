@@ -146,7 +146,7 @@ void *CommUnit_routine()
     /* wait for NSI get ready */
     while(NSI_initialization_complete == false)
     {
-        Sleep(BUSY_WAITING_TIME_IN_MS);
+        sleep_t(BUSY_WAITING_TIME_IN_MS);
         if(initialization_failed == true)
         {
             return (void *)NULL;
@@ -163,7 +163,7 @@ void *CommUnit_routine()
     zlog_info(category_debug, "[CommUnit] thread pool Initialized");
 #endif
 
-    uptime = clock_gettime();
+    uptime = get_clock_time();
 
     /* Set the initial time. */
     init_time = uptime;
@@ -177,7 +177,7 @@ void *CommUnit_routine()
     {
         did_work = false;
 
-        uptime = clock_gettime();
+        uptime = get_clock_time();
 
         /* In the normal situation, the scanning starts from the high priority
            to lower priority. When the timer expired for MAX_STARVATION_TIME,
@@ -226,7 +226,7 @@ void *CommUnit_routine()
                     break;
                 }
             }
-            uptime = clock_gettime();
+            uptime = get_clock_time();
             pthread_mutex_unlock( &priority_list_head.list_lock);
         }
 
@@ -317,7 +317,7 @@ void *CommUnit_routine()
         }
 
         /* Update the init_time */
-        init_time = clock_gettime();
+        init_time = get_clock_time();
 
         pthread_mutex_unlock( &priority_list_head.list_lock);
 
@@ -325,7 +325,7 @@ void *CommUnit_routine()
            sleep before starting the next iteration */
         if(did_work == false)
         {
-            Sleep(BUSY_WAITING_TIME_IN_MS);
+            sleep_t(BUSY_WAITING_TIME_IN_MS);
         }
 
     } /* End while(ready_to_work == true) */
@@ -335,34 +335,6 @@ void *CommUnit_routine()
     thpool_destroy(thpool);
 
     return (void *)NULL;
-}
-
-
-
-int udp_sendpkt(pudp_config udp_config, BufferNode *buffer_node)
-{
-    int pkt_type;
-
-    char content[WIFI_MESSAGE_LENGTH];
-
-    pkt_type = ((buffer_node->pkt_direction << 4) & 0xf0) + 
-               (buffer_node->pkt_type & 0x0f);
-
-    memset(content, 0, WIFI_MESSAGE_LENGTH);
-
-    sprintf(content, "%c%s", (char)pkt_type, buffer_node ->content);
-
-    buffer_node -> content_size =  buffer_node -> content_size + 1;
-  
-    /* Add the content of the buffer node to the UDP to be sent to the 
-       destination */
-    udp_addpkt(udp_config, 
-               buffer_node -> net_address, 
-               buffer_node -> port,
-               content,
-               buffer_node -> content_size);
-
-    return WORK_SUCCESSFULLY;
 }
 
 
@@ -435,7 +407,7 @@ int get_system_time()
     return system_time;
 }
 
-int clock_gettime()
+int get_clock_time()
 {
 #ifdef _WIN32
     return GetTickCount() / 1000;
@@ -465,8 +437,13 @@ char *strtok_save(char *str, char *delim, char **saveptr)
         *saveptr += strlen(delim) * sizeof(char);
         return NULL;
     }
-
+    
+#ifdef _WIN32
     return strtok_s(str, delim, saveptr);
+#elif __unix__
+    return strtok_r(str, delim, saveptr);
+#endif
+    
 }
 
 
@@ -486,4 +463,13 @@ int display_time(void)
     zlog_debug(category_debug, "%s", ctime(&now));
     
     return 0;
+}
+
+void sleep_t(int wait_time)
+{
+#ifdef _WIN32
+    Sleep(wait_time);
+#elif __unix__
+    usleep(wait_time);
+#endif
 }
