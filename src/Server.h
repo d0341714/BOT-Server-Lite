@@ -62,165 +62,30 @@
 /* File path of the config file of the Server */
 #define ZLOG_CONFIG_FILE_NAME ".\\config\\zlog.conf"
 
-/* The category of log file used for health report */
-#define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
-
-/* The category of the printf during debugging */
-#define LOG_CATEGORY_DEBUG "LBeacon_Debug"
-
 /* The type term for geo-fence fence */
 #define GEO_FENCE_ALERT_TYPE_FENCE "fence"
 
 /* The type term for geo-fence perimeter */
 #define GEO_FENCE_ALERT_TYPE_PERIMETER "perimeter"
 
-typedef struct {
-   /* The name of the geo fence */
-   char name[LENGTH_OF_GEO_FENCE_NAME];
+/* zlog category name */
+/* The category of log file used for health report */
+#define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
 
-   int number_perimeters;
-   int number_fences;
-   int number_mac_prefixes;
+/* The category of the printf during debugging */
+#define LOG_CATEGORY_DEBUG "LBeacon_Debug"
 
-   int rssi_of_perimeters;
-   int rssi_of_fences;
-
-   char perimeters[20][LENGTH_OF_UUID];
-   char fences[20][LENGTH_OF_UUID];
-   char mac_prefixes[20][LENGTH_OF_MAC_ADDRESS];
-
-   /* The list head records the list of the geo fence */
-   List_Entry geo_fence_list_entry;
-
-} GeoFenceListNode;
-
-
-
-/* The configuration file structure */
-typedef struct {
-
-    /* The IP address of the Server for WiFi netwok connection. */
-    char server_ip[NETWORK_ADDR_LENGTH];
-
-    /* The IP address of database for the Server to connect. */
-    char db_ip[NETWORK_ADDR_LENGTH];
-
-    /* The maximum number of Gateway nodes allowed in the star network of 
-    this Server */
-    int allowed_number_nodes;
-
-    /* The time interval in seconds for the Server sending request for health
-       reports from LBeacon */
-    int period_between_RFHR;
-
-    /* The time interval in seconds for the Server sending request for tracked
-       object data from LBeacon */
-    int period_between_RFTOD;
-    
-    /* The time interval in seconds for the Server checking object location 
-    information */
-    int period_between_check_object_location;
-
-    /* The time interval in seconds for the Server checking object activity 
-    information */
-    int period_between_check_object_activity;
-
-    /* The number of worker threads used by the communication unit for sending
-      and receiving packets to and from LBeacons and the sever. */
-    int number_worker_threads;
-
-    /* A port that Gateways are listening on and for the Server to send to. */
-    int send_port;
-
-    /* A port that the Server is listening for Gateways to send to */
-    int recv_port;
-
-    /* A port that the database is listening on for the Server to send to */
-    int database_port;
-
-    /* The name of the database */
-    char database_name[MAXIMUM_DATABASE_INFO];
-
-    /* The account for accessing to the database */
-    char database_account[MAXIMUM_DATABASE_INFO];
-
-    /* The password for accessing to the database */
-    char database_password[MAXIMUM_DATABASE_INFO];
-
-    /* The number of days in which we want to keep the data in the database */
-    int database_keep_days;
-
-    /* Priority levels at which buffer lists are processed by the worker threads
-     */
-    int time_critical_priority;
-    int high_priority;
-    int normal_priority;
-    int low_priority;
-
-    /*the time window in which we treat this object as shown and visiable by 
-    BOT system*/
-    int location_time_interval_in_sec;
-
-    /*the time window in which we treat this object as in panic situation if 
-    object (user) presses panic button within the interval.*/
-    int panic_time_interval_in_sec;
-
-    /*the time window in which we treat this object as shown, visiable, and 
-    geofence violation.*/
-    int geo_fence_time_interval_in_sec;
-    
-    /*the time window in which we want to monitor the movement activity.*/
-    int inactive_time_interval_in_min;
-
-    /*the time slot in minutes in which we calculate the running average of 
-    RSSI for comparison.*/
-    int inactive_each_time_slot_in_min;
-
-    /*the delta value of RSSI which we used as a criteria to identify the 
-    movement of object.*/
-    int inactive_rssi_delta;
-    
-    /* The list head of the geo gence list */
-    struct List_Entry geo_fence_list_head;
-
-} ServerConfig;
 
 /* Global variables */
 
-/* The Server config struct for storing config parameters from the config file 
- */
-ServerConfig serverconfig;
-
 /* The database argument for opening database */
 char database_argument[SQL_TEMP_BUFFER_LENGTH];
-
-/* The struct for storing necessary objects for the Wifi connection */
-sudp_config udp_config;
-
-/* The mempool for the buffer node structure to allocate memory */
-Memory_Pool node_mempool;
 
 /* The mempool for the GeoFence node structure to allocate memory */
 Memory_Pool geofence_mempool;
 
 /* An array of address maps */
 AddressMapArray Gateway_address_map;
-
-/* The head of a list of buffers of data from LBeacons */
-BufferListHead LBeacon_receive_buffer_list_head;
-
-/* The head of a list of the return message for the Gateway join requests */
-BufferListHead NSI_send_buffer_list_head;
-
-/* The head of a list of buffers for return join request status */
-BufferListHead NSI_receive_buffer_list_head;
-
-/* The head of a list of buffers holding health reports to be processed and sent
-   to the Server */
-BufferListHead BHM_send_buffer_list_head;
-
-/* The head of a list of buffers holding health reports from LBeacons */
-BufferListHead BHM_receive_buffer_list_head;
 
 /* The head of a list of buffers holding message from LBeacons specified by 
    GeoFence */
@@ -229,23 +94,6 @@ BufferListHead Geo_fence_receive_buffer_list_head;
 /* The head of a list of buffers holding GeoFence alert from GeoFence */
 BufferListHead Geo_fence_alert_buffer_list_head;
 
-/* The head of a list of buffers for the buffer list head in the priority 
-   order. */
-BufferListHead priority_list_head;
-
-
-/* Flags */
-
-/*
-  Initialization of the Server components involves network activates that may
-  take time. These flags enable each module to inform the main thread when its
-  initialization completes.
- */
-bool NSI_initialization_complete;
-bool CommUnit_initialization_complete;
-
-/* The flag is to identify whether any component fail to initialize */
-bool initialization_failed;
 
 /* Variables for storing the last polling times in second*/
 int last_polling_LBeacon_for_HR_time;
@@ -291,26 +139,6 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name);
      None
  */
 void *sort_priority_list(ServerConfig *config, BufferListHead *list_head);
-
-
-/*
-  CommUnit_routine:
-
-     The function is executed by the main thread of the communication unit that
-     is responsible for sending and receiving packets to and from the sever and
-     LBeacons after the NSI module has initialized WiFi networks. It creates
-     threads to carry out the communication process.
-
-  Parameters:
-
-     None
-
-  Return value:
-
-     None
-
- */
-void *CommUnit_routine();
 
 
 /*

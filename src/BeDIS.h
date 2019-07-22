@@ -47,6 +47,30 @@
 #ifndef BEDIS_H
 #define BEDIS_H
 
+#ifdef _WIN32
+ 
+   #include <winsock2.h>
+   #pragma  comment(lib,"WS2_32.lib")
+   #include <WS2tcpip.h>
+   #include <windows.h>
+
+#elif __unix__ // all unices not caught above
+
+   #include <netdb.h>
+   #include <netinet/in.h>
+   #include <dirent.h>
+   #include <pthread.h>
+   #include <arpa/inet.h>
+   #include <sys/socket.h>
+   #include <sys/poll.h>
+   #include <sys/ioctl.h>
+   #include <sys/types.h>
+   #include <sys/time.h>
+   #include <sys/timeb.h>
+   #include <sys/file.h>
+#else
+#   error "Unknown compiler"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,113 +80,14 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <winsock2.h>
-#pragma comment(lib,"WS2_32.lib")
-#include <WS2tcpip.h>
 #include <signal.h>
 #include <time.h>
-#include <windows.h>
 #include "Mempool.h"
 #include "UDP_API.h"
 #include "LinkedList.h"
 #include "thpool.h"
 #include "zlog.h"
-
-
-/* Parameter that marks the start of the config file */
-#define DELIMITER "="
-
-/* Parameter that marks the start of the fraction part of float number */
-#define FRACTION_DOT "."
-
-/* Parameter that marks the separator of differnt records communicated with
-   SQL wrapper API */
-#define DELIMITER_SEMICOLON ";"
-
-/* Parameter that marks the separate of different records */
-#define DELIMITER_COMMA ","
-
-/* Maximum number of characters in each line of config file */
-#define CONFIG_BUFFER_SIZE 4096
-
-/* Number of times to retry open file, because file openning operation may have
-   transient failure. */
-#define FILE_OPEN_RETRIES 5
-
-/* Number of times to retry getting a dongle, because this operation may have
-   transient failure. */
-#define DONGLE_GET_RETRIES 5
-
-/* Number of times to retry opening socket, because socket openning operation
-   may have transient failure. */
-#define SOCKET_OPEN_RETRIES 5
-
-/* The number of slots in the memory pool */
-#define SLOTS_IN_MEM_POOL 1024
-
-/* Length of the IP address in byte */
-#define NETWORK_ADDR_LENGTH 16
-
-/* Length of the IP address in Hex */
-#define NETWORK_ADDR_LENGTH_HEX 8
-
-/* The size of message to be sent over WiFi in bytes */
-#define WIFI_MESSAGE_LENGTH 4096
-
-/* Maximum length of the message in bytes allow to set to WIFI_MESSAGE_LENGTH */
-#define MAXIMUM_WIFI_MESSAGE_LENGTH 65507
-
-/* Minimum length of the message in bytes
-   (One byte for data type and one byte for a space) 
- */
-#define MINIMUM_WIFI_MESSAGE_LENGTH 2
-
-/* Length of geo_fence name in byte */
-#define LENGTH_OF_GEO_FENCE_NAME 32
-
-/* Number of characters in a Bluetooth MAC address */
-#define LENGTH_OF_MAC_ADDRESS 18
-
-/* Maximum length of message to communicate with SQL wrapper API in bytes */
-#define SQL_TEMP_BUFFER_LENGTH 4096
-
-/* The size of array to store Wi-Fi SSID */
-#define WIFI_SSID_LENGTH 10
-
-/* The size of array to store Wi-Fi Password */
-#define WIFI_PASS_LENGTH 10
-
-/* Length of the LBeacon's UUID in number of characters */
-#define LENGTH_OF_UUID 33
-
-/* Length of coordinates in number of bits */
-#define COORDINATE_LENGTH 64
-
-/* The port on which to listen for incoming data */
-#define UDP_LISTEN_PORT 8888
-
-/* Number of bytes in the string format of epoch time */
-#define LENGTH_OF_EPOCH_TIME 11
-
-/* Time interval in seconds for busy-wait checking in threads */
-#define INTERVAL_FOR_BUSY_WAITING_CHECK_IN_SEC 3
-
-/* Timeout interval in ms */
-#define BUSY_WAITING_TIME_IN_MS 300
-
-/* Timeout interval in ms */
-#define DAILY_WAITING_TIME_IN_MS 86400000
-
-/* Maximum length for each array of database information */
-#define MAXIMUM_DATABASE_INFO 1024
-
-/* Maximum number of nodes per star network */
-#define MAX_NUMBER_NODES 16
-
-/*
-  Maximum length of time in seconds low priority message lists are starved
-  of attention. */
-#define MAX_STARVATION_TIME 600
+#include "global_variable.h"
 
 
 typedef enum _ErrorCode{
@@ -323,8 +248,13 @@ typedef struct {
 /*  A struct for recording the network address and it's last update time */
 typedef struct {
 
+    char uuid[LENGTH_OF_UUID];
+
     /* The network address of wifi link to the Gateway */
     char net_address[NETWORK_ADDR_LENGTH];
+
+    /* The last LBeacon reported datetime */
+    int last_lbeacon_datetime;
 
     /* The last join request time */
     int last_request_time;
@@ -354,6 +284,47 @@ typedef struct coordinates{
 
 } Coordinates;
 
+/* Global variables */
+
+/* The struct for storing necessary objects for the Wifi connection */
+sudp_config udp_config;
+
+/* The mempool for the buffer node structure to allocate memory */
+Memory_Pool node_mempool;
+
+/* The head of a list of buffers of data from LBeacons */
+BufferListHead LBeacon_receive_buffer_list_head;
+
+/* The head of a list of the return message for the Gateway join requests */
+BufferListHead NSI_send_buffer_list_head;
+
+/* The head of a list of buffers for return join request status */
+BufferListHead NSI_receive_buffer_list_head;
+
+/* The head of a list of buffers holding health reports to be processed and sent
+   to the Server */
+BufferListHead BHM_send_buffer_list_head;
+
+/* The head of a list of buffers holding health reports from LBeacons */
+BufferListHead BHM_receive_buffer_list_head;
+
+/* The head of a list of buffers for the buffer list head in the priority 
+   order. */
+BufferListHead priority_list_head;
+
+
+/* Flags */
+
+/*
+  Initialization of the Server components involves network activates that may
+  take time. These flags enable each module to inform the main thread when its
+  initialization completes.
+ */
+bool NSI_initialization_complete;
+bool CommUnit_initialization_complete;
+
+/* The flag is to identify whether any component fail to initialize */
+bool initialization_failed;
 
 /* A global flag that is initially set to true by the main thread. It is set
    to false by any thread when the thread encounters a fatal error,
@@ -430,14 +401,36 @@ void init_Address_Map(AddressMapArray *address_map);
   Parameters:
 
      address_map - A pointer to the head of the AddressMap.
-     net_address - The pointer to the network address to compare.
+     find - The pointer to the network address to compare.
+     flag - 0: find net_address
+            1: find uuid
+            
 
   Return value:
 
      int: If not find, return -1, else return its array number.
  */
-int is_in_Address_Map(AddressMapArray *address_map, char *net_address);
+int is_in_Address_Map(AddressMapArray *address_map, char *find, int flag);
 
+
+/*
+  CommUnit_routine:
+
+     The function is executed by the main thread of the communication unit that
+     is responsible for sending and receiving packets to and from the sever and
+     LBeacons after the NSI module has initialized WiFi networks. It creates
+     threads to carry out the communication process.
+
+  Parameters:
+
+     None
+
+  Return value:
+
+     None
+
+ */
+void *CommUnit_routine();
 
 /*
   udp_sendpkt
