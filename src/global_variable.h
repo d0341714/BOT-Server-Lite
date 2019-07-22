@@ -252,6 +252,6 @@ typedef struct {
 
 /* The Server config struct for storing config parameters from the config file 
  */
-ServerConfig serverconfig;
+ServerConfig config;
 
 #endif

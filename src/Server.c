@@ -124,9 +124,9 @@ int main(int argc, char **argv)
     zlog_info(category_debug,"Mempool Initialized");
 #endif
 
-    /* Create the serverconfig from input serverconfig file */
+    /* Create the config from input serverconfig file */
 
-    if(get_server_config( &serverconfig, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY)
+    if(get_server_config( &config, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY)
     {
         zlog_error(category_health_report, "Opening config file Fail");
 #ifdef debugging
@@ -144,11 +144,11 @@ int main(int argc, char **argv)
     memset(database_argument, 0, SQL_TEMP_BUFFER_LENGTH);
 
     sprintf(database_argument, "dbname=%s user=%s password=%s host=%s port=%d",
-                               serverconfig.database_name, 
-                               serverconfig.database_account,
-                               serverconfig.database_password, 
-                               serverconfig.db_ip,
-                               serverconfig.database_port );
+                               config.database_name, 
+                               config.database_account,
+                               config.database_password, 
+                               config.db_ip,
+                               config.database_port );
 
 #ifdef debugging
     zlog_info(category_debug,"Initialize buffer lists");
@@ -160,46 +160,46 @@ int main(int argc, char **argv)
     /* Initialize buffer_list_heads and add to the head in to the priority list.
      */
     init_buffer( &priority_list_head, (void *) sort_priority_list,
-                serverconfig.high_priority);
+                config.high_priority);
 
     init_buffer( &Geo_fence_alert_buffer_list_head,
                 (void *) process_GeoFence_alert_routine, 
-                serverconfig.time_critical_priority);
+                config.time_critical_priority);
     insert_list_tail( &Geo_fence_alert_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &Geo_fence_receive_buffer_list_head,
                 (void *) process_tracked_data_from_geofence_gateway, 
-                serverconfig.time_critical_priority);
+                config.time_critical_priority);
     insert_list_tail( &Geo_fence_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &LBeacon_receive_buffer_list_head,
-                (void *) Server_LBeacon_routine, serverconfig.normal_priority);
+                (void *) Server_LBeacon_routine, config.normal_priority);
     insert_list_tail( &LBeacon_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &NSI_send_buffer_list_head,
-                (void *) Server_process_wifi_send, serverconfig.normal_priority);
+                (void *) Server_process_wifi_send, config.normal_priority);
     insert_list_tail( &NSI_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &NSI_receive_buffer_list_head,
-                (void *) Server_NSI_routine, serverconfig.normal_priority);
+                (void *) Server_NSI_routine, config.normal_priority);
     insert_list_tail( &NSI_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &BHM_receive_buffer_list_head,
-                (void *) Server_BHM_routine, serverconfig.low_priority);
+                (void *) Server_BHM_routine, config.low_priority);
     insert_list_tail( &BHM_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &BHM_send_buffer_list_head,
-                (void *) Server_process_wifi_send, serverconfig.low_priority);
+                (void *) Server_process_wifi_send, config.low_priority);
     insert_list_tail( &BHM_send_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
-    sort_priority_list(&serverconfig, &priority_list_head);
+    sort_priority_list(&config, &priority_list_head);
 
 #ifdef debugging
     zlog_info(category_debug,"Buffer lists initialize");
@@ -210,7 +210,7 @@ int main(int argc, char **argv)
 #endif
 
     /* Initialize the Wifi connection */
-    if(udp_initial( &udp_config, serverconfig.recv_port) != WORK_SUCCESSFULLY){
+    if(udp_initial( &udp_config, config.recv_port) != WORK_SUCCESSFULLY){
 
         /* Error handling and return */
         initialization_failed = true;
@@ -318,7 +318,7 @@ int main(int argc, char **argv)
         /* If it is the time to poll track object data from LBeacons, 
            get a thread to do this work */
         if(uptime - last_polling_object_tracking_time >=
-           serverconfig.period_between_RFTOD)
+           config.period_between_RFTOD)
         {
             /* Pull object tracking object data */
             /* set the pkt type */
@@ -347,7 +347,7 @@ int main(int argc, char **argv)
            of data to be sent at the same time except for tracked object data. 
          */
         if(uptime - last_polling_LBeacon_for_HR_time >=
-                serverconfig.period_between_RFHR)
+                config.period_between_RFHR)
         {
             /* Polling for health reports. */
             /* set the pkt type */
@@ -386,7 +386,7 @@ int main(int argc, char **argv)
 }
 
 
-ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name) 
+ErrorCode get_server_config(ServerConfig *config, char *file_name) 
 {
     FILE *file = fopen(file_name, "r");
     char config_setting[CONFIG_BUFFER_SIZE];
@@ -418,10 +418,10 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         else
             config_message_size = strlen(config_message);
 
-        memcpy(serverconfig->server_ip, config_message, config_message_size);
+        memcpy(config->server_ip, config_message, config_message_size);
 
 #ifdef debugging
-        zlog_info(category_debug,"Server IP [%s]", serverconfig->server_ip);
+        zlog_info(category_debug,"Server IP [%s]", config->server_ip);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -433,119 +433,119 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         else
             config_message_size = strlen(config_message);
 
-        memcpy(serverconfig->db_ip, config_message, config_message_size);
+        memcpy(config->db_ip, config_message, config_message_size);
 
 #ifdef debugging
-        zlog_info(category_debug,"Database IP [%s]", serverconfig->db_ip);
+        zlog_info(category_debug,"Database IP [%s]", config->db_ip);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->allowed_number_nodes = atoi(config_message);
+        config->allowed_number_nodes = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,"Allow Number of Nodes [%d]", 
-               serverconfig->allowed_number_nodes);
+               config->allowed_number_nodes);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->period_between_RFHR = atoi(config_message);
+        config->period_between_RFHR = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "Periods between request for health report " \
                   "period_between_RFHR [%d]",
-                  serverconfig->period_between_RFHR);
+                  config->period_between_RFHR);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->period_between_RFTOD = atoi(config_message);
+        config->period_between_RFTOD = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "Periods between request for tracked object data " \
                   "period_between_RFTOD [%d]",
-                  serverconfig->period_between_RFTOD);
+                  config->period_between_RFTOD);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->period_between_check_object_location = 
+        config->period_between_check_object_location = 
             atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "period_between_check_object_location [%d]",
-                  serverconfig->period_between_check_object_location);
+                  config->period_between_check_object_location);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->period_between_check_object_activity = 
+        config->period_between_check_object_activity = 
             atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "period_between_check_object_activity [%d]",
-                  serverconfig->period_between_check_object_activity);
+                  config->period_between_check_object_activity);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->number_worker_threads = atoi(config_message);
+        config->number_worker_threads = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "Number of worker threads [%d]",
-                  serverconfig->number_worker_threads);
+                  config->number_worker_threads);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->send_port = atoi(config_message);
+        config->send_port = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "The destination port when sending [%d]", 
-                  serverconfig->send_port);
+                  config->send_port);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->recv_port = atoi(config_message);
+        config->recv_port = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
-                  "The received port [%d]", serverconfig->recv_port);
+                  "The received port [%d]", config->recv_port);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->database_port = atoi(config_message);
+        config->database_port = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug, 
-                  "The database port [%d]", serverconfig->database_port);
+                  "The database port [%d]", config->database_port);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -557,12 +557,12 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         else
             config_message_size = strlen(config_message);
 
-        memcpy(serverconfig->database_name, config_message, config_message_size)
+        memcpy(config->database_name, config_message, config_message_size)
         ;
 
 #ifdef debugging
         zlog_info(category_debug,
-                  "Database Name [%s]", serverconfig->database_name);
+                  "Database Name [%s]", config->database_name);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -574,12 +574,12 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         else
             config_message_size = strlen(config_message);
 
-        memcpy(serverconfig->database_account, config_message, 
+        memcpy(config->database_account, config_message, 
                config_message_size);
 
 #ifdef debugging
         zlog_info(category_debug,
-                  "Database Account [%s]", serverconfig->database_account);
+                  "Database Account [%s]", config->database_account);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
@@ -591,7 +591,7 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         else
             config_message_size = strlen(config_message);
 
-        memcpy(serverconfig->database_password, config_message, 
+        memcpy(config->database_password, config_message, 
                config_message_size);
 
 
@@ -599,132 +599,132 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->database_keep_days = atoi(config_message);
+        config->database_keep_days = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "Database database_keep_days [%d]", 
-                  serverconfig->database_keep_days);
+                  config->database_keep_days);
 #endif
         
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->time_critical_priority = atoi(config_message);
+        config->time_critical_priority = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "The nice of time critical priority is [%d]",
-                  serverconfig->time_critical_priority);
+                  config->time_critical_priority);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->high_priority = atoi(config_message);
+        config->high_priority = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "The nice of high priority is [%d]", 
-                  serverconfig->high_priority);
+                  config->high_priority);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->normal_priority = atoi(config_message);
+        config->normal_priority = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "The nice of normal priority is [%d]",
-                  serverconfig->normal_priority);
+                  config->normal_priority);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->low_priority = atoi(config_message);
+        config->low_priority = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "The nice of low priority is [%d]", 
-                  serverconfig->low_priority);
+                  config->low_priority);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->location_time_interval_in_sec = atoi(config_message);
+        config->location_time_interval_in_sec = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "The location_time_interval_in_sec is [%d]", 
-                  serverconfig->location_time_interval_in_sec);
+                  config->location_time_interval_in_sec);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->panic_time_interval_in_sec = atoi(config_message);
+        config->panic_time_interval_in_sec = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "The panic_time_interval_in_sec is [%d]", 
-                  serverconfig->panic_time_interval_in_sec);
+                  config->panic_time_interval_in_sec);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->geo_fence_time_interval_in_sec = atoi(config_message);
+        config->geo_fence_time_interval_in_sec = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "The geo_fence_time_interval_in_sec is [%d]", 
-                  serverconfig->geo_fence_time_interval_in_sec);
+                  config->geo_fence_time_interval_in_sec);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->inactive_time_interval_in_min = atoi(config_message);
+        config->inactive_time_interval_in_min = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "The inactive_time_interval_in_min is [%d]", 
-                  serverconfig->inactive_time_interval_in_min);
+                  config->inactive_time_interval_in_min);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->inactive_each_time_slot_in_min = atoi(config_message);
+        config->inactive_each_time_slot_in_min = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "The inactive_each_time_slot_in_min is [%d]", 
-                  serverconfig->inactive_each_time_slot_in_min);
+                  config->inactive_each_time_slot_in_min);
 #endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
         config_message = config_message + strlen(DELIMITER);
         trim_string_tail(config_message);
-        serverconfig->inactive_rssi_delta = atoi(config_message);
+        config->inactive_rssi_delta = atoi(config_message);
 
 #ifdef debugging
         zlog_info(category_debug,
                   "The inactive_rssi_delta is [%d]", 
-                  serverconfig->inactive_rssi_delta);
+                  config->inactive_rssi_delta);
 #endif
 
 #ifdef debugging
@@ -732,7 +732,7 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
 #endif
 
        /* Initialize geo-fence list head to store all the geo-fence settings */
-       init_entry( &(serverconfig->geo_fence_list_head));
+       init_entry( &(config->geo_fence_list_head));
 
        fgets(config_setting, sizeof(config_setting), file);
        config_message = strstr((char *)config_setting, DELIMITER);
@@ -747,11 +747,11 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
            config_message = config_message + strlen(DELIMITER);
            trim_string_tail(config_message);
         
-           add_geo_fence_setting(&(serverconfig->geo_fence_list_head), config_message);
+           add_geo_fence_setting(&(config->geo_fence_list_head), config_message);
        }
 
 #ifdef debugging
-       list_for_each(current_list_entry, &(serverconfig->geo_fence_list_head)){
+       list_for_each(current_list_entry, &(config->geo_fence_list_head)){
             current_list_ptr = ListEntry(current_list_entry,
                                          GeoFenceListNode,
                                          geo_fence_list_entry);
@@ -791,7 +791,7 @@ ErrorCode get_server_config(ServerConfig *serverconfig, char *file_name)
 }
 
 
-void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head)
+void *sort_priority_list(ServerConfig *config, BufferListHead *list_head)
 {
     List_Entry *list_pointer,
                *next_list_pointer;
@@ -817,20 +817,20 @@ void *sort_priority_list(ServerConfig *serverconfig, BufferListHead *list_head)
         current_head = ListEntry(list_pointer, BufferListHead,
                                  priority_list_entry);
 
-        if(current_head -> priority_nice == serverconfig -> time_critical_priority)
+        if(current_head -> priority_nice == config -> time_critical_priority)
 
             insert_list_tail( list_pointer, &critical_priority_head);
 
-        else if(current_head -> priority_nice == serverconfig -> high_priority)
+        else if(current_head -> priority_nice == config -> high_priority)
 
             insert_list_tail( list_pointer, &high_priority_head);
 
-        else if(current_head -> priority_nice == serverconfig -> 
+        else if(current_head -> priority_nice == config -> 
                 normal_priority)
 
             insert_list_tail( list_pointer, &normal_priority_head);
 
-        else if(current_head -> priority_nice == serverconfig -> low_priority)
+        else if(current_head -> priority_nice == config -> low_priority)
 
             insert_list_tail( list_pointer, &low_priority_head);
 
@@ -885,8 +885,8 @@ void *maintain_database()
     while(true == ready_to_work){
         zlog_info(category_debug, 
                   "SQL_retain_data with database_keep_days=[%d]", 
-                  serverconfig.database_keep_days); 
-        SQL_retain_data(db, serverconfig.database_keep_days * 24);
+                  config.database_keep_days); 
+        SQL_retain_data(db, config.database_keep_days * 24);
 
         zlog_info(category_debug, "SQL_vacuum_database");
         SQL_vacuum_database(db);
@@ -919,23 +919,23 @@ void *summarize_location_information(){
         uptime = clock_gettime();
         
         if(uptime - last_sync_location >=
-            serverconfig.period_between_check_object_location){
+            config.period_between_check_object_location){
             
             SQL_summarize_object_inforamtion(
                 db, 
-                serverconfig.location_time_interval_in_sec,
-                serverconfig.panic_time_interval_in_sec,
-                serverconfig.geo_fence_time_interval_in_sec);
+                config.location_time_interval_in_sec,
+                config.panic_time_interval_in_sec,
+                config.geo_fence_time_interval_in_sec);
         }
 
         if(uptime - last_sync_activity >= 
-            serverconfig.period_between_check_object_activity){
+            config.period_between_check_object_activity){
         
             SQL_identify_last_activity_status(
                 db, 
-                serverconfig.inactive_time_interval_in_min, 
-                serverconfig.inactive_each_time_slot_in_min,
-                serverconfig.inactive_rssi_delta);
+                config.inactive_time_interval_in_min, 
+                config.inactive_each_time_slot_in_min,
+                config.inactive_rssi_delta);
         }
 
         Sleep(BUSY_WAITING_TIME_IN_MS);
@@ -1217,7 +1217,7 @@ void Broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size)
                 udp_addpkt( &udp_config,
                             address_map ->
                             address_map_list[current_index].net_address,
-                            serverconfig.send_port,
+                            config.send_port,
                             msg,
                             size);
             }
@@ -1236,7 +1236,7 @@ void *Server_process_wifi_send(void *_buffer_node)
     zlog_info(category_debug, 
               "Start Send pkt\naddress [%s]\nport [%d]\nmsg [%s]\nsize [%d]",
                                                     current_node->net_address,
-                                                    serverconfig.send_port,
+                                                    config.send_port,
                                                     current_node->content,
                                                     current_node->content_size);
 #endif
@@ -1244,7 +1244,7 @@ void *Server_process_wifi_send(void *_buffer_node)
     /* Add the content of the buffer node to the UDP to be sent to the
        server */
     //udp_sendpkt(&udp_config, 
-    //            current_node -> net_address,serverconfig.send_port, 
+    //            current_node -> net_address,config.send_port, 
     //            current_node -> content, current_node -> content_size);
     udp_sendpkt(&udp_config, current_node);
 
@@ -1546,7 +1546,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
     lbeacon_uuid = strtok_save(content_temp, DELIMITER_SEMICOLON, &save_ptr);
     
 
-    list_for_each(current_list_entry, &(serverconfig.geo_fence_list_head)){
+    list_for_each(current_list_entry, &(config.geo_fence_list_head)){
 
         current_list_ptr = ListEntry(current_list_entry,
                                      GeoFenceListNode,
