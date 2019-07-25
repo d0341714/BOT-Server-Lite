@@ -54,27 +54,6 @@
 /* When debugging is needed */
 #define debugging
 
-/* Server config file location and the config file definition. */
-
-/* File path of the config file of the Server */
-#define CONFIG_FILE_NAME "./config/server.conf"
-
-/* File path of the config file of the Server */
-#define ZLOG_CONFIG_FILE_NAME ".\\config\\zlog.conf"
-
-/* The type term for geo-fence fence */
-#define GEO_FENCE_ALERT_TYPE_FENCE "fence"
-
-/* The type term for geo-fence perimeter */
-#define GEO_FENCE_ALERT_TYPE_PERIMETER "perimeter"
-
-/* zlog category name */
-/* The category of log file used for health report */
-#define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
-
-/* The category of the printf during debugging */
-#define LOG_CATEGORY_DEBUG "LBeacon_Debug"
-
 
 /* Global variables */
 

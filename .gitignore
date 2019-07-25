@@ -48,3 +48,5 @@
 *.htm
 *.user
 *.res
+src/BeDIS.c
+src/BeDIS.h
