@@ -22,7 +22,7 @@
 
   Version:
 
-     1.0, 20190617
+     1.0, 20190726
 
   Abstract:
 
@@ -41,7 +41,7 @@
      Jake Lee       , jakelee@iis.sinica.edu.tw
      Ray Chao       , raychao5566@gmail.com
      Gary Xiao      , garyh0205@hotmail.com
-     Chun Yu Lai    , chunyu1202@gmail.com
+     Chun-Yu Lai    , chunyu1202@gmail.com
  */
 
 
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
     int send_pkt_type;
 
     /* The command message to be sent */
-    char command_msg[MINIMUM_WIFI_MESSAGE_LENGTH];
+    char command_msg[WIFI_MESSAGE_LENGTH];
 
     int uptime;
 
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 
 
     /* Initialize zlog */
-	if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0)
+    if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0)
     {
         category_health_report = zlog_get_category(LOG_CATEGORY_HEALTH_REPORT);
 
@@ -322,13 +322,11 @@ int main(int argc, char **argv)
         {
             /* Pull object tracking object data */
             /* set the pkt type */
-            send_pkt_type = ((from_server & 0x0f) << 4) +
-                             (tracked_object_data &
-                             0x0f);
-            memset(command_msg, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
-            command_msg[0] = (char)send_pkt_type;
-
+            memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
+            sprintf(command_msg, "%d;%d;%s;", from_server, 
+                                              tracked_object_data, 
+                                              BOT_SERVER_API_VERSION);
 
 #ifdef debugging
             display_time();
@@ -337,7 +335,7 @@ int main(int argc, char **argv)
 
             /* Broadcast poll messenge to gateways */
             Broadcast_to_gateway(&Gateway_address_map, command_msg,
-                             MINIMUM_WIFI_MESSAGE_LENGTH);
+                                 WIFI_MESSAGE_LENGTH);
 
             /* Update the last_polling_object_tracking_time */
             last_polling_object_tracking_time = uptime;
@@ -351,11 +349,11 @@ int main(int argc, char **argv)
         {
             /* Polling for health reports. */
             /* set the pkt type */
-            send_pkt_type = ((from_server & 0x0f) << 4) +
-                             (health_report & 0x0f);
-            memset(command_msg, 0, MINIMUM_WIFI_MESSAGE_LENGTH);
 
-            command_msg[0] = (char)send_pkt_type;
+            memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
+            sprintf(command_msg, "%d;%d;%s;", from_server, 
+                                              gateway_health_report, 
+                                              BOT_SERVER_API_VERSION);
 
 #ifdef debugging
             display_time();
@@ -364,7 +362,7 @@ int main(int argc, char **argv)
 
             /* broadcast to gateways */
             Broadcast_to_gateway(&Gateway_address_map, command_msg,
-                              MINIMUM_WIFI_MESSAGE_LENGTH);
+                                 WIFI_MESSAGE_LENGTH);
 
             /* Update the last_polling_LBeacon_for_HR_time */
             last_polling_LBeacon_for_HR_time = uptime;
@@ -873,18 +871,17 @@ void *sort_priority_list(ServerConfig *config, BufferListHead *list_head)
 
 int udp_sendpkt(pudp_config udp_config, BufferNode *buffer_node)
 {
-    int pkt_type;
-
     char content[WIFI_MESSAGE_LENGTH];
-
-    pkt_type = ((buffer_node->pkt_direction << 4) & 0xf0) + 
-               (buffer_node->pkt_type & 0x0f);
 
     memset(content, 0, WIFI_MESSAGE_LENGTH);
 
-    sprintf(content, "%c%s", (char)pkt_type, buffer_node ->content);
+    sprintf(content, "%d;%d;%s;%s", buffer_node->pkt_direction, 
+                                    buffer_node->pkt_type,
+                                    BOT_SERVER_API_VERSION,
+                                    buffer_node->content);
 
-    buffer_node -> content_size =  buffer_node -> content_size + 1;
+    strcpy(buffer_node->content, content);
+    buffer_node -> content_size =  strlen(buffer_node->content);
   
     /* Add the content of the buffer node to the UDP to be sent to the 
        destination */
@@ -981,40 +978,54 @@ void *Server_NSI_routine(void *_buffer_node)
 
     void *db = NULL;
 
-    current_node -> pkt_direction = from_server;
+    JoinStatus join_status = JOIN_UNKNOWN;
 
 #ifdef debugging
     zlog_info(category_debug, "Start join...(%s)", 
               current_node -> net_address);
 #endif
 
-    /* Put the address into Gateway_address_map and set the return pkt type
-     */
-    if (Gateway_join_request(&Gateway_address_map, current_node ->
-                             net_address) == true)
-        current_node -> pkt_type = join_request_ack;
-    else
-        current_node -> pkt_type = join_request_deny;
-
     memset(gateway_record, 0, sizeof(gateway_record));
 
     sprintf(gateway_record, "1;%s;%d;", current_node -> net_address,
             S_NORMAL_STATUS);
-
+    
     if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+
         zlog_error(category_debug, 
                   "cannot open database"); 
         return (void *)NULL;
+
     }
 
     SQL_update_gateway_registration_status(db, gateway_record,
                                            strlen(gateway_record));
 
     SQL_update_lbeacon_registration_status(db,
-                                           &current_node->content[1],
-                                           strlen(&current_node->content[1]));
+                                           current_node->content,
+                                           strlen(current_node->content));
 
     SQL_close_database_connection(db);
+
+
+     /* Put the address into Gateway_address_map */
+    if (true == Gateway_join_request(&Gateway_address_map, 
+                                     current_node -> net_address) ){
+        join_status = JOIN_ACK;
+    }    
+    else{
+        join_status = JOIN_DENY;
+    }
+
+    current_node -> pkt_direction = from_server;
+    current_node -> pkt_type = join_response;
+
+    sprintf(current_node->content, "%d;%d;%s;%d;", current_node->pkt_direction, 
+                                                  current_node->pkt_type,
+                                                  BOT_SERVER_API_VERSION,
+                                                  join_status);
+
+    current_node->content_size = strlen(current_node->content);
 
     pthread_mutex_lock(&NSI_send_buffer_list_head.list_lock);
 
@@ -1044,17 +1055,19 @@ void *Server_BHM_routine(void *_buffer_node)
     }
 
     if(current_node->pkt_direction == from_gateway){
-    
-        SQL_update_gateway_health_status(db,
-                                         current_node -> content,
-                                         current_node -> content_size);
-    
-    }else if(current_node->pkt_direction == from_beacon){
 
-        SQL_update_lbeacon_health_status(db,
-                                         current_node -> content,
-                                         current_node -> content_size);
-    
+        if(current_node->pkt_type == gateway_health_report){
+          
+            SQL_update_gateway_health_status(db,
+                                             current_node -> content,
+                                             current_node -> content_size);
+        }
+        else if(current_node->pkt_type == beacon_health_report){
+
+            SQL_update_lbeacon_health_status(db,
+                                             current_node -> content,
+                                             current_node -> content_size);
+        }
     }
     SQL_close_database_connection(db);
     
@@ -1099,13 +1112,16 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
    
     void *db = NULL;
 
-    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
         zlog_error(category_debug, 
                   "cannot open database"); 
         return (void *)NULL;
+
     }
 
-    if(current_node -> pkt_type == tracked_object_data){
+    if(current_node -> pkt_type == time_critical_tracked_object_data){
         
         check_geo_fence_violations(current_node);
 
@@ -1261,10 +1277,10 @@ void *Server_process_wifi_send(void *_buffer_node)
 #ifdef debugging
     zlog_info(category_debug, 
               "Start Send pkt\naddress [%s]\nport [%d]\nmsg [%s]\nsize [%d]",
-                                                    current_node->net_address,
-                                                    config.send_port,
-                                                    current_node->content,
-                                                    current_node->content_size);
+              current_node->net_address,
+              config.send_port,
+              current_node->content,
+              current_node->content_size);
 #endif
 
     /* Add the content of the buffer node to the UDP to be sent to the
@@ -1288,9 +1304,14 @@ void *Server_process_wifi_receive()
 {
     BufferNode *new_node;
 
-    int test_times;
-
     sPkt temppkt;
+
+    char buf[WIFI_MESSAGE_LENGTH];
+    char *saveptr = NULL;
+    char *from_direction = NULL;
+    char *request_type = NULL;
+    char *API_version = NULL;
+    char *remain_string = NULL;
 
     while (ready_to_work == true)
     {
@@ -1321,21 +1342,35 @@ void *Server_process_wifi_receive()
         /* Initialize the entry of the buffer node */
         init_entry( &new_node -> buffer_entry);
 
-        /* Copy the content to the buffer_node */
-        memcpy(new_node -> content, &temppkt.content[1], 
-               temppkt.content_size - 1);
+        memset(buf, 0, sizeof(buf));
+        strcpy(buf, temppkt.content);
 
-        new_node -> content_size = temppkt.content_size - 1;
+        remain_string = buf;
+
+        from_direction = strtok_save(buf, DELIMITER_SEMICOLON, &saveptr);
+        remain_string = remain_string + strlen(from_direction) + strlen(DELIMITER_SEMICOLON);         
+
+        new_node -> pkt_direction = atoi(from_direction);
+     
+        request_type = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+        remain_string = remain_string + strlen(request_type) + strlen(DELIMITER_SEMICOLON);
+
+        new_node -> pkt_type = atoi(request_type);
+
+        API_version = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+        remain_string = remain_string + strlen(API_version) + strlen(DELIMITER_SEMICOLON);
+
+        /* Copy the content to the buffer_node */
+        strcpy(new_node->content, remain_string);
+        zlog_debug(category_debug, "pkt_direction=[%d], pkt_type=[%d], content=[%s]", 
+                   new_node->pkt_direction, new_node->pkt_type, new_node->content);
+
+        new_node -> content_size = strlen(new_node->content);
 
         new_node -> port = temppkt.port;
 
         memcpy(new_node -> net_address, temppkt.address,    
                NETWORK_ADDR_LENGTH);
-
-        /* read the pkt direction from higher 4 bits. */
-        new_node -> pkt_direction = (temppkt.content[0] >> 4) & 0x0f;
-        /* read the pkt type from lower lower 4 bits. */
-        new_node -> pkt_type = temppkt.content[0] & 0x0f;
 
         /* Insert the node to the specified buffer, and release
            list_lock. */
@@ -1359,10 +1394,11 @@ void *Server_process_wifi_receive()
                                        &NSI_receive_buffer_list_head.list_lock);
                         break;
 
-                    case tracked_object_data:
+                    case time_critical_tracked_object_data:
 #ifdef debugging
                         display_time();
-                        zlog_info(category_debug, "Get tracked object data from Geo_fence Gateway");
+                        zlog_info(category_debug, "Get tracked object data from geofence Gateway");
+                        zlog_info(category_debug, "new_node->content=[%s]", new_node->content);
 #endif
                         pthread_mutex_lock(
                                   &Geo_fence_receive_buffer_list_head.list_lock);
@@ -1373,7 +1409,22 @@ void *Server_process_wifi_receive()
 
                         break;
 
-                    case health_report:
+                    case tracked_object_data:
+#ifdef debugging
+                        display_time();
+                        zlog_info(category_debug, "Get Tracked Object Data from normal Gateway");
+#endif            
+                        pthread_mutex_lock(
+                                   &LBeacon_receive_buffer_list_head.list_lock);
+                        insert_list_tail( &new_node -> buffer_entry,
+                                   &LBeacon_receive_buffer_list_head.list_head);
+                        pthread_mutex_unlock(
+                                   &LBeacon_receive_buffer_list_head.list_lock);
+                        
+                        break;
+
+                    case gateway_health_report:
+                    case beacon_health_report:
 #ifdef debugging
                         display_time();
                         zlog_info(category_debug, "Get Health Report from Gateway");
@@ -1390,43 +1441,6 @@ void *Server_process_wifi_receive()
                         break;
                 }
                     
-                break;
-
-            case from_beacon:
-
-                switch (new_node -> pkt_type) 
-                {
-                    case tracked_object_data:
-#ifdef debugging
-                        display_time();
-                        zlog_info(category_debug, "Get Tracked Object Data from LBeacon");
-#endif            
-                        pthread_mutex_lock(
-                                   &LBeacon_receive_buffer_list_head.list_lock);
-                        insert_list_tail( &new_node -> buffer_entry,
-                                   &LBeacon_receive_buffer_list_head.list_head);
-                        pthread_mutex_unlock(
-                                   &LBeacon_receive_buffer_list_head.list_lock);
-                        
-                        break;
-
-                    case health_report:
-#ifdef debugging
-                        display_time();
-                        zlog_info(category_debug, "Get Health Report from LBeacon");
-#endif
-                        pthread_mutex_lock(&BHM_receive_buffer_list_head
-                                                   .list_lock);
-                        insert_list_tail( &new_node -> buffer_entry,
-                                       &BHM_receive_buffer_list_head.list_head);
-                        pthread_mutex_unlock(
-                                       &BHM_receive_buffer_list_head.list_lock);
-                        break;
-
-                    default:
-                        mp_free( &node_mempool, new_node);
-                        break;
-                }
                 break;
 
             default:

@@ -52,10 +52,26 @@
 #include "SqlWrapper.h"
 
 /* When debugging is needed */
-#define debugging
-
+//#define debugging
 
 /* Global variables */
+
+/* Server API protocol version for communicate between Server and Gateway. */
+#define BOT_SERVER_API_VERSION "2.0"
+
+/* Server config file location and the config file definition. */
+
+/* File path of the config file of the Server */
+#define CONFIG_FILE_NAME "./config/server.conf"
+
+/* File path of the config file of the Server */
+#define ZLOG_CONFIG_FILE_NAME "./config/zlog.conf"
+
+/* The type term for geo-fence fence */
+#define GEO_FENCE_ALERT_TYPE_FENCE "fence"
+
+/* The type term for geo-fence perimeter */
+#define GEO_FENCE_ALERT_TYPE_PERIMETER "perimeter"
 
 /* The database argument for opening database */
 char database_argument[SQL_TEMP_BUFFER_LENGTH];

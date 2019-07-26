@@ -36,7 +36,7 @@
 
   Authors:
 
-     Chun Yu Lai   , chunyu1202@gmail.com
+     Chun-Yu Lai   , chunyu1202@gmail.com
  */
 
 #ifndef SQL_WRAPPER_H

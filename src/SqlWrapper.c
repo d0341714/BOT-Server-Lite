@@ -24,7 +24,7 @@
 
   Version:
 
-     1.0, 20190617
+     1.0, 20190726
 
   Abstract:
 
@@ -39,7 +39,7 @@
 
   Authors:
 
-     Chun Yu Lai   , chunyu1202@gmail.com
+     Chun-Yu Lai   , chunyu1202@gmail.com
  */
 
 #include "SqlWrapper.h"
@@ -233,8 +233,8 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
                                                  size_t buf_len){
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char *string_begin;
-    char *string_end;
+    char *saveptr = NULL;
+    char *numbers_str = NULL;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
@@ -255,11 +255,8 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
-    string_begin = temp_buf;
-    string_end = strstr(string_begin, DELIMITER_SEMICOLON);
-    *string_end = '\0';
-
-    numbers = atoi(string_begin);
+    numbers_str = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    numbers = atoi(numbers_str);
 
     if(numbers <= 0){
         return E_SQL_PARSE;
@@ -268,11 +265,9 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
     SQL_begin_transaction(db);
 
     while( numbers-- ){
-
-        ip_address = string_end + 1;
-        string_end = strstr(ip_address, DELIMITER_SEMICOLON);
-        *string_end = '\0';
-
+        
+        ip_address = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+       
         /* Create SQL statement */
         pqescape_ip_address =
             PQescapeLiteral(conn, ip_address, strlen(ip_address));
@@ -305,8 +300,8 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
 
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char *string_begin;
-    char *string_end;
+    char *saveptr = NULL;
+    char *numbers_str = NULL;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
@@ -339,36 +334,22 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
-    string_begin = temp_buf;
-    string_end = strstr(string_begin, DELIMITER_SEMICOLON);
-    *string_end = '\0';
-
-    numbers = atoi(string_begin);
+    numbers_str = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    numbers = atoi(numbers_str);
 
     if(numbers <= 0){
         return E_SQL_PARSE;
     }
 
-    string_begin = string_end + 1;
-    string_end = strstr(string_begin, DELIMITER_SEMICOLON);
-    *string_end = '\0';
-    gateway_ip = string_begin;
+    gateway_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
     SQL_begin_transaction(db);
 
     while( numbers-- ){
-
-        uuid = string_end + 1;
-        string_end = strstr(uuid, DELIMITER_SEMICOLON);
-        *string_end = '\0';
-
-        registered_timestamp_GMT = string_end + 1;
-        string_end = strstr(registered_timestamp_GMT, DELIMITER_SEMICOLON);
-        *string_end = '\0';
-
-        lbeacon_ip = string_end + 1;
-        string_end = strstr(lbeacon_ip, DELIMITER_SEMICOLON);
-        *string_end = '\0';
+        uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+        registered_timestamp_GMT = 
+            strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+        lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
@@ -419,8 +400,7 @@ ErrorCode SQL_update_gateway_health_status(void *db,
 
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char *string_end;
-    int numbers = 0;
+    char *saveptr = NULL;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "UPDATE gateway_table " \
@@ -435,13 +415,8 @@ ErrorCode SQL_update_gateway_health_status(void *db,
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
-    ip_address = temp_buf;
-    string_end = strstr(ip_address, DELIMITER_SEMICOLON);
-    *string_end = '\0';
-
-    health_status = string_end + 1;
-    string_end = strstr(health_status, DELIMITER_SEMICOLON);
-    *string_end = '\0';
+    ip_address = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    health_status = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
     SQL_begin_transaction(db);
 
@@ -478,8 +453,7 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
 
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char *string_end;
-    int numbers = 0;
+    char *saveptr = NULL;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "UPDATE lbeacon_table " \
@@ -496,21 +470,10 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
-    lbeacon_uuid = temp_buf;
-    string_end = strstr(lbeacon_uuid, DELIMITER_SEMICOLON);
-    *string_end = '\0';
-
-    lbeacon_timestamp = string_end + 1;
-    string_end = strstr(lbeacon_timestamp, DELIMITER_SEMICOLON);
-    *string_end = '\0';
-
-    lbeacon_ip = string_end + 1;
-    string_end = strstr(lbeacon_ip, DELIMITER_SEMICOLON);
-    *string_end = '\0';
-
-    health_status = string_end + 1;
-    string_end = strstr(health_status, DELIMITER_SEMICOLON);
-    *string_end = '\0';
+    lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+    lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+    health_status = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
     SQL_begin_transaction(db);
 
@@ -547,7 +510,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
-    char *string_end;
+    char *saveptr = NULL;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     int num_types = 2; // BR_EDR and BLE types
@@ -583,55 +546,48 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     char *pqescape_initial_timestamp_GMT = NULL;
     char *pqescape_final_timestamp_GMT = NULL;
 
+    zlog_debug(category_debug, "buf=[%s]", buf);
+
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
-    lbeacon_uuid = temp_buf;
-    string_end = strstr(lbeacon_uuid, DELIMITER_SEMICOLON);
-    *string_end = '\0';
+    lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+    lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-    lbeacon_timestamp = string_end + 1;
-    string_end = strstr(lbeacon_timestamp, DELIMITER_SEMICOLON);
-    *string_end = '\0';
-
-    lbeacon_ip = string_end + 1;
-    string_end = strstr(lbeacon_ip, DELIMITER_SEMICOLON);
-    *string_end = '\0';
+    zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
+               "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);
 
     SQL_begin_transaction(db);
 
     while(num_types --){
 
-        object_type = string_end + 1;
-        string_end = strstr(object_type, DELIMITER_SEMICOLON);
-        *string_end = '\0';
+        object_type = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-        object_number = string_end + 1;
-        string_end = strstr(object_number, DELIMITER_SEMICOLON);
-        *string_end = '\0';
+        object_number = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+        zlog_debug(category_debug, "object_type=[%s], object_number=[%s]", 
+                   object_type, object_number);
 
         numbers = atoi(object_number);
 
         while(numbers--){
-            object_mac_address = string_end + 1;
-            string_end = strstr(object_mac_address, DELIMITER_SEMICOLON);
-            *string_end = '\0';
+            object_mac_address = 
+                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-            initial_timestamp_GMT = string_end + 1;
-            string_end = strstr(initial_timestamp_GMT, DELIMITER_SEMICOLON);
-            *string_end = '\0';
+            initial_timestamp_GMT = 
+                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-            final_timestamp_GMT = string_end + 1;
-            string_end = strstr(final_timestamp_GMT, DELIMITER_SEMICOLON);
-            *string_end = '\0';
+            final_timestamp_GMT = 
+                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-            rssi = string_end + 1;
-            string_end = strstr(rssi, DELIMITER_SEMICOLON);
-            *string_end = '\0';
+            rssi = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-            push_button = string_end + 1;
-            string_end = strstr(push_button, DELIMITER_SEMICOLON);
-            *string_end = '\0';
+            push_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+            zlog_debug(category_debug, "object_mac_address=[%s], rssi=[%s], " \
+                       "push_button=[%s]", object_mac_address, rssi, 
+                       push_button);
 
             /* Create SQL statement */
             pqescape_object_mac_address =
@@ -1483,6 +1439,10 @@ ErrorCode SQL_identify_last_activity_status(void *db,
 
             mac_address = PQgetvalue(res, current_row, 0);
             lbeacon_uuid = PQgetvalue(res, current_row, 1);
+
+            if(strlen(lbeacon_uuid) == 0){
+                continue;
+            }
 
             pqescape_mac_address = 
                 PQescapeLiteral(conn, mac_address, strlen(mac_address));
