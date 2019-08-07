@@ -1003,7 +1003,8 @@ void *Server_NSI_routine(void *_buffer_node)
 
     SQL_update_lbeacon_registration_status(db,
                                            current_node->content,
-                                           strlen(current_node->content));
+                                           strlen(current_node->content),
+                                           current_node -> net_address);
 
     SQL_close_database_connection(db);
 
@@ -1060,13 +1061,15 @@ void *Server_BHM_routine(void *_buffer_node)
           
             SQL_update_gateway_health_status(db,
                                              current_node -> content,
-                                             current_node -> content_size);
+                                             current_node -> content_size,
+                                             current_node -> net_address);
         }
         else if(current_node->pkt_type == beacon_health_report){
 
             SQL_update_lbeacon_health_status(db,
                                              current_node -> content,
-                                             current_node -> content_size);
+                                             current_node -> content_size,
+                                             current_node -> net_address);
         }
     }
     SQL_close_database_connection(db);

@@ -296,7 +296,8 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
 
 ErrorCode SQL_update_lbeacon_registration_status(void *db,
                                                  char *buf,
-                                                 size_t buf_len){
+                                                 size_t buf_len,
+                                                 char *gateway_ip_address){
 
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
@@ -324,7 +325,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
     HealthStatus health_status = S_NORMAL_STATUS;
     char *uuid = NULL;
     char *lbeacon_ip = NULL;
-    char *gateway_ip = NULL;
+    char *not_used_gateway_ip = NULL;
     char *registered_timestamp_GMT = NULL;
     char *pqescape_uuid = NULL;
     char *pqescape_lbeacon_ip = NULL;
@@ -341,7 +342,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
         return E_SQL_PARSE;
     }
 
-    gateway_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+    not_used_gateway_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
     SQL_begin_transaction(db);
 
@@ -358,7 +359,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
         pqescape_lbeacon_ip =
             PQescapeLiteral(conn, lbeacon_ip, strlen(lbeacon_ip));
         pqescape_gateway_ip =
-            PQescapeLiteral(conn, gateway_ip, strlen(gateway_ip));
+            PQescapeLiteral(conn, gateway_ip_address, strlen(gateway_ip_address));
         pqescape_registered_timestamp_GMT =
             PQescapeLiteral(conn, registered_timestamp_GMT,
                             strlen(registered_timestamp_GMT));
@@ -396,7 +397,8 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
 
 ErrorCode SQL_update_gateway_health_status(void *db,
                                            char *buf,
-                                           size_t buf_len){
+                                           size_t buf_len,
+                                           char *gateway_ip_address){
 
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
@@ -407,7 +409,7 @@ ErrorCode SQL_update_gateway_health_status(void *db,
                          "SET health_status = %s, " \
                          "last_report_timestamp = NOW() " \
                          "WHERE ip_address = %s ;" ;
-    char *ip_address = NULL;
+    char *not_used_ip_address = NULL;
     char *health_status = NULL;
     char *pqescape_ip_address = NULL;
     char *pqescape_health_status = NULL;
@@ -415,14 +417,14 @@ ErrorCode SQL_update_gateway_health_status(void *db,
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
-    ip_address = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    not_used_ip_address = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
     health_status = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
     SQL_begin_transaction(db);
 
     /* Create SQL statement */
     pqescape_ip_address =
-        PQescapeLiteral(conn, ip_address, strlen(ip_address));
+        PQescapeLiteral(conn, gateway_ip_address, strlen(gateway_ip_address));
     pqescape_health_status =
         PQescapeLiteral(conn, health_status, strlen(health_status));
 
@@ -449,7 +451,8 @@ ErrorCode SQL_update_gateway_health_status(void *db,
 
 ErrorCode SQL_update_lbeacon_health_status(void *db,
                                            char *buf,
-                                           size_t buf_len){
+                                           size_t buf_len,
+                                           char *gateway_ip_address){
 
     PGconn *conn = (PGconn *) db;
     char temp_buf[WIFI_MESSAGE_LENGTH];
@@ -458,7 +461,8 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "UPDATE lbeacon_table " \
                          "SET health_status = %s, " \
-                         "last_report_timestamp = NOW() " \
+                         "last_report_timestamp = NOW(), " \
+                         "gateway_ip_address = %s " \
                          "WHERE uuid = %s ;";
     char *lbeacon_uuid = NULL;
     char *lbeacon_timestamp = NULL;
@@ -466,6 +470,7 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
     char *health_status = NULL;
     char *pqescape_lbeacon_uuid = NULL;
     char *pqescape_health_status = NULL;
+    char *pqescape_gateway_ip = NULL;
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -481,14 +486,18 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
     pqescape_lbeacon_uuid = PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid));
     pqescape_health_status =
         PQescapeLiteral(conn, health_status, strlen(health_status));
+    pqescape_gateway_ip = 
+        PQescapeLiteral(conn, gateway_ip_address, strlen(gateway_ip_address));
 
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_template,
             pqescape_health_status,
+            pqescape_gateway_ip,
             pqescape_lbeacon_uuid);
 
     PQfreemem(pqescape_lbeacon_uuid);
     PQfreemem(pqescape_health_status);
+    PQfreemem(pqescape_gateway_ip);
 
     /* Execute SQL statement */
     ret_val = SQL_execute(db, sql);

@@ -237,6 +237,8 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
 
      buf_len - Length in number of bytes of buf input string
 
+     gateway_ip_address - the real ip address of Gateway
+
   Return Value:
 
      ErrorCode - indicate the result of execution, the expected return code
@@ -244,7 +246,8 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
 */
 ErrorCode SQL_update_lbeacon_registration_status(void *db,
                                                  char *buf,
-                                                 size_t buf_len);
+                                                 size_t buf_len,
+                                                 char *gateway_ip_address);
 
 
 /*
@@ -263,6 +266,8 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
 
      buf_len - Length in number of bytes of buf input string
 
+     gateway_ip_address - the real ip address of Gateway
+
   Return Value:
 
      ErrorCode - indicate the result of execution, the expected return code
@@ -270,7 +275,8 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
 */
 ErrorCode SQL_update_gateway_health_status(void *db,
                                            char *buf,
-                                           size_t buf_len);
+                                           size_t buf_len,
+                                           char *gateway_ip_address);
 
 
 /*
@@ -289,6 +295,8 @@ ErrorCode SQL_update_gateway_health_status(void *db,
 
      buf_len - Length in number of bytes of buf input string
 
+     gateway_ip_address - the real ip address of Gateway
+
   Return Value:
 
      ErrorCode - indicate the result of execution, the expected return code
@@ -296,7 +304,8 @@ ErrorCode SQL_update_gateway_health_status(void *db,
 */
 ErrorCode SQL_update_lbeacon_health_status(void *db,
                                            char *buf,
-                                           size_t buf_len);
+                                           size_t buf_len,
+                                           char *gateway_ip_address);
 
 
 /*
