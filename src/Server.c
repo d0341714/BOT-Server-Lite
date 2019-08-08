@@ -1166,7 +1166,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
 {
     int not_in_use = -1;
     int n;
-    int answer;
+    int answer = -1;
 
 #ifdef debugging
     zlog_info(category_debug, 
@@ -1183,11 +1183,13 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
 #ifdef debugging
     zlog_info(category_debug, "Check whether joined");
 #endif
-
-    if(answer = is_in_Address_Map(address_map, address, 0) >=0)
+    answer = is_in_Address_Map(address_map, address, 0);
+    if(answer >=0)
     {
+        memset(address_map ->address_map_list[answer].net_address, 0, 
+               NETWORK_ADDR_LENGTH);
         strncpy(address_map -> address_map_list[answer].net_address,
-                address, NETWORK_ADDR_LENGTH);
+                address, strlen(address));
 
         address_map -> address_map_list[answer].last_request_time =
             get_system_time();
@@ -1216,11 +1218,12 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     /* If still has space for the LBeacon to register */
     if (not_in_use != -1)
     {
-        AddressMap *tmp =  &address_map -> address_map_list[not_in_use];
-
         address_map -> in_use[not_in_use] = true;
 
-        strncpy(tmp -> net_address, address, NETWORK_ADDR_LENGTH);
+        memset(address_map->address_map_list[not_in_use].net_address, 0, 
+               NETWORK_ADDR_LENGTH);
+        strncpy(address_map->address_map_list[not_in_use].net_address, 
+                address, strlen(address));
 
         pthread_mutex_unlock( &address_map -> list_lock);
 
