@@ -1533,3 +1533,56 @@ ErrorCode SQL_identify_last_activity_status(void *db,
 
     return WORK_SUCCESSFULLY;
 }
+
+ErrorCode SQL_get_object_monitor_type(void *db, 
+                                      char *mac_address, 
+                                      int *monitor_type){
+
+    PGconn *conn = (PGconn *)db;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char *sql_select_template = "SELECT monitor_type " \
+                                "FROM object_table " \
+                                "WHERE " \
+                                "mac_address = %s";
+    PGresult *res = NULL;
+    int total_fields = 0;
+    int total_rows = 0;
+   
+    char *pqescape_mac_address = NULL;
+    char *object_monitor_type = NULL;
+   
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+   
+    memset(sql, 0, sizeof(sql));
+
+    pqescape_mac_address = 
+        PQescapeLiteral(conn, mac_address, strlen(mac_address));
+
+    sprintf(sql, sql_select_template, pqescape_mac_address);
+
+    res = PQexec(conn, sql);
+
+    PQfreemem(pqescape_mac_address);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   res, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }
+
+    total_fields = PQnfields(res);
+    total_rows = PQntuples(res);
+
+    *monitor_type = 0;
+    if(total_rows == 1 && total_fields == 1){
+        object_monitor_type = PQgetvalue(res, 0, 0);
+        *monitor_type = atoi(object_monitor_type);
+    }
+
+    PQclear(res);
+
+    return WORK_SUCCESSFULLY;
+}

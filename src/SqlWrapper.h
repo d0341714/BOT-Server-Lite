@@ -463,7 +463,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec);
 /*
   SQL_identify_last_activity_status
 
-     This function use each pair of object mac_address and lbeacon_uuid from
+     This function uses each pair of object mac_address and lbeacon_uuid from
      the summary table object_summary_table to check the activity status 
      records stored in tracking_table (Time-Series database). It uses the 
      features called TIME_BUCKET and Delta provided by timescaleDB (TSDB) to
@@ -492,5 +492,29 @@ ErrorCode SQL_identify_last_activity_status(void *db,
                                             int time_interval_in_min, 
                                             int each_time_slot_in_min,
                                             unsigned int rssi_delta);
+
+/*
+  SQL_get_object_monitor_type
+
+     This function queries object_table to extract monitor_type of the input
+     mac_address
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     mac_address - a pointer to mac address of object
+
+     monitor_type - a pointer to output of this function. It stores 
+                    monitor_type of the input mac_address in object_table
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_get_object_monitor_type(void *db, 
+                                      char *mac_address, 
+                                      int *monitor_type);
 
 #endif

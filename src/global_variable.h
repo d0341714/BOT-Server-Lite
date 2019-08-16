@@ -65,15 +65,13 @@ typedef struct {
 
    int number_perimeters;
    int number_fences;
-   int number_mac_prefixes;
-
+   
    int rssi_of_perimeters;
    int rssi_of_fences;
 
    char perimeters[20][LENGTH_OF_UUID];
    char fences[20][LENGTH_OF_UUID];
-   char mac_prefixes[20][LENGTH_OF_MAC_ADDRESS];
-
+   
    /* The list head records the list of the geo fence */
    List_Entry geo_fence_list_entry;
 
