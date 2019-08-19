@@ -58,6 +58,17 @@
 /* Maximum length for each array of database information */
 #define MAXIMUM_DATABASE_INFO 1024
 
+/* Maximum number of LBeacons can be defined as the perimeter in each 
+geo-fence rule */
+#define MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER 20
+
+/* Maximum number of LBeacons can be defined as the fence in each 
+geo-fence rule */
+#define MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE 20
+
+/* Maximum number of monitor types can be monitored in each geo-fence rule */
+#define MAXIMUM_MONITOR_TYPE_IN_GEO_FENCE 20
+
 
 typedef struct {
    /* The name of the geo fence */
@@ -65,12 +76,14 @@ typedef struct {
 
    int number_perimeters;
    int number_fences;
+   int number_monitor_types;
    
    int rssi_of_perimeters;
    int rssi_of_fences;
 
-   char perimeters[20][LENGTH_OF_UUID];
-   char fences[20][LENGTH_OF_UUID];
+   char perimeters[MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER][LENGTH_OF_UUID];
+   char fences[MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE][LENGTH_OF_UUID];
+   int monitor_types[MAXIMUM_MONITOR_TYPE_IN_GEO_FENCE];
    
    /* The list head records the list of the geo fence */
    List_Entry geo_fence_list_entry;

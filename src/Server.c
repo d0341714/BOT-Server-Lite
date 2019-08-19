@@ -1480,7 +1480,7 @@ ErrorCode add_geo_fence_setting(struct List_Entry *geo_fence_list_head,
     char *name = NULL;
     char *perimeters = NULL;
     char *fences = NULL;
-    char *mac_prefixes = NULL;
+    char *monitor_types = NULL;
 
     GeoFenceListNode *new_node = NULL;
 
@@ -1498,7 +1498,7 @@ ErrorCode add_geo_fence_setting(struct List_Entry *geo_fence_list_head,
     
     fences = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
-    mac_prefixes = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+    monitor_types = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
 #ifdef debugging
     zlog_info(category_debug, 
@@ -1524,25 +1524,68 @@ ErrorCode add_geo_fence_setting(struct List_Entry *geo_fence_list_head,
     // parse perimeters settings
     current_ptr = strtok_save(perimeters, DELIMITER_COMMA, &save_ptr);
     new_node->number_perimeters = atoi (current_ptr);
-    if(new_node->number_perimeters > 0){
-        for(i = 0 ; i < new_node->number_perimeters ; i++){
-            temp_value = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
-            strcpy(new_node->perimeters[i], temp_value);
+    if(new_node->number_perimeters > 
+       MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER)
+    {
+        zlog_error(category_debug,
+                   "number_perimeters[%d] exceeds our maximum support number[%d]",
+                   new_node->number_perimeters,
+                   MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER);
+    }
+    else
+    {
+        if(new_node->number_perimeters > 0){
+            for(i = 0 ; i < new_node->number_perimeters ; i++){
+                temp_value = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
+                strcpy(new_node->perimeters[i], temp_value);
+            }
+            current_ptr = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
+            new_node->rssi_of_perimeters = atoi(current_ptr);
         }
-        current_ptr = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
-        new_node->rssi_of_perimeters = atoi(current_ptr);
     }
 
     // parse fences settings
     current_ptr = strtok_save(fences, DELIMITER_COMMA, &save_ptr);
     new_node->number_fences = atoi (current_ptr);
-    if(new_node->number_fences > 0){
-        for(i = 0 ; i < new_node->number_fences ; i++){
-            temp_value = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
-            strcpy(new_node->fences[i], temp_value);
+    if(new_node->number_fences > 
+       MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE)
+    {
+        zlog_error(category_debug,
+                   "number_fences[%d] exceeds our maximum support number[%d]",
+                   new_node->number_fences,
+                   MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE);
+    }
+    else
+    {
+        if(new_node->number_fences > 0){
+            for(i = 0 ; i < new_node->number_fences ; i++){
+                temp_value = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
+                strcpy(new_node->fences[i], temp_value);
+            }
+            current_ptr = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
+            new_node->rssi_of_fences = atoi(current_ptr);
         }
-        current_ptr = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
-        new_node->rssi_of_fences = atoi(current_ptr);
+    }
+    
+    // parse monitor_type settings
+    current_ptr = strtok_save(monitor_types, DELIMITER_COMMA, &save_ptr);
+    new_node->number_monitor_types = atoi (current_ptr);
+    if(new_node->number_monitor_types > 
+       MAXIMUM_MONITOR_TYPE_IN_GEO_FENCE)
+    {
+        zlog_error(category_debug,
+                   "number_monitor_types[%d] exceeds our maximum support number[%d]",
+                   new_node->number_monitor_types,
+                   MAXIMUM_MONITOR_TYPE_IN_GEO_FENCE);
+    }
+    else
+    {
+        if(new_node->number_monitor_types > 0){
+            for(i = 0 ; i < new_node->number_monitor_types ; i++){
+                temp_value = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
+                new_node->monitor_types[i] = atoi(temp_value);
+            }
+        }
     }
 
     insert_list_tail( &new_node -> geo_fence_list_entry,
@@ -1588,7 +1631,8 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
     bool is_fence_lbeacon = false;
 
     void *db = NULL;
-    int monitor_type = 0;
+    int object_monitor_type = 0;
+    bool is_monitor_type = false;
 
 #ifdef debugging
     zlog_info(category_debug, ">>check_geo_fence_violations");
@@ -1695,47 +1739,61 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                 
                 SQL_open_database_connection(database_argument, &db);
 
-                SQL_get_object_monitor_type(db, mac_address, &monitor_type);
+                SQL_get_object_monitor_type(db, mac_address, &object_monitor_type);
 
                 SQL_close_database_connection(db);
-               
-                if(GEO_FENCE == (MonitorType)monitor_type){
-                    if(is_perimeter_lbeacon && 
-                       detected_rssi > 
-                       current_list_ptr->rssi_of_perimeters){
+                
+                is_monitor_type = false;
+
+                for(i = 0 ; i < current_list_ptr->number_monitor_types ; i++){
+                    if( current_list_ptr->monitor_types[i] == 
+                        (object_monitor_type & 
+                         current_list_ptr->monitor_types[i])){
+
+                        is_monitor_type = true;
+                        break;
+
+                    }
+                }
+                if(is_monitor_type == false)
+                    continue;
+
+                if(is_fence_lbeacon && 
+                   detected_rssi > 
+                   current_list_ptr->rssi_of_fences){
 #ifdef debugging
-                        zlog_info(category_debug, 
-                                  "[GeoFence-Perimeter]: LBeacon UUID=[%s]" \
-                                  "mac_address=[%s]", 
-                                  lbeacon_uuid, mac_address);
+                    zlog_info(category_debug, 
+                              "[GeoFence-Fence]: LBeacon UUID=[%s] "\
+                              "mac_address=[%s]", 
+                              lbeacon_uuid, mac_address);
 #endif
 
-                        insert_into_geo_fence_alert_list(
-                            mac_address,
-                            current_list_ptr->name, 
-                            GEO_FENCE_ALERT_TYPE_PERIMETER,
-                            lbeacon_uuid,
-                            final_timestamp,
-                            rssi);
-                    }
-                    if(is_fence_lbeacon && 
-                       detected_rssi > 
-                       current_list_ptr->rssi_of_fences){
+                    insert_into_geo_fence_alert_list(
+                        mac_address,
+                        current_list_ptr->name, 
+                        GEO_FENCE_ALERT_TYPE_FENCE,
+                        lbeacon_uuid,
+                        final_timestamp,
+                        rssi);
+
+                }else if(is_perimeter_lbeacon && 
+                         detected_rssi > 
+                         current_list_ptr->rssi_of_perimeters){
 #ifdef debugging
-                        zlog_info(category_debug, 
-                            "[GeoFence-Fence]: LBeacon UUID=[%s] "\
-                            "mac_address=[%s]", 
-                            lbeacon_uuid, mac_address);
+                    zlog_info(category_debug, 
+                              "[GeoFence-Perimeter]: LBeacon UUID=[%s]" \
+                              "mac_address=[%s]", 
+                              lbeacon_uuid, mac_address);
 #endif
 
-                        insert_into_geo_fence_alert_list(
-                            mac_address,
-                            current_list_ptr->name, 
-                            GEO_FENCE_ALERT_TYPE_FENCE,
-                            lbeacon_uuid,
-                            final_timestamp,
-                            rssi);
-                    }
+                    insert_into_geo_fence_alert_list(
+                        mac_address,
+                        current_list_ptr->name, 
+                        GEO_FENCE_ALERT_TYPE_PERIMETER,
+                        lbeacon_uuid,
+                        final_timestamp,
+                        rssi);
+
                 }
             }
         }
