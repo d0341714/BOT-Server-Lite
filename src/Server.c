@@ -272,7 +272,9 @@ int main(int argc, char **argv)
     }
 
     /* Create thread to summarize location informtion */
-    return_value = startThread( &location_information_thread, summarize_location_information, NULL);
+    return_value = startThread( &location_information_thread, 
+                               Server_summarize_location_information, 
+                               NULL);
 
     if(return_value != WORK_SUCCESSFULLY)
     {
@@ -326,7 +328,7 @@ int main(int argc, char **argv)
             memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
             sprintf(command_msg, "%d;%d;%s;", from_server, 
                                               tracked_object_data, 
-                                              BOT_SERVER_API_VERSION);
+                                              BOT_SERVER_API_VERSION_LATEST);
 
 #ifdef debugging
             display_time();
@@ -353,7 +355,7 @@ int main(int argc, char **argv)
             memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
             sprintf(command_msg, "%d;%d;%s;", from_server, 
                                               gateway_health_report, 
-                                              BOT_SERVER_API_VERSION);
+                                              BOT_SERVER_API_VERSION_LATEST);
 
 #ifdef debugging
             display_time();
@@ -877,7 +879,7 @@ int udp_sendpkt(pudp_config udp_config, BufferNode *buffer_node)
 
     sprintf(content, "%d;%d;%s;%s", buffer_node->pkt_direction, 
                                     buffer_node->pkt_type,
-                                    BOT_SERVER_API_VERSION,
+                                    BOT_SERVER_API_VERSION_LATEST,
                                     buffer_node->content);
 
     strcpy(buffer_node->content, content);
@@ -899,7 +901,9 @@ void *maintain_database()
 {
     void *db = NULL;
 
-    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
         zlog_error(category_debug, 
                   "cannot open database"); 
         return (void *)NULL;
@@ -923,13 +927,15 @@ void *maintain_database()
     return (void *)NULL;
 }
 
-void *summarize_location_information(){
+void *Server_summarize_location_information(){
     void *db = NULL;
     int uptime = 0;
     int last_sync_location = 0;
     int last_sync_activity = 0;
 
-    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
         zlog_error(category_debug, 
                   "cannot open database"); 
         return (void *)NULL;
@@ -990,7 +996,8 @@ void *Server_NSI_routine(void *_buffer_node)
     sprintf(gateway_record, "1;%s;%d;", current_node -> net_address,
             S_NORMAL_STATUS);
     
-    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
 
         zlog_error(category_debug, 
                   "cannot open database"); 
@@ -1022,9 +1029,9 @@ void *Server_NSI_routine(void *_buffer_node)
     current_node -> pkt_type = join_response;
 
     sprintf(current_node->content, "%d;%d;%s;%d;", current_node->pkt_direction, 
-                                                  current_node->pkt_type,
-                                                  BOT_SERVER_API_VERSION,
-                                                  join_status);
+                                                   current_node->pkt_type,
+                                                   BOT_SERVER_API_VERSION_LATEST,
+                                                   join_status);
 
     current_node->content_size = strlen(current_node->content);
 
@@ -1049,7 +1056,9 @@ void *Server_BHM_routine(void *_buffer_node)
     
     void *db = NULL;
     
-    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
         zlog_error(category_debug, 
                   "cannot open database"); 
         return (void *)NULL;
@@ -1086,7 +1095,9 @@ void *Server_LBeacon_routine(void *_buffer_node)
     
     void *db = NULL;
 
-    if(WORK_SUCCESSFULLY != SQL_open_database_connection(database_argument, &db)){
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
         zlog_error(category_debug, 
                   "cannot open database"); 
         return (void *)NULL;
@@ -1094,10 +1105,17 @@ void *Server_LBeacon_routine(void *_buffer_node)
 
     if(current_node -> pkt_type == tracked_object_data)
     {
-
-        SQL_update_object_tracking_data(db,
-                                        current_node -> content,
-                                        strlen(current_node -> content));
+        // Server should support backward compatibility.
+        if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
+            SQL_update_object_tracking_data(db,
+                                            current_node -> content,
+                                            strlen(current_node -> content));
+        }else{
+            SQL_update_object_tracking_data_with_battery_voltage(
+                db,
+                current_node -> content,
+                strlen(current_node -> content));
+        }
 
     }
 
@@ -1128,9 +1146,17 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
         
         check_geo_fence_violations(current_node);
 
-        SQL_update_object_tracking_data(db,
-                                        current_node -> content,
-                                        strlen(current_node -> content));
+        // Server should support backward compatibility.
+        if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
+            SQL_update_object_tracking_data(db,
+                                            current_node -> content,
+                                            strlen(current_node -> content));
+        }else{
+            SQL_update_object_tracking_data_with_battery_voltage(
+                db,
+                current_node -> content,
+                strlen(current_node -> content));
+        }
         
     }
 
@@ -1338,8 +1364,8 @@ void *Server_process_wifi_receive()
         
         if(NULL == new_node){
              zlog_info(category_debug, 
-                       "Server_process_wifi_receive (new_node) mp_alloc failed," \
-                       " abort this data");
+                       "Server_process_wifi_receive (new_node) mp_alloc " \
+                       "failed, abort this data");
              continue;
         }
 
@@ -1359,7 +1385,8 @@ void *Server_process_wifi_receive()
              mp_free( &node_mempool, new_node);
              continue;
         }
-        remain_string = remain_string + strlen(from_direction) + strlen(DELIMITER_SEMICOLON);         
+        remain_string = remain_string + strlen(from_direction) + 
+                        strlen(DELIMITER_SEMICOLON);         
         sscanf(from_direction, "%d", &new_node -> pkt_direction);
      
         request_type = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
@@ -1368,7 +1395,8 @@ void *Server_process_wifi_receive()
              mp_free( &node_mempool, new_node);
              continue;
         }
-        remain_string = remain_string + strlen(request_type) + strlen(DELIMITER_SEMICOLON);
+        remain_string = remain_string + strlen(request_type) + 
+                        strlen(DELIMITER_SEMICOLON);
         sscanf(request_type, "%d", &new_node -> pkt_type);
 
         API_version = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
@@ -1377,12 +1405,16 @@ void *Server_process_wifi_receive()
              mp_free( &node_mempool, new_node);
              continue;
         }
-        remain_string = remain_string + strlen(API_version) + strlen(DELIMITER_SEMICOLON);
-
+        remain_string = remain_string + strlen(API_version) + 
+                        strlen(DELIMITER_SEMICOLON);
+        sscanf(API_version, "%f", &new_node -> API_version);
+       
         /* Copy the content to the buffer_node */
         strcpy(new_node->content, remain_string);
-        zlog_debug(category_debug, "pkt_direction=[%d], pkt_type=[%d], content=[%s]", 
-                   new_node->pkt_direction, new_node->pkt_type, new_node->content);
+        zlog_debug(category_debug, "pkt_direction=[%d], pkt_type=[%d], " \
+                   "API_version=[%f], content=[%s]", new_node->pkt_direction, 
+                   new_node->pkt_type, new_node->API_version, 
+                   new_node->content);
 
         new_node -> content_size = strlen(new_node->content);
 
@@ -1403,7 +1435,8 @@ void *Server_process_wifi_receive()
                     case request_to_join:
 #ifdef debugging
                         display_time();
-                        zlog_info(category_debug, "Get Join request from Gateway");
+                        zlog_info(category_debug, "Get Join request from "
+                                  "Gateway");
 #endif
                         pthread_mutex_lock( 
                                        &NSI_receive_buffer_list_head.list_lock);
@@ -1416,8 +1449,10 @@ void *Server_process_wifi_receive()
                     case time_critical_tracked_object_data:
 #ifdef debugging
                         display_time();
-                        zlog_info(category_debug, "Get tracked object data from geofence Gateway");
-                        zlog_info(category_debug, "new_node->content=[%s]", new_node->content);
+                        zlog_info(category_debug, "Get tracked object data from "
+                                  "geofence Gateway");
+                        zlog_info(category_debug, "new_node->content=[%s]", 
+                                  new_node->content);
 #endif
                         pthread_mutex_lock(
                                   &Geo_fence_receive_buffer_list_head.list_lock);
@@ -1431,7 +1466,8 @@ void *Server_process_wifi_receive()
                     case tracked_object_data:
 #ifdef debugging
                         display_time();
-                        zlog_info(category_debug, "Get Tracked Object Data from normal Gateway");
+                        zlog_info(category_debug, "Get Tracked Object Data from "
+                                  "normal Gateway");
 #endif            
                         pthread_mutex_lock(
                                    &LBeacon_receive_buffer_list_head.list_lock);
@@ -1621,6 +1657,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
     char *final_timestamp = NULL;
     char *rssi = NULL;
     char *panic_button = NULL;
+    char *battery_voltage = NULL;
 
     int i = 0;
     int number_types = 0;
@@ -1734,6 +1771,17 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                 panic_button = strtok_save(NULL, 
                                            DELIMITER_SEMICOLON, 
                                            &save_ptr);
+
+                if(atof(BOT_SERVER_API_VERSION_20) == buffer_node->API_version){
+                    /* We do not have additional fields in 
+                       BOT_SERVER_API_VERSION_20, the all fields are already 
+                       listed above */
+                       
+                }else{
+                    battery_voltage = strtok_save(NULL, 
+                                                  DELIMITER_SEMICOLON, 
+                                                  &save_ptr);
+                }
        
                 detected_rssi = atoi(rssi);
                 

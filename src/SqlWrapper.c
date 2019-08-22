@@ -647,6 +647,149 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 }
 
 
+ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
+                                                               char *buf,
+                                                               size_t buf_len){
+
+    PGconn *conn = (PGconn *) db;
+    char temp_buf[WIFI_MESSAGE_LENGTH];
+    char *saveptr = NULL;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    int num_types = 2; // BR_EDR and BLE types
+    char *sql_template = "INSERT INTO tracking_table " \
+                         "(object_mac_address, " \
+                         "lbeacon_uuid, " \
+                         "rssi, " \
+                         "panic_button, " \
+                         "battery_voltage, " \
+                         "initial_timestamp, " \
+                         "final_timestamp, " \
+                         "server_time_offset) " \
+                         "VALUES " \
+                         "(%s, %s, %s, %s, %s," \
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
+                         "%d);";
+    char *lbeacon_uuid = NULL;
+    char *lbeacon_ip = NULL;
+    char *lbeacon_timestamp = NULL;
+    char *object_type = NULL;
+    char *object_number = NULL;
+    int numbers = 0;
+    char *object_mac_address = NULL;
+    char *initial_timestamp_GMT = NULL;
+    char *final_timestamp_GMT = NULL;
+    char *rssi = NULL;
+    char *panic_button = NULL;
+    char *battery_voltage = NULL;
+    int current_time = get_system_time();
+    char *pqescape_object_mac_address = NULL;
+    char *pqescape_lbeacon_uuid = NULL;
+    char *pqescape_rssi = NULL;
+    char *pqescape_panic_button = NULL;
+    char *pqescape_battery_voltage = NULL;
+    char *pqescape_initial_timestamp_GMT = NULL;
+    char *pqescape_final_timestamp_GMT = NULL;
+
+    zlog_debug(category_debug, "buf=[%s]", buf);
+
+    memset(temp_buf, 0, sizeof(temp_buf));
+    memcpy(temp_buf, buf, buf_len);
+
+    lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+    lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+    zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
+               "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);
+
+    SQL_begin_transaction(db);
+
+    while(num_types --){
+
+        object_type = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+        object_number = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+        zlog_debug(category_debug, "object_type=[%s], object_number=[%s]", 
+                   object_type, object_number);
+
+        numbers = atoi(object_number);
+
+        while(numbers--){
+            object_mac_address = 
+                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+            initial_timestamp_GMT = 
+                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+            final_timestamp_GMT = 
+                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+            rssi = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+            panic_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+            battery_voltage = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+            zlog_debug(category_debug, "object_mac_address=[%s], rssi=[%s], " \
+                       "panic_button=[%s], battery_voltage=[%s]", 
+                       object_mac_address, rssi, panic_button, battery_voltage);
+
+            /* Create SQL statement */
+            pqescape_object_mac_address =
+                PQescapeLiteral(conn, object_mac_address,
+                                strlen(object_mac_address));
+            pqescape_lbeacon_uuid =
+                PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid));
+            pqescape_rssi = PQescapeLiteral(conn, rssi, strlen(rssi));
+            pqescape_panic_button =
+                PQescapeLiteral(conn, panic_button, strlen(panic_button));
+            pqescape_battery_voltage =
+                PQescapeLiteral(conn, battery_voltage, strlen(battery_voltage));
+            pqescape_initial_timestamp_GMT =
+                PQescapeLiteral(conn, initial_timestamp_GMT,
+                                strlen(initial_timestamp_GMT));
+            pqescape_final_timestamp_GMT =
+                PQescapeLiteral(conn, final_timestamp_GMT,
+                                strlen(final_timestamp_GMT));
+
+            memset(sql, 0, sizeof(sql));
+            sprintf(sql, sql_template,
+                    pqescape_object_mac_address,
+                    pqescape_lbeacon_uuid,
+                    pqescape_rssi,
+                    pqescape_panic_button,
+                    pqescape_battery_voltage,
+                    pqescape_initial_timestamp_GMT,
+                    pqescape_final_timestamp_GMT,
+                    current_time - atoi(lbeacon_timestamp));
+
+            PQfreemem(pqescape_object_mac_address);
+            PQfreemem(pqescape_lbeacon_uuid);
+            PQfreemem(pqescape_rssi);
+            PQfreemem(pqescape_panic_button);
+            PQfreemem(pqescape_battery_voltage);
+            PQfreemem(pqescape_initial_timestamp_GMT);
+            PQfreemem(pqescape_final_timestamp_GMT);
+
+            /* Execute SQL statement */
+            ret_val = SQL_execute(db, sql);
+
+            if(WORK_SUCCESSFULLY != ret_val){
+                SQL_rollback_transaction(db);
+                return E_SQL_EXECUTE;
+            }
+        }
+    }
+
+    SQL_commit_transaction(db);
+
+    return WORK_SUCCESSFULLY;
+}
+
+
 ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
@@ -771,6 +914,7 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_select_template = "SELECT object_mac_address, lbeacon_uuid, " \
                                 "ROUND( AVG(rssi), 2) as avg_rssi, " \
+                                "MIN(battery_voltage) as battery_voltage, " \
                                 "MIN(initial_timestamp) as initial_timestamp, " \
                                 "MAX(final_timestamp) as final_timestamp " \
                                 "FROM tracking_table " \
@@ -792,11 +936,13 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
 
     char *lbeacon_uuid = NULL;
     char *avg_rssi = NULL;
+    char *battery_voltage = NULL;
     char *initial_timestamp = NULL;
     char *final_timestamp = NULL;
 
     char *pqescape_mac_address = NULL;
     char *pqescape_lbeacon_uuid = NULL;
+    char *pqescape_rssi = NULL;
     char *pqescape_initial_timestamp = NULL;
     char *pqescape_final_timestamp = NULL;
 
@@ -814,6 +960,7 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
         "UPDATE object_summary_table " \
         "set uuid = %s, " \
         "rssi = %d, " \
+        "battery_voltage = %d, " \
         "first_seen_timestamp = %s, " \
         "last_seen_timestamp = %s" \
         "WHERE mac_address = %s";
@@ -821,6 +968,7 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
     char *sql_update_timing_template = 
         "UPDATE object_summary_table " \
         "set rssi = %d, " \
+        "battery_voltage = %d, " \
         "last_seen_timestamp = %s " \
         "WHERE mac_address = %s";
 
@@ -847,7 +995,7 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
     total_fields = PQnfields(res);
     total_rows = PQntuples(res);
 
-    if(total_rows > 0 && total_fields == 5){
+    if(total_rows > 0 && total_fields == 6){
 
         memset(prev_mac_address, 0, sizeof(prev_mac_address));
 
@@ -868,8 +1016,9 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
 
                 lbeacon_uuid = PQgetvalue(res, current_row, 1);
                 avg_rssi = PQgetvalue(res, current_row, 2);
-                initial_timestamp = PQgetvalue(res, current_row, 3);
-                final_timestamp = PQgetvalue(res, current_row, 4);
+                battery_voltage = PQgetvalue(res, current_row, 3);
+                initial_timestamp = PQgetvalue(res, current_row, 4);
+                final_timestamp = PQgetvalue(res, current_row, 5);
 
                 zlog_debug(category_debug, "get location [%s] [%s] [%s]",
                            mac_address, lbeacon_uuid, avg_rssi);
@@ -925,7 +1074,8 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
                     memset(sql, 0, sizeof(sql));
                     sprintf(sql, sql_update_location_information_template,  
                                  pqescape_lbeacon_uuid,
-                                 atoi(avg_rssi), 
+                                 atoi(avg_rssi),
+                                 atoi(battery_voltage),
                                  pqescape_initial_timestamp, 
                                  pqescape_final_timestamp,
                                  pqescape_mac_address);
@@ -964,7 +1114,8 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
                      
                         memset(sql, 0, sizeof(sql));
                         sprintf(sql, sql_update_timing_template,  
-                                atoi(avg_rssi), 
+                                atoi(avg_rssi),
+                                atoi(battery_voltage),
                                 pqescape_final_timestamp,
                                 pqescape_mac_address);
 

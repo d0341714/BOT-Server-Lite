@@ -56,9 +56,6 @@
 
 /* Global variables */
 
-/* Server API protocol version for communicate between Server and Gateway. */
-#define BOT_SERVER_API_VERSION "2.0"
-
 /* Server config file location and the config file definition. */
 
 /* File path of the config file of the Server */
@@ -339,6 +336,24 @@ void *Server_process_wifi_send(void *_buffer_node);
 void *Server_process_wifi_receive();
 
 /*
+  Server_summarize_location_information:
+
+     This function checks if it is time to summarize location information of 
+     objects. If YES, it triggers SQL wrapper functions to summarize the 
+     information.
+
+  Parameters:
+
+     None
+
+  Return value:
+
+     None
+ */
+
+void *Server_summarize_location_information(); 
+
+/*
   add_geo_fence_setting:
 
      This function parses one configuraion of geo-fence and stores the 
@@ -408,6 +423,5 @@ ErrorCode insert_into_geo_fence_alert_list(char *mac_address,
                                            char *final_timestamp, 
                                            char *rssi);
 
-void *summarize_location_information(); 
 
 #endif

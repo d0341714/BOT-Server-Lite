@@ -336,6 +336,37 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                                           char *buf,
                                           size_t buf_len);
 
+
+/*
+  SQL_update_object_tracking_data_with_battery_voltage
+
+     Updates data of tracked objects
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     buf - pointer to an input string with the format below.
+
+           lbeacon_uuid;lbeacon_datetime;lbeacon_ip;object_type; \
+           object_number;object_mac_address_1;initial_timestamp_GMT_1; \
+           final_timestamp_GMT_1;rssi_1;push_button_1;battery_voltage_1; \
+           object_type;object_number;object_mac_address_2; \
+           initial_timestamp_GMT_2;final_timestamp_GMT_2;rssi_2;push_button_2; \
+           battery_voltage_2;
+
+     buf_len - Length in number of bytes of buf input string
+
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
+                                                               char *buf,
+                                                               size_t buf_len);
+
+
 /*
   SQL_insert_geo_fence_alert
 
