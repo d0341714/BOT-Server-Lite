@@ -949,25 +949,30 @@ void *Server_summarize_location_information(){
         
         if(uptime - last_sync_location >=
             config.period_between_check_object_location){
-            
+           
+            last_sync_location = uptime;
             SQL_summarize_object_inforamtion(
                 db, 
                 config.location_time_interval_in_sec,
                 config.panic_time_interval_in_sec,
                 config.geo_fence_time_interval_in_sec);
+           
         }
 
         if(uptime - last_sync_activity >= 
             config.period_between_check_object_activity){
-        
+    
+            last_sync_activity = uptime;
+
             SQL_identify_last_activity_status(
                 db, 
                 config.inactive_time_interval_in_min, 
                 config.inactive_each_time_slot_in_min,
                 config.inactive_rssi_delta);
+                
         }
 
-        sleep_t(BUSY_WAITING_TIME_IN_MS);
+        sleep_t(NORMAL_WAITING_TIME_IN_MS);
     }
 
     SQL_close_database_connection(db);
