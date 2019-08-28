@@ -548,4 +548,68 @@ ErrorCode SQL_get_object_monitor_type(void *db,
                                       char *mac_address, 
                                       int *monitor_type);
 
+/*
+  SQL_update_geo_fence_config
+
+     Updates start hour and end hour of geo-fence rule
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     unique_key - pointer to unique key to identify this geo-fence rule
+
+     name - pointer to the name of the geo-fence rule specified by the input 
+            unique key
+
+     hour_start - pointer to start hour of the geo-fence rule specified by the 
+                  input unique key
+
+     hour_end - pointer to start hour of the geo-fence rule specified by the 
+                input unique key
+
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_update_geo_fence_config(void *db,
+                                      char *unique_key, 
+                                      char *name,
+                                      char *hour_start,
+                                      char *hour_end);
+
+/*
+  SQL_get_geo_fence_config
+
+     This function queries geo_fence_config to extract configurations of 
+     the specified geo_fence rule
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     unique_key - pointer to unique key to identify this geo-fence rule
+
+     enable - a pointer to output of this function. It stores enable status of
+              the geo-fence rule specified by the input unique key
+     
+     hour_start - a pointer to output of this function. It stores start hour of
+                  the geo-fence rule specified by the input unique key
+
+     hour_end - a pointer to output of this function. It stores end hour of
+                the geo-fence rule specified by the input unique key
+              
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_get_geo_fence_config(void *db, 
+                                   char *unique_key, 
+                                   int *enable,
+                                   int *hour_start,
+                                   int *hour_end);
+
 #endif

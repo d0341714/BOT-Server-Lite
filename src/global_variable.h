@@ -46,6 +46,9 @@
 /* Length of the LBeacon's UUID in number of characters */
 #define LENGTH_OF_UUID 33
 
+/* Length of geo_fence unique key in byte */
+#define LENGTH_OF_GEO_FENCE_KEY 32
+
 /* Length of geo_fence name in byte */
 #define LENGTH_OF_GEO_FENCE_NAME 32
 
@@ -71,6 +74,9 @@ geo-fence rule */
 
 
 typedef struct {
+   /* The unique key of the geo fence */
+   char unique_key[LENGTH_OF_GEO_FENCE_KEY];
+
    /* The name of the geo fence */
    char name[LENGTH_OF_GEO_FENCE_NAME];
 

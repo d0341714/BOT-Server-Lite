@@ -98,13 +98,9 @@ int main(int argc, char **argv)
             zlog_fini();
     }
 
-#ifdef debugging
     zlog_info(category_debug,"Start Server");
-#endif
 
-#ifdef debugging
     zlog_info(category_debug,"Mempool Initializing");
-#endif
 
     /* Initialize the memory pool */
     if(mp_init( &node_mempool, sizeof(BufferNode), SLOTS_IN_MEM_POOL)
@@ -120,39 +116,18 @@ int main(int argc, char **argv)
         return E_MALLOC;
     }
 
-#ifdef debugging
     zlog_info(category_debug,"Mempool Initialized");
-#endif
 
     /* Create the config from input serverconfig file */
 
     if(get_server_config( &config, CONFIG_FILE_NAME) != WORK_SUCCESSFULLY)
     {
         zlog_error(category_health_report, "Opening config file Fail");
-#ifdef debugging
         zlog_error(category_debug, "Opening config file Fail");
-#endif
         return E_OPEN_FILE;
     }
 
-#ifdef debugging
-    zlog_info(category_debug,"Start connect to Database");
-#endif
-
-    /* Open DB */
-
-    memset(database_argument, 0, SQL_TEMP_BUFFER_LENGTH);
-
-    sprintf(database_argument, "dbname=%s user=%s password=%s host=%s port=%d",
-                               config.database_name, 
-                               config.database_account,
-                               config.database_password, 
-                               config.db_ip,
-                               config.database_port );
-
-#ifdef debugging
     zlog_info(category_debug,"Initialize buffer lists");
-#endif
 
     /* Initialize the address map*/
     init_Address_Map( &Gateway_address_map);
@@ -201,13 +176,9 @@ int main(int argc, char **argv)
 
     sort_priority_list(&config, &priority_list_head);
 
-#ifdef debugging
     zlog_info(category_debug,"Buffer lists initialize");
-#endif
 
-#ifdef debugging
     zlog_info(category_debug,"Initialize sockets");
-#endif
 
     /* Initialize the Wifi connection */
     if(udp_initial( &udp_config, config.recv_port) != WORK_SUCCESSFULLY){
@@ -215,10 +186,7 @@ int main(int argc, char **argv)
         /* Error handling and return */
         initialization_failed = true;
         zlog_error(category_health_report, "Fail to initialize sockets");
-        
-#ifdef debugging
         zlog_error(category_debug, "Fail to initialize sockets");
-#endif
 
         return E_WIFI_INIT_FAIL;
     }
@@ -232,20 +200,13 @@ int main(int argc, char **argv)
         initialization_failed = true;
         return E_WIFI_INIT_FAIL;
     }
-
-#ifdef debugging
-    zlog_info(category_debug,"Sockets initialized");
-#endif
+   zlog_info(category_debug,"Sockets initialized");
 
     NSI_initialization_complete = true;
 
-#ifdef debugging
     zlog_info(category_debug,"Network Setup and Initialize success");
-#endif
 
-#ifdef debugging
     zlog_info(category_debug,"Initialize Communication Unit");
-#endif
 
     /* Create the main thread of Communication Unit  */
     return_value = startThread( &CommUnit_thread, CommUnit_routine, NULL);
@@ -253,9 +214,7 @@ int main(int argc, char **argv)
     if(return_value != WORK_SUCCESSFULLY)
     {
         zlog_error(category_health_report, "CommUnit_thread Create Fail");
-#ifdef debugging
         zlog_error(category_debug, "CommUnit_thread Create Fail");
-#endif
         return return_value;
     }
 
@@ -265,9 +224,7 @@ int main(int argc, char **argv)
     if(return_value != WORK_SUCCESSFULLY)
     {
         zlog_error(category_health_report, "Maintain database fail");
-#ifdef debugging
         zlog_error(category_debug, "Maintain database fail");
-#endif
         return return_value;
     }
 
@@ -279,15 +236,11 @@ int main(int argc, char **argv)
     if(return_value != WORK_SUCCESSFULLY)
     {
         zlog_error(category_health_report, "summarize_location_information fail");
-#ifdef debugging
         zlog_error(category_debug, "summarize_location_information fail");
-#endif
         return return_value;
     }
 
-#ifdef debugging
     zlog_info(category_debug,"Start Communication");
-#endif
 
     /* The while loop waiting for CommUnit routine to be ready */
     while(CommUnit_initialization_complete == false)
@@ -332,8 +285,8 @@ int main(int argc, char **argv)
 
 #ifdef debugging
             display_time();
-            zlog_info(category_debug,"Send Request for Tracked Object Data");
 #endif
+            zlog_info(category_debug,"Send Request for Tracked Object Data");
 
             /* Broadcast poll messenge to gateways */
             Broadcast_to_gateway(&Gateway_address_map, command_msg,
@@ -359,8 +312,8 @@ int main(int argc, char **argv)
 
 #ifdef debugging
             display_time();
-            zlog_info(category_debug,"Send Request for Health Report");
 #endif
+            zlog_info(category_debug,"Send Request for Health Report");
 
             /* broadcast to gateways */
             Broadcast_to_gateway(&Gateway_address_map, command_msg,
@@ -401,9 +354,7 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
     if (file == NULL) 
     {
         zlog_error(category_health_report, "Load serverconfig fail");
-#ifdef debugging
         zlog_info(category_debug, "Load serverconfig fail");
-#endif
         return E_OPEN_FILE;
     }
     else 
@@ -420,9 +371,7 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
 
         memcpy(config->server_ip, config_message, config_message_size);
 
-#ifdef debugging
         zlog_info(category_debug,"Server IP [%s]", config->server_ip);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -435,9 +384,7 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
 
         memcpy(config->db_ip, config_message, config_message_size);
 
-#ifdef debugging
         zlog_info(category_debug,"Database IP [%s]", config->db_ip);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -445,10 +392,8 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->allowed_number_nodes = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,"Allow Number of Nodes [%d]", 
-               config->allowed_number_nodes);
-#endif
+                  config->allowed_number_nodes);
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -456,12 +401,10 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->period_between_RFHR = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "Periods between request for health report " \
                   "period_between_RFHR [%d]",
                   config->period_between_RFHR);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -469,12 +412,10 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->period_between_RFTOD = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "Periods between request for tracked object data " \
                   "period_between_RFTOD [%d]",
                   config->period_between_RFTOD);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -483,11 +424,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         config->period_between_check_object_location = 
             atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "period_between_check_object_location [%d]",
                   config->period_between_check_object_location);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -496,11 +435,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         config->period_between_check_object_activity = 
             atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "period_between_check_object_activity [%d]",
                   config->period_between_check_object_activity);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -508,11 +445,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->number_worker_threads = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "Number of worker threads [%d]",
                   config->number_worker_threads);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -520,11 +455,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->send_port = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The destination port when sending [%d]", 
                   config->send_port);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -532,10 +465,8 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->recv_port = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The received port [%d]", config->recv_port);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -543,10 +474,8 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->database_port = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug, 
                   "The database port [%d]", config->database_port);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -560,10 +489,8 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         memcpy(config->database_name, config_message, config_message_size)
         ;
 
-#ifdef debugging
         zlog_info(category_debug,
                   "Database Name [%s]", config->database_name);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -577,10 +504,8 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         memcpy(config->database_account, config_message, 
                config_message_size);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "Database Account [%s]", config->database_account);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -594,6 +519,14 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         memcpy(config->database_password, config_message, 
                config_message_size);
 
+        memset(database_argument, 0, SQL_TEMP_BUFFER_LENGTH);
+
+        sprintf(database_argument, "dbname=%s user=%s password=%s host=%s port=%d",
+                config->database_name, 
+                config->database_account,
+                config->database_password, 
+                config->db_ip,
+                config->database_port );
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -601,11 +534,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->database_keep_days = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "Database database_keep_days [%d]", 
                   config->database_keep_days);
-#endif
         
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -613,11 +544,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->time_critical_priority = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The nice of time critical priority is [%d]",
                   config->time_critical_priority);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -625,11 +554,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->high_priority = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The nice of high priority is [%d]", 
                   config->high_priority);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -637,11 +564,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->normal_priority = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The nice of normal priority is [%d]",
                   config->normal_priority);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -649,11 +574,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->low_priority = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The nice of low priority is [%d]", 
                   config->low_priority);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -661,11 +584,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->location_time_interval_in_sec = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The location_time_interval_in_sec is [%d]", 
                   config->location_time_interval_in_sec);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -673,11 +594,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->panic_time_interval_in_sec = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The panic_time_interval_in_sec is [%d]", 
                   config->panic_time_interval_in_sec);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -685,11 +604,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->geo_fence_time_interval_in_sec = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The geo_fence_time_interval_in_sec is [%d]", 
                   config->geo_fence_time_interval_in_sec);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -697,11 +614,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->inactive_time_interval_in_min = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The inactive_time_interval_in_min is [%d]", 
                   config->inactive_time_interval_in_min);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -709,11 +624,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->inactive_each_time_slot_in_min = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The inactive_each_time_slot_in_min is [%d]", 
                   config->inactive_each_time_slot_in_min);
-#endif
 
         fgets(config_setting, sizeof(config_setting), file);
         config_message = strstr((char *)config_setting, DELIMITER);
@@ -721,34 +634,30 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
         trim_string_tail(config_message);
         config->inactive_rssi_delta = atoi(config_message);
 
-#ifdef debugging
         zlog_info(category_debug,
                   "The inactive_rssi_delta is [%d]", 
                   config->inactive_rssi_delta);
-#endif
 
-#ifdef debugging
         zlog_info(category_debug, "Initialize geo-fence list");
-#endif
 
-       /* Initialize geo-fence list head to store all the geo-fence settings */
-       init_entry( &(config->geo_fence_list_head));
+        /* Initialize geo-fence list head to store all the geo-fence settings */
+        init_entry( &(config->geo_fence_list_head));
 
-       fgets(config_setting, sizeof(config_setting), file);
-       config_message = strstr((char *)config_setting, DELIMITER);
-       config_message = config_message + strlen(DELIMITER);
-       trim_string_tail(config_message);
-       number_geofence_settings = atoi(config_message);
+        fgets(config_setting, sizeof(config_setting), file);
+        config_message = strstr((char *)config_setting, DELIMITER);
+        config_message = config_message + strlen(DELIMITER);
+        trim_string_tail(config_message);
+        number_geofence_settings = atoi(config_message);
 
-       for(i = 0; i < number_geofence_settings ; i++){
+        for(i = 0; i < number_geofence_settings ; i++){
           
-           fgets(config_setting, sizeof(config_setting), file);
-           config_message = strstr((char *)config_setting, DELIMITER);
-           config_message = config_message + strlen(DELIMITER);
-           trim_string_tail(config_message);
+            fgets(config_setting, sizeof(config_setting), file);
+            config_message = strstr((char *)config_setting, DELIMITER);
+            config_message = config_message + strlen(DELIMITER);
+            trim_string_tail(config_message);
         
-           add_geo_fence_setting(&(config->geo_fence_list_head), config_message);
-       }
+            add_geo_fence_setting(&(config->geo_fence_list_head), config_message);
+        }
 
 #ifdef debugging
        list_for_each(current_list_entry, &(config->geo_fence_list_head)){
@@ -756,7 +665,9 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
                                          GeoFenceListNode,
                                          geo_fence_list_entry);
             
-            zlog_info(category_debug, "name=[%s]", current_list_ptr->name);
+            zlog_info(category_debug, "unique_key=[%s], name=[%s]", 
+                      current_list_ptr->unique_key,
+                      current_list_ptr->name);
 
             zlog_info(category_debug, "[perimeters] count=%d", 
                       current_list_ptr->number_perimeters);
@@ -780,9 +691,7 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
        }
 #endif
        
-#ifdef debugging
         zlog_info(category_debug, "geo-fence list initialized");
-#endif
 
         fclose(file);
 
@@ -991,10 +900,8 @@ void *Server_NSI_routine(void *_buffer_node)
 
     JoinStatus join_status = JOIN_UNKNOWN;
 
-#ifdef debugging
     zlog_info(category_debug, "Start join...(%s)", 
               current_node -> net_address);
-#endif
 
     memset(gateway_record, 0, sizeof(gateway_record));
 
@@ -1047,9 +954,7 @@ void *Server_NSI_routine(void *_buffer_node)
 
     pthread_mutex_unlock( &NSI_send_buffer_list_head.list_lock);
 
-#ifdef debugging
     zlog_info(category_debug, "%s join success", current_node -> net_address);
-#endif
     
     return (void *)NULL;
 }
@@ -1199,10 +1104,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     int n;
     int answer = -1;
 
-#ifdef debugging
     zlog_info(category_debug, 
               "Enter Gateway_join_request address [%s]", address);
-#endif
 
     pthread_mutex_lock( &address_map -> list_lock);
     /* Copy all the necessary information received from the LBeacon to the
@@ -1211,9 +1114,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     /* Find the first unused address map location and use the location to store
        the new joined LBeacon. */
 
-#ifdef debugging
     zlog_info(category_debug, "Check whether joined");
-#endif
+
     answer = is_in_Address_Map(address_map, address, 0);
     if(answer >=0)
     {
@@ -1226,10 +1128,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
             get_system_time();
 
         pthread_mutex_unlock( &address_map -> list_lock);
-
-#ifdef debugging
         zlog_info(category_debug, "Exist and Return");
-#endif
 
         return true;
     }
@@ -1242,9 +1141,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
         }
     }
 
-#ifdef debugging
     zlog_info(category_debug, "Start join...(%s)", address);
-#endif
 
     /* If still has space for the LBeacon to register */
     if (not_in_use != -1)
@@ -1258,9 +1155,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
 
         pthread_mutex_unlock( &address_map -> list_lock);
 
-#ifdef debugging
         zlog_info(category_debug, "Join Success");
-#endif
 
         return true;
     }
@@ -1268,9 +1163,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     {
         pthread_mutex_unlock( &address_map -> list_lock);
 
-#ifdef debugging
         zlog_info(category_debug, "Join maximum");
-#endif
         return false;
     }
 }
@@ -1329,9 +1222,7 @@ void *Server_process_wifi_send(void *_buffer_node)
 
     mp_free( &node_mempool, current_node);
 
-#ifdef debugging
     zlog_info(category_debug, "Send Success");
-#endif
 
     return (void *)NULL;
 }
@@ -1440,9 +1331,10 @@ void *Server_process_wifi_receive()
                     case request_to_join:
 #ifdef debugging
                         display_time();
+#endif
                         zlog_info(category_debug, "Get Join request from "
                                   "Gateway");
-#endif
+
                         pthread_mutex_lock( 
                                        &NSI_receive_buffer_list_head.list_lock);
                         insert_list_tail( &new_node -> buffer_entry,
@@ -1454,11 +1346,12 @@ void *Server_process_wifi_receive()
                     case time_critical_tracked_object_data:
 #ifdef debugging
                         display_time();
+#endif
                         zlog_info(category_debug, "Get tracked object data from "
                                   "geofence Gateway");
                         zlog_info(category_debug, "new_node->content=[%s]", 
                                   new_node->content);
-#endif
+
                         pthread_mutex_lock(
                                   &Geo_fence_receive_buffer_list_head.list_lock);
                         insert_list_tail( &new_node -> buffer_entry,
@@ -1471,9 +1364,10 @@ void *Server_process_wifi_receive()
                     case tracked_object_data:
 #ifdef debugging
                         display_time();
+#endif
                         zlog_info(category_debug, "Get Tracked Object Data from "
                                   "normal Gateway");
-#endif            
+
                         pthread_mutex_lock(
                                    &LBeacon_receive_buffer_list_head.list_lock);
                         insert_list_tail( &new_node -> buffer_entry,
@@ -1487,8 +1381,9 @@ void *Server_process_wifi_receive()
                     case beacon_health_report:
 #ifdef debugging
                         display_time();
-                        zlog_info(category_debug, "Get Health Report from Gateway");
 #endif
+                        zlog_info(category_debug, "Get Health Report from Gateway");
+
                         pthread_mutex_lock( 
                                        &BHM_receive_buffer_list_head.list_lock);
                         insert_list_tail( &new_node -> buffer_entry,
@@ -1519,21 +1414,28 @@ ErrorCode add_geo_fence_setting(struct List_Entry *geo_fence_list_head,
     char *save_ptr = NULL;
 
     char *name = NULL;
+    char *unique_key = NULL;
+    char *hours_duration = NULL;
     char *perimeters = NULL;
     char *fences = NULL;
     char *monitor_types = NULL;
+    char *hour_start = NULL;
+    char *hour_end = NULL;
+    void *db = NULL;
 
     GeoFenceListNode *new_node = NULL;
 
     int i = 0;
     char *temp_value = NULL;
 
-#ifdef debugging
     zlog_info(category_debug, ">> add_geo_fence_setting");
     zlog_info(category_debug, "GeoFence data=[%s]", buf);
-#endif
 
     name = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
+
+    unique_key = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+
+    hours_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
     perimeters = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
     
@@ -1541,11 +1443,9 @@ ErrorCode add_geo_fence_setting(struct List_Entry *geo_fence_list_head,
 
     monitor_types = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
-#ifdef debugging
     zlog_info(category_debug, 
-              "name=[%s], perimeters=[%s], fences=[%s], mac_prefixes=[%s]", 
-              name, perimeters, fences, mac_prefixes);
-#endif
+              "name=[%s], perimeters=[%s], fences=[%s], monitor_types=[%s]", 
+              name, perimeters, fences, monitor_types);
 
     new_node = mp_alloc( &geofence_mempool);
            
@@ -1561,7 +1461,13 @@ ErrorCode add_geo_fence_setting(struct List_Entry *geo_fence_list_head,
     init_entry(&new_node -> geo_fence_list_entry);
                     
     memcpy(new_node->name, name, strlen(name));
-  
+
+    memcpy(new_node->unique_key, unique_key, strlen(unique_key));
+
+    // parse hours duration
+    hour_start = strtok_save(hours_duration, DELIMITER_COMMA, &save_ptr);
+    hour_end = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
+
     // parse perimeters settings
     current_ptr = strtok_save(perimeters, DELIMITER_COMMA, &save_ptr);
     new_node->number_perimeters = atoi (current_ptr);
@@ -1631,9 +1537,24 @@ ErrorCode add_geo_fence_setting(struct List_Entry *geo_fence_list_head,
 
     insert_list_tail( &new_node -> geo_fence_list_entry,
                       geo_fence_list_head);
-#ifdef debugging    
+
+
+    // update geo-fence configuration to database
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
+        zlog_error(category_debug, 
+                   "cannot open database"); 
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    SQL_update_geo_fence_config(db, unique_key, name, hour_start, hour_end);
+    
+    SQL_close_database_connection(db);
+
+ 
     zlog_info(category_debug, "<<add_geo_fence_setting");
-#endif
+
     return WORK_SUCCESSFULLY;
 }
 
@@ -1676,10 +1597,29 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
     int object_monitor_type = 0;
     bool is_monitor_type = false;
 
-#ifdef debugging
-    zlog_info(category_debug, ">>check_geo_fence_violations");
-#endif
+    int is_rule_enabled = 0;
+    int rule_hour_start = 0;
+    int rule_hour_end = 0;
+    int current_hour = 0;
 
+    time_t current_time = get_system_time();
+    struct tm ts;
+    char string_hour[80];
+
+    ts = *localtime(&current_time);
+    strftime(string_hour, sizeof(string_hour), "%H", &ts);
+    current_hour = atoi(string_hour);
+
+
+    zlog_info(category_debug, ">>check_geo_fence_violations");
+
+    
+    // get current hour
+    ts = *localtime(&current_time);
+    strftime(string_hour, sizeof(string_hour), "%H", &ts);
+    current_hour = atoi(string_hour);
+
+ 
     memset(content_temp, 0, WIFI_MESSAGE_LENGTH);
     memcpy(content_temp, buffer_node -> content, buffer_node -> content_size);
 
@@ -1692,7 +1632,48 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                                      GeoFenceListNode,
                                      geo_fence_list_entry);
 
-        // First, check if lbeacon_uuid is listed as perimeter LBeacon or 
+        // Check if this geo-fence rule is enabled and active
+        SQL_open_database_connection(database_argument, &db);
+
+        SQL_get_geo_fence_config(db, 
+                                 current_list_ptr->unique_key, 
+                                 &is_rule_enabled,
+                                 &rule_hour_start,
+                                 &rule_hour_end);
+
+        SQL_close_database_connection(db);
+
+        if(is_rule_enabled == 0){
+            zlog_debug(category_debug, 
+                       "Skip geo-fence rule=[%s], enable=[%d]", 
+                       current_list_ptr->unique_key, is_rule_enabled);
+            continue;
+        }
+
+        if(rule_hour_start < rule_hour_end){
+            if(current_hour < rule_hour_start || 
+                rule_hour_end < current_hour){
+
+                zlog_debug(category_debug, 
+                           "Skip geo-fence rule=[%s], start=[%d], end=[%d], " \
+                           "current_hour=[%d]", 
+                           current_list_ptr->unique_key, rule_hour_start,
+                           rule_hour_end, current_hour);
+                continue;
+            }
+        }else{
+            if(rule_hour_end < current_hour && 
+                current_hour < rule_hour_start){
+                zlog_debug(category_debug, 
+                           "Skip geo-fence rule=[%s], start=[%d], end=[%d], " \
+                           "current_hour=[%d]", 
+                           current_list_ptr->unique_key, rule_hour_start,
+                           rule_hour_end, current_hour);
+                continue;
+            }
+        }
+
+        // Check if lbeacon_uuid is listed as perimeter LBeacon or 
         // fence LBeacon of this geo-fence setting
         is_perimeter_lbeacon = false;
         is_fence_lbeacon = false;
@@ -1718,11 +1699,11 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
         // If lbeacon_uuid is not part of this geo-fence setting, continue 
         // to check next geo-fence setting
         if(is_perimeter_lbeacon == false && is_fence_lbeacon == false){
-#ifdef debugging
+
            zlog_info(category_debug, 
                      "lbeacon_uuid=[%s] is not in geo-fence setting name=[%s]", 
                      lbeacon_uuid, current_list_ptr->name);
-#endif
+
             continue;
         }
         
@@ -1814,12 +1795,12 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                 if(is_fence_lbeacon && 
                    detected_rssi > 
                    current_list_ptr->rssi_of_fences){
-#ifdef debugging
+
                     zlog_info(category_debug, 
                               "[GeoFence-Fence]: LBeacon UUID=[%s] "\
                               "mac_address=[%s]", 
                               lbeacon_uuid, mac_address);
-#endif
+
 
                     insert_into_geo_fence_alert_list(
                         mac_address,
@@ -1832,12 +1813,12 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                 }else if(is_perimeter_lbeacon && 
                          detected_rssi > 
                          current_list_ptr->rssi_of_perimeters){
-#ifdef debugging
+
                     zlog_info(category_debug, 
                               "[GeoFence-Perimeter]: LBeacon UUID=[%s]" \
                               "mac_address=[%s]", 
                               lbeacon_uuid, mac_address);
-#endif
+
 
                     insert_into_geo_fence_alert_list(
                         mac_address,
@@ -1852,9 +1833,9 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
         }
     }
 
-#ifdef debugging
+
     zlog_info(category_debug, "<<check_geo_fence_violations");
-#endif
+
 
     return WORK_SUCCESSFULLY;
 }
@@ -1867,9 +1848,9 @@ ErrorCode insert_into_geo_fence_alert_list(char *mac_address,
                                            char *rssi){
         BufferNode *new_node = NULL;
 
-#ifdef debugging
+
         zlog_info(category_debug, ">> insert_into_geo_fence_alert_list");
-#endif
+
 
         new_node = mp_alloc( &node_mempool);
         if(NULL == new_node){
@@ -1900,9 +1881,9 @@ ErrorCode insert_into_geo_fence_alert_list(char *mac_address,
 
         pthread_mutex_unlock(&Geo_fence_alert_buffer_list_head.list_lock); 
 
-#ifdef debugging
+
         zlog_info(category_debug, "<< insert_into_geo_fence_alert_list");
-#endif
+
 
         return WORK_SUCCESSFULLY;
  }

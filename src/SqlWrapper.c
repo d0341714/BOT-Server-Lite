@@ -1737,3 +1737,113 @@ ErrorCode SQL_get_object_monitor_type(void *db,
 
     return WORK_SUCCESSFULLY;
 }
+
+ErrorCode SQL_update_geo_fence_config(void *db,
+                                      char *unique_key,
+                                      char *name,
+                                      char *hour_start,
+                                      char *hour_end){
+    PGconn *conn = (PGconn *) db;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char *sql_template = "INSERT INTO geo_fence_config " \
+                         "(unique_key, " \
+                         "name, " \
+                         "hour_start, " \
+                         "hour_end) " \
+                         "VALUES " \
+                         "(%s, %s, %s, %s)" \
+                         "ON CONFLICT (unique_key) " \
+                         "DO UPDATE SET " \
+                         "name = %s, " \
+                         "hour_start = %s, " \
+                         "hour_end = %s;";
+
+    char *pqescape_unique_key = NULL;
+    char *pqescape_name = NULL;
+
+    pqescape_unique_key = 
+        PQescapeLiteral(conn, unique_key, strlen(unique_key));
+
+    pqescape_name = 
+        PQescapeLiteral(conn, name, strlen(name));
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template,
+            pqescape_unique_key,
+            pqescape_name,
+            hour_start, 
+            hour_end,
+            pqescape_name,
+            hour_start,
+            hour_end);
+
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db, sql);
+
+    PQfreemem(pqescape_unique_key);
+    PQfreemem(pqescape_name);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        return E_SQL_EXECUTE;
+    }
+
+    return WORK_SUCCESSFULLY;
+}
+
+ErrorCode SQL_get_geo_fence_config(void *db, 
+                                   char *unique_key, 
+                                   int *enable,
+                                   int *hour_start,
+                                   int *hour_end){
+    PGconn *conn = (PGconn *)db;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char *sql_select_template = "SELECT enable, hour_start, hour_end " \
+                                "FROM geo_fence_config " \
+                                "WHERE " \
+                                "unique_key = %s";
+    PGresult *res = NULL;
+    int total_fields = 0;
+    int total_rows = 0;
+
+    char *pqescape_unique_key = NULL;
+   
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+
+
+    memset(sql, 0, sizeof(sql));
+
+    pqescape_unique_key = 
+        PQescapeLiteral(conn, unique_key, strlen(unique_key));
+    
+    sprintf(sql, sql_select_template, pqescape_unique_key);
+
+    res = PQexec(conn, sql);
+
+    PQfreemem(pqescape_unique_key);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   res, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }
+
+    total_fields = PQnfields(res);
+    total_rows = PQntuples(res);
+
+    *enable = 0;
+    *hour_start = 0;
+    *hour_end = 0;
+    if(total_rows == 1 && total_fields == 3){
+        *enable = atoi(PQgetvalue(res, 0, 0));
+        *hour_start = atoi(PQgetvalue(res, 0, 1));
+        *hour_end = atoi(PQgetvalue(res, 0, 2));
+    }
+
+    PQclear(res);
+
+    return WORK_SUCCESSFULLY;
+}
