@@ -374,6 +374,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\global_variables.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\LinkedList.h"
 				>
 			</File>
