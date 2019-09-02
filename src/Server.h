@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20190617
+     1.0, 20190902
 
   Abstract:
 
@@ -39,7 +39,7 @@
      Holly Wang   , hollywang@iis.sinica.edu.tw
      Ray Chao     , raychao5566@gmail.com
      Gary Xiao    , garyh0205@hotmail.com
-     Chun Yu Lai  , chunyu1202@gmail.com
+     Chun-Yu Lai  , chunyu1202@gmail.com
 
  */
 
@@ -64,10 +64,12 @@
 /* File path of the config file of the Server */
 #define ZLOG_CONFIG_FILE_NAME "./config/zlog.conf"
 
-/* The type term for geo-fence fence */
+/* The type name for geo-fence alerts triggered by the presence of monitored 
+   objects at LBeacons in a fence. */
 #define GEO_FENCE_ALERT_TYPE_FENCE "fence"
 
-/* The type term for geo-fence perimeter */
+/* The type name for geo-fence alerts triggered by the presence of monitored
+   objects at LBeacons that are in perimeter of a geofence. */
 #define GEO_FENCE_ALERT_TYPE_PERIMETER "perimeter"
 
 /* The database argument for opening database */
@@ -79,21 +81,18 @@ Memory_Pool geofence_mempool;
 /* An array of address maps */
 AddressMapArray Gateway_address_map;
 
-/* The head of a list of buffers holding message from LBeacons specified by 
-   GeoFence */
+/* The head of a list of buffers holding message from LBeacons that are parts 
+   of GeoFences */
 BufferListHead Geo_fence_receive_buffer_list_head;
 
-/* The head of a list of buffers holding GeoFence alert from GeoFence */
+/* The head of a list of buffers holding alerts from GeoFences */
 BufferListHead Geo_fence_alert_buffer_list_head;
 
-
-/* Variables for storing the last polling times in second*/
+/* Variables for storing the last polling times in seconds. Server keeps 
+   comparing current MONOTONIC timestamp with these last polling times to 
+   determine the timing of triggering next polling requests periodically. */
 int last_polling_LBeacon_for_HR_time;
 int last_polling_object_tracking_time;
-
-/* Variables for storing the last updating times in second*/
-int last_update_geo_fence;
-
 
 /*
   get_server_config:
@@ -117,13 +116,13 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name);
 /*
   sort_priority_list:
 
-     The function arrange entries in the priority list in nonincreasing
-     order of the priority nice.
+     The function arranges entries in the priority list in nondecreasing order
+     of nice. 
 
   Parameters:
 
      config - The pointer points to the structure which stored config for
-              gateway.
+              Server.
      list_head - The pointer points to the priority list head.
 
   Return value:
@@ -132,31 +131,10 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name);
  */
 void *sort_priority_list(ServerConfig *config, BufferListHead *list_head);
 
-
-/*
-  udp_sendpkt
-
-     This function is called to send a packet to the destination via UDP 
-     connection.
-
-  Parameter:
-
-     udp_config  : A pointer to the structure contains all variables 
-                   for the UDP connection.
-     buffer_node : A pointer to the buffer node.
-
-  Return Value:
-
-     int : If return 0, everything work successfully.
-           If not 0   , something wrong.
- */
-int udp_sendpkt(pudp_config udp_config, BufferNode *buffer_node);
-
-
 /*
   maintain_database:
 
-     This function is executed as a dedicated thread and it maintains database 
+     This function is executed as a dedicated thread to maintain database 
      records by retaining old data from database and doing vacuum on all the 
      tables.
 
@@ -174,8 +152,8 @@ void *maintain_database();
 /*
   Server_NSI_routine:
 
-     This function is executed by worker threads when they process the buffer
-     nodes in NSI receive buffer list.
+     This function is executed by worker threads on a Server when they process 
+     the buffer nodes in NSI receive buffer list.
 
   Parameters:
 
@@ -191,8 +169,8 @@ void *Server_NSI_routine(void *_buffer_node);
 /*
   Server_BHM_routine:
 
-     This function is executed by worker threads when they process the buffer
-     nodes in BHM receive buffer list.
+     This function is executed by worker threads on a Server when they process 
+     the buffer nodes in BHM receive buffer list.
 
   Parameters:
 
@@ -209,8 +187,9 @@ void *Server_BHM_routine(void *_buffer_node);
 /*
   Server_LBeacon_routine:
 
-     This function is executed by worker threads when they process the buffer
-     nodes in LBeacon receive buffer list and send to the server directly.
+     This function is executed by worker threads on a Server when they process 
+     the buffer nodes in LBeacon receive buffer list and send to the server 
+     directly.
 
   Parameters:
 
@@ -227,8 +206,8 @@ void *Server_LBeacon_routine(void *_buffer_node);
 /*
   process_tracked_data_from_geofence_gateway:
 
-     This function is executed by worker threads when processing
-     the buffer node in the GeoFence receive buffer list.
+     This function is executed by worker threads on a Server when processing
+     buffer nodes in the GeoFence receive buffer list.
 
   Parameters:
 
@@ -245,8 +224,8 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node);
 /*
   process_GeoFence_alert_routine:
 
-     This function is executed by worker threads when processing
-     the buffer node in the GeoFence alert buffer list.
+     This function is executed by worker threads on a Server when processing
+     buffer nodes in the GeoFence alert buffer list.
 
   Parameters:
 
@@ -263,9 +242,9 @@ void *process_GeoFence_alert_routine(void *_buffer_node);
 /*
   Gateway_join_request:
 
-     This function is executed when a Gateway sends a command to join the Server
-     . When executed, it fills the AddressMap with the inputs and sets the
-     network_address if not exceed MAX_NUMBER_NODES.
+     This function is executed on the Server in response to a request from a 
+     Gateway to join the Server. When executed, it fills the AddressMap with 
+     the inputs and sets the network_address if not exceed MAX_NUMBER_NODES.
 
   Parameters:
 
@@ -354,33 +333,33 @@ void *Server_process_wifi_receive();
 void *Server_summarize_location_information(); 
 
 /*
-  add_geo_fence_setting:
+  add_geo_fence_settings:
 
-     This function parses one configuraion of geo-fence and stores the 
-     geo-fence setting structure into the geo-fence setting buffer list.
+     This function parses the configuraion of a geo-fence and stores the 
+     resultant geo-fence setting struct in the geo-fence setting buffer list.
 
   Parameters:
 
-     geo_fence_list_head - The pointer points to the geo-fence setting 
+     geo_fence_list_head - The pointer to the head of the geo-fence setting 
                            buffer list head.
-     buf - The pointer points to the buffer containing one configuraion of 
-           geo-fence setting. 
+     buf - The pointer to the buffer containing the configuraion of a 
+           geo-fence.
 
   Return value:
 
      ErrorCode
 
  */
-ErrorCode add_geo_fence_setting(struct List_Entry * geo_fence_list_head,
+ErrorCode add_geo_fence_settings(struct List_Entry * geo_fence_list_head,
                                 char *buf);
 
 
 /*
-  detect_geo_fence_violations:
+  check_geo_fence_violations:
 
-     This function checks the object tracking data forwarded by Geo-Fence 
-     Gateway. It compares the tracking data against geo-fence settings and 
-     detects if the objects violates the geo-fence settings.
+     This function checks the object tracking data forwarded by a Geo-Fence 
+     Gateway. It compares the tracking data against geo-fence settings in order 
+     to detect the objects that violate the geo-fence settings.
 
   Parameters:
 
@@ -399,13 +378,13 @@ ErrorCode check_geo_fence_violations(BufferNode* buffer_node);
   insert_into_geo_fence_alert_list:
 
      This function inserts geo-fence alert log into geo-fence alert buffer 
-     list
+     list.
 
   Parameters:
 
      mac_address - MAC address of detected object.
-     fence_type - Type of geo-fence setting. The possible values are 
-                  perimeter and fence.
+     fence_type - Type of geo-fence. The possible values being perimeter or 
+                  fence.
      lbeacon_uuid - UUID of the LBeacon scanned the detected object.
      final_timestamp - Timestamp at which the lbeacon_uuid scanned this 
                        detected object.

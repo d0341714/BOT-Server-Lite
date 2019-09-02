@@ -261,8 +261,6 @@ int main(int argc, char **argv)
     last_polling_object_tracking_time = 0;
     last_polling_LBeacon_for_HR_time = 0;
 
-    last_update_geo_fence = 0;
-
     /* The while loop that keeps the program running */
     while(ready_to_work == true)
     {
@@ -656,7 +654,7 @@ ErrorCode get_server_config(ServerConfig *config, char *file_name)
             config_message = config_message + strlen(DELIMITER);
             trim_string_tail(config_message);
         
-            add_geo_fence_setting(&(config->geo_fence_list_head), config_message);
+            add_geo_fence_settings(&(config->geo_fence_list_head), config_message);
         }
 
 #ifdef debugging
@@ -778,33 +776,6 @@ void *sort_priority_list(ServerConfig *config, BufferListHead *list_head)
 
     return (void *)NULL;
 }
-
-
-int udp_sendpkt(pudp_config udp_config, BufferNode *buffer_node)
-{
-    char content[WIFI_MESSAGE_LENGTH];
-
-    memset(content, 0, WIFI_MESSAGE_LENGTH);
-
-    sprintf(content, "%d;%d;%s;%s", buffer_node->pkt_direction, 
-                                    buffer_node->pkt_type,
-                                    BOT_SERVER_API_VERSION_LATEST,
-                                    buffer_node->content);
-
-    strcpy(buffer_node->content, content);
-    buffer_node -> content_size =  strlen(buffer_node->content);
-  
-    /* Add the content of the buffer node to the UDP to be sent to the 
-       destination */
-    udp_addpkt(udp_config, 
-               buffer_node -> net_address, 
-               buffer_node -> port,
-               content,
-               buffer_node -> content_size);
-
-    return WORK_SUCCESSFULLY;
-}
-
 
 void *maintain_database()
 {
@@ -1203,6 +1174,7 @@ void Broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size)
 void *Server_process_wifi_send(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
+    char content[WIFI_MESSAGE_LENGTH];
 
 #ifdef debugging
     zlog_info(category_debug, 
@@ -1213,12 +1185,23 @@ void *Server_process_wifi_send(void *_buffer_node)
               current_node->content_size);
 #endif
 
-    /* Add the content of the buffer node to the UDP to be sent to the
-       server */
-    //udp_sendpkt(&udp_config, 
-    //            current_node -> net_address,config.send_port, 
-    //            current_node -> content, current_node -> content_size);
-    udp_sendpkt(&udp_config, current_node);
+    memset(content, 0, WIFI_MESSAGE_LENGTH);
+
+    sprintf(content, "%d;%d;%s;%s", current_node->pkt_direction, 
+                                    current_node->pkt_type,
+                                    BOT_SERVER_API_VERSION_LATEST,
+                                    current_node->content);
+
+    strcpy(current_node->content, content);
+    current_node -> content_size =  strlen(current_node->content);
+  
+    /* Add the content of the buffer node to the UDP to be sent to the 
+       destination */
+    udp_addpkt(&udp_config, 
+               current_node -> net_address, 
+               current_node -> port,
+               current_node -> content,
+               current_node -> content_size);
 
     mp_free( &node_mempool, current_node);
 
@@ -1407,7 +1390,7 @@ void *Server_process_wifi_receive()
 }
 
 
-ErrorCode add_geo_fence_setting(struct List_Entry *geo_fence_list_head, 
+ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head, 
                                 char *buf)
 {
     char *current_ptr = NULL;
@@ -1428,7 +1411,7 @@ ErrorCode add_geo_fence_setting(struct List_Entry *geo_fence_list_head,
     int i = 0;
     char *temp_value = NULL;
 
-    zlog_info(category_debug, ">> add_geo_fence_setting");
+    zlog_info(category_debug, ">> add_geo_fence_settings");
     zlog_info(category_debug, "GeoFence data=[%s]", buf);
 
     name = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
@@ -1451,7 +1434,7 @@ ErrorCode add_geo_fence_setting(struct List_Entry *geo_fence_list_head,
            
     if(NULL == new_node){
         zlog_error(category_health_report,
-                   "[add_geo_fence_setting] mp_alloc failed, abort this data");
+                   "[add_geo_fence_settings] mp_alloc failed, abort this data");
 
         return E_MALLOC;
     }
@@ -1553,7 +1536,7 @@ ErrorCode add_geo_fence_setting(struct List_Entry *geo_fence_list_head,
     SQL_close_database_connection(db);
 
  
-    zlog_info(category_debug, "<<add_geo_fence_setting");
+    zlog_info(category_debug, "<<add_geo_fence_settings");
 
     return WORK_SUCCESSFULLY;
 }
