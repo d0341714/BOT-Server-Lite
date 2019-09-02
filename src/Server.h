@@ -72,6 +72,134 @@
    objects at LBeacons that are in perimeter of a geofence. */
 #define GEO_FENCE_ALERT_TYPE_PERIMETER "perimeter"
 
+/* Length of geo_fence unique key in byte */
+#define LENGTH_OF_GEO_FENCE_KEY 32
+
+/* Length of geo_fence name in byte */
+#define LENGTH_OF_GEO_FENCE_NAME 32
+
+/* Maximum length for each array of database information */
+#define MAXIMUM_DATABASE_INFO 1024
+
+/* Maximum number of LBeacons can be defined as the perimeter in each 
+geo-fence rule */
+#define MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER 20
+
+/* Maximum number of LBeacons can be defined as the fence in each 
+geo-fence rule */
+#define MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE 20
+
+/* Maximum number of monitor types can be monitored in each geo-fence rule */
+#define MAXIMUM_MONITOR_TYPE_IN_GEO_FENCE 20
+
+
+typedef struct {
+   /* The unique key of the geo fence */
+   char unique_key[LENGTH_OF_GEO_FENCE_KEY];
+
+   /* The name of the geo fence */
+   char name[LENGTH_OF_GEO_FENCE_NAME];
+
+   int number_perimeters;
+   int number_fences;
+   int number_monitor_types;
+   
+   int rssi_of_perimeters;
+   int rssi_of_fences;
+
+   char perimeters[MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER][LENGTH_OF_UUID];
+   char fences[MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE][LENGTH_OF_UUID];
+   int monitor_types[MAXIMUM_MONITOR_TYPE_IN_GEO_FENCE];
+   
+   /* The list entry for inserting the geofence rule into the list of the geo 
+      fences */
+   List_Entry geo_fence_list_entry;
+
+} GeoFenceListNode;
+
+/* The configuration file structure */
+typedef struct {
+
+    /* The IP address of the Server for WiFi netwok connection. */
+    char server_ip[NETWORK_ADDR_LENGTH];
+
+    /* The IP address of database for the Server to connect. */
+    char db_ip[NETWORK_ADDR_LENGTH];
+
+    /* The maximum number of Gateway nodes allowed in the star network of 
+    this Server */
+    int allowed_number_nodes;
+
+    /* The time interval in seconds between consecutive Server requests for 
+       health reports from LBeacons */
+    int period_between_RFHR;
+
+    /* The time interval in seconds between consecutive Server requests for 
+       tracked object data from LBeacons */
+    int period_between_RFTOD;
+    
+    /* The time interval in seconds between consecutive checks by the Server
+       for object location information */
+    int period_between_check_object_location;
+
+    /* The time interval in seconds between consecutive checks by the Server 
+       for object activity information */
+    int period_between_check_object_activity;
+
+    /* A port that gateways are listening on and for the Server to send to. */
+    int send_port;
+
+    /* A port that the Server is listening for gateways to send to */
+    int recv_port;
+
+    /* A port that the database is listening on and for the Server to send to */
+    int database_port;
+
+    /* The name of the database */
+    char database_name[MAXIMUM_DATABASE_INFO];
+
+    /* The account for accessing to the database */
+    char database_account[MAXIMUM_DATABASE_INFO];
+
+    /* The password for accessing to the database */
+    char database_password[MAXIMUM_DATABASE_INFO];
+
+    /* The number of days in which data are kept in the database */
+    int database_keep_days;
+
+    /* The length of the time window in which each object is shown and 
+       made visiable by BOT system. */
+    int location_time_interval_in_sec;
+
+    /* The length of the time window in which the object is in the panic 
+       condition often the user of the object presses the panic buton of the 
+       object. */
+    int panic_time_interval_in_sec;
+
+    /* The length of the time window in which an object is shown to be in 
+       geofence violation. */
+    int geo_fence_time_interval_in_sec;
+    
+    /* The length of the time window in which we want to monitor the movement activity.*/
+    int inactive_time_interval_in_min;
+
+    /*the time slot in minutes in which we calculate the running average of 
+    RSSI for comparison.*/
+    int inactive_each_time_slot_in_min;
+
+    /*the delta value of RSSI which we used as a criteria to identify the 
+    movement of object.*/
+    int inactive_rssi_delta;
+    
+    /* The list head of the geo gence list */
+    struct List_Entry geo_fence_list_head;
+
+} ServerConfig;
+
+/* A Server config struct for storing config parameters from the config file */
+
+ServerConfig config;
+
 /* The database argument for opening database */
 char database_argument[SQL_TEMP_BUFFER_LENGTH];
 
@@ -102,7 +230,8 @@ int last_polling_object_tracking_time;
      ServerConfig struct global variable.
 
   Parameters:
-
+     config - Server related configration settings
+     common_config - Common configuration settings among Gateway and Server
      file_name - The name of the config file that stores the Server data
 
   Return value:
@@ -110,26 +239,9 @@ int last_polling_object_tracking_time;
      ErrorCode - WORK_SUCCESSFULLY: work successfully.
                  E_OPEN_FILE: config file  fail to open.
  */
-ErrorCode get_server_config(ServerConfig *config, char *file_name);
-
-
-/*
-  sort_priority_list:
-
-     The function arranges entries in the priority list in nondecreasing order
-     of nice. 
-
-  Parameters:
-
-     config - The pointer points to the structure which stored config for
-              Server.
-     list_head - The pointer points to the priority list head.
-
-  Return value:
-
-     None
- */
-void *sort_priority_list(ServerConfig *config, BufferListHead *list_head);
+ErrorCode get_server_config(ServerConfig *config, 
+                            CommonConfig *common_config, 
+                            char *file_name);
 
 /*
   maintain_database:
