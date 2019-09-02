@@ -116,6 +116,27 @@ typedef struct {
 
 } GeoFenceListNode;
 
+typedef struct {
+    /* The length of the time window in which an object is shown to be in 
+       geofence violation. */
+    int geo_fence_time_interval_in_sec;
+
+} GeoFenceMonitorConfig;
+
+typedef struct {
+    /* The length of the time window in which we want to monitor the movement activity.*/
+    int inactive_time_interval_in_min;
+
+    /*the time slot in minutes in which we calculate the running average of 
+    RSSI for comparison.*/
+    int inactive_each_time_slot_in_min;
+
+    /*the delta value of RSSI which we used as a criteria to identify the 
+    movement of object.*/
+    int inactive_rssi_delta;
+
+} MovementMonitorConfig;
+
 /* The configuration file structure */
 typedef struct {
 
@@ -170,26 +191,24 @@ typedef struct {
        made visiable by BOT system. */
     int location_time_interval_in_sec;
 
+    /* The flag of enable panic button monitor */
+    int is_enabled_panic_button_monitor;
+
     /* The length of the time window in which the object is in the panic 
        condition often the user of the object presses the panic buton of the 
        object. */
     int panic_time_interval_in_sec;
 
-    /* The length of the time window in which an object is shown to be in 
-       geofence violation. */
-    int geo_fence_time_interval_in_sec;
-    
-    /* The length of the time window in which we want to monitor the movement activity.*/
-    int inactive_time_interval_in_min;
+    /* The flag of enable geo-fence monitor */
+    int is_enabled_geofence_monitor;
 
-    /*the time slot in minutes in which we calculate the running average of 
-    RSSI for comparison.*/
-    int inactive_each_time_slot_in_min;
+    GeoFenceMonitorConfig geofence_monitor_config;
 
-    /*the delta value of RSSI which we used as a criteria to identify the 
-    movement of object.*/
-    int inactive_rssi_delta;
-    
+    /* The flag of enable movement monitor */
+    int is_enabled_movement_monitor;
+
+    MovementMonitorConfig movement_monitor_config;
+        
     /* The list head of the geo gence list */
     struct List_Entry geo_fence_list_head;
 

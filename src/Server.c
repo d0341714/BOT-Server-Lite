@@ -489,34 +489,60 @@ ErrorCode get_server_config(ServerConfig *config,
               config->location_time_interval_in_sec);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->is_enabled_panic_button_monitor = atoi(config_message);
+    zlog_info(category_debug,
+              "The is_enabled_panic_button_monitor is [%d]", 
+              config->is_enabled_panic_button_monitor);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
     config->panic_time_interval_in_sec = atoi(config_message);
     zlog_info(category_debug,
               "The panic_time_interval_in_sec is [%d]", 
               config->panic_time_interval_in_sec);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->geo_fence_time_interval_in_sec = atoi(config_message);
+    config->is_enabled_geofence_monitor = atoi(config_message);
+    zlog_info(category_debug,
+              "The is_enabled_geofence_monitor is [%d]", 
+              config->is_enabled_geofence_monitor);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->geofence_monitor_config.geo_fence_time_interval_in_sec = 
+        atoi(config_message);
     zlog_info(category_debug,
               "The geo_fence_time_interval_in_sec is [%d]", 
-              config->geo_fence_time_interval_in_sec);
+              config->geofence_monitor_config.
+              geo_fence_time_interval_in_sec);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->inactive_time_interval_in_min = atoi(config_message);
+    config->is_enabled_movement_monitor = atoi(config_message);
+    zlog_info(category_debug,
+              "The is_enabled_movement_monitor is [%d]", 
+              config->is_enabled_movement_monitor);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->movement_monitor_config.inactive_time_interval_in_min = 
+        atoi(config_message);
     zlog_info(category_debug,
               "The inactive_time_interval_in_min is [%d]", 
-              config->inactive_time_interval_in_min);
+              config->movement_monitor_config.
+              inactive_time_interval_in_min);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->inactive_each_time_slot_in_min = atoi(config_message);
+    config->movement_monitor_config.inactive_each_time_slot_in_min = 
+        atoi(config_message);
     zlog_info(category_debug,
               "The inactive_each_time_slot_in_min is [%d]", 
-              config->inactive_each_time_slot_in_min);
+              config->movement_monitor_config.
+              inactive_each_time_slot_in_min);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->inactive_rssi_delta = atoi(config_message);
+    config->movement_monitor_config.inactive_rssi_delta = 
+        atoi(config_message);
     zlog_info(category_debug,
               "The inactive_rssi_delta is [%d]", 
-              config->inactive_rssi_delta);
+              config->movement_monitor_config.
+              inactive_rssi_delta);
 
     zlog_info(category_debug, "Initialize geo-fence list");
 
@@ -627,23 +653,34 @@ void *Server_summarize_location_information(){
             last_sync_location = uptime;
             SQL_summarize_object_inforamtion(
                 db, 
-                config.location_time_interval_in_sec,
-                config.panic_time_interval_in_sec,
-                config.geo_fence_time_interval_in_sec);
-           
+                config.location_time_interval_in_sec);
+
+            if(config.is_enabled_panic_button_monitor){
+                // Check each object's panic_button status within time interval
+                SQL_identify_panic(db, 
+                                   config.panic_time_interval_in_sec);
+            }
+
+            if(config.is_enabled_geofence_monitor){
+                // Check each object's geo-fence status within time interval
+                SQL_identify_geo_fence(db, 
+                                       config.geofence_monitor_config.
+                                       geo_fence_time_interval_in_sec);
+            }
         }
 
-        if(uptime - last_sync_activity >= 
-            config.period_between_check_object_activity){
+        if(config.is_enabled_movement_monitor){
+            if(uptime - last_sync_activity >= 
+                config.period_between_check_object_activity){
     
-            last_sync_activity = uptime;
+                last_sync_activity = uptime;
 
-            SQL_identify_last_activity_status(
-                db, 
-                config.inactive_time_interval_in_min, 
-                config.inactive_each_time_slot_in_min,
-                config.inactive_rssi_delta);
-                
+                SQL_identify_last_activity_status(
+                    db, 
+                    config.movement_monitor_config.inactive_time_interval_in_min, 
+                    config.movement_monitor_config.inactive_each_time_slot_in_min,
+                    config.movement_monitor_config.inactive_rssi_delta);    
+            }
         }
 
         sleep_t(NORMAL_WAITING_TIME_IN_MS);

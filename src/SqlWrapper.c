@@ -891,20 +891,12 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
 }
 
 ErrorCode SQL_summarize_object_inforamtion(void *db, 
-                                           int time_interval_in_sec, 
-                                           int panic_time_interval_in_sec,
-                                           int geo_fence_time_interval_in_sec){
+                                           int time_interval_in_sec){
 
     // Compute each object's location within time interval:
     // 1. Compute each object's lbeacon_uuid that has strongest rssi of this object
     // 2. Compute the stay of length time of this object under this lbeacon_uuid
     SQL_summarize_object_location(db, time_interval_in_sec);
-
-    // Check each object's panic_button status within time interval
-    SQL_identify_panic(db, panic_time_interval_in_sec);
-
-    // Check each object's geo-fence status within time interval
-    SQL_identify_geo_fence(db, geo_fence_time_interval_in_sec);
 
     return WORK_SUCCESSFULLY;
 }
