@@ -45,6 +45,9 @@
 #include "BeDIS.h"
 #include <libpq-fe.h>
 
+/* Maximum length of message to communicate with SQL wrapper API in bytes */
+#define SQL_TEMP_BUFFER_LENGTH 4096
+
 /* When debugging is needed */
 //#define debugging
 

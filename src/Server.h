@@ -92,7 +92,6 @@ geo-fence rule */
 /* Maximum number of monitor types can be monitored in each geo-fence rule */
 #define MAXIMUM_MONITOR_TYPE_IN_GEO_FENCE 20
 
-
 typedef struct {
    /* The unique key of the geo fence */
    char unique_key[LENGTH_OF_GEO_FENCE_KEY];
