@@ -102,14 +102,14 @@ int main(int argc, char **argv)
 
     zlog_info(category_debug,"Mempool Initializing");
 
-    /* Initialize the memory pool */
+    /* Initialize the memory pool for buffer nodes */
     if(mp_init( &node_mempool, sizeof(BufferNode), SLOTS_IN_MEM_POOL)
        != MEMORY_POOL_SUCCESS)
     {
         return E_MALLOC;
     }
 
-    /* Initialize the memory pool */
+    /* Initialize the memory pool for geo-fence structs */
     if(mp_init( &geofence_mempool, sizeof(GeoFenceListNode), SLOTS_IN_MEM_POOL)
        != MEMORY_POOL_SUCCESS)
     {
@@ -219,7 +219,9 @@ int main(int argc, char **argv)
     }
 
     /* Create thread to main database */
-    return_value = startThread( &database_maintenance_thread, maintain_database, NULL);
+    return_value = startThread( &database_maintenance_thread, 
+                                maintain_database, 
+                                NULL);
 
     if(return_value != WORK_SUCCESSFULLY)
     {
@@ -228,10 +230,10 @@ int main(int argc, char **argv)
         return return_value;
     }
 
-    /* Create thread to summarize location informtion */
+    /* Create thread to summarize location information */
     return_value = startThread( &location_information_thread, 
-                               Server_summarize_location_information, 
-                               NULL);
+                                Server_summarize_location_information, 
+                                NULL);
 
     if(return_value != WORK_SUCCESSFULLY)
     {
@@ -273,7 +275,7 @@ int main(int argc, char **argv)
         if(uptime - last_polling_object_tracking_time >=
            config.period_between_RFTOD)
         {
-            /* Pull object tracking object data */
+            /* Poll object tracking object data */
             /* set the pkt type */
 
             memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
@@ -295,7 +297,7 @@ int main(int argc, char **argv)
         }
 
         /* Since period_between_RFTOD is short, we only allow one type 
-           of data to be sent at the same time except for tracked object data. 
+           of data to be sent at a time except for tracked object data. 
          */
         if(uptime - last_polling_LBeacon_for_HR_time >=
                 config.period_between_RFHR)
@@ -793,7 +795,7 @@ void *maintain_database()
         zlog_info(category_debug, 
                   "SQL_retain_data with database_keep_days=[%d]", 
                   config.database_keep_days); 
-        SQL_retain_data(db, config.database_keep_days * 24);
+        SQL_retain_data(db, config.database_keep_days * HOURS_EACH_DAY);
 
         zlog_info(category_debug, "SQL_vacuum_database");
         SQL_vacuum_database(db);
@@ -1305,85 +1307,85 @@ void *Server_process_wifi_receive()
         /* Insert the node to the specified buffer, and release
            list_lock. */
 
-        switch (new_node -> pkt_direction) 
+        if (from_gateway == new_node -> pkt_direction) 
         {
-            case from_gateway:
-
-                switch (new_node -> pkt_type) 
-                {
-                    case request_to_join:
+            switch (new_node -> pkt_type) 
+            {
+                case request_to_join:
 #ifdef debugging
-                        display_time();
+                    display_time();
 #endif
-                        zlog_info(category_debug, "Get Join request from "
-                                  "Gateway");
+                    zlog_info(category_debug, "Get Join request from "
+                              "Gateway");
 
-                        pthread_mutex_lock( 
-                                       &NSI_receive_buffer_list_head.list_lock);
-                        insert_list_tail( &new_node -> buffer_entry,
-                                       &NSI_receive_buffer_list_head.list_head);
-                        pthread_mutex_unlock(
-                                       &NSI_receive_buffer_list_head.list_lock);
-                        break;
+                    pthread_mutex_lock(&NSI_receive_buffer_list_head
+                                       .list_lock);
+                    insert_list_tail(&new_node -> buffer_entry,
+                                     &NSI_receive_buffer_list_head
+                                     .list_head);
+                    pthread_mutex_unlock(&NSI_receive_buffer_list_head
+                                         .list_lock);
+                    break;
 
-                    case time_critical_tracked_object_data:
+                case time_critical_tracked_object_data:
 #ifdef debugging
-                        display_time();
+                    display_time();
 #endif
-                        zlog_info(category_debug, "Get tracked object data from "
-                                  "geofence Gateway");
-                        zlog_info(category_debug, "new_node->content=[%s]", 
-                                  new_node->content);
+                    zlog_info(category_debug, "Get tracked object data from "
+                              "geofence Gateway");
+                    zlog_info(category_debug, "new_node->content=[%s]", 
+                              new_node->content);
 
-                        pthread_mutex_lock(
-                                  &Geo_fence_receive_buffer_list_head.list_lock);
-                        insert_list_tail( &new_node -> buffer_entry,
-                                  &Geo_fence_receive_buffer_list_head.list_head);
-                        pthread_mutex_unlock(
-                                  &Geo_fence_receive_buffer_list_head.list_lock);
+                    pthread_mutex_lock(&Geo_fence_receive_buffer_list_head
+                                       .list_lock);
+                    insert_list_tail(&new_node -> buffer_entry,
+                                     &Geo_fence_receive_buffer_list_head
+                                     .list_head);
+                    pthread_mutex_unlock(&Geo_fence_receive_buffer_list_head
+                                         .list_lock);
 
-                        break;
+                    break;
 
-                    case tracked_object_data:
+                case tracked_object_data:
 #ifdef debugging
-                        display_time();
+                    display_time();
 #endif
-                        zlog_info(category_debug, "Get Tracked Object Data from "
-                                  "normal Gateway");
+                    zlog_info(category_debug, "Get Tracked Object Data from "
+                              "normal Gateway");
 
-                        pthread_mutex_lock(
-                                   &LBeacon_receive_buffer_list_head.list_lock);
-                        insert_list_tail( &new_node -> buffer_entry,
-                                   &LBeacon_receive_buffer_list_head.list_head);
-                        pthread_mutex_unlock(
-                                   &LBeacon_receive_buffer_list_head.list_lock);
+                    pthread_mutex_lock(&LBeacon_receive_buffer_list_head
+                                       .list_lock);
+                    insert_list_tail(&new_node -> buffer_entry, 
+                                     &LBeacon_receive_buffer_list_head
+                                     .list_head);
+                    pthread_mutex_unlock(&LBeacon_receive_buffer_list_head
+                                         .list_lock);
                         
-                        break;
+                    break;
 
-                    case gateway_health_report:
-                    case beacon_health_report:
+                case gateway_health_report:
+                case beacon_health_report:
 #ifdef debugging
-                        display_time();
+                    display_time();
 #endif
-                        zlog_info(category_debug, "Get Health Report from Gateway");
+                    zlog_info(category_debug, "Get Health Report from " \
+                                              "Gateway");
 
-                        pthread_mutex_lock( 
-                                       &BHM_receive_buffer_list_head.list_lock);
-                        insert_list_tail( &new_node -> buffer_entry,
-                                       &BHM_receive_buffer_list_head.list_head);
-                        pthread_mutex_unlock(
-                                       &BHM_receive_buffer_list_head.list_lock);
-                        break;
-                    default:
-                        mp_free( &node_mempool, new_node);
-                        break;
-                }
-                    
-                break;
-
-            default:
-                mp_free( &node_mempool, new_node);
-                break;
+                    pthread_mutex_lock(&BHM_receive_buffer_list_head
+                                       .list_lock);
+                    insert_list_tail(&new_node -> buffer_entry,
+                                     &BHM_receive_buffer_list_head.list_head);
+                    pthread_mutex_unlock(&BHM_receive_buffer_list_head
+                                         .list_lock);
+                    break;
+                default:
+                    mp_free( &node_mempool, new_node);
+                    break;
+            }
+        }
+        else
+        {
+            mp_free( &node_mempool, new_node);
         }
     }
     return (void *)NULL;
@@ -1545,10 +1547,10 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
 ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
 {
      /* The format of the tracked object data:
-     * lbeacon_uuid;lbeacon_datetime,lbeacon_ip;object_type;object_number;
-     * object_mac_address_1;initial_timestamp_GMT_1;final_timestamp_GMT_1;
-     * rssi_1;panic_button_1;object_type;object_number;object_mac_address_2;
-     * initial_timestamp_GMT_2;final_timestamp_GMT_2;rssi_2;panic_button_2;
+        lbeacon_uuid;lbeacon_datetime,lbeacon_ip;object_type;object_number;
+        object_mac_address_1;initial_timestamp_GMT_1;final_timestamp_GMT_1;
+        rssi_1;panic_button_1;object_type;object_number;object_mac_address_2;
+        initial_timestamp_GMT_2;final_timestamp_GMT_2;rssi_2;panic_button_2;
      */
     char content_temp[WIFI_MESSAGE_LENGTH];
     char *save_ptr = NULL;
