@@ -651,9 +651,15 @@ void *Server_summarize_location_information(){
             config.period_between_check_object_location){
            
             last_sync_location = uptime;
-            SQL_summarize_object_inforamtion(
-                db, 
-                config.location_time_interval_in_sec);
+
+            /* Compute each object's location within time interval:
+               1. Compute each object's lbeacon_uuid that has strongest rssi 
+                  of this object
+               2. Compute the stay of length time of this object under this 
+                  lbeacon_uuid
+            */
+            SQL_summarize_object_location(db,
+                                          config.location_time_interval_in_sec);
 
             if(config.is_enabled_panic_button_monitor){
                 // Check each object's panic_button status within time interval

@@ -890,17 +890,6 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_summarize_object_inforamtion(void *db, 
-                                           int time_interval_in_sec){
-
-    // Compute each object's location within time interval:
-    // 1. Compute each object's lbeacon_uuid that has strongest rssi of this object
-    // 2. Compute the stay of length time of this object under this lbeacon_uuid
-    SQL_summarize_object_location(db, time_interval_in_sec);
-
-    return WORK_SUCCESSFULLY;
-}
-
 ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
     PGconn *conn = (PGconn *)db;
     char sql[SQL_TEMP_BUFFER_LENGTH];

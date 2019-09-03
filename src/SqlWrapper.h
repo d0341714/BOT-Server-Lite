@@ -395,28 +395,6 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
 ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len);
 
 /*
-  SQL_summarize_object_inforamtion
-
-     This function invokes sub-functions to summarize information of object 
-     list for BOT sysmte GUI. The summary informtion is updated to the summary 
-     table object_summary_table.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     location_time_interval_in_sec - the time window in which we treat this 
-                                     object as shown and visiable by BOT system
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-ErrorCode SQL_summarize_object_inforamtion(void *db, 
-                                           int location_time_interval_in_sec);
-
-/*
   SQL_summarize_object_location
 
      This function queries tracking_table (Time-Series database) within time 
