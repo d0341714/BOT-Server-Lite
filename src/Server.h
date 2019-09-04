@@ -92,6 +92,18 @@ geo-fence rule */
 /* Maximum number of monitor types can be monitored in each geo-fence rule */
 #define MAXIMUM_MONITOR_TYPE_IN_GEO_FENCE 20
 
+/* Type of device to be tracked. */
+typedef enum ObjectMonitorType {
+
+    MONITOR_NORMAL = 0,
+    MONITOR_GEO_FENCE = 1,
+    MONITOR_PANIC = 2,
+    MONITOR_MOVEMENT = 3,
+    MONITOR_PROHIBITION_AREA = 4,
+    MONITOR_MAX_TYPE = 5
+
+} ObjectMonitorType;
+
 typedef struct {
    /* The unique key of the geo fence */
    char unique_key[LENGTH_OF_GEO_FENCE_KEY];
@@ -101,14 +113,12 @@ typedef struct {
 
    int number_perimeters;
    int number_fences;
-   int number_monitor_types;
    
    int rssi_of_perimeters;
    int rssi_of_fences;
 
    char perimeters[MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER][LENGTH_OF_UUID];
    char fences[MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE][LENGTH_OF_UUID];
-   int monitor_types[MAXIMUM_MONITOR_TYPE_IN_GEO_FENCE];
    
    /* The list entry for inserting the geofence rule into the list of the geo 
       fences */
