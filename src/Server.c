@@ -309,8 +309,6 @@ int main(int argc, char **argv)
                 config.period_between_RFHR)
         {
             /* Polling for health reports. */
-            /* set the pkt type */
-
             memset(command_msg, 0, WIFI_MESSAGE_LENGTH);
             sprintf(command_msg, "%d;%d;%s;", from_server, 
                                               gateway_health_report, 
@@ -514,37 +512,7 @@ ErrorCode get_server_config(ServerConfig *config,
               config->geofence_monitor_config.
               geo_fence_time_interval_in_sec);
 
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->is_enabled_movement_monitor = atoi(config_message);
-    zlog_info(category_debug,
-              "The is_enabled_movement_monitor is [%d]", 
-              config->is_enabled_movement_monitor);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->movement_monitor_config.inactive_time_interval_in_min = 
-        atoi(config_message);
-    zlog_info(category_debug,
-              "The inactive_time_interval_in_min is [%d]", 
-              config->movement_monitor_config.
-              inactive_time_interval_in_min);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->movement_monitor_config.inactive_each_time_slot_in_min = 
-        atoi(config_message);
-    zlog_info(category_debug,
-              "The inactive_each_time_slot_in_min is [%d]", 
-              config->movement_monitor_config.
-              inactive_each_time_slot_in_min);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->movement_monitor_config.inactive_rssi_delta = 
-        atoi(config_message);
-    zlog_info(category_debug,
-              "The inactive_rssi_delta is [%d]", 
-              config->movement_monitor_config.
-              inactive_rssi_delta);
-
-    zlog_info(category_debug, "Initialize geo-fence list");
+        zlog_info(category_debug, "Initialize geo-fence list");
 
     /* Initialize geo-fence list head to store all the geo-fence settings */
     init_entry( &(config->geo_fence_list_head));
@@ -592,6 +560,33 @@ ErrorCode get_server_config(ServerConfig *config,
        
     zlog_info(category_debug, "geo-fence list initialized");
 
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->is_enabled_movement_monitor = atoi(config_message);
+    zlog_info(category_debug,
+              "The is_enabled_movement_monitor is [%d]", 
+              config->is_enabled_movement_monitor);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->movement_monitor_config.time_interval_in_min = atoi(config_message);
+    zlog_info(category_debug,
+              "The time_interval_in_min is [%d]", 
+              config->movement_monitor_config.
+              time_interval_in_min);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->movement_monitor_config.each_time_slot_in_min = atoi(config_message);
+    zlog_info(category_debug,
+              "The each_time_slot_in_min is [%d]", 
+              config->movement_monitor_config.
+              each_time_slot_in_min);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->movement_monitor_config.rssi_delta = atoi(config_message);
+    zlog_info(category_debug,
+              "The rssi_delta is [%d]", 
+              config->movement_monitor_config.
+              rssi_delta);
+
     fclose(file);
 
     return WORK_SUCCESSFULLY;
@@ -630,8 +625,8 @@ void *maintain_database()
 void *Server_summarize_location_information(){
     void *db = NULL;
     int uptime = 0;
-    int last_sync_location = 0;
-    int last_sync_activity = 0;
+    int last_sync_location_timestamp = 0;
+    int last_sync_movement_timestamp = 0;
 
     if(WORK_SUCCESSFULLY != 
        SQL_open_database_connection(database_argument, &db)){
@@ -647,10 +642,10 @@ void *Server_summarize_location_information(){
     
         uptime = get_clock_time();
         
-        if(uptime - last_sync_location >=
+        if(uptime - last_sync_location_timestamp >=
             config.period_between_check_object_location){
            
-            last_sync_location = uptime;
+            last_sync_location_timestamp = uptime;
 
             /* Compute each object's location within time interval:
                1. Compute each object's lbeacon_uuid that has strongest rssi 
@@ -676,16 +671,16 @@ void *Server_summarize_location_information(){
         }
 
         if(config.is_enabled_movement_monitor){
-            if(uptime - last_sync_activity >= 
+            if(uptime - last_sync_movement_timestamp >= 
                 config.period_between_check_object_activity){
     
-                last_sync_activity = uptime;
+                last_sync_movement_timestamp = uptime;
 
-                SQL_identify_last_activity_status(
+                SQL_identify_last_movement_status(
                     db, 
-                    config.movement_monitor_config.inactive_time_interval_in_min, 
-                    config.movement_monitor_config.inactive_each_time_slot_in_min,
-                    config.movement_monitor_config.inactive_rssi_delta);    
+                    config.movement_monitor_config.time_interval_in_min, 
+                    config.movement_monitor_config.each_time_slot_in_min,
+                    config.movement_monitor_config.rssi_delta);    
             }
         }
 
@@ -1399,7 +1394,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
     bool is_fence_lbeacon = false;
 
     void *db = NULL;
-    int object_monitor_type = 0;
+    ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
 
     int is_rule_enabled = 0;
     int rule_hour_start = 0;

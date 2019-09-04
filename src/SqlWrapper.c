@@ -1164,6 +1164,8 @@ ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec){
         "set panic_timestamp = %s " \
         "WHERE mac_address = %s";
 
+    ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
+
     ErrorCode ret_val = WORK_SUCCESSFULLY;
 
     
@@ -1208,7 +1210,15 @@ ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec){
                             strlen(mac_address))){
 
                 strncpy(prev_mac_address, mac_address, strlen(mac_address));
-                
+
+                SQL_get_object_monitor_type(db, mac_address, 
+                                            &object_monitor_type);
+                if(MONITOR_PANIC != 
+                   (MONITOR_PANIC & (ObjectMonitorType)object_monitor_type)){
+
+                    continue;
+                }
+
                 pqescape_mac_address = 
                     PQescapeLiteral(conn, mac_address, 
                                     strlen(mac_address));
@@ -1311,7 +1321,10 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
         "geofence_violation_timestamp = %s " \
         "WHERE mac_address = %s";
 
+    ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
+
     ErrorCode ret_val = WORK_SUCCESSFULLY;
+
 
     memset(sql, 0, sizeof(sql));
 
@@ -1351,6 +1364,14 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
                             strlen(mac_address))){
 
                 strncpy(prev_mac_address, mac_address, strlen(mac_address));
+
+                SQL_get_object_monitor_type(db, mac_address, 
+                                            &object_monitor_type);
+                if(MONITOR_GEO_FENCE != 
+                   (MONITOR_GEO_FENCE & (ObjectMonitorType)object_monitor_type)){
+                
+                    continue;
+                }
 
                 lbeacon_uuid = PQgetvalue(res, current_row, 1);
                 avg_rssi = PQgetvalue(res, current_row, 2);
@@ -1499,7 +1520,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_last_activity_status(void *db, 
+ErrorCode SQL_identify_last_movement_status(void *db, 
                                             int time_interval_in_min, 
                                             int each_time_slot_in_min,
                                             unsigned int rssi_delta){
@@ -1552,8 +1573,11 @@ ErrorCode SQL_identify_last_activity_status(void *db,
 
     char *pqescape_time_slot_activity = NULL;
     
+    ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
+
     ErrorCode ret_val = WORK_SUCCESSFULLY;
    
+
     memset(sql, 0, sizeof(sql));
 
     sprintf(sql, sql_select_template);
@@ -1577,6 +1601,16 @@ ErrorCode SQL_identify_last_activity_status(void *db,
         SQL_begin_transaction(db);
 
         for(current_row = 0 ; current_row < total_rows ; current_row++){
+            mac_address = PQgetvalue(res, current_row, 0);
+
+            SQL_get_object_monitor_type(db, mac_address, 
+                                        &object_monitor_type);
+            if(MONITOR_MOVEMENT != 
+               (MONITOR_MOVEMENT & (ObjectMonitorType)object_monitor_type)){
+                
+                continue;
+            }
+
 
             mac_address = PQgetvalue(res, current_row, 0);
             lbeacon_uuid = PQgetvalue(res, current_row, 1);
@@ -1668,7 +1702,7 @@ ErrorCode SQL_identify_last_activity_status(void *db,
 
 ErrorCode SQL_get_object_monitor_type(void *db, 
                                       char *mac_address, 
-                                      int *monitor_type){
+                                      ObjectMonitorType *monitor_type){
 
     PGconn *conn = (PGconn *)db;
     char sql[SQL_TEMP_BUFFER_LENGTH];
@@ -1708,10 +1742,10 @@ ErrorCode SQL_get_object_monitor_type(void *db,
     total_fields = PQnfields(res);
     total_rows = PQntuples(res);
 
-    *monitor_type = 0;
+    *monitor_type = MONITOR_NORMAL;
     if(total_rows == 1 && total_fields == 1){
         object_monitor_type = PQgetvalue(res, 0, 0);
-        *monitor_type = atoi(object_monitor_type);
+        *monitor_type = (ObjectMonitorType)atoi(object_monitor_type);
     }
 
     PQclear(res);

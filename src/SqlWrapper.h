@@ -464,7 +464,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec);
 
 
 /*
-  SQL_identify_last_activity_status
+  SQL_identify_last_movement_status
 
      This function uses each pair of object mac_address and lbeacon_uuid from
      the summary table object_summary_table to check the activity status 
@@ -491,7 +491,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec);
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
-ErrorCode SQL_identify_last_activity_status(void *db, 
+ErrorCode SQL_identify_last_movement_status(void *db, 
                                             int time_interval_in_min, 
                                             int each_time_slot_in_min,
                                             unsigned int rssi_delta);
@@ -518,7 +518,7 @@ ErrorCode SQL_identify_last_activity_status(void *db,
 */
 ErrorCode SQL_get_object_monitor_type(void *db, 
                                       char *mac_address, 
-                                      int *monitor_type);
+                                      ObjectMonitorType *monitor_type);
 
 /*
   SQL_update_geo_fence_config

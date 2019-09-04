@@ -92,18 +92,6 @@ geo-fence rule */
 /* Maximum number of monitor types can be monitored in each geo-fence rule */
 #define MAXIMUM_MONITOR_TYPE_IN_GEO_FENCE 20
 
-/* Type of device to be tracked. */
-typedef enum ObjectMonitorType {
-
-    MONITOR_NORMAL = 0,
-    MONITOR_GEO_FENCE = 1,
-    MONITOR_PANIC = 2,
-    MONITOR_MOVEMENT = 3,
-    MONITOR_PROHIBITION_AREA = 4,
-    MONITOR_MAX_TYPE = 5
-
-} ObjectMonitorType;
-
 typedef struct {
    /* The unique key of the geo fence */
    char unique_key[LENGTH_OF_GEO_FENCE_KEY];
@@ -134,16 +122,18 @@ typedef struct {
 } GeoFenceMonitorConfig;
 
 typedef struct {
-    /* The length of the time window in which we want to monitor the movement activity.*/
-    int inactive_time_interval_in_min;
+    /* The length of the time window in which an object is monitored for 
+       movements.*/
+    int time_interval_in_min;
 
-    /*the time slot in minutes in which we calculate the running average of 
-    RSSI for comparison.*/
-    int inactive_each_time_slot_in_min;
+    /* The time slot in minutes in which the running average of RSSI is 
+       calculated to compare with the running average of RSSI in adjacent 
+       time slots.
+       */
+    int each_time_slot_in_min;
 
-    /*the delta value of RSSI which we used as a criteria to identify the 
-    movement of object.*/
-    int inactive_rssi_delta;
+    /* The delta value of RSSI which an object is treated as moved. */
+    int rssi_delta;
 
 } MovementMonitorConfig;
 
