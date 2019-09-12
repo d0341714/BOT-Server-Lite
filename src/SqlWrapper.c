@@ -1756,6 +1756,8 @@ ErrorCode SQL_get_object_monitor_type(void *db,
 ErrorCode SQL_update_geo_fence_config(void *db,
                                       char *unique_key,
                                       char *name,
+                                      char *perimeters,
+                                      char *fences,
                                       char *hour_start,
                                       char *hour_end){
     PGconn *conn = (PGconn *) db;
@@ -1764,18 +1766,24 @@ ErrorCode SQL_update_geo_fence_config(void *db,
     char *sql_template = "INSERT INTO geo_fence_config " \
                          "(unique_key, " \
                          "name, " \
+                         "perimeters, " \
+                         "fences, " \
                          "hour_start, " \
                          "hour_end) " \
                          "VALUES " \
-                         "(%s, %s, %s, %s)" \
+                         "(%s, %s, %s, %s, %s, %s)" \
                          "ON CONFLICT (unique_key) " \
                          "DO UPDATE SET " \
                          "name = %s, " \
+                         "perimeters = %s, " \
+                         "fences = %s, " \
                          "hour_start = %s, " \
                          "hour_end = %s;";
 
     char *pqescape_unique_key = NULL;
     char *pqescape_name = NULL;
+    char *pqescape_perimeters = NULL;
+    char *pqescape_fences = NULL;
 
     pqescape_unique_key = 
         PQescapeLiteral(conn, unique_key, strlen(unique_key));
@@ -1783,13 +1791,23 @@ ErrorCode SQL_update_geo_fence_config(void *db,
     pqescape_name = 
         PQescapeLiteral(conn, name, strlen(name));
 
+    pqescape_perimeters = 
+        PQescapeLiteral(conn, perimeters, strlen(perimeters));
+
+    pqescape_fences = 
+        PQescapeLiteral(conn, fences, strlen(fences));
+
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_template,
             pqescape_unique_key,
             pqescape_name,
+            pqescape_perimeters,
+            pqescape_fences,
             hour_start, 
             hour_end,
             pqescape_name,
+            pqescape_perimeters,
+            pqescape_fences,
             hour_start,
             hour_end);
 
@@ -1798,6 +1816,8 @@ ErrorCode SQL_update_geo_fence_config(void *db,
 
     PQfreemem(pqescape_unique_key);
     PQfreemem(pqescape_name);
+    PQfreemem(pqescape_perimeters);
+    PQfreemem(pqescape_fences);
 
     if(WORK_SUCCESSFULLY != ret_val){
         return E_SQL_EXECUTE;

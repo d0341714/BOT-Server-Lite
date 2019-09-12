@@ -534,6 +534,10 @@ ErrorCode SQL_get_object_monitor_type(void *db,
      name - pointer to the name of the geo-fence rule specified by the input 
             unique key
 
+     perimeters - set of LBeacons that are in perimeter of a geofence. 
+
+     fences - set of LBeacons that are in a fence
+
      hour_start - pointer to start hour of the geo-fence rule specified by the 
                   input unique key
 
@@ -548,6 +552,8 @@ ErrorCode SQL_get_object_monitor_type(void *db,
 ErrorCode SQL_update_geo_fence_config(void *db,
                                       char *unique_key, 
                                       char *name,
+                                      char *perimeters,
+                                      char *fences,
                                       char *hour_start,
                                       char *hour_end);
 

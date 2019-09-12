@@ -1243,11 +1243,16 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
     char *hour_start = NULL;
     char *hour_end = NULL;
     void *db = NULL;
+    char perimeters_config[CONFIG_BUFFER_SIZE];
+    char fences_config[CONFIG_BUFFER_SIZE];
 
     GeoFenceListNode *new_node = NULL;
 
     int i = 0;
     char *temp_value = NULL;
+
+    memset(perimeters_config, 0, sizeof(perimeters_config));
+    memset(fences_config, 0, sizeof(fences_config));
 
     zlog_info(category_debug, ">> add_geo_fence_settings");
     zlog_info(category_debug, "GeoFence data=[%s]", buf);
@@ -1259,8 +1264,10 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
     hours_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
     perimeters = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+    strcpy(perimeters_config, perimeters);
     
     fences = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+    strcpy(fences_config, fences);
 
     monitor_types = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
@@ -1348,7 +1355,13 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
         return E_SQL_OPEN_DATABASE;
     }
 
-    SQL_update_geo_fence_config(db, unique_key, name, hour_start, hour_end);
+    zlog_debug(category_debug, 
+               "perimeter = [%s], fences = [%s]", 
+               perimeters_config, fences_config);
+
+    SQL_update_geo_fence_config(db, unique_key, name, 
+                                perimeters_config, fences_config, 
+                                hour_start, hour_end);
     
     SQL_close_database_connection(db);
 
