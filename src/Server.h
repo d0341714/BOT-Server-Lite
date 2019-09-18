@@ -166,10 +166,6 @@ typedef struct {
        for object activity information */
     int period_between_check_object_activity;
 
-    /* The time interval in seconds between consecutive checks by the Server 
-       for object violation events */
-    int period_between_check_violation_event;
-
     /* A port that gateways are listening on and for the Server to send to. */
     int send_port;
 
@@ -492,6 +488,22 @@ void *Server_summarize_location_information();
      None
  */
 void *Server_collect_violation_event(); 
+
+
+/*
+  Server_send_notification:
+
+     This function checks notification_table and sends out notifications.
+
+  Parameters:
+
+     None
+
+  Return value:
+
+     None
+ */
+void *Server_send_notification(); 
 
 /*
   add_geo_fence_settings:

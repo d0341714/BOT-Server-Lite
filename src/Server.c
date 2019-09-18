@@ -74,6 +74,9 @@ int main(int argc, char **argv)
     /* The thread of collecting violation events */
     pthread_t collect_violation_thread;
 
+    /* The thread of sending notification */
+    pthread_t send_notification_thread;
+
     /* The thread to listen for messages from Wi-Fi interface */
     pthread_t wifi_listener_thread;
 
@@ -267,6 +270,20 @@ int main(int argc, char **argv)
         return return_value;
     }
 
+    /* Create thread to collect notification events */
+    return_value = startThread( &send_notification_thread, 
+                                Server_send_notification, 
+                                NULL);
+
+    if(return_value != WORK_SUCCESSFULLY)
+    {
+        zlog_error(category_health_report, 
+                   "Server_send_notification fail");
+        zlog_error(category_debug, 
+                   "Server_send_notification fail");
+        return return_value;
+    }
+
     zlog_info(category_debug,"Start Communication");
 
     /* The while loop waiting for CommUnit routine to be ready */
@@ -419,13 +436,6 @@ ErrorCode get_server_config(ServerConfig *config,
     zlog_info(category_debug,
               "period_between_check_object_activity [%d]",
               config->period_between_check_object_activity);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->period_between_check_violation_event = 
-        atoi(config_message);
-    zlog_info(category_debug,
-              "The period_between_check_violation_event is [%d]", 
-              config->period_between_check_violation_event);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
     common_config->number_worker_threads = atoi(config_message);
@@ -738,12 +748,9 @@ void *Server_summarize_location_information(){
     return (void *)NULL;
 }
 
-
 void *Server_collect_violation_event(){
     void *db = NULL;
-    int uptime = 0;
-    int last_collect_violation_events_timestamp = 0;
-
+   
     if(WORK_SUCCESSFULLY != 
        SQL_open_database_connection(database_argument, &db)){
 
@@ -752,41 +759,63 @@ void *Server_collect_violation_event(){
         return (void *)NULL;
     }
 
-    uptime = get_clock_time();
-
     while(true == ready_to_work){
-    
-        uptime = get_clock_time();
-        
-        if(config.is_enabled_collect_violation_event){
-            if(uptime - last_collect_violation_events_timestamp >=
-                config.period_between_check_violation_event){
-           
-                last_collect_violation_events_timestamp = uptime;
 
-                if(config.is_enabled_geofence_monitor){
-                    SQL_collect_violation_events(
-                        db,
-                        MONITOR_GEO_FENCE,
-                        config.collect_violation_event_time_interval_in_sec,
-                        config.granularity_for_continuous_violations_in_sec);
-                }
-                if(config.is_enabled_panic_button_monitor){
-                    SQL_collect_violation_events(
-                        db,
-                        MONITOR_PANIC,
-                        config.collect_violation_event_time_interval_in_sec,
-                        config.granularity_for_continuous_violations_in_sec);
-                }
-                if(config.is_enabled_movement_monitor){
-                    SQL_collect_violation_events(
-                        db,
-                        MONITOR_MOVEMENT,
-                        config.collect_violation_event_time_interval_in_sec,
-                        config.granularity_for_continuous_violations_in_sec);
-                }
+        if(config.is_enabled_collect_violation_event){
+          
+            if(config.is_enabled_geofence_monitor){
+                SQL_collect_violation_events(
+                    db,
+                    MONITOR_GEO_FENCE,
+                    config.collect_violation_event_time_interval_in_sec,
+                    config.granularity_for_continuous_violations_in_sec);
+            }
+            if(config.is_enabled_panic_button_monitor){
+                SQL_collect_violation_events(
+                    db,
+                    MONITOR_PANIC,
+                    config.collect_violation_event_time_interval_in_sec,
+                    config.granularity_for_continuous_violations_in_sec);
+            }
+            if(config.is_enabled_movement_monitor){
+                SQL_collect_violation_events(
+                    db,
+                    MONITOR_MOVEMENT,
+                    config.collect_violation_event_time_interval_in_sec,
+                    config.granularity_for_continuous_violations_in_sec);
             }
         }
+
+        sleep_t(BUSY_WAITING_TIME_IN_MS);
+    }
+
+    SQL_close_database_connection(db);
+
+    return (void *)NULL;
+}
+
+
+void *Server_send_notification(){
+    void *db = NULL;
+    char violation_info[WIFI_MESSAGE_LENGTH];
+   
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
+        zlog_error(category_debug, 
+                  "cannot open database"); 
+        return (void *)NULL;
+    }
+
+    while(true == ready_to_work){
+
+        memset(violation_info, 0, sizeof(violation_info));
+        SQL_get_and_update_violation_events(db, violation_info, 
+                                            sizeof(violation_info));
+
+        // send notification here
+        zlog_debug(category_debug, "send notification for [%s]", 
+                   violation_info);
 
         sleep_t(BUSY_WAITING_TIME_IN_MS);
     }

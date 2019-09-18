@@ -1718,12 +1718,13 @@ ErrorCode SQL_collect_violation_events(
         "monitor_type, " \
         "mac_address, " \
         "uuid, " \
-        "violation_timestamp " \
-        ") " \
+        "violation_timestamp, " \
+        "processed) " \
         "SELECT %d, " \
         "mac_address, " \
         "uuid, " \
-        "%s " \
+        "%s, " \
+        "0 " \
         "FROM object_summary_table " \
         "WHERE "\
         "%s >= " \
@@ -1779,6 +1780,76 @@ ErrorCode SQL_collect_violation_events(
         return E_SQL_EXECUTE;
     }     
     SQL_commit_transaction(db);
+
+    return WORK_SUCCESSFULLY;
+}
+
+ErrorCode SQL_get_and_update_violation_events(void *db, 
+                                              char *buf, 
+                                              size_t buf_len){
+
+    PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char *sql_select_template = 
+        "SELECT id, monitor_type, mac_address, uuid, violation_timestamp " \
+        "FROM "
+        "notification_table " \
+        "WHERE "\
+        "processed != 1 " \
+        "ORDER BY id ASC;";
+
+    PGresult *res = NULL;
+    int total_fields = 0;
+    int total_rows = 0;
+    int i;
+    char one_record[SQL_TEMP_BUFFER_LENGTH];
+    char *sql_update_template = 
+        "UPDATE "
+        "notification_table " \
+        "SET "\
+        "processed = 1 " \
+        "WHERE id = %d;";
+
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_select_template);
+
+    res = PQexec(conn, sql);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   res, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }
+
+    total_rows = PQntuples(res);
+    total_fields = PQnfields(res);
+    
+    if(total_rows > 0 && total_fields == 5){
+        for(i = 0 ; i < total_rows ; i++){
+            memset(one_record, 0, sizeof(one_record));
+            sprintf(one_record, "%s,%s,%s,%s,%s;", PQgetvalue(res, i, 0),
+                                                  PQgetvalue(res, i, 1),
+                                                  PQgetvalue(res, i, 2),
+                                                  PQgetvalue(res, i, 3),
+                                                  PQgetvalue(res, i, 4));
+            
+            if(buf_len > strlen(buf) + strlen(one_record)){
+                strcat(buf, one_record);
+            
+                memset(sql, 0, sizeof(sql));
+                sprintf(sql, sql_update_template, atoi(PQgetvalue(res, i, 0)));
+
+                SQL_execute(db, sql);        
+            }
+        }
+    }
+
+    PQclear(res);
 
     return WORK_SUCCESSFULLY;
 }

@@ -529,6 +529,30 @@ ErrorCode SQL_collect_violation_events(
     int granularity_for_continuous_violations_in_sec);
 
 /*
+  SQL_get_and_update_violation_events
+
+     This function checks object_summary_table to see if there are any 
+     violation events. If YES, the violation events of all monitoring 
+     types are recored into notification_table. 
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     buf - an output string with detailed information of violations
+
+     buf_len - length in number of bytes of buf output string
+ 
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_get_and_update_violation_events(void *db,
+                                              char *buf,
+                                              size_t buf_len);
+
+/*
   SQL_get_object_monitor_type
 
      This function queries object_table to extract monitor_type of the input
