@@ -142,16 +142,17 @@ ErrorCode SQL_vacuum_database(void *db){
 
     PGconn *conn = (PGconn *) db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char *table_name[5] = {"tracking_table",
-                           "lbeacon_table",
-                           "gateway_table",
-                           "object_table",
-                           "geo_fence_alert"};
+    char *table_name[] = {"tracking_table",
+                          "lbeacon_table",
+                          "gateway_table",
+                          "object_table",
+                          "geo_fence_alert",
+                          "notification_table"};
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_template = "VACUUM %s;";
     int idx = 0;
 
-    for(idx = 0; idx< 5 ; idx++){
+    for(idx = 0; idx< sizeof(table_name)/sizeof(table_name[0]) ; idx++){
 
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_template, table_name[idx]);
@@ -174,12 +175,12 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
     PGconn *conn = (PGconn *) db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *table_name[1] = {"geo_fence_alert"};
+    char *table_name[] = {"geo_fence_alert"};
     char *sql_template = "DELETE FROM %s WHERE " \
                          "receive_time < " \
                          "NOW() - INTERVAL \'%d HOURS\';";
     int idx = 0;
-    char *tsdb_table_name[1] = {"tracking_table"};
+    char *tsdb_table_name[] = {"tracking_table"};
     char *sql_tsdb_template = "SELECT drop_chunks(interval \'%d HOURS\', " \
                               "\'%s\');";
     PGresult *res;
@@ -187,7 +188,7 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
 
     SQL_begin_transaction(db);
 
-    for(idx = 0; idx< 1; idx++){
+    for(idx = 0; idx< sizeof(table_name)/sizeof(table_name[0]); idx++){
 
         memset(sql, 0, sizeof(sql));
 
@@ -203,7 +204,7 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
 
     }
 
-    for(idx = 0; idx<1; idx++){
+    for(idx = 0; idx< sizeof(tsdb_table_name)/sizeof(tsdb_table_name[0]); idx++){
 
         memset(sql, 0, sizeof(sql));
 

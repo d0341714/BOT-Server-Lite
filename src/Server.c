@@ -654,7 +654,7 @@ void *maintain_database()
         SQL_vacuum_database(db);
 
         //Sleep one day before next check
-        sleep_t(86400 * 1000);
+        sleep_t(MS_EACH_DAY);
     }
 
     SQL_close_database_connection(db);
