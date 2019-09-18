@@ -497,6 +497,38 @@ ErrorCode SQL_identify_last_movement_status(void *db,
                                             unsigned int rssi_delta);
 
 /*
+  SQL_collect_violation_events
+
+     This function checks object_summary_table to see if there are any 
+     violation events. If YES, the violation events of all monitoring 
+     types are recored into notification_table. 
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     monitor_type - the monitor type of the violations to be collected
+
+     time_interval_in_sec - the time window in which an object is monitored 
+                            for violations
+
+     granularity_for_continuous_violations_in_sec - 
+          the length of the time window in which only one violation event is 
+          inserted into notification_table when there are continuous 
+          violations.
+ 
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_collect_violation_events(
+    void *db, 
+    ObjectMonitorType monitor_type,
+    int time_interval_in_sec,
+    int granularity_for_continuous_violations_in_sec);
+
+/*
   SQL_get_object_monitor_type
 
      This function queries object_table to extract monitor_type of the input
@@ -589,5 +621,6 @@ ErrorCode SQL_get_geo_fence_config(void *db,
                                    int *enable,
                                    int *hour_start,
                                    int *hour_end);
+
 
 #endif

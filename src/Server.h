@@ -209,6 +209,17 @@ typedef struct {
 
     MovementMonitorConfig movement_monitor_config;
         
+    /* The flag of enable collect violation event */
+    int is_enabled_collect_violation_event;
+
+    /* The length of the time window in which object_summary_table is checked 
+       and to collect violation events */
+    int collect_violation_event_time_interval_in_sec;
+
+    /* The length of the time window in which only one representative record 
+       of continuous same violations is inserted into notification_table. */
+    int granularity_for_continuous_violations_in_sec;
+
     /* The list head of the geo gence list */
     struct List_Entry geo_fence_list_head;
 
@@ -459,8 +470,23 @@ void *Server_process_wifi_receive();
 
      None
  */
-
 void *Server_summarize_location_information(); 
+
+/*
+  Server_collect_violation_event:
+
+     This function checks object_summary_table periodically to collect 
+     violation events into notification_table.
+
+  Parameters:
+
+     None
+
+  Return value:
+
+     None
+ */
+void *Server_collect_violation_event(); 
 
 /*
   add_geo_fence_settings:

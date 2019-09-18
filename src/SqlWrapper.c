@@ -69,6 +69,7 @@ static ErrorCode SQL_execute(void *db, char *sql_statement){
 
 
 static ErrorCode SQL_begin_transaction(void* db){
+
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql;
 
@@ -129,6 +130,7 @@ ErrorCode SQL_open_database_connection(char *conninfo, void **db){
 
 
 ErrorCode SQL_close_database_connection(void *db){
+
     PGconn *conn = (PGconn *) db;
     PQfinish(conn);
 
@@ -137,14 +139,15 @@ ErrorCode SQL_close_database_connection(void *db){
 
 
 ErrorCode SQL_vacuum_database(void *db){
+
     PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *table_name[5] = {"tracking_table",
                            "lbeacon_table",
                            "gateway_table",
                            "object_table",
                            "geo_fence_alert"};
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "VACUUM %s;";
     int idx = 0;
 
@@ -169,8 +172,8 @@ ErrorCode SQL_vacuum_database(void *db){
 ErrorCode SQL_retain_data(void *db, int retention_hours){
 
     PGconn *conn = (PGconn *) db;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
     char *table_name[1] = {"geo_fence_alert"};
     char *sql_template = "DELETE FROM %s WHERE " \
                          "receive_time < " \
@@ -180,6 +183,7 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
     char *sql_tsdb_template = "SELECT drop_chunks(interval \'%d HOURS\', " \
                               "\'%s\');";
     PGresult *res;
+
 
     SQL_begin_transaction(db);
 
@@ -231,13 +235,14 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
 ErrorCode SQL_update_gateway_registration_status(void *db,
                                                  char *buf,
                                                  size_t buf_len){
+
     PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
     char *numbers_str = NULL;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "INSERT INTO gateway_table " \
                          "(ip_address, " \
                          "health_status, " \
@@ -251,6 +256,7 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
     HealthStatus health_status = S_NORMAL_STATUS;
     char *ip_address = NULL;
     char *pqescape_ip_address = NULL;
+
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -300,12 +306,12 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
                                                  char *gateway_ip_address){
 
     PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
     char *numbers_str = NULL;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "INSERT INTO lbeacon_table " \
                          "(uuid, " \
                          "ip_address, " \
@@ -331,6 +337,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
     char *pqescape_lbeacon_ip = NULL;
     char *pqescape_gateway_ip = NULL;
     char *pqescape_registered_timestamp_GMT = NULL;
+
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -401,10 +408,10 @@ ErrorCode SQL_update_gateway_health_status(void *db,
                                            char *gateway_ip_address){
 
     PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "UPDATE gateway_table " \
                          "SET health_status = %s, " \
                          "last_report_timestamp = NOW() " \
@@ -413,6 +420,7 @@ ErrorCode SQL_update_gateway_health_status(void *db,
     char *health_status = NULL;
     char *pqescape_ip_address = NULL;
     char *pqescape_health_status = NULL;
+
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -455,10 +463,10 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
                                            char *gateway_ip_address){
 
     PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "UPDATE lbeacon_table " \
                          "SET health_status = %s, " \
                          "last_report_timestamp = NOW(), " \
@@ -471,6 +479,7 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
     char *pqescape_lbeacon_uuid = NULL;
     char *pqescape_health_status = NULL;
     char *pqescape_gateway_ip = NULL;
+
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -518,10 +527,10 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                                           size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
     int num_types = 2; // BR_EDR and BLE types
     char *sql_template = "INSERT INTO tracking_table " \
                          "(object_mac_address, " \
@@ -554,6 +563,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     char *pqescape_push_button = NULL;
     char *pqescape_initial_timestamp_GMT = NULL;
     char *pqescape_final_timestamp_GMT = NULL;
+
 
     zlog_debug(category_debug, "buf=[%s]", buf);
 
@@ -652,10 +662,10 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                                                                size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
     int num_types = 2; // BR_EDR and BLE types
     char *sql_template = "INSERT INTO tracking_table " \
                          "(object_mac_address, " \
@@ -691,6 +701,7 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     char *pqescape_battery_voltage = NULL;
     char *pqescape_initial_timestamp_GMT = NULL;
     char *pqescape_final_timestamp_GMT = NULL;
+
 
     zlog_debug(category_debug, "buf=[%s]", buf);
 
@@ -793,10 +804,10 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
 ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
 
     PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *saved_ptr;
     char content_temp[WIFI_MESSAGE_LENGTH];
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql_template = "INSERT INTO geo_fence_alert " \
                          "(mac_address, " \
                          "name, " \
@@ -825,6 +836,7 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
     char *pqescape_uuid = NULL;
     char *pqescape_alert_time = NULL;
     char *pqescape_rssi = NULL;
+
 
     saved_ptr = NULL;
 
@@ -891,7 +903,9 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len){
 }
 
 ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
+
     PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_select_template = "SELECT object_mac_address, lbeacon_uuid, " \
                                 "ROUND( AVG(rssi), 2) as avg_rssi, " \
@@ -953,14 +967,12 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
         "last_seen_timestamp = %s " \
         "WHERE mac_address = %s";
 
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
 
     memset(sql, 0, sizeof(sql));
 
     sprintf(sql, sql_select_template, 
             time_interval_in_sec + 5, 
             time_interval_in_sec);
-
 
     res = PQexec(conn, sql);
 
@@ -1130,7 +1142,9 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
 }
 
 ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec){
+
     PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_select_template = "SELECT object_mac_address, lbeacon_uuid, " \
                                 "panic_button, " \
@@ -1165,8 +1179,6 @@ ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec){
         "WHERE mac_address = %s";
 
     ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
-
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
 
     
     memset(sql, 0, sizeof(sql));
@@ -1246,6 +1258,7 @@ ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec){
 
                     return E_SQL_EXECUTE;
                 }
+
             }
         }
 
@@ -1257,7 +1270,9 @@ ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec){
 }
 
 ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
+
     PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_select_template = "SELECT mac_address, uuid, " \
                                 "ROUND( AVG(rssi), 2) as avg_rssi, " \
@@ -1322,8 +1337,6 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
         "WHERE mac_address = %s";
 
     ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
-
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
 
 
     memset(sql, 0, sizeof(sql));
@@ -1459,6 +1472,8 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
 
                         return E_SQL_EXECUTE;
                     }
+
+                    
                 }
                 else if(rows_mac_address == 1)
                 {
@@ -1507,6 +1522,7 @@ ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec){
                             return E_SQL_EXECUTE;
                         }
                     }
+                        
                 }
                 PQclear(res_mac_address);                
             }
@@ -1524,7 +1540,9 @@ ErrorCode SQL_identify_last_movement_status(void *db,
                                             int time_interval_in_min, 
                                             int each_time_slot_in_min,
                                             unsigned int rssi_delta){
+
     PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_select_template = "SELECT mac_address, uuid " \
                                 "FROM object_summary_table " \
@@ -1574,8 +1592,6 @@ ErrorCode SQL_identify_last_movement_status(void *db,
     char *pqescape_time_slot_activity = NULL;
     
     ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
-
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
    
 
     memset(sql, 0, sizeof(sql));
@@ -1686,6 +1702,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
                         return E_SQL_EXECUTE;
                     }     
                     PQclear(res_activity);
+
                     continue;
                 }
             }
@@ -1700,11 +1717,84 @@ ErrorCode SQL_identify_last_movement_status(void *db,
     return WORK_SUCCESSFULLY;
 }
 
+ErrorCode SQL_collect_violation_events(
+    void *db, 
+    ObjectMonitorType monitor_type,
+    int time_interval_in_sec,
+    int granularity_for_continuous_violations_in_sec){
+
+    PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char *sql_insert_template = 
+        "INSERT INTO " \
+        "notification_table( " \
+        "monitor_type, " \
+        "mac_address, " \
+        "uuid, " \
+        "violation_timestamp " \
+        ") " \
+        "SELECT %d, " \
+        "mac_address, " \
+        "uuid, " \
+        "%s " \
+        "FROM object_summary_table " \
+        "WHERE "\
+        "%s >= " \
+        "NOW() - interval '%d seconds' " \
+        "AND NOT EXISTS(" \
+        "SELECT * FROM notification_table " \
+        "WHERE monitor_type = %d " \
+        "AND mac_address = mac_address " \
+        "AND uuid = uuid " \
+        "AND EXTRACT(EPOCH FROM(%s - " \
+        "violation_timestamp)) < %d);";
+
+    char *geofence_violation_timestamp = "geofence_violation_timestamp";
+    char *panic_violation_timestamp = "panic_timestamp";
+    char *violation_timestamp_name = NULL;
+
+    if(MONITOR_GEO_FENCE == monitor_type){
+        violation_timestamp_name = geofence_violation_timestamp;
+    }else if(MONITOR_PANIC == monitor_type){
+        violation_timestamp_name = panic_violation_timestamp;
+    }
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, 
+            sql_insert_template, 
+            monitor_type, 
+            violation_timestamp_name,
+            violation_timestamp_name,
+            time_interval_in_sec,
+            monitor_type,
+            violation_timestamp_name,
+            granularity_for_continuous_violations_in_sec);
+
+    zlog_debug(category_debug, "SQL_collect_violation_events [%d] %s", 
+                               monitor_type, sql);
+
+    SQL_begin_transaction(db);
+    SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != ret_val){
+        SQL_rollback_transaction(db);
+        
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   ret_val, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }     
+    SQL_commit_transaction(db);
+
+    return WORK_SUCCESSFULLY;
+}
+
 ErrorCode SQL_get_object_monitor_type(void *db, 
                                       char *mac_address, 
                                       ObjectMonitorType *monitor_type){
 
     PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_select_template = "SELECT monitor_type " \
                                 "FROM object_table " \
@@ -1717,7 +1807,6 @@ ErrorCode SQL_get_object_monitor_type(void *db,
     char *pqescape_mac_address = NULL;
     char *object_monitor_type = NULL;
    
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
    
     memset(sql, 0, sizeof(sql));
 
@@ -1760,9 +1849,10 @@ ErrorCode SQL_update_geo_fence_config(void *db,
                                       char *fences,
                                       char *hour_start,
                                       char *hour_end){
+
     PGconn *conn = (PGconn *) db;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
     ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_template = "INSERT INTO geo_fence_config " \
                          "(unique_key, " \
                          "name, " \
@@ -1784,6 +1874,7 @@ ErrorCode SQL_update_geo_fence_config(void *db,
     char *pqescape_name = NULL;
     char *pqescape_perimeters = NULL;
     char *pqescape_fences = NULL;
+
 
     pqescape_unique_key = 
         PQescapeLiteral(conn, unique_key, strlen(unique_key));
@@ -1831,7 +1922,9 @@ ErrorCode SQL_get_geo_fence_config(void *db,
                                    int *enable,
                                    int *hour_start,
                                    int *hour_end){
+
     PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_select_template = "SELECT enable, hour_start, hour_end " \
                                 "FROM geo_fence_config " \
@@ -1842,8 +1935,6 @@ ErrorCode SQL_get_geo_fence_config(void *db,
     int total_rows = 0;
 
     char *pqescape_unique_key = NULL;
-   
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
 
 
     memset(sql, 0, sizeof(sql));

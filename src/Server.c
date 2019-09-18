@@ -71,6 +71,9 @@ int main(int argc, char **argv)
     /* The thread of summarizing location information */
     pthread_t location_information_thread;
 
+    /* The thread of collecting violation events */
+    pthread_t collect_violation_thread;
+
     /* The thread to listen for messages from Wi-Fi interface */
     pthread_t wifi_listener_thread;
 
@@ -243,8 +246,24 @@ int main(int argc, char **argv)
 
     if(return_value != WORK_SUCCESSFULLY)
     {
-        zlog_error(category_health_report, "summarize_location_information fail");
-        zlog_error(category_debug, "summarize_location_information fail");
+        zlog_error(category_health_report, 
+                   "Server_summarize_location_information fail");
+        zlog_error(category_debug, 
+                   "Server_summarize_location_information fail");
+        return return_value;
+    }
+
+    /* Create thread to collect notification events */
+    return_value = startThread( &collect_violation_thread, 
+                                Server_collect_violation_event, 
+                                NULL);
+
+    if(return_value != WORK_SUCCESSFULLY)
+    {
+        zlog_error(category_health_report, 
+                   "Server_collect_violation_event fail");
+        zlog_error(category_debug, 
+                   "Server_collect_violation_event fail");
         return return_value;
     }
 
@@ -587,6 +606,27 @@ ErrorCode get_server_config(ServerConfig *config,
               config->movement_monitor_config.
               rssi_delta);
 
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->is_enabled_collect_violation_event = atoi(config_message);
+    zlog_info(category_debug,
+              "The is_enabled_collect_violation_event is [%d]", 
+              config->is_enabled_collect_violation_event);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->collect_violation_event_time_interval_in_sec = 
+        atoi(config_message);
+    zlog_info(category_debug,
+              "The collect_violation_event_time_interval_in_sec is [%d]", 
+              config->collect_violation_event_time_interval_in_sec);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->granularity_for_continuous_violations_in_sec = 
+        atoi(config_message);
+    zlog_info(category_debug,
+              "The granularity_for_continuous_violations_in_sec " \
+              "is [%d]", 
+              config->granularity_for_continuous_violations_in_sec);
+
     fclose(file);
 
     return WORK_SUCCESSFULLY;
@@ -692,6 +732,59 @@ void *Server_summarize_location_information(){
     return (void *)NULL;
 }
 
+
+void *Server_collect_violation_event(){
+    void *db = NULL;
+    int uptime = 0;
+    int last_collect_violation_events_timestamp = 0;
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
+        zlog_error(category_debug, 
+                  "cannot open database"); 
+        return (void *)NULL;
+    }
+
+    uptime = get_clock_time();
+
+    while(true == ready_to_work){
+    
+        uptime = get_clock_time();
+        
+        if(config.is_enabled_collect_violation_event){
+            if(uptime - last_collect_violation_events_timestamp >=
+                config.collect_violation_event_time_interval_in_sec){
+           
+                last_collect_violation_events_timestamp = uptime;
+
+                if(config.is_enabled_geofence_monitor){
+                    SQL_collect_violation_events(
+                        db,
+                        MONITOR_GEO_FENCE,
+                        config.geofence_monitor_config.
+                        geo_fence_time_interval_in_sec,
+                        config.granularity_for_continuous_violations_in_sec);
+                }
+                if(config.is_enabled_panic_button_monitor){
+                    SQL_collect_violation_events(
+                        db,
+                        MONITOR_PANIC,
+                        config.panic_time_interval_in_sec,
+                        config.granularity_for_continuous_violations_in_sec);
+                }
+                if(config.is_enabled_movement_monitor){
+                }
+            }
+        }
+
+        sleep_t(BUSY_WAITING_TIME_IN_MS);
+    }
+
+    SQL_close_database_connection(db);
+
+    return (void *)NULL;
+}
 
 void *Server_NSI_routine(void *_buffer_node)
 {
