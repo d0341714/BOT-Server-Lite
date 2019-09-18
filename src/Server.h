@@ -166,6 +166,10 @@ typedef struct {
        for object activity information */
     int period_between_check_object_activity;
 
+    /* The time interval in seconds between consecutive checks by the Server 
+       for object violation events */
+    int period_between_check_violation_event;
+
     /* A port that gateways are listening on and for the Server to send to. */
     int send_port;
 
@@ -212,8 +216,9 @@ typedef struct {
     /* The flag of enable collect violation event */
     int is_enabled_collect_violation_event;
 
-    /* The length of the time window in which object_summary_table is checked 
-       and to collect violation events */
+    /* The length of the time window in which a violation event in 
+       object_summary_table is treated as valid event.
+    */
     int collect_violation_event_time_interval_in_sec;
 
     /* The length of the time window in which only one representative record 

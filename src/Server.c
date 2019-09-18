@@ -421,6 +421,13 @@ ErrorCode get_server_config(ServerConfig *config,
               config->period_between_check_object_activity);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->period_between_check_violation_event = 
+        atoi(config_message);
+    zlog_info(category_debug,
+              "The period_between_check_violation_event is [%d]", 
+              config->period_between_check_violation_event);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
     common_config->number_worker_threads = atoi(config_message);
     zlog_info(category_debug,
               "Number of worker threads [%d]",
@@ -613,8 +620,7 @@ ErrorCode get_server_config(ServerConfig *config,
               config->is_enabled_collect_violation_event);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->collect_violation_event_time_interval_in_sec = 
-        atoi(config_message);
+    config->collect_violation_event_time_interval_in_sec = atoi(config_message);
     zlog_info(category_debug,
               "The collect_violation_event_time_interval_in_sec is [%d]", 
               config->collect_violation_event_time_interval_in_sec);
@@ -754,7 +760,7 @@ void *Server_collect_violation_event(){
         
         if(config.is_enabled_collect_violation_event){
             if(uptime - last_collect_violation_events_timestamp >=
-                config.collect_violation_event_time_interval_in_sec){
+                config.period_between_check_violation_event){
            
                 last_collect_violation_events_timestamp = uptime;
 
@@ -762,18 +768,22 @@ void *Server_collect_violation_event(){
                     SQL_collect_violation_events(
                         db,
                         MONITOR_GEO_FENCE,
-                        config.geofence_monitor_config.
-                        geo_fence_time_interval_in_sec,
+                        config.collect_violation_event_time_interval_in_sec,
                         config.granularity_for_continuous_violations_in_sec);
                 }
                 if(config.is_enabled_panic_button_monitor){
                     SQL_collect_violation_events(
                         db,
                         MONITOR_PANIC,
-                        config.panic_time_interval_in_sec,
+                        config.collect_violation_event_time_interval_in_sec,
                         config.granularity_for_continuous_violations_in_sec);
                 }
                 if(config.is_enabled_movement_monitor){
+                    SQL_collect_violation_events(
+                        db,
+                        MONITOR_MOVEMENT,
+                        config.collect_violation_event_time_interval_in_sec,
+                        config.granularity_for_continuous_violations_in_sec);
                 }
             }
         }

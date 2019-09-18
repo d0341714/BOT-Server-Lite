@@ -1581,16 +1581,13 @@ ErrorCode SQL_identify_last_movement_status(void *db,
 
     PGresult *res_activity = NULL;
     int rows_activity = 0;
-    int fields_activity = 0;
-
+   
     char *time_slot_activity = NULL;
 
     char *sql_update_activity_template = 
         "UPDATE object_summary_table " \
-        "SET last_activity_timestamp = %s " \
+        "SET movement_violation_timestamp = NOW()" \
         "WHERE mac_address = %s";
-
-    char *pqescape_time_slot_activity = NULL;
     
     ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
    
@@ -1666,46 +1663,34 @@ ErrorCode SQL_identify_last_movement_status(void *db,
             }
 
             rows_activity = PQntuples(res_activity);
-            fields_activity = PQnfields(res_activity);
- 
-            if(rows_activity > 0){
-                if(fields_activity == 3){
-
-                    time_slot_activity = PQgetvalue(res_activity, 0, 0);
-
-                    pqescape_mac_address = 
-                        PQescapeLiteral(conn, mac_address, 
-                                        strlen(mac_address));
-
-                    pqescape_time_slot_activity = 
-                        PQescapeLiteral(conn, time_slot_activity,
-                                        strlen(time_slot_activity));
+         
+            if(rows_activity == 0){
+                pqescape_mac_address = 
+                    PQescapeLiteral(conn, mac_address, 
+                                    strlen(mac_address));
                 
-                    memset(sql, 0, sizeof(sql));
+                memset(sql, 0, sizeof(sql));
                     
-                    sprintf(sql, sql_update_activity_template,  
-                            pqescape_time_slot_activity,
-                            pqescape_mac_address);
+                sprintf(sql, sql_update_activity_template,
+                        pqescape_mac_address);
                             
-                    SQL_execute(db, sql);
+                SQL_execute(db, sql);
 
-                    PQfreemem(pqescape_mac_address);
-                    PQfreemem(pqescape_time_slot_activity);
+                PQfreemem(pqescape_mac_address);
+               
+                if(WORK_SUCCESSFULLY != ret_val){
+                    PQclear(res_activity);   
+                    SQL_rollback_transaction(db);
+                    PQclear(res);
 
-                    if(WORK_SUCCESSFULLY != ret_val){
-                        PQclear(res_activity);   
-                        SQL_rollback_transaction(db);
-                        PQclear(res);
+                    zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                               ret_val, PQerrorMessage(conn));
 
-                        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                                   ret_val, PQerrorMessage(conn));
+                    return E_SQL_EXECUTE;
+                }     
+                PQclear(res_activity);
 
-                        return E_SQL_EXECUTE;
-                    }     
-                    PQclear(res_activity);
-
-                    continue;
-                }
+                continue;
             }
             PQclear(res_activity);
         }
@@ -1753,12 +1738,23 @@ ErrorCode SQL_collect_violation_events(
 
     char *geofence_violation_timestamp = "geofence_violation_timestamp";
     char *panic_violation_timestamp = "panic_timestamp";
+    char *movement_violation_timestamp = "movement_violation_timestamp";
     char *violation_timestamp_name = NULL;
 
-    if(MONITOR_GEO_FENCE == monitor_type){
-        violation_timestamp_name = geofence_violation_timestamp;
-    }else if(MONITOR_PANIC == monitor_type){
-        violation_timestamp_name = panic_violation_timestamp;
+    switch (monitor_type){
+        case MONITOR_GEO_FENCE:
+            violation_timestamp_name = geofence_violation_timestamp;
+            break;
+        case MONITOR_PANIC:
+            violation_timestamp_name = panic_violation_timestamp;
+            break;
+        case MONITOR_MOVEMENT:
+            violation_timestamp_name = movement_violation_timestamp;
+            break;
+        default:
+            zlog_error(category_debug, "Unknown monitor_type=[%d]", 
+                       monitor_type);
+            return E_INPUT_PARAMETER;
     }
 
     memset(sql, 0, sizeof(sql));
@@ -1771,9 +1767,6 @@ ErrorCode SQL_collect_violation_events(
             monitor_type,
             violation_timestamp_name,
             granularity_for_continuous_violations_in_sec);
-
-    zlog_debug(category_debug, "SQL_collect_violation_events [%d] %s", 
-                               monitor_type, sql);
 
     SQL_begin_transaction(db);
     SQL_execute(db, sql);

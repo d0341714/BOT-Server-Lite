@@ -509,8 +509,8 @@ ErrorCode SQL_identify_last_movement_status(void *db,
 
      monitor_type - the monitor type of the violations to be collected
 
-     time_interval_in_sec - the time window in which an object is monitored 
-                            for violations
+     time_interval_in_sec - the time window in which a violation is treated as 
+                            valid event
 
      granularity_for_continuous_violations_in_sec - 
           the length of the time window in which only one violation event is 
