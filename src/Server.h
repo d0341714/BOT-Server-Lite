@@ -174,10 +174,6 @@ typedef struct {
        tracked object data from LBeacons */
     int period_between_RFTOD;
     
-    /* The time interval in seconds between consecutive checks by the Server
-       for object location information */
-    int period_between_check_object_location;
-
     /* The time interval in seconds between consecutive checks by the Server 
        for object activity information */
     int period_between_check_object_activity;

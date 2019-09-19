@@ -436,12 +436,6 @@ ErrorCode get_server_config(ServerConfig *config,
               config->period_between_RFTOD);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->period_between_check_object_location = atoi(config_message);
-    zlog_info(category_debug,
-              "period_between_check_object_location [%d]",
-              config->period_between_check_object_location);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
     config->period_between_check_object_activity = atoi(config_message);
     zlog_info(category_debug,
               "period_between_check_object_activity [%d]",
@@ -733,32 +727,28 @@ void *Server_summarize_location_information(){
     
         uptime = get_clock_time();
         
-        if(uptime - last_sync_location_timestamp >=
-            config.period_between_check_object_location){
            
-            last_sync_location_timestamp = uptime;
+        
+        /* Compute each object's location within time interval:
+           1. Compute each object's lbeacon_uuid that has strongest rssi 
+              of this object
+           2. Compute the stay of length time of this object under this 
+              lbeacon_uuid
+        */
+        SQL_summarize_object_location(db,
+                                      config.location_time_interval_in_sec);
 
-            /* Compute each object's location within time interval:
-               1. Compute each object's lbeacon_uuid that has strongest rssi 
-                  of this object
-               2. Compute the stay of length time of this object under this 
-                  lbeacon_uuid
-            */
-            SQL_summarize_object_location(db,
-                                          config.location_time_interval_in_sec);
+        if(config.is_enabled_panic_button_monitor){
+            // Check each object's panic_button status within time interval
+            SQL_identify_panic(db, 
+                               config.panic_time_interval_in_sec);
+        }
 
-            if(config.is_enabled_panic_button_monitor){
-                // Check each object's panic_button status within time interval
-                SQL_identify_panic(db, 
-                                   config.panic_time_interval_in_sec);
-            }
-
-            if(config.is_enabled_geofence_monitor){
-                // Check each object's geo-fence status within time interval
-                SQL_identify_geo_fence(db, 
-                                       config.geofence_monitor_config.
-                                       geo_fence_time_interval_in_sec);
-            }
+        if(config.is_enabled_geofence_monitor){
+            // Check each object's geo-fence status within time interval
+            SQL_identify_geo_fence(db, 
+                                   config.geofence_monitor_config.
+                                   geo_fence_time_interval_in_sec);
         }
 
         if(config.is_enabled_movement_monitor){
@@ -775,7 +765,7 @@ void *Server_summarize_location_information(){
             }
         }
 
-        sleep_t(NORMAL_WAITING_TIME_IN_MS);
+        sleep_t(BUSY_WAITING_TIME_IN_MS);
     }
 
     SQL_close_database_connection(db);
