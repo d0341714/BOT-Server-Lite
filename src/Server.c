@@ -122,6 +122,13 @@ int main(int argc, char **argv)
         return E_MALLOC;
     }
 
+    /* Initialize the memory pool for geo-fence structs */
+    if(mp_init( &notification_mempool, sizeof(NotificationListNode), SLOTS_IN_MEM_POOL)
+       != MEMORY_POOL_SUCCESS)
+    {
+        return E_MALLOC;
+    }
+
     zlog_info(category_debug,"Mempool Initialized");
 
     /* Create the config from input serverconfig file */
@@ -375,6 +382,8 @@ int main(int argc, char **argv)
 
     mp_destroy(&geofence_mempool);
 
+    mp_destroy(&notification_mempool);
+
     return WORK_SUCCESSFULLY;
 }
 
@@ -386,6 +395,7 @@ ErrorCode get_server_config(ServerConfig *config,
     FILE *file = fopen(file_name, "r");
     char config_message[CONFIG_BUFFER_SIZE];
     int number_geofence_settings = 0;
+    int number_notification_settings = 0;
     int i = 0;
 
     List_Entry *current_list_entry = NULL;
@@ -548,7 +558,7 @@ ErrorCode get_server_config(ServerConfig *config,
               config->geofence_monitor_config.
               geo_fence_time_interval_in_sec);
 
-        zlog_info(category_debug, "Initialize geo-fence list");
+    zlog_info(category_debug, "Initialize geo-fence list");
 
     /* Initialize geo-fence list head to store all the geo-fence settings */
     init_entry( &(config->geo_fence_list_head));
@@ -642,6 +652,31 @@ ErrorCode get_server_config(ServerConfig *config,
               "The granularity_for_continuous_violations_in_sec " \
               "is [%d]", 
               config->granularity_for_continuous_violations_in_sec);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->is_enabled_send_notification_alarm = atoi(config_message);
+    zlog_info(category_debug,
+              "The is_enabled_send_notification_alarm is [%d]", 
+              config->is_enabled_send_notification_alarm);
+
+    zlog_info(category_debug, "Initialize notification list");
+
+    /* Initialize notification list head to store all the notification 
+       settings */
+    init_entry( &(config->notification_list_head));
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    number_notification_settings = atoi(config_message);
+
+    for(i = 0; i < number_notification_settings ; i++){
+          
+        fetch_next_string(file, config_message, sizeof(config_message)); 
+        add_notification_settings(&(config->notification_list_head), 
+                                  config_message);
+    }
+       
+    zlog_info(category_debug, "notification list initialized");
+
 
     fclose(file);
 
@@ -813,9 +848,16 @@ void *Server_send_notification(){
         SQL_get_and_update_violation_events(db, violation_info, 
                                             sizeof(violation_info));
 
-        // send notification here
-        zlog_debug(category_debug, "send notification for [%s]", 
-                   violation_info);
+        if(config.is_enabled_send_notification_alarm){
+            /* The notification alarm is sent out to all BOT agents currently.
+               If needed, we can extend notification feature to support 
+               granularity. */
+            if(strlen(violation_info) > 0){
+                zlog_debug(category_debug, "send notification for [%s]", 
+                           violation_info);
+                send_notification_alarm_to_gateway();            
+            }
+        }
 
         sleep_t(BUSY_WAITING_TIME_IN_MS);
     }
@@ -823,6 +865,36 @@ void *Server_send_notification(){
     SQL_close_database_connection(db);
 
     return (void *)NULL;
+}
+
+void send_notification_alarm_to_gateway(){
+
+    List_Entry * current_list_entry = NULL;
+    NotificationListNode *current_list_ptr = NULL;
+    char command_msg[WIFI_MESSAGE_LENGTH];
+
+    list_for_each(current_list_entry, &(config.notification_list_head)){
+
+        current_list_ptr = ListEntry(current_list_entry,
+                                     NotificationListNode,
+                                     notification_list_entry);
+
+        memset(command_msg, 0, sizeof(command_msg));
+
+        sprintf(command_msg, "%d;%d;%s;%d;%d;%s;", 
+                from_server, 
+                send_notification_alarm, 
+                BOT_SERVER_API_VERSION_LATEST,
+                current_list_ptr->alarm_type,
+                current_list_ptr->alarm_duration_in_sec,
+                current_list_ptr->agents_list);
+
+        udp_addpkt(&udp_config,
+                   current_list_ptr->gateway_ip,
+                   config.send_port,
+                   command_msg,
+                   strlen(command_msg));
+    }
 }
 
 void *Server_NSI_routine(void *_buffer_node)
@@ -1361,8 +1433,8 @@ void *Server_process_wifi_receive()
 
 
 ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head, 
-                                char *buf)
-{
+                                char *buf){
+
     char *current_ptr = NULL;
     char *save_ptr = NULL;
 
@@ -1382,6 +1454,7 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
 
     int i = 0;
     char *temp_value = NULL;
+
 
     memset(perimeters_config, 0, sizeof(perimeters_config));
     memset(fences_config, 0, sizeof(fences_config));
@@ -1503,6 +1576,67 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
     return WORK_SUCCESSFULLY;
 }
 
+ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
+                                    char *buf){
+
+    char *current_ptr = NULL;
+    char *save_ptr = NULL;
+
+    char *alarm_type = NULL;
+    char *alarm_duration = NULL;
+    char *gateway_ip = NULL;
+    char *agents_list = NULL;
+
+    NotificationListNode *new_node = NULL;
+
+    int i;
+    char *temp_value = NULL;
+
+
+    zlog_info(category_debug, ">> add_notification_settings");
+    zlog_info(category_debug, "Notification data=[%s]", buf);
+
+    alarm_type = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
+
+    alarm_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+
+    gateway_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+
+    agents_list = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+
+    zlog_info(category_debug, 
+              "alarm_type=[%s], gateway_ip=[%s], agents_list=[%s]", 
+              alarm_type, gateway_ip, agents_list);
+
+    new_node = mp_alloc( &notification_mempool);
+           
+    if(NULL == new_node){
+        zlog_error(category_health_report,
+                   "[add_notification_settings] mp_alloc failed, " \
+                   "abort this data");
+
+        return E_MALLOC;
+    }
+
+    memset(new_node, 0, sizeof(NotificationListNode));
+
+    init_entry(&new_node -> notification_list_entry);
+                    
+    new_node->alarm_type = (AlarmType)atoi(alarm_type);
+
+    new_node->alarm_duration_in_sec = atoi(alarm_duration);
+    
+    strcpy(new_node->gateway_ip, gateway_ip);
+
+    strcpy(new_node->agents_list, agents_list);
+    
+    insert_list_tail( &new_node -> notification_list_entry,
+                      notification_list_head);
+ 
+    zlog_info(category_debug, "<<add_notification_settings");
+
+    return WORK_SUCCESSFULLY;
+}
 
 ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
 {

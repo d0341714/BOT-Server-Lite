@@ -137,6 +137,22 @@ typedef struct {
 
 } MovementMonitorConfig;
 
+typedef struct {
+
+   AlarmType alarm_type;
+
+   int alarm_duration_in_sec;
+
+   char gateway_ip[NETWORK_ADDR_LENGTH];
+
+   char agents_list[CONFIG_BUFFER_SIZE];
+   
+   /* The list entry for inserting the notification entry into the notification 
+      list */
+   List_Entry notification_list_entry;
+
+} NotificationListNode;
+
 /* The configuration file structure */
 typedef struct {
 
@@ -202,11 +218,16 @@ typedef struct {
     /* The flag of enable geo-fence monitor */
     int is_enabled_geofence_monitor;
 
+    /* The specific setting for checking geofence rules */
     GeoFenceMonitorConfig geofence_monitor_config;
+
+    /* The list head of the geo gence list */
+    struct List_Entry geo_fence_list_head;
 
     /* The flag of enable movement monitor */
     int is_enabled_movement_monitor;
 
+    /* The specific settings for checking movement rules */
     MovementMonitorConfig movement_monitor_config;
         
     /* The flag of enable collect violation event */
@@ -221,8 +242,11 @@ typedef struct {
        of continuous same violations is inserted into notification_table. */
     int granularity_for_continuous_violations_in_sec;
 
-    /* The list head of the geo gence list */
-    struct List_Entry geo_fence_list_head;
+    /* The flag of enable sending notification alarms */
+    int is_enabled_send_notification_alarm;
+
+    /* The list head of the notification list */
+    struct List_Entry notification_list_head;
 
 } ServerConfig;
 
@@ -235,6 +259,9 @@ char database_argument[SQL_TEMP_BUFFER_LENGTH];
 
 /* The mempool for the GeoFence node structure to allocate memory */
 Memory_Pool geofence_mempool;
+
+/* The mempool for the Notification node structure to allocate memory */
+Memory_Pool notification_mempool;
 
 /* An array of address maps */
 AddressMapArray Gateway_address_map;
@@ -505,16 +532,36 @@ void *Server_collect_violation_event();
  */
 void *Server_send_notification(); 
 
+
+/*
+  send_notification_alarm_to_gateway:
+
+     This function is executed when a notification alarm needs to be sent 
+     to Gateways. When called, this function sends notification alarms to the
+     gateways specified in notification settings, and gateway will propagate 
+     the notification alarm requests to all agents.
+
+  Parameters:
+
+  Return value:
+
+     None
+
+ */
+void send_notification_alarm_to_gateway();
+
 /*
   add_geo_fence_settings:
 
-     This function parses the configuraion of a geo-fence and stores the 
-     resultant geo-fence setting struct in the geo-fence setting buffer list.
+     This function parses the configuraion of a geo-fence setting and stores 
+     the resultant geo-fence setting struct in the geo-fence setting buffer 
+     list.
 
   Parameters:
 
      geo_fence_list_head - The pointer to the head of the geo-fence setting 
                            buffer list head.
+
      buf - The pointer to the buffer containing the configuraion of a 
            geo-fence.
 
@@ -526,6 +573,28 @@ void *Server_send_notification();
 ErrorCode add_geo_fence_settings(struct List_Entry * geo_fence_list_head,
                                 char *buf);
 
+/*
+  add_notification_settings:
+
+     This function parses the configuraion of a notification setting and stores 
+     the resultant notification setting struct in the notification setting 
+     buffer list.
+
+  Parameters:
+
+     notification_list_head - The pointer to the head of the notification 
+                              setting buffer list head.
+
+     buf - The pointer to the buffer containing the configuraion of a 
+           notification.
+
+  Return value:
+
+     ErrorCode
+
+ */
+ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
+                                    char *buf);
 
 /*
   check_geo_fence_violations:

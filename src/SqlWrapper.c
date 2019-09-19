@@ -1833,10 +1833,10 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
         for(i = 0 ; i < total_rows ; i++){
             memset(one_record, 0, sizeof(one_record));
             sprintf(one_record, "%s,%s,%s,%s,%s;", PQgetvalue(res, i, 0),
-                                                  PQgetvalue(res, i, 1),
-                                                  PQgetvalue(res, i, 2),
-                                                  PQgetvalue(res, i, 3),
-                                                  PQgetvalue(res, i, 4));
+                                                   PQgetvalue(res, i, 1),
+                                                   PQgetvalue(res, i, 2),
+                                                   PQgetvalue(res, i, 3),
+                                                   PQgetvalue(res, i, 4));
             
             if(buf_len > strlen(buf) + strlen(one_record)){
                 strcat(buf, one_record);
