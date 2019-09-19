@@ -1132,11 +1132,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     answer = is_in_Address_Map(address_map, address, 0);
     if(answer >=0)
     {
-        memset(address_map ->address_map_list[answer].net_address, 0, 
-               NETWORK_ADDR_LENGTH);
-        strncpy(address_map -> address_map_list[answer].net_address,
-                address, strlen(address));
-
+		/* Need to update last request time for each Gateway */
         address_map -> address_map_list[answer].last_request_time =
             get_system_time();
 

@@ -271,7 +271,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\inc\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\json-c\inc\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\zlog\head\&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\import\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\inc\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\json-c\inc\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\zlog\head\&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -332,19 +332,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\..\src\BeDIS.c"
+				RelativePath="..\..\..\import\BeDIS.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\LinkedList.c"
+				RelativePath="..\..\..\import\LinkedList.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\Mempool.c"
+				RelativePath="..\..\..\import\Mempool.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\pkt_Queue.c"
+				RelativePath="..\..\..\import\pkt_Queue.c"
 				>
 			</File>
 			<File
@@ -356,11 +356,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\thpool.c"
+				RelativePath="..\..\..\import\thpool.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\UDP_API.c"
+				RelativePath="..\..\..\import\UDP_API.c"
 				>
 			</File>
 		</Filter>
@@ -370,19 +370,19 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\..\src\BeDIS.h"
+				RelativePath="..\..\..\import\BeDIS.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\LinkedList.h"
+				RelativePath="..\..\..\import\LinkedList.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\Mempool.h"
+				RelativePath="..\..\..\import\Mempool.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\pkt_Queue.h"
+				RelativePath="..\..\..\import\pkt_Queue.h"
 				>
 			</File>
 			<File
@@ -398,11 +398,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\thpool.h"
+				RelativePath="..\..\..\import\thpool.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\UDP_API.h"
+				RelativePath="..\..\..\import\UDP_API.h"
 				>
 			</File>
 		</Filter>
