@@ -151,12 +151,6 @@ int main(int argc, char **argv)
     init_buffer( &priority_list_head, (void *) sort_priority_list,
                 common_config.high_priority);
 
-    init_buffer( &Geo_fence_alert_buffer_list_head,
-                (void *) process_GeoFence_alert_routine, 
-                common_config.time_critical_priority);
-    insert_list_tail( &Geo_fence_alert_buffer_list_head.priority_list_entry,
-                      &priority_list_head.priority_list_entry);
-
     init_buffer( &Geo_fence_receive_buffer_list_head,
                 (void *) process_tracked_data_from_geofence_gateway, 
                 common_config.time_critical_priority);
@@ -544,14 +538,6 @@ ErrorCode get_server_config(ServerConfig *config,
               "The is_enabled_geofence_monitor is [%d]", 
               config->is_enabled_geofence_monitor);
 
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->geofence_monitor_config.geo_fence_time_interval_in_sec = 
-        atoi(config_message);
-    zlog_info(category_debug,
-              "The geo_fence_time_interval_in_sec is [%d]", 
-              config->geofence_monitor_config.
-              geo_fence_time_interval_in_sec);
-
     zlog_info(category_debug, "Initialize geo-fence list");
 
     /* Initialize geo-fence list head to store all the geo-fence settings */
@@ -727,8 +713,6 @@ void *Server_summarize_location_information(){
     
         uptime = get_clock_time();
         
-           
-        
         /* Compute each object's location within time interval:
            1. Compute each object's lbeacon_uuid that has strongest rssi 
               of this object
@@ -742,13 +726,6 @@ void *Server_summarize_location_information(){
             // Check each object's panic_button status within time interval
             SQL_identify_panic(db, 
                                config.panic_time_interval_in_sec);
-        }
-
-        if(config.is_enabled_geofence_monitor){
-            // Check each object's geo-fence status within time interval
-            SQL_identify_geo_fence(db, 
-                                   config.geofence_monitor_config.
-                                   geo_fence_time_interval_in_sec);
         }
 
         if(config.is_enabled_movement_monitor){
@@ -1051,7 +1028,9 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 
     if(current_node -> pkt_type == time_critical_tracked_object_data){
         
-        check_geo_fence_violations(current_node);
+		if(config.is_enabled_geofence_monitor){
+            check_geo_fence_violations(current_node);
+		}
 
         // Server should support backward compatibility.
         if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
@@ -1073,33 +1052,6 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 
     return (void *)NULL;
 }
-
-
-void *process_GeoFence_alert_routine(void *_buffer_node)
-{
-    BufferNode *current_node = (BufferNode *)_buffer_node;
-  
-    void *db = NULL;
-
-    if(WORK_SUCCESSFULLY != 
-       SQL_open_database_connection(database_argument, &db)){
-
-        zlog_error(category_debug, 
-                  "cannot open database"); 
-        return (void *)NULL;
-    }
-
-    SQL_insert_geo_fence_alert(db, current_node -> content, 
-                               current_node -> content_size);
-
-    SQL_close_database_connection(db);
-    
-    mp_free( &node_mempool, current_node);
-
-    return (void *)NULL;
-}
-
-
 
 bool Gateway_join_request(AddressMapArray *address_map, char *address)
 {
@@ -1867,14 +1819,30 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                               "mac_address=[%s]", 
                               lbeacon_uuid, mac_address);
 
+					if(WORK_SUCCESSFULLY != 
+                        SQL_open_database_connection(database_argument, &db)){
 
-                    insert_into_geo_fence_alert_list(
+                        zlog_error(category_debug, 
+                                   "cannot open database"); 
+                        continue;
+                    }
+
+                    
+					SQL_insert_geofence_violation_event(
+						db,
+	                    mac_address,
+						lbeacon_uuid,
+                        config.granularity_for_continuous_violations_in_sec);
+
+					SQL_identify_geofence(
+                        db,
                         mac_address,
-                        current_list_ptr->name, 
-                        GEO_FENCE_ALERT_TYPE_FENCE,
+						current_list_ptr->name, 
+						GEO_FENCE_ALERT_TYPE_FENCE,
                         lbeacon_uuid,
-                        final_timestamp,
-                        rssi);
+						detected_rssi);
+
+					SQL_close_database_connection(db);
 
                 }else if(is_perimeter_lbeacon && 
                          detected_rssi > 
@@ -1885,15 +1853,29 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                               "mac_address=[%s]", 
                               lbeacon_uuid, mac_address);
 
+					if(WORK_SUCCESSFULLY != 
+                        SQL_open_database_connection(database_argument, &db)){
 
-                    insert_into_geo_fence_alert_list(
+                        zlog_error(category_debug, 
+                                   "cannot open database"); 
+                        continue;
+                    }
+
+					SQL_insert_geofence_violation_event(
+						db,
+	                    mac_address,
+						lbeacon_uuid,
+                        config.granularity_for_continuous_violations_in_sec);
+
+					SQL_identify_geofence(
+                        db,
                         mac_address,
-                        current_list_ptr->name, 
-                        GEO_FENCE_ALERT_TYPE_PERIMETER,
+						current_list_ptr->name, 
+						GEO_FENCE_ALERT_TYPE_PERIMETER,
                         lbeacon_uuid,
-                        final_timestamp,
-                        rssi);
+						detected_rssi);
 
+					SQL_close_database_connection(db);
                 }
             }
         }
@@ -1906,52 +1888,5 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode insert_into_geo_fence_alert_list(char *mac_address, 
-                                           char *fence_name,
-                                           char *fence_type, 
-                                           char *lbeacon_uuid, 
-                                           char *final_timestamp, 
-                                           char *rssi){
-        BufferNode *new_node = NULL;
-
-
-        zlog_info(category_debug, ">> insert_into_geo_fence_alert_list");
-
-
-        new_node = mp_alloc( &node_mempool);
-        if(NULL == new_node){
-            zlog_info(category_debug,
-                      "[insert_into_geo_fence_alert_list] mp_alloc failed, abort "\
-                      "this data");
-            return E_MALLOC;
-        }
-
-        memset(new_node, 0, sizeof(BufferNode));
-
-        init_entry( &new_node -> buffer_entry);
-
-        sprintf(new_node -> content, "%d;%s;%s;%s;%s;%s;%s;", 1, 
-                                                           mac_address, 
-                                                           fence_name,
-                                                           fence_type, 
-                                                           lbeacon_uuid, 
-                                                           final_timestamp, 
-                                                           rssi);
-
-        new_node -> content_size = strlen(new_node -> content);
-        
-        pthread_mutex_lock(&Geo_fence_alert_buffer_list_head.list_lock);
-
-        insert_list_tail( &new_node -> buffer_entry,
-                          &Geo_fence_alert_buffer_list_head.list_head);
-
-        pthread_mutex_unlock(&Geo_fence_alert_buffer_list_head.list_lock); 
-
-
-        zlog_info(category_debug, "<< insert_into_geo_fence_alert_list");
-
-
-        return WORK_SUCCESSFULLY;
- }
 
 

@@ -369,31 +369,6 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                                                                char *buf,
                                                                size_t buf_len);
 
-
-/*
-  SQL_insert_geo_fence_alert
-
-     This function insert received geo fence alert into geo_fence_alert table.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     buf - pointer to an array to receive the returned geo fence information.
-           The returned message format is below.
-
-            number_of_geo_fence_alert;mac_address1;type1;uuid1;alert_time1;
-            rssi1;mac_address2;type2;uuid2;alert_time2;rssi2;
-
-     buf_len - Length in number of bytes of buf
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len);
-
 /*
   SQL_summarize_object_location
 
@@ -418,6 +393,41 @@ ErrorCode SQL_insert_geo_fence_alert(void *db, char *buf, size_t buf_len);
 */
 ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec);
 
+
+/*
+  SQL_identify_geofence
+
+     This function updates geofence violation information into 
+	 object_summary_table.
+	 
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     mac_address -  MAC address of detected object.
+
+     geofence_name - name of geo-fence rule
+
+     geofence_type - type of geo-fence. The possible values being perimeter or 
+                     fence.
+
+	 geofence_uuid - UUID of the LBeacon scanned the detected object.
+
+	 detected_rssi - rssi signal fo the detected object
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_identify_geofence(
+	void *db,
+	char *mac_address,
+	char *geofence_name,
+	char *geofence_type,
+	char *geofence_uuid,
+	int detected_rssi);
+
 /*
   SQL_identify_panic
 
@@ -440,27 +450,6 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec);
                  is WORK_SUCCESSFULLY.
 */
 ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec);
-
-/*
-  SQL_identify_geo_fence
-
-     This function queries geo_fence_alert table within time window to find 
-     out whether the object violated geo-fence in the past time interval. 
-     The geo-fence status is updated to the summary table object_summary_table.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     time_interval_in_sec - the time window in which we treat this object 
-                            as shown, visiable, and geofence violation.
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-ErrorCode SQL_identify_geo_fence(void *db, int time_interval_in_sec);
 
 
 /*
@@ -495,6 +484,38 @@ ErrorCode SQL_identify_last_movement_status(void *db,
                                             int time_interval_in_min, 
                                             int each_time_slot_in_min,
                                             unsigned int rssi_delta);
+
+
+/*
+  SQL_insert_geofence_violation_event
+
+     This function inserts geofence violation event into notification_table 
+	 directly, because geofence violation is time-critical.
+	 
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     mac_address -  MAC address of detected object.
+
+	 geofence_uuid - UUID of the LBeacon scanned the detected object.
+
+	 granularity_for_continuous_violations_in_sec - 
+          the length of the time window in which only one violation event is 
+          inserted into notification_table when there are continuous 
+          violations.
+          
+ 
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_insert_geofence_violation_event(
+	void *db,
+	char *mac_address,
+	char *geofence_uuid,
+	int granularity_for_continuous_violations_in_sec);
 
 /*
   SQL_collect_violation_events
