@@ -51,16 +51,10 @@ int main(int argc, char **argv)
 {
     int return_value;
 
-    /* The type of the packet sent by the server */
-    int send_pkt_type;
-
     /* The command message to be sent */
     char command_msg[WIFI_MESSAGE_LENGTH];
 
     int uptime;
-
-    /* Number of character bytes in the packet content */
-    int content_size;
 
     /* The main thread of the communication Unit */
     pthread_t CommUnit_thread;
@@ -79,10 +73,6 @@ int main(int argc, char **argv)
 
     /* The thread to listen for messages from Wi-Fi interface */
     pthread_t wifi_listener_thread;
-
-    BufferNode *current_node;
-
-    char content[WIFI_MESSAGE_LENGTH];
 
     /* Initialize flags */
     NSI_initialization_complete      = false;
@@ -213,7 +203,8 @@ int main(int argc, char **argv)
         initialization_failed = true;
         return E_WIFI_INIT_FAIL;
     }
-   zlog_info(category_debug,"Sockets initialized");
+
+    zlog_info(category_debug,"Sockets initialized");
 
     NSI_initialization_complete = true;
 
@@ -332,7 +323,7 @@ int main(int argc, char **argv)
             zlog_info(category_debug,"Send Request for Tracked Object Data");
 
             /* Broadcast poll messenge to gateways */
-            Broadcast_to_gateway(&Gateway_address_map, command_msg,
+            broadcast_to_gateway(&Gateway_address_map, command_msg,
                                  WIFI_MESSAGE_LENGTH);
 
             /* Update the last_polling_object_tracking_time */
@@ -357,7 +348,7 @@ int main(int argc, char **argv)
             zlog_info(category_debug,"Send Request for Health Report");
 
             /* broadcast to gateways */
-            Broadcast_to_gateway(&Gateway_address_map, command_msg,
+            broadcast_to_gateway(&Gateway_address_map, command_msg,
                                  WIFI_MESSAGE_LENGTH);
 
             /* Update the last_polling_LBeacon_for_HR_time */
@@ -713,12 +704,6 @@ void *Server_summarize_location_information(){
     
         uptime = get_clock_time();
         
-        /* Compute each object's location within time interval:
-           1. Compute each object's lbeacon_uuid that has strongest rssi 
-              of this object
-           2. Compute the stay of length time of this object under this 
-              lbeacon_uuid
-        */
         SQL_summarize_object_location(db,
                                       config.location_time_interval_in_sec);
 
@@ -1120,7 +1105,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
 }
 
 
-void Broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size)
+void broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size)
 {
     /* The counter for for-loop*/
     int current_index;
@@ -1591,28 +1576,14 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
     GeoFenceListNode *current_list_ptr = NULL;
 
     char *lbeacon_uuid = NULL;
-    char *lbeacon_datetime = NULL;
-    char *lbeacon_ip = NULL;
-    char *object_type = NULL;
-    char *string_number_objects = NULL;
-    char *mac_address = NULL;
-    char *initial_timestamp = NULL;
-    char *final_timestamp = NULL;
-    char *rssi = NULL;
-    char *panic_button = NULL;
-    char *battery_voltage = NULL;
-
+    
     int i = 0;
-    int number_types = 0;
-    int number_objects = 0;
-    int detected_rssi = 0;
 
     bool is_perimeter_lbeacon = false;
     bool is_fence_lbeacon = false;
 
     void *db = NULL;
-    ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
-
+    
     int is_rule_enabled = 0;
     int rule_hour_start = 0;
     int rule_hour_end = 0;
@@ -1629,7 +1600,6 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
 
     zlog_info(category_debug, ">>check_geo_fence_violations");
 
-    
     // get current hour
     ts = *localtime(&current_time);
     strftime(string_hour, sizeof(string_hour), "%H", &ts);
@@ -1648,6 +1618,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                                      GeoFenceListNode,
                                      geo_fence_list_entry);
 
+        /* check if geo-fence rule is turn-on */
         if(WORK_SUCCESSFULLY != 
            SQL_open_database_connection(database_argument, &db)){
 
@@ -1671,6 +1642,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
             continue;
         }
 
+		/* check if geo-fence is valid at current time */
         if(rule_hour_start < rule_hour_end){
             if(current_hour < rule_hour_start || 
                 rule_hour_end < current_hour){
@@ -1728,157 +1700,19 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
             continue;
         }
         
-        memset(content_temp, 0, WIFI_MESSAGE_LENGTH);
+		// start to examine object status
+        memset(content_temp, 0, sizeof(content_temp));
         memcpy(content_temp, 
                buffer_node -> content, 
                buffer_node -> content_size);
 
-        lbeacon_uuid = strtok_save(content_temp, 
-                                   DELIMITER_SEMICOLON, 
-                                   &save_ptr);
-
-        lbeacon_datetime = strtok_save(NULL, 
-                                       DELIMITER_SEMICOLON, 
-                                       &save_ptr);
-
-        lbeacon_ip = strtok_save(NULL, 
-                                 DELIMITER_SEMICOLON, 
-                                 &save_ptr);
-
-        // We set number_types as 2, because we need to parse BLE and 
-        // BR_EDR types
-        number_types = 2;
-        while(number_types --){
-            object_type = strtok_save(NULL, 
-                                      DELIMITER_SEMICOLON, 
-                                      &save_ptr);
-        
-            string_number_objects = strtok_save(NULL, 
-                                            DELIMITER_SEMICOLON, 
-                                            &save_ptr);
-            number_objects = atoi(string_number_objects);
-
-            while(number_objects--){
-                mac_address = strtok_save(NULL, 
-                                          DELIMITER_SEMICOLON, 
-                                          &save_ptr);
-
-                initial_timestamp = strtok_save(NULL, 
-                                                DELIMITER_SEMICOLON, 
-                                                &save_ptr);
-
-                final_timestamp = strtok_save(NULL, 
-                                              DELIMITER_SEMICOLON, 
-                                              &save_ptr);
-
-                rssi = strtok_save(NULL, 
-                                   DELIMITER_SEMICOLON, 
-                                   &save_ptr);
-
-                panic_button = strtok_save(NULL, 
-                                           DELIMITER_SEMICOLON, 
-                                           &save_ptr);
-
-                if(atof(BOT_SERVER_API_VERSION_20) == buffer_node->API_version){
-                    /* We do not have additional fields in 
-                       BOT_SERVER_API_VERSION_20, the all fields are already 
-                       listed above */
-                       
-                }else{
-                    battery_voltage = strtok_save(NULL, 
-                                                  DELIMITER_SEMICOLON, 
-                                                  &save_ptr);
-                }
-       
-                detected_rssi = atoi(rssi);
-                
-                if(WORK_SUCCESSFULLY != 
-                    SQL_open_database_connection(database_argument, &db)){
-
-                    zlog_error(category_debug, 
-                               "cannot open database"); 
-                    continue;
-                }
-
-                SQL_get_object_monitor_type(db, mac_address, &object_monitor_type);
-
-                SQL_close_database_connection(db);
-                
-                if(MONITOR_GEO_FENCE != 
-                   (MONITOR_GEO_FENCE & 
-                    (ObjectMonitorType)object_monitor_type)){
-                    continue;
-                }
-
-                if(is_fence_lbeacon && 
-                   detected_rssi > 
-                   current_list_ptr->rssi_of_fences){
-
-                    zlog_info(category_debug, 
-                              "[GeoFence-Fence]: LBeacon UUID=[%s] "\
-                              "mac_address=[%s]", 
-                              lbeacon_uuid, mac_address);
-
-					if(WORK_SUCCESSFULLY != 
-                        SQL_open_database_connection(database_argument, &db)){
-
-                        zlog_error(category_debug, 
-                                   "cannot open database"); 
-                        continue;
-                    }
-
-                    
-					SQL_insert_geofence_violation_event(
-						db,
-	                    mac_address,
-						lbeacon_uuid,
-                        config.granularity_for_continuous_violations_in_sec);
-
-					SQL_identify_geofence(
-                        db,
-                        mac_address,
-						current_list_ptr->name, 
-						GEO_FENCE_ALERT_TYPE_FENCE,
-                        lbeacon_uuid,
-						detected_rssi);
-
-					SQL_close_database_connection(db);
-
-                }else if(is_perimeter_lbeacon && 
-                         detected_rssi > 
-                         current_list_ptr->rssi_of_perimeters){
-
-                    zlog_info(category_debug, 
-                              "[GeoFence-Perimeter]: LBeacon UUID=[%s]" \
-                              "mac_address=[%s]", 
-                              lbeacon_uuid, mac_address);
-
-					if(WORK_SUCCESSFULLY != 
-                        SQL_open_database_connection(database_argument, &db)){
-
-                        zlog_error(category_debug, 
-                                   "cannot open database"); 
-                        continue;
-                    }
-
-					SQL_insert_geofence_violation_event(
-						db,
-	                    mac_address,
-						lbeacon_uuid,
-                        config.granularity_for_continuous_violations_in_sec);
-
-					SQL_identify_geofence(
-                        db,
-                        mac_address,
-						current_list_ptr->name, 
-						GEO_FENCE_ALERT_TYPE_PERIMETER,
-                        lbeacon_uuid,
-						detected_rssi);
-
-					SQL_close_database_connection(db);
-                }
-            }
-        }
+        examine_tracked_objects_status(buffer_node->API_version,
+                                       content_temp, 
+                                       current_list_ptr->name,
+                                       is_fence_lbeacon,
+                                       current_list_ptr->rssi_of_fences,
+                                       is_perimeter_lbeacon, 
+                                       current_list_ptr->rssi_of_perimeters);      
     }
 
 
@@ -1889,4 +1723,162 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
 }
 
 
+
+ErrorCode examine_tracked_objects_status(float api_version,
+                                         char *buf,
+                                         char *geofence_name,
+                                         bool is_fence_lbeacon,
+                                         int fence_rssi,
+                                         bool is_perimeter_lbeacon,
+                                         int perimeter_rssi)
+{
+    /* The format of the tracked object data:
+        lbeacon_uuid;lbeacon_datetime,lbeacon_ip;object_type;object_number;
+        object_mac_address_1;initial_timestamp_GMT_1;final_timestamp_GMT_1;
+        rssi_1;panic_button_1;object_type;object_number;object_mac_address_2;
+        initial_timestamp_GMT_2;final_timestamp_GMT_2;rssi_2;panic_button_2;
+     */
+
+    char *save_ptr = NULL;
+    char *lbeacon_uuid = NULL;
+    char *lbeacon_datetime = NULL;
+    char *lbeacon_ip = NULL;
+    /* We set number_types as 2, because we need to parse BLE and 
+       BR_EDR types */
+    int number_types = 2;
+    char *object_type = NULL;
+    char *string_number_objects = NULL;
+    int number_objects = 0;
+    char *mac_address = NULL;
+    char *initial_timestamp = NULL;
+    char *final_timestamp = NULL;
+    char *rssi = NULL;
+    int detected_rssi = 0;
+    char *panic_button = NULL;
+    char *battery_voltage = NULL;
+    void *db = NULL;
+    ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
+
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+ 
+        zlog_error(category_debug, 
+                   "cannot open database"); 
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    lbeacon_uuid = strtok_save(buf, 
+                               DELIMITER_SEMICOLON, 
+                               &save_ptr);
+    lbeacon_datetime = strtok_save(NULL, 
+                                   DELIMITER_SEMICOLON, 
+                                   &save_ptr);
+
+    lbeacon_ip = strtok_save(NULL, 
+                             DELIMITER_SEMICOLON, 
+                             &save_ptr);
+
+    while(number_types --){
+        object_type = strtok_save(NULL, 
+                                  DELIMITER_SEMICOLON, 
+                                  &save_ptr);
+        
+        string_number_objects = strtok_save(NULL, 
+                                            DELIMITER_SEMICOLON, 
+                                            &save_ptr);
+        number_objects = atoi(string_number_objects);
+
+        while(number_objects--){
+            mac_address = strtok_save(NULL, 
+                                      DELIMITER_SEMICOLON, 
+                                      &save_ptr);
+
+            initial_timestamp = strtok_save(NULL, 
+                                            DELIMITER_SEMICOLON, 
+                                            &save_ptr);
+
+            final_timestamp = strtok_save(NULL, 
+                                          DELIMITER_SEMICOLON, 
+                                          &save_ptr);
+
+            rssi = strtok_save(NULL, 
+                               DELIMITER_SEMICOLON, 
+                               &save_ptr);
+            detected_rssi = atoi(rssi);
+
+            panic_button = strtok_save(NULL, 
+                                       DELIMITER_SEMICOLON, 
+                                       &save_ptr);
+
+            if(atof(BOT_SERVER_API_VERSION_20) == api_version){
+                /* We do not have additional fields in 
+                   BOT_SERVER_API_VERSION_20, the all fields are already 
+                   listed above */           
+            }else{
+                battery_voltage = strtok_save(NULL, 
+                                              DELIMITER_SEMICOLON, 
+                                              &save_ptr);
+            }
+
+            /* check if mac_address has MONITOR_GEO_FENCE monitor type */
+            SQL_get_object_monitor_type(db, mac_address, &object_monitor_type);
+                
+            if(MONITOR_GEO_FENCE != 
+               (MONITOR_GEO_FENCE & 
+                (ObjectMonitorType)object_monitor_type)){
+
+                continue;
+            }
+
+            /* check fence rule and perimeter rule */
+            if(is_fence_lbeacon && ( detected_rssi > fence_rssi)){
+
+                zlog_info(category_debug, 
+                          "[GeoFence-Fence]: LBeacon UUID=[%s] "\
+                          "mac_address=[%s]", 
+                          lbeacon_uuid, mac_address);
+                    
+		        SQL_insert_geofence_violation_event(
+				    db,
+	                mac_address,
+					lbeacon_uuid,
+                    config.granularity_for_continuous_violations_in_sec);
+
+                SQL_identify_geofence(
+                    db,
+                    mac_address,
+				    geofence_name, 
+					GEO_FENCE_ALERT_TYPE_FENCE,
+                    lbeacon_uuid,
+				    detected_rssi);
+
+            }else if(is_perimeter_lbeacon && (detected_rssi > perimeter_rssi)){
+
+                zlog_info(category_debug, 
+                          "[GeoFence-Perimeter]: LBeacon UUID=[%s]" \
+                          "mac_address=[%s]", 
+                          lbeacon_uuid, mac_address);
+
+                SQL_insert_geofence_violation_event(
+				    db,
+	                mac_address,
+					lbeacon_uuid,
+                    config.granularity_for_continuous_violations_in_sec);
+
+			    SQL_identify_geofence(
+                    db,
+                    mac_address,
+					geofence_name, 
+					GEO_FENCE_ALERT_TYPE_PERIMETER,
+                    lbeacon_uuid,
+					detected_rssi);
+            }
+        }
+    }
+    
+    SQL_close_database_connection(db);
+
+    return WORK_SUCCESSFULLY;
+}
 

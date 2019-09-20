@@ -175,9 +175,9 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
     PGconn *conn = (PGconn *) db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *table_name[] = {""};
+    char *table_name[] = {"notification_table"};
     char *sql_template = "DELETE FROM %s WHERE " \
-                         "receive_time < " \
+                         "violation_timestamp < " \
                          "NOW() - INTERVAL \'%d HOURS\';";
     int idx = 0;
     char *tsdb_table_name[] = {"tracking_table"};
@@ -187,7 +187,7 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
 
 
     SQL_begin_transaction(db);
-/*
+
     for(idx = 0; idx< sizeof(table_name)/sizeof(table_name[0]); idx++){
 
         memset(sql, 0, sizeof(sql));
@@ -202,7 +202,7 @@ ErrorCode SQL_retain_data(void *db, int retention_hours){
         }
 
     }
-*/
+
     for(idx = 0; idx< sizeof(tsdb_table_name)/sizeof(tsdb_table_name[0]); idx++){
 
         memset(sql, 0, sizeof(sql));

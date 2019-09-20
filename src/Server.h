@@ -394,7 +394,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address);
 
 
 /*
-  Broadcast_to_gateway:
+  broadcast_to_gateway:
 
      This function is executed when a command needs to be broadcast to Gateways.
      When called, this function sends msg to all Gateways registered in the
@@ -410,7 +410,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address);
      None
 
  */
-void Broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size);
+void broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size);
 
 
 /*
@@ -563,9 +563,10 @@ ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
 /*
   check_geo_fence_violations:
 
-     This function checks the object tracking data forwarded by a Geo-Fence 
-     Gateway. It compares the tracking data against geo-fence settings in order 
-     to detect the objects that violate the geo-fence settings.
+     This function first iterates all enabled and valid geo-fence rules and then 
+     checks if the LBeacon that sent out this message buffer is part of fences. 
+     If YES, it invokes helper function examine_tracked_objects_status() to 
+     examine each detected object against geo-fence rule.
 
   Parameters:
 
@@ -573,7 +574,7 @@ ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
 
   Return value:
 
-     ErrorCode
+     ErrorCode - WORK_SUCCESSFULLY: work successfully.
 
  */
 
@@ -581,4 +582,44 @@ ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
 ErrorCode check_geo_fence_violations(BufferNode* buffer_node);
 
 
+/*
+  examine_tracked_objects_status:
+
+     This function extracts each detected object data from the buffer and
+     checks if the object violates the geo-fence rules.
+
+  Parameters:
+
+     api_version - API protocol version of BOT_GATEWAY_API used by LBeacon to
+                   send out the input message buffer
+     
+     buf - the packet content sent out by LBeacon
+
+     geofence_name - the name of geo-fence rule
+
+     is_fence_lbeacon - flag to specify if LBeacon that sent out the input buf 
+                        is part of fence
+
+     fence_rssi - the rssi criteria of fence to determine the detected object 
+                  violates fence rule
+
+     is_perimeter_lbeacon - flag to specify if LBeacon that sent out the input buf 
+                            is part of perimeter
+
+     perimeter_rssi - the rssi criteria of perimeter to determine the detected
+                      object violates perimeter rule
+
+
+  Return value:
+
+     ErrorCode - WORK_SUCCESSFULLY: work successfully.
+
+ */
+ErrorCode examine_tracked_objects_status(float api_version,
+                                         char *buf,
+                                         char *geofence_name,
+                                         bool is_fence_lbeacon,
+                                         int fence_rssi,
+                                         bool is_perimeter_lbeacon,
+                                         int perimeter_rssi);
 #endif
