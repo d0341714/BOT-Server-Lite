@@ -1366,7 +1366,6 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
     char *hours_duration = NULL;
     char *perimeters = NULL;
     char *fences = NULL;
-    char *monitor_types = NULL;
     char *hour_start = NULL;
     char *hour_end = NULL;
     void *db = NULL;
@@ -1397,11 +1396,9 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
     fences = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
     strcpy(fences_config, fences);
 
-    monitor_types = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
-
     zlog_info(category_debug, 
-              "name=[%s], perimeters=[%s], fences=[%s], monitor_types=[%s]", 
-              name, perimeters, fences, monitor_types);
+              "name=[%s], perimeters=[%s], fences=[%s]", 
+              name, perimeters, fences);
 
     new_node = mp_alloc( &geofence_mempool);
            
