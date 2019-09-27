@@ -1039,11 +1039,10 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_geofence(
+ErrorCode SQL_identify_geofence_violation(
 	void *db,
 	char *mac_address,
-	char *geofence_name,
-	char *geofence_type,
+	char *geofence_key,
 	char *geofence_uuid,
 	int detected_rssi){
 
@@ -1054,16 +1053,15 @@ ErrorCode SQL_identify_geofence(
 	char *sql_insert_summary_table = 
 		"UPDATE object_summary_table " \
 		"SET " \
-		"geofence_name = %s, " \
-		"geofence_type = %s, " \
+		"geofence_key = %s, " \
 		"geofence_uuid = %s, " \
 		"geofence_rssi = %d, " \
-		"geofence_violation_timestamp = NOW() " \
+		"geofence_violation_timestamp = NOW(), " \
+        "perimeter_valid_timestamp = NOW() " \
 		"WHERE mac_address = %s";
 
 	char *pqescape_mac_address = NULL;
-	char *pqescape_geofence_name = NULL;
-	char *pqescape_geofence_type = NULL;
+	char *pqescape_geofence_key = NULL;
 	char *pqescape_geofence_uuid = NULL;
 
 
@@ -1072,20 +1070,17 @@ ErrorCode SQL_identify_geofence(
 	pqescape_mac_address = 
                     PQescapeLiteral(conn, mac_address, 
                                     strlen(mac_address)); 
-	pqescape_geofence_name = 
-                    PQescapeLiteral(conn, geofence_name, 
-                                    strlen(geofence_name));
-	pqescape_geofence_type = 
-                    PQescapeLiteral(conn, geofence_type, 
-                                    strlen(geofence_type));
+	pqescape_geofence_key = 
+                    PQescapeLiteral(conn, geofence_key, 
+                                    strlen(geofence_key));
+	
 	pqescape_geofence_uuid = 
                     PQescapeLiteral(conn, geofence_uuid, 
                                     strlen(geofence_uuid));
 	
 	sprintf(sql, 
             sql_insert_summary_table, 
-            pqescape_geofence_name, 
-            pqescape_geofence_type,
+            pqescape_geofence_key, 
             pqescape_geofence_uuid,
 			detected_rssi,
             pqescape_mac_address);
@@ -1095,8 +1090,7 @@ ErrorCode SQL_identify_geofence(
     SQL_execute(db, sql);
 
 	PQfreemem(pqescape_mac_address);
-	PQfreemem(pqescape_geofence_name);
-	PQfreemem(pqescape_geofence_type);
+	PQfreemem(pqescape_geofence_key);
 	PQfreemem(pqescape_geofence_uuid);
 
     if(WORK_SUCCESSFULLY != ret_val){
@@ -1109,6 +1103,129 @@ ErrorCode SQL_identify_geofence(
     }     
     SQL_commit_transaction(db);
 
+    return WORK_SUCCESSFULLY;
+}
+
+
+ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
+	void *db,
+	char *mac_address,
+	char *geofence_key,
+    int valid_duration_in_sec){
+
+    PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+
+	char *sql_insert_summary_table = 
+		"UPDATE object_summary_table " \
+		"SET " \
+		"geofence_key = %s, " \
+		"perimeter_valid_timestamp = NOW() + INTERVAL '%d seconds' " \
+		"WHERE mac_address = %s";
+
+	char *pqescape_mac_address = NULL;
+	char *pqescape_geofence_key = NULL;
+	
+	memset(sql, 0, sizeof(sql));
+
+	pqescape_mac_address = 
+                    PQescapeLiteral(conn, mac_address, 
+                                    strlen(mac_address)); 
+	pqescape_geofence_key = 
+                    PQescapeLiteral(conn, geofence_key, 
+                                    strlen(geofence_key));
+	
+	sprintf(sql, 
+            sql_insert_summary_table, 
+            pqescape_geofence_key, 
+            valid_duration_in_sec,
+            pqescape_mac_address);
+		    
+    SQL_begin_transaction(db);
+
+    SQL_execute(db, sql);
+
+	PQfreemem(pqescape_mac_address);
+	PQfreemem(pqescape_geofence_key);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        SQL_rollback_transaction(db);
+        
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   ret_val, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }     
+    SQL_commit_transaction(db);
+
+    return WORK_SUCCESSFULLY;
+}
+
+
+ErrorCode SQL_check_perimeter_violation_valid(
+	void *db,
+	char *mac_address,
+	char *geofence_key,
+    int *is_valid_perimeter){
+
+    PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+
+	char *sql_select_template = 
+		"SELECT mac_address " \
+        "FROM object_summary_table " \
+		"WHERE " \
+		"geofence_key = %s AND " \
+		"perimeter_valid_timestamp > NOW() AND " \
+		"mac_address = %s";
+
+	char *pqescape_mac_address = NULL;
+	char *pqescape_geofence_key = NULL;
+
+    PGresult *res = NULL;
+    int total_rows = 0;
+	
+
+    *is_valid_perimeter = 0;
+
+	memset(sql, 0, sizeof(sql));
+
+	pqescape_mac_address = 
+                    PQescapeLiteral(conn, mac_address, 
+                                    strlen(mac_address)); 
+	pqescape_geofence_key = 
+                    PQescapeLiteral(conn, geofence_key, 
+                                    strlen(geofence_key));
+	
+	sprintf(sql, 
+            sql_select_template, 
+            pqescape_geofence_key, 
+            pqescape_mac_address);
+
+    res = PQexec(conn, sql);
+
+    PQfreemem(pqescape_mac_address);
+	PQfreemem(pqescape_geofence_key);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   res, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }
+
+    total_rows = PQntuples(res);
+
+    if(total_rows == 1){
+        *is_valid_perimeter = 1;
+    }
+		
+    PQclear(res);
+	
     return WORK_SUCCESSFULLY;
 }
 

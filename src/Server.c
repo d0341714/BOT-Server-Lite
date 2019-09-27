@@ -529,6 +529,12 @@ ErrorCode get_server_config(ServerConfig *config,
               "The is_enabled_geofence_monitor is [%d]", 
               config->is_enabled_geofence_monitor);
 
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->perimeter_valid_duration_in_sec = atoi(config_message);
+    zlog_info(category_debug,
+              "The perimeter_valid_duration_in_sec is [%d]", 
+              config->perimeter_valid_duration_in_sec);
+
     zlog_info(category_debug, "Initialize geo-fence list");
 
     /* Initialize geo-fence list head to store all the geo-fence settings */
@@ -1691,8 +1697,11 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
         if(is_perimeter_lbeacon == false && is_fence_lbeacon == false){
 
            zlog_info(category_debug, 
-                     "lbeacon_uuid=[%s] is not in geo-fence setting name=[%s]", 
-                     lbeacon_uuid, current_list_ptr->name);
+                     "lbeacon_uuid=[%s] is not in geo-fence setting " \
+                     "unique_key=[%s], name=[%s]", 
+                     lbeacon_uuid, 
+                     current_list_ptr->unique_key,
+                     current_list_ptr->name);
 
             continue;
         }
@@ -1705,7 +1714,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
 
         examine_tracked_objects_status(buffer_node->API_version,
                                        content_temp, 
-                                       current_list_ptr->name,
+                                       current_list_ptr->unique_key,
                                        is_fence_lbeacon,
                                        current_list_ptr->rssi_of_fences,
                                        is_perimeter_lbeacon, 
@@ -1723,7 +1732,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
 
 ErrorCode examine_tracked_objects_status(float api_version,
                                          char *buf,
-                                         char *geofence_name,
+                                         char *geofence_key,
                                          bool is_fence_lbeacon,
                                          int fence_rssi,
                                          bool is_perimeter_lbeacon,
@@ -1755,6 +1764,7 @@ ErrorCode examine_tracked_objects_status(float api_version,
     char *battery_voltage = NULL;
     void *db = NULL;
     ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
+    int is_valid_perimeter;
 
 
     if(WORK_SUCCESSFULLY != 
@@ -1835,41 +1845,49 @@ ErrorCode examine_tracked_objects_status(float api_version,
                           "[GeoFence-Fence]: LBeacon UUID=[%s] "\
                           "mac_address=[%s]", 
                           lbeacon_uuid, mac_address);
-                    
-		        SQL_insert_geofence_violation_event(
-				    db,
-	                mac_address,
-					lbeacon_uuid,
-                    config.granularity_for_continuous_violations_in_sec);
 
-                SQL_identify_geofence(
-                    db,
-                    mac_address,
-				    geofence_name, 
-					GEO_FENCE_ALERT_TYPE_FENCE,
-                    lbeacon_uuid,
-				    detected_rssi);
 
-            }else if(is_perimeter_lbeacon && (detected_rssi > perimeter_rssi)){
+                //check if user violated perimeter first
+                is_valid_perimeter = 0;
+
+                SQL_check_perimeter_violation_valid(
+                    db, 
+                    mac_address, 
+                    geofence_key,
+                    &is_valid_perimeter);
+                
+                 zlog_info(category_debug, 
+                              "[GeoFence-Fence]: is_valid_perimter=[%d]",
+                              is_valid_perimeter);
+
+                if(is_valid_perimeter){
+
+		            SQL_insert_geofence_violation_event(
+				        db,
+	                    mac_address,
+					    lbeacon_uuid,
+                        config.granularity_for_continuous_violations_in_sec);
+
+                    SQL_identify_geofence_violation(
+                        db,
+                        mac_address,
+				        geofence_key, 
+                        lbeacon_uuid,
+				        detected_rssi);
+                }
+            }
+            if(is_perimeter_lbeacon && (detected_rssi > perimeter_rssi)){
 
                 zlog_info(category_debug, 
                           "[GeoFence-Perimeter]: LBeacon UUID=[%s]" \
                           "mac_address=[%s]", 
                           lbeacon_uuid, mac_address);
 
-                SQL_insert_geofence_violation_event(
-				    db,
-	                mac_address,
-					lbeacon_uuid,
-                    config.granularity_for_continuous_violations_in_sec);
-
-			    SQL_identify_geofence(
+                SQL_insert_geofence_perimeter_valid_deadline(
                     db,
                     mac_address,
-					geofence_name, 
-					GEO_FENCE_ALERT_TYPE_PERIMETER,
-                    lbeacon_uuid,
-					detected_rssi);
+					geofence_key,
+                    config.perimeter_valid_duration_in_sec);
             }
         }
     }

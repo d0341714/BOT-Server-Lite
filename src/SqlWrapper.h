@@ -395,10 +395,11 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec);
 
 
 /*
-  SQL_identify_geofence
+  SQL_identify_geofence_violation
 
      This function updates geofence violation information into 
-	 object_summary_table.
+	 object_summary_table and sets perimeter valid timestamp as current
+     timestamp to disable previous perimeter violation.
 	 
   Parameter:
 
@@ -406,10 +407,7 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec);
 
      mac_address -  MAC address of detected object.
 
-     geofence_name - name of geo-fence rule
-
-     geofence_type - type of geo-fence. The possible values being perimeter or 
-                     fence.
+     geofence_key - name of geo-fence rule
 
 	 geofence_uuid - UUID of the LBeacon scanned the detected object.
 
@@ -420,13 +418,71 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec);
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
-ErrorCode SQL_identify_geofence(
+ErrorCode SQL_identify_geofence_violation(
 	void *db,
 	char *mac_address,
-	char *geofence_name,
-	char *geofence_type,
+	char *geofence_key,
 	char *geofence_uuid,
 	int detected_rssi);
+
+/*
+  SQL_insert_geofence_perimeter_valid_deadline
+
+     This function updates geofence perimter violation information into 
+	 object_summary_table. The information includes geofence name and perimter
+     violation timestamp.
+	 
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     mac_address -  MAC address of detected object.
+
+     geofence_key - the unique key of geo-fence rule
+
+     valid_duration_in_sec - the duration in seconds within which this 
+                             perimeter violation is treated as valid
+
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
+	void *db,
+	char *mac_address,
+	char *geofence_key,
+    int valid_duration_in_sec);
+
+/*
+  SQL_check_perimeter_violation_valid
+
+     This function updates geofence perimter violation information into 
+	 object_summary_table. The information includes geofence name and perimter
+     violation timestamp.
+	 
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     mac_address -  MAC address of detected object.
+
+     geofence_key - the unique key of geo-fence rule
+
+     is_valid_perimeter - output value to specify if perimter violation is 
+                          still valid
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+ErrorCode SQL_check_perimeter_violation_valid(
+	void *db,
+	char *mac_address,
+	char *geofence_key,
+    int *is_valid_perimeter);
 
 /*
   SQL_identify_panic

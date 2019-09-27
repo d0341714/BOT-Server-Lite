@@ -64,14 +64,6 @@
 /* File path of the config file of the Server */
 #define ZLOG_CONFIG_FILE_NAME "./config/zlog.conf"
 
-/* The type name for geo-fence alerts triggered by the presence of monitored 
-   objects at LBeacons in a fence. */
-#define GEO_FENCE_ALERT_TYPE_FENCE "fence"
-
-/* The type name for geo-fence alerts triggered by the presence of monitored
-   objects at LBeacons that are in perimeter of a geofence. */
-#define GEO_FENCE_ALERT_TYPE_PERIMETER "perimeter"
-
 /* Length of geo_fence unique key in byte */
 #define LENGTH_OF_GEO_FENCE_KEY 32
 
@@ -206,6 +198,9 @@ typedef struct {
 
     /* The flag of enable geo-fence monitor */
     int is_enabled_geofence_monitor;
+
+    /* The time duration geo-fence perimeter violation lasts valid */
+    int perimeter_valid_duration_in_sec;
 
     /* The list head of the geo gence list */
     struct List_Entry geo_fence_list_head;
@@ -595,7 +590,7 @@ ErrorCode check_geo_fence_violations(BufferNode* buffer_node);
      
      buf - the packet content sent out by LBeacon
 
-     geofence_name - the name of geo-fence rule
+     geofence_key - the unique key of geo-fence rule
 
      is_fence_lbeacon - flag to specify if LBeacon that sent out the input buf 
                         is part of fence
@@ -617,7 +612,7 @@ ErrorCode check_geo_fence_violations(BufferNode* buffer_node);
  */
 ErrorCode examine_tracked_objects_status(float api_version,
                                          char *buf,
-                                         char *geofence_name,
+                                         char *geofence_key,
                                          bool is_fence_lbeacon,
                                          int fence_rssi,
                                          bool is_perimeter_lbeacon,
