@@ -506,6 +506,12 @@ ErrorCode get_server_config(ServerConfig *config,
               common_config->low_priority);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->database_loose_time_interval_in_sec = atoi(config_message);
+    zlog_info(category_debug,
+              "The database_loose_time_interval_in_sec is [%d]", 
+              config->database_loose_time_interval_in_sec);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
     config->location_time_interval_in_sec = atoi(config_message);
     zlog_info(category_debug,
               "The location_time_interval_in_sec is [%d]", 
@@ -711,11 +717,13 @@ void *Server_summarize_location_information(){
         uptime = get_clock_time();
         
         SQL_summarize_object_location(db,
+                                      config.database_loose_time_interval_in_sec,
                                       config.location_time_interval_in_sec);
 
         if(config.is_enabled_panic_button_monitor){
             // Check each object's panic_button status within time interval
             SQL_identify_panic(db, 
+                               config.database_loose_time_interval_in_sec,
                                config.panic_time_interval_in_sec);
         }
 

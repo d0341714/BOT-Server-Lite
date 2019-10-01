@@ -383,6 +383,10 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
 
      db - a pointer pointing to the connection to the database backend server
 
+     database_loose_time_interval_in_sec - 
+         the length of time window in which tracked data is filtered to limit 
+         database processing time
+                                           
      time_interval_in_sec - the time window in which we treat this object as 
                             shown and visiable by BOT system
 
@@ -391,7 +395,9 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
-ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec);
+ErrorCode SQL_summarize_object_location(void *db, 
+                                        int database_loose_time_interval_in_sec,
+                                        int time_interval_in_sec);
 
 
 /*
@@ -496,6 +502,10 @@ ErrorCode SQL_check_perimeter_violation_valid(
 
      db - a pointer pointing to the connection to the database backend server
 
+     database_loose_time_interval_in_sec - 
+         the length of time window in which tracked data is filtered to limit 
+         database processing time
+
      time_interval_in_sec - the time window in which we treat this object 
                             as in panic situation if object (user) presses 
                             panic button within the interval.
@@ -505,7 +515,9 @@ ErrorCode SQL_check_perimeter_violation_valid(
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
-ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec);
+ErrorCode SQL_identify_panic(void *db,
+                             int database_loose_time_interval_in_sec,
+                             int time_interval_in_sec);
 
 
 /*

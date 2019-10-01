@@ -800,7 +800,9 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
+ErrorCode SQL_summarize_object_location(void *db, 
+                                        int database_loose_time_interval_in_sec,
+                                        int time_interval_in_sec){
 
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
@@ -869,7 +871,7 @@ ErrorCode SQL_summarize_object_location(void *db, int time_interval_in_sec){
     memset(sql, 0, sizeof(sql));
 
     sprintf(sql, sql_select_template, 
-            time_interval_in_sec + 5, 
+            database_loose_time_interval_in_sec, 
             time_interval_in_sec);
 
     res = PQexec(conn, sql);
@@ -1229,7 +1231,9 @@ ErrorCode SQL_check_perimeter_violation_valid(
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec){
+ErrorCode SQL_identify_panic(void *db, 
+                             int database_loose_time_interval_in_sec,
+                             int time_interval_in_sec){
 
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
@@ -1272,7 +1276,7 @@ ErrorCode SQL_identify_panic(void *db, int time_interval_in_sec){
     memset(sql, 0, sizeof(sql));
 
     sprintf(sql, sql_select_template, 
-            time_interval_in_sec + 5, 
+            database_loose_time_interval_in_sec, 
             time_interval_in_sec);
 
     res = PQexec(conn, sql);

@@ -184,6 +184,10 @@ typedef struct {
     /* The number of days in which data are kept in the database */
     int database_keep_days;
 
+    /* The length of the loose time window in which tracked data is filtered
+    to limit the database processing time. */
+    int database_loose_time_interval_in_sec;
+
     /* The length of the time window in which each object is shown and 
        made visiable by BOT system. */
     int location_time_interval_in_sec;
