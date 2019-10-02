@@ -186,7 +186,7 @@ typedef struct {
 
     /* The length of the loose time window in which tracked data is filtered
     to limit the database processing time. */
-    int database_loose_time_interval_in_sec;
+    int database_loose_time_window_in_sec;
 
     /* The length of the time window in which each object is shown and 
        made visiable by BOT system. */
