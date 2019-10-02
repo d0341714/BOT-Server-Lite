@@ -623,10 +623,13 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                 PQescapeLiteral(conn, object_mac_address,
                                 strlen(object_mac_address));
             pqescape_lbeacon_uuid =
-                PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid));
-            pqescape_rssi = PQescapeLiteral(conn, rssi, strlen(rssi));
+                PQescapeLiteral(conn, lbeacon_uuid, 
+                                strlen(lbeacon_uuid));
+            pqescape_rssi = 
+                PQescapeLiteral(conn, rssi, strlen(rssi));
             pqescape_push_button =
-                PQescapeLiteral(conn, push_button, strlen(push_button));
+                PQescapeLiteral(conn, push_button, 
+                                strlen(push_button));
             pqescape_initial_timestamp_GMT =
                 PQescapeLiteral(conn, initial_timestamp_GMT,
                                 strlen(initial_timestamp_GMT));
@@ -935,7 +938,7 @@ ErrorCode SQL_summarize_object_location(void *db,
                 pqescape_mac_address = 
                     PQescapeLiteral(conn, mac_address, strlen(mac_address));
                 pqescape_lbeacon_uuid = 
-                        PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid));
+                    PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid));
                 
                 sprintf(sql, sql_select_mac_address_lbeacon_uuid_template, 
                         pqescape_mac_address,
@@ -1085,15 +1088,14 @@ ErrorCode SQL_identify_geofence_violation(
     memset(sql, 0, sizeof(sql));
 
     pqescape_mac_address = 
-                    PQescapeLiteral(conn, mac_address, 
-                                    strlen(mac_address)); 
+        PQescapeLiteral(conn, mac_address, 
+                        strlen(mac_address)); 
     pqescape_geofence_key = 
-                    PQescapeLiteral(conn, geofence_key, 
-                                    strlen(geofence_key));
-    
+        PQescapeLiteral(conn, geofence_key, 
+                        strlen(geofence_key));
     pqescape_geofence_uuid = 
-                    PQescapeLiteral(conn, geofence_uuid, 
-                                    strlen(geofence_uuid));
+        PQescapeLiteral(conn, geofence_uuid, 
+                        strlen(geofence_uuid));
     
     sprintf(sql, 
             sql_insert_summary_table, 
@@ -1147,11 +1149,11 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
     memset(sql, 0, sizeof(sql));
 
     pqescape_mac_address = 
-                    PQescapeLiteral(conn, mac_address, 
-                                    strlen(mac_address)); 
+        PQescapeLiteral(conn, mac_address, 
+                        strlen(mac_address)); 
     pqescape_geofence_key = 
-                    PQescapeLiteral(conn, geofence_key, 
-                                    strlen(geofence_key));
+        PQescapeLiteral(conn, geofence_key, 
+                        strlen(geofence_key));
     
     sprintf(sql, 
             sql_insert_summary_table, 
@@ -1210,11 +1212,11 @@ ErrorCode SQL_check_perimeter_violation_valid(
     memset(sql, 0, sizeof(sql));
 
     pqescape_mac_address = 
-                    PQescapeLiteral(conn, mac_address, 
-                                    strlen(mac_address)); 
+        PQescapeLiteral(conn, mac_address, 
+                        strlen(mac_address)); 
     pqescape_geofence_key = 
-                    PQescapeLiteral(conn, geofence_key, 
-                                    strlen(geofence_key));
+        PQescapeLiteral(conn, geofence_key, 
+                        strlen(geofence_key));
     
     sprintf(sql, 
             sql_select_template, 
@@ -1582,11 +1584,11 @@ ErrorCode SQL_insert_geofence_violation_event(
     memset(sql, 0, sizeof(sql));
 
     pqescape_mac_address = 
-                    PQescapeLiteral(conn, mac_address, 
-                                    strlen(mac_address));
+        PQescapeLiteral(conn, mac_address, 
+                        strlen(mac_address));
     pqescape_geofence_uuid = 
-                    PQescapeLiteral(conn, geofence_uuid, 
-                                    strlen(geofence_uuid));
+        PQescapeLiteral(conn, geofence_uuid, 
+                        strlen(geofence_uuid));
     
     sprintf(sql, sql_insert_notification_table, 
             monitor_type,
