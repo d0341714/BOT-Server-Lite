@@ -84,7 +84,8 @@ int main(int argc, char **argv)
     /* Initialize zlog */
     if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0)
     {
-        category_health_report = zlog_get_category(LOG_CATEGORY_HEALTH_REPORT);
+        category_health_report = 
+            zlog_get_category(LOG_CATEGORY_HEALTH_REPORT);
 
         if (!category_health_report)
             zlog_fini();
@@ -99,8 +100,9 @@ int main(int argc, char **argv)
     zlog_info(category_debug,"Mempool Initializing");
 
     /* Initialize the memory pool for buffer nodes */
-    if(mp_init( &node_mempool, sizeof(BufferNode), SLOTS_IN_MEM_POOL)
-       != MEMORY_POOL_SUCCESS)
+    if(MEMORY_POOL_SUCCESS != mp_init( &node_mempool, 
+                                       sizeof(BufferNode), 
+                                       SLOTS_IN_MEM_POOL))
     {
         return E_MALLOC;
     }
@@ -125,8 +127,9 @@ int main(int argc, char **argv)
 
     /* Create the config from input serverconfig file */
 
-    if(get_server_config( &config, &common_config, CONFIG_FILE_NAME) 
-       != WORK_SUCCESSFULLY)
+    if(WORK_SUCCESSFULLY != get_server_config( &config, 
+                                               &common_config, 
+                                               CONFIG_FILE_NAME))
     {
         zlog_error(category_health_report, "Opening config file Fail");
         zlog_error(category_debug, "Opening config file Fail");
