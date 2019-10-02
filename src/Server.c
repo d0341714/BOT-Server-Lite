@@ -22,7 +22,7 @@
 
   Version:
 
-     1.0, 20190726
+     1.0, 20191002
 
   Abstract:
 
@@ -106,15 +106,17 @@ int main(int argc, char **argv)
     }
 
     /* Initialize the memory pool for geo-fence structs */
-    if(mp_init( &geofence_mempool, sizeof(GeoFenceListNode), SLOTS_IN_MEM_POOL)
-       != MEMORY_POOL_SUCCESS)
+    if(MEMORY_POOL_SUCCESS != mp_init( &geofence_mempool, 
+                                       sizeof(GeoFenceListNode), 
+                                       SLOTS_IN_MEM_POOL))
     {
         return E_MALLOC;
     }
 
     /* Initialize the memory pool for geo-fence structs */
-    if(mp_init( &notification_mempool, sizeof(NotificationListNode), SLOTS_IN_MEM_POOL)
-       != MEMORY_POOL_SUCCESS)
+    if(MEMORY_POOL_SUCCESS != mp_init( &notification_mempool, 
+                                       sizeof(NotificationListNode), 
+                                       SLOTS_IN_MEM_POOL))
     {
         return E_MALLOC;
     }
@@ -136,7 +138,8 @@ int main(int argc, char **argv)
     /* Initialize the address map*/
     init_Address_Map( &Gateway_address_map);
 
-    /* Initialize buffer_list_heads and add to the head in to the priority list.
+    /* Initialize buffer_list_heads and add to the head in to the priority 
+       list.
      */
     init_buffer( &priority_list_head, (void *) sort_priority_list,
                 common_config.high_priority);
@@ -1027,9 +1030,9 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 
     if(current_node -> pkt_type == time_critical_tracked_object_data){
         
-		if(config.is_enabled_geofence_monitor){
+        if(config.is_enabled_geofence_monitor){
             check_geo_fence_violations(current_node);
-		}
+        }
 
         // Server should support backward compatibility.
         if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
@@ -1073,7 +1076,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     answer = is_in_Address_Map(address_map, address, 0);
     if(answer >=0)
     {
-		/* Need to update last request time for each Gateway */
+        /* Need to update last request time for each Gateway */
         address_map -> address_map_list[answer].last_request_time =
             get_system_time();
 
@@ -1653,7 +1656,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
             continue;
         }
 
-		/* check if geo-fence is valid at current time */
+        /* check if geo-fence is valid at current time */
         if(rule_hour_start < rule_hour_end){
             if(current_hour < rule_hour_start || 
                 rule_hour_end < current_hour){
@@ -1714,7 +1717,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
             continue;
         }
         
-		// start to examine object status
+        // start to examine object status
         memset(content_temp, 0, sizeof(content_temp));
         memcpy(content_temp, 
                buffer_node -> content, 
@@ -1870,18 +1873,18 @@ ErrorCode examine_tracked_objects_status(float api_version,
 
                 if(is_valid_perimeter){
 
-		            SQL_insert_geofence_violation_event(
-				        db,
-	                    mac_address,
-					    lbeacon_uuid,
+                    SQL_insert_geofence_violation_event(
+                        db,
+                        mac_address,
+                        lbeacon_uuid,
                         config.granularity_for_continuous_violations_in_sec);
 
                     SQL_identify_geofence_violation(
                         db,
                         mac_address,
-				        geofence_key, 
+                        geofence_key, 
                         lbeacon_uuid,
-				        detected_rssi);
+                        detected_rssi);
                 }
             }
             if(is_perimeter_lbeacon && (detected_rssi > perimeter_rssi)){
@@ -1894,7 +1897,7 @@ ErrorCode examine_tracked_objects_status(float api_version,
                 SQL_insert_geofence_perimeter_valid_deadline(
                     db,
                     mac_address,
-					geofence_key,
+                    geofence_key,
                     config.perimeter_valid_duration_in_sec);
             }
         }

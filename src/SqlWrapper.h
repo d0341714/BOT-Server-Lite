@@ -16,12 +16,12 @@
 
   File Description:
 
-     This file contains the header of  function declarations and variable used
+     This file contains the header of function declarations and variable used
      in sqlWrapper.c
 
   Version:
 
-     1.0, 20190617
+     1.0, 20191002
 
   Abstract:
 
@@ -404,9 +404,9 @@ ErrorCode SQL_summarize_object_location(void *db,
   SQL_identify_geofence_violation
 
      This function updates geofence violation information into 
-	 object_summary_table and sets perimeter valid timestamp as current
+     object_summary_table and sets perimeter valid timestamp as current
      timestamp to disable previous perimeter violation.
-	 
+     
   Parameter:
 
      db - a pointer pointing to the connection to the database backend server
@@ -415,9 +415,9 @@ ErrorCode SQL_summarize_object_location(void *db,
 
      geofence_key - name of geo-fence rule
 
-	 geofence_uuid - UUID of the LBeacon scanned the detected object.
+     geofence_uuid - UUID of the LBeacon scanned the detected object.
 
-	 detected_rssi - rssi signal fo the detected object
+     detected_rssi - rssi signal fo the detected object
 
   Return Value:
 
@@ -425,19 +425,19 @@ ErrorCode SQL_summarize_object_location(void *db,
                  is WORK_SUCCESSFULLY.
 */
 ErrorCode SQL_identify_geofence_violation(
-	void *db,
-	char *mac_address,
-	char *geofence_key,
-	char *geofence_uuid,
-	int detected_rssi);
+    void *db,
+    char *mac_address,
+    char *geofence_key,
+    char *geofence_uuid,
+    int detected_rssi);
 
 /*
   SQL_insert_geofence_perimeter_valid_deadline
 
      This function updates geofence perimter violation information into 
-	 object_summary_table. The information includes geofence name and perimter
+     object_summary_table. The information includes geofence name and perimter
      violation timestamp.
-	 
+     
   Parameter:
 
      db - a pointer pointing to the connection to the database backend server
@@ -456,18 +456,18 @@ ErrorCode SQL_identify_geofence_violation(
                  is WORK_SUCCESSFULLY.
 */
 ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
-	void *db,
-	char *mac_address,
-	char *geofence_key,
+    void *db,
+    char *mac_address,
+    char *geofence_key,
     int valid_duration_in_sec);
 
 /*
   SQL_check_perimeter_violation_valid
 
      This function updates geofence perimter violation information into 
-	 object_summary_table. The information includes geofence name and perimter
+     object_summary_table. The information includes geofence name and perimter
      violation timestamp.
-	 
+     
   Parameter:
 
      db - a pointer pointing to the connection to the database backend server
@@ -485,9 +485,9 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
                  is WORK_SUCCESSFULLY.
 */
 ErrorCode SQL_check_perimeter_violation_valid(
-	void *db,
-	char *mac_address,
-	char *geofence_key,
+    void *db,
+    char *mac_address,
+    char *geofence_key,
     int *is_valid_perimeter);
 
 /*
@@ -558,17 +558,17 @@ ErrorCode SQL_identify_last_movement_status(void *db,
   SQL_insert_geofence_violation_event
 
      This function inserts geofence violation event into notification_table 
-	 directly, because geofence violation is time-critical.
-	 
+     directly, because geofence violation is time-critical.
+     
   Parameter:
 
      db - a pointer pointing to the connection to the database backend server
 
      mac_address -  MAC address of detected object.
 
-	 geofence_uuid - UUID of the LBeacon scanned the detected object.
+     geofence_uuid - UUID of the LBeacon scanned the detected object.
 
-	 granularity_for_continuous_violations_in_sec - 
+     granularity_for_continuous_violations_in_sec - 
           the length of the time window in which only one violation event is 
           inserted into notification_table when there are continuous 
           violations.
@@ -580,10 +580,10 @@ ErrorCode SQL_identify_last_movement_status(void *db,
                  is WORK_SUCCESSFULLY.
 */
 ErrorCode SQL_insert_geofence_violation_event(
-	void *db,
-	char *mac_address,
-	char *geofence_uuid,
-	int granularity_for_continuous_violations_in_sec);
+    void *db,
+    char *mac_address,
+    char *geofence_uuid,
+    int granularity_for_continuous_violations_in_sec);
 
 /*
   SQL_collect_violation_events
