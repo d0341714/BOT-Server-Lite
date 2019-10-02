@@ -763,12 +763,16 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                 PQescapeLiteral(conn, object_mac_address,
                                 strlen(object_mac_address));
             pqescape_lbeacon_uuid =
-                PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid));
-            pqescape_rssi = PQescapeLiteral(conn, rssi, strlen(rssi));
+                PQescapeLiteral(conn, lbeacon_uuid, 
+                                strlen(lbeacon_uuid));
+            pqescape_rssi = 
+                PQescapeLiteral(conn, rssi, strlen(rssi));
             pqescape_panic_button =
-                PQescapeLiteral(conn, panic_button, strlen(panic_button));
+                PQescapeLiteral(conn, panic_button, 
+                                strlen(panic_button));
             pqescape_battery_voltage =
-                PQescapeLiteral(conn, battery_voltage, strlen(battery_voltage));
+                PQescapeLiteral(conn, battery_voltage, 
+                                strlen(battery_voltage));
             pqescape_initial_timestamp_GMT =
                 PQescapeLiteral(conn, initial_timestamp_GMT,
                                 strlen(initial_timestamp_GMT));
