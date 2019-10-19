@@ -1808,6 +1808,10 @@ ErrorCode examine_tracked_objects_status(float api_version,
         string_number_objects = strtok_save(NULL, 
                                             DELIMITER_SEMICOLON, 
                                             &save_ptr);
+        if(string_number_objects == NULL){
+            SQL_close_database_connection(db);
+            return E_API_PROTOCOL_FORMAT;
+        }
         number_objects = atoi(string_number_objects);
 
         while(number_objects--){
@@ -1826,6 +1830,10 @@ ErrorCode examine_tracked_objects_status(float api_version,
             rssi = strtok_save(NULL, 
                                DELIMITER_SEMICOLON, 
                                &save_ptr);
+            if(rssi == NULL){
+                SQL_close_database_connection(db);
+                return E_API_PROTOCOL_FORMAT;
+            }
             detected_rssi = atoi(rssi);
 
             panic_button = strtok_save(NULL, 

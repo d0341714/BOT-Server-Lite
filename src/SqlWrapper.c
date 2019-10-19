@@ -270,6 +270,9 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
     memcpy(temp_buf, buf, buf_len);
 
     numbers_str = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    if(numbers_str == NULL){
+        return E_API_PROTOCOL_FORMAT;
+    }
     numbers = atoi(numbers_str);
 
     if(numbers <= 0){
@@ -351,6 +354,9 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
     memcpy(temp_buf, buf, buf_len);
 
     numbers_str = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    if(numbers_str == NULL){
+        return E_API_PROTOCOL_FORMAT;
+    }
     numbers = atoi(numbers_str);
 
     if(numbers <= 0){
@@ -567,6 +573,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     char *rssi = NULL;
     char *push_button = NULL;
     int current_time = get_system_time();
+    int lbeacon_timestamp_value;
     char *pqescape_object_mac_address = NULL;
     char *pqescape_lbeacon_uuid = NULL;
     char *pqescape_rssi = NULL;
@@ -582,6 +589,10 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
     lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
     lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+    if(lbeacon_timestamp == NULL){
+        return E_API_PROTOCOL_FORMAT;
+    }
+    lbeacon_timestamp_value = atoi(lbeacon_timestamp);
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
     zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
@@ -597,7 +608,10 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
         zlog_debug(category_debug, "object_type=[%s], object_number=[%s]", 
                    object_type, object_number);
-
+        if(object_number == NULL){
+            SQL_rollback_transaction(db);
+            return E_API_PROTOCOL_FORMAT;
+        }
         numbers = atoi(object_number);
 
         while(numbers--){
@@ -645,7 +659,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
                     pqescape_push_button,
                     pqescape_initial_timestamp_GMT,
                     pqescape_final_timestamp_GMT,
-                    current_time - atoi(lbeacon_timestamp));
+                    current_time - lbeacon_timestamp_value);
 
             PQfreemem(pqescape_object_mac_address);
             PQfreemem(pqescape_lbeacon_uuid);
@@ -707,6 +721,7 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     char *panic_button = NULL;
     char *battery_voltage = NULL;
     int current_time = get_system_time();
+    int lbeacon_timestamp_value;
     char *pqescape_object_mac_address = NULL;
     char *pqescape_lbeacon_uuid = NULL;
     char *pqescape_rssi = NULL;
@@ -723,6 +738,10 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
 
     lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
     lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+    if(lbeacon_timestamp == NULL){
+        return E_API_PROTOCOL_FORMAT;
+    }
+    lbeacon_timestamp_value = atoi(lbeacon_timestamp);
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
     zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
@@ -738,7 +757,10 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
 
         zlog_debug(category_debug, "object_type=[%s], object_number=[%s]", 
                    object_type, object_number);
-
+        if(object_number == NULL){
+            SQL_rollback_transaction(db);
+            return E_API_PROTOCOL_FORMAT;
+        }
         numbers = atoi(object_number);
 
         while(numbers--){
@@ -792,7 +814,7 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                     pqescape_battery_voltage,
                     pqescape_initial_timestamp_GMT,
                     pqescape_final_timestamp_GMT,
-                    current_time - atoi(lbeacon_timestamp));
+                    current_time - lbeacon_timestamp_value);
 
             PQfreemem(pqescape_object_mac_address);
             PQfreemem(pqescape_lbeacon_uuid);
@@ -884,6 +906,9 @@ ErrorCode SQL_summarize_object_location(void *db,
         "last_seen_timestamp = %s " \
         "WHERE mac_address = %s";
 
+    int avg_rssi_int;
+    int battery_voltage_int;
+
 
     memset(sql, 0, sizeof(sql));
 
@@ -933,6 +958,12 @@ ErrorCode SQL_summarize_object_location(void *db,
                 zlog_debug(category_debug, "get location [%s] [%s] [%s]",
                            mac_address, lbeacon_uuid, avg_rssi);
 
+                if(avg_rssi == NULL || battery_voltage == NULL){
+                    SQL_rollback_transaction(db);
+                    return E_API_PROTOCOL_FORMAT;                   
+                }
+                avg_rssi_int = atoi(avg_rssi);
+                battery_voltage_int = atoi(battery_voltage);
                 // first, check if the pair of mac_address and lbeacon_uuid 
                 // exists in the object_summary_table.
                 pqescape_mac_address = 
@@ -984,8 +1015,8 @@ ErrorCode SQL_summarize_object_location(void *db,
                     memset(sql, 0, sizeof(sql));
                     sprintf(sql, sql_update_location_information_template,  
                                  pqescape_lbeacon_uuid,
-                                 atoi(avg_rssi),
-                                 atoi(battery_voltage),
+                                 avg_rssi_int,
+                                 battery_voltage_int,
                                  pqescape_initial_timestamp, 
                                  pqescape_final_timestamp,
                                  pqescape_mac_address);
@@ -1024,8 +1055,8 @@ ErrorCode SQL_summarize_object_location(void *db,
                      
                         memset(sql, 0, sizeof(sql));
                         sprintf(sql, sql_update_timing_template,  
-                                atoi(avg_rssi),
-                                atoi(battery_voltage),
+                                avg_rssi_int,
+                                battery_voltage_int,
                                 pqescape_final_timestamp,
                                 pqescape_mac_address);
 
@@ -1727,6 +1758,8 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
         "processed = 1 " \
         "WHERE id = %d;";
 
+    int id_int;
+
 
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_select_template);
@@ -1758,6 +1791,10 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
                 strcat(buf, one_record);
             
                 memset(sql, 0, sizeof(sql));
+                if(PQgetvalue(res, i, 0) == NULL){
+                    PQclear(res);
+                    return E_API_PROTOCOL_FORMAT;
+                }
                 sprintf(sql, sql_update_template, atoi(PQgetvalue(res, i, 0)));
 
                 SQL_execute(db, sql);        
@@ -1815,6 +1852,10 @@ ErrorCode SQL_get_object_monitor_type(void *db,
     *monitor_type = MONITOR_NORMAL;
     if(total_rows == 1 && total_fields == 1){
         object_monitor_type = PQgetvalue(res, 0, 0);
+        if(object_monitor_type == NULL){
+            PQclear(res);
+            return E_API_PROTOCOL_FORMAT;
+        }
         *monitor_type = (ObjectMonitorType)atoi(object_monitor_type);
     }
 
@@ -1945,6 +1986,12 @@ ErrorCode SQL_get_geo_fence_config(void *db,
     *hour_start = 0;
     *hour_end = 0;
     if(total_rows == 1 && total_fields == 3){
+        if(PQgetvalue(res, 0, 0) == NULL || 
+           PQgetvalue(res, 0, 1) == NULL || 
+           PQgetvalue(res, 0, 2) == NULL){
+            PQclear(res);
+            return E_API_PROTOCOL_FORMAT;
+        }
         *enable = atoi(PQgetvalue(res, 0, 0));
         *hour_start = atoi(PQgetvalue(res, 0, 1));
         *hour_end = atoi(PQgetvalue(res, 0, 2));
