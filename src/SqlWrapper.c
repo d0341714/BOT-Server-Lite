@@ -174,7 +174,7 @@ ErrorCode SQL_vacuum_database(void *db){
 }
 
 
-ErrorCode SQL_retain_data(void *db, int retention_hours){
+ErrorCode SQL_delete_old_data(void *db, int retention_hours){
 
     PGconn *conn = (PGconn *) db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
@@ -846,6 +846,7 @@ ErrorCode SQL_summarize_object_location(void *db,
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
+
     char *sql_select_template = "SELECT object_mac_address, lbeacon_uuid, " \
                                 "ROUND( AVG(rssi), 2) as avg_rssi, " \
                                 "MIN(battery_voltage) as battery_voltage, " \
@@ -860,6 +861,14 @@ ErrorCode SQL_summarize_object_location(void *db,
                                 "object_mac_address, lbeacon_uuid " \
                                 "HAVING AVG(rssi) > -100 ORDER BY " \
                                 "object_mac_address ASC, avg_rssi DESC";
+    const int NUMBER_FILEDS_OF_SQL_SELECT_TEMPLATE = 6;
+    const int FIELD_INDEX_OF_OBJECT_MAC_ADDRESS = 0;
+    const int FIELD_INDEX_OF_LBEACON_UUID = 1;
+    const int FIELD_INDEX_OF_AVG_RSSI = 2;
+    const int FIELD_INDEX_OF_BATTERY_VOLTAGE = 3;
+    const int FIELD_INDEX_OF_INITIAL_TIMESTAMP = 4;
+    const int FIELD_INDEX_OF_FINAL_TIMESTAMP = 5;
+
     PGresult *res = NULL;
     int current_row = 0;
     int total_fields = 0;
@@ -885,6 +894,9 @@ ErrorCode SQL_summarize_object_location(void *db,
         "from " \
         "object_summary_table where " \
         "mac_address = %s AND uuid = %s";
+    const int EXPECTED_ROWS_FOR_NOT_FOUND = 0;
+    const int EXPECTED_ROWS_FOR_FOUND = 1;
+    const int RESULT_FIELDS_OF_SQL_SELECT_MAC_ADDRESS_LBEACON_UUID_TEMPLATE = 2;
 
     PGresult *res_mac_address = NULL;
     int rows_mac_address = 0;
@@ -899,7 +911,7 @@ ErrorCode SQL_summarize_object_location(void *db,
         "last_seen_timestamp = %s" \
         "WHERE mac_address = %s";
 
-    char *sql_update_timing_template = 
+    char *sql_update_status_template = 
         "UPDATE object_summary_table " \
         "set rssi = %d, " \
         "battery_voltage = %d, " \
@@ -930,7 +942,8 @@ ErrorCode SQL_summarize_object_location(void *db,
     total_fields = PQnfields(res);
     total_rows = PQntuples(res);
 
-    if(total_rows > 0 && total_fields == 6){
+    if(total_rows > 0 && 
+       total_fields == NUMBER_FILEDS_OF_SQL_SELECT_TEMPLATE){
 
         memset(prev_mac_address, 0, sizeof(prev_mac_address));
 
@@ -938,7 +951,9 @@ ErrorCode SQL_summarize_object_location(void *db,
 
         for(current_row = 0 ; current_row < total_rows ; current_row++){
 
-            mac_address = PQgetvalue(res, current_row, 0);
+            mac_address = PQgetvalue(res, 
+                                     current_row, 
+                                     FIELD_INDEX_OF_OBJECT_MAC_ADDRESS);
 
             // we only need to handle the first row of each pair of 
             // mac_address and lbeacon_uuid, because we have sorted 
@@ -949,11 +964,21 @@ ErrorCode SQL_summarize_object_location(void *db,
 
                 strncpy(prev_mac_address, mac_address, strlen(mac_address));
 
-                lbeacon_uuid = PQgetvalue(res, current_row, 1);
-                avg_rssi = PQgetvalue(res, current_row, 2);
-                battery_voltage = PQgetvalue(res, current_row, 3);
-                initial_timestamp = PQgetvalue(res, current_row, 4);
-                final_timestamp = PQgetvalue(res, current_row, 5);
+                lbeacon_uuid = PQgetvalue(res, 
+                                          current_row, 
+                                          FIELD_INDEX_OF_LBEACON_UUID);
+                avg_rssi = PQgetvalue(res, 
+                                      current_row, 
+                                      FIELD_INDEX_OF_AVG_RSSI);
+                battery_voltage = PQgetvalue(res, 
+                                             current_row, 
+                                             FIELD_INDEX_OF_BATTERY_VOLTAGE);
+                initial_timestamp = PQgetvalue(res, 
+                                               current_row, 
+                                               FIELD_INDEX_OF_INITIAL_TIMESTAMP);
+                final_timestamp = PQgetvalue(res, 
+                                             current_row, 
+                                             FIELD_INDEX_OF_FINAL_TIMESTAMP);
 
                 zlog_debug(category_debug, "get location [%s] [%s] [%s]",
                            mac_address, lbeacon_uuid, avg_rssi);
@@ -994,7 +1019,7 @@ ErrorCode SQL_summarize_object_location(void *db,
                 rows_mac_address = PQntuples(res_mac_address);
                 fields_mac_address = PQnfields(res_mac_address);
 
-                if(rows_mac_address == 0){
+                if(rows_mac_address == EXPECTED_ROWS_FOR_NOT_FOUND){
                     // if the pair of mac_address and lbeacon_uuid does not exist
                     // in the object_summary_table, we update the whole location 
                     // information
@@ -1021,7 +1046,7 @@ ErrorCode SQL_summarize_object_location(void *db,
                                  pqescape_final_timestamp,
                                  pqescape_mac_address);
 
-                    SQL_execute(db, sql);
+                    ret_val = SQL_execute(db, sql);
 
                     PQfreemem(pqescape_mac_address);
                     PQfreemem(pqescape_lbeacon_uuid);
@@ -1039,9 +1064,10 @@ ErrorCode SQL_summarize_object_location(void *db,
                         return E_SQL_EXECUTE;
                     }
                 }
-                else if(rows_mac_address == 1)
+                else if(rows_mac_address == EXPECTED_ROWS_FOR_NOT_FOUND)
                 {
-                    if(fields_mac_address == 2){
+                    if(fields_mac_address == 
+                       RESULT_FIELDS_OF_SQL_SELECT_MAC_ADDRESS_LBEACON_UUID_TEMPLATE){
                     // if the pair of mac_address and lbeacon_uuid exists
                     // in the object_summary_table, we update the timing 
                     // information
@@ -1054,13 +1080,13 @@ ErrorCode SQL_summarize_object_location(void *db,
                                         strlen(final_timestamp));
                      
                         memset(sql, 0, sizeof(sql));
-                        sprintf(sql, sql_update_timing_template,  
+                        sprintf(sql, sql_update_status_template,  
                                 avg_rssi_int,
                                 battery_voltage_int,
                                 pqescape_final_timestamp,
                                 pqescape_mac_address);
 
-                        SQL_execute(db, sql);
+                        ret_val = SQL_execute(db, sql);
 
                         PQfreemem(pqescape_mac_address);
                         PQfreemem(pqescape_final_timestamp);
@@ -1137,7 +1163,7 @@ ErrorCode SQL_identify_geofence_violation(
             
     SQL_begin_transaction(db);
 
-    SQL_execute(db, sql);
+    ret_val = SQL_execute(db, sql);
 
     PQfreemem(pqescape_mac_address);
     PQfreemem(pqescape_geofence_key);
@@ -1194,7 +1220,7 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
             
     SQL_begin_transaction(db);
 
-    SQL_execute(db, sql);
+    ret_val = SQL_execute(db, sql);
 
     PQfreemem(pqescape_mac_address);
     PQfreemem(pqescape_geofence_key);
@@ -1230,6 +1256,9 @@ ErrorCode SQL_check_perimeter_violation_valid(
         "geofence_key = %s AND " \
         "perimeter_valid_timestamp > NOW() AND " \
         "mac_address = %s";
+    const int EXPECTED_RESULT_ROWS_OF_SQL_SELECT_TEMPLATE = 1;
+
+    const int PERIMETER_VIOLATION_IS_VALID = 1;
 
     char *pqescape_mac_address = NULL;
     char *pqescape_geofence_key = NULL;
@@ -1270,8 +1299,8 @@ ErrorCode SQL_check_perimeter_violation_valid(
 
     total_rows = PQntuples(res);
 
-    if(total_rows == 1){
-        *is_valid_perimeter = 1;
+    if(total_rows == EXPECTED_RESULT_ROWS_OF_SQL_SELECT_TEMPLATE){
+        *is_valid_perimeter = PERIMETER_VIOLATION_IS_VALID;
     }
         
     PQclear(res);
@@ -1286,7 +1315,9 @@ ErrorCode SQL_identify_panic(void *db,
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_select_template = "SELECT object_mac_address, lbeacon_uuid, " \
+
+    char *sql_select_template = "SELECT object_mac_address, " \
+                                "lbeacon_uuid, " \
                                 "panic_button, " \
                                 "MAX(final_timestamp) as final_timestamp " \
                                 "FROM tracking_table " \
@@ -1300,6 +1331,10 @@ ErrorCode SQL_identify_panic(void *db,
                                 "object_mac_address, lbeacon_uuid, panic_button " \
                                 "ORDER BY " \
                                 "object_mac_address ASC";
+    const int NUMBER_FILEDS_OF_SQL_SELECT_TEMPLATE = 4;
+    const int FIELD_INDEX_OF_OBJECT_MAC_ADDRESS = 0;
+    const int FIELD_INDEX_OF_FINAL_TIMESTAMP = 3;
+
     PGresult *res = NULL;
     int current_row = 0;
     int total_fields = 0;
@@ -1341,7 +1376,8 @@ ErrorCode SQL_identify_panic(void *db,
     total_fields = PQnfields(res);
     total_rows = PQntuples(res);
 
-    if(total_rows > 0 && total_fields == 4){
+    if(total_rows > 0 && 
+       total_fields == NUMBER_FILEDS_OF_SQL_SELECT_TEMPLATE){
 
         memset(prev_mac_address, 0, sizeof(prev_mac_address));
         
@@ -1349,8 +1385,12 @@ ErrorCode SQL_identify_panic(void *db,
 
         for(current_row = 0 ; current_row < total_rows ; current_row++){
 
-            mac_address = PQgetvalue(res, current_row, 0);
-            final_timestamp = PQgetvalue(res, current_row, 3);
+            mac_address = PQgetvalue(res, 
+                                     current_row, 
+                                     FIELD_INDEX_OF_OBJECT_MAC_ADDRESS);
+            final_timestamp = PQgetvalue(res, 
+                                         current_row, 
+                                         FIELD_INDEX_OF_FINAL_TIMESTAMP);
 
             // we only need to handle the first row of each mac_address, 
             // because we care about the object (user) who has pressed 
@@ -1383,7 +1423,7 @@ ErrorCode SQL_identify_panic(void *db,
                              pqescape_final_timestamp,
                              pqescape_mac_address);
 
-                SQL_execute(db, sql);
+                ret_val = SQL_execute(db, sql);
 
                 PQfreemem(pqescape_mac_address);
                 PQfreemem(pqescape_final_timestamp);
@@ -1417,10 +1457,15 @@ ErrorCode SQL_identify_last_movement_status(void *db,
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
+
     char *sql_select_template = "SELECT mac_address, uuid " \
                                 "FROM object_summary_table " \
                                 "ORDER BY " \
                                 "mac_address ASC";
+    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 2;
+    const int FIELD_INDEX_OF_MAC_ADDRESS = 0;
+    const int FIELD_INDEX_OF_UUID = 1;
+
     PGresult *res = NULL;
     int current_row = 0;
     int total_fields = 0;
@@ -1482,12 +1527,15 @@ ErrorCode SQL_identify_last_movement_status(void *db,
     total_fields = PQnfields(res);
     total_rows = PQntuples(res);
 
-    if(total_rows > 0 && total_fields == 2){
+    if(total_rows > 0 && 
+       total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
 
         SQL_begin_transaction(db);
 
         for(current_row = 0 ; current_row < total_rows ; current_row++){
-            mac_address = PQgetvalue(res, current_row, 0);
+            mac_address = PQgetvalue(res, 
+                                     current_row, 
+                                     FIELD_INDEX_OF_MAC_ADDRESS);
 
             SQL_get_object_monitor_type(db, mac_address, 
                                         &object_monitor_type);
@@ -1498,8 +1546,12 @@ ErrorCode SQL_identify_last_movement_status(void *db,
             }
 
 
-            mac_address = PQgetvalue(res, current_row, 0);
-            lbeacon_uuid = PQgetvalue(res, current_row, 1);
+            mac_address = PQgetvalue(res, 
+                                     current_row, 
+                                     FIELD_INDEX_OF_MAC_ADDRESS);
+            lbeacon_uuid = PQgetvalue(res, 
+                                      current_row, 
+                                      FIELD_INDEX_OF_UUID);
 
             if(strlen(lbeacon_uuid) == 0){
                 continue;
@@ -1546,7 +1598,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
                 sprintf(sql, sql_update_activity_template,
                         pqescape_mac_address);
                             
-                SQL_execute(db, sql);
+                ret_val = SQL_execute(db, sql);
 
                 PQfreemem(pqescape_mac_address);
                
@@ -1583,9 +1635,9 @@ ErrorCode SQL_insert_geofence_violation_event(
 
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
+    ObjectMonitorType monitor_type = MONITOR_GEO_FENCE;
     char sql[SQL_TEMP_BUFFER_LENGTH];
 
-    ObjectMonitorType monitor_type = MONITOR_GEO_FENCE;
     char *sql_insert_notification_table = 
         "INSERT INTO " \
         "notification_table( " \
@@ -1632,7 +1684,7 @@ ErrorCode SQL_insert_geofence_violation_event(
             
     SQL_begin_transaction(db);
 
-    SQL_execute(db, sql);
+    ret_val = SQL_execute(db, sql);
 
     PQfreemem(pqescape_mac_address);
     PQfreemem(pqescape_geofence_uuid);
@@ -1659,6 +1711,7 @@ ErrorCode SQL_collect_violation_events(
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
+
     char *sql_insert_template = 
         "INSERT INTO " \
         "notification_table( " \
@@ -1717,12 +1770,14 @@ ErrorCode SQL_collect_violation_events(
             granularity_for_continuous_violations_in_sec);
 
     SQL_begin_transaction(db);
-    SQL_execute(db, sql);
+    ret_val = SQL_execute(db, sql);
     if(WORK_SUCCESSFULLY != ret_val){
         SQL_rollback_transaction(db);
         
-        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   ret_val, PQerrorMessage(conn));
+        zlog_error(category_debug, 
+                   "SQL_execute failed [%d]: %s", 
+                   ret_val, 
+                   PQerrorMessage(conn));
 
         return E_SQL_EXECUTE;
     }     
@@ -1738,6 +1793,7 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
+
     char *sql_select_template = 
         "SELECT id, monitor_type, mac_address, uuid, violation_timestamp " \
         "FROM "
@@ -1745,6 +1801,12 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
         "WHERE "\
         "processed != 1 " \
         "ORDER BY id ASC;";
+    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 5;
+    const int FIELD_INDEX_OF_ID = 0;
+    const int FIELD_INDEX_OF_MONITOR_TYPE = 1;
+    const int FIELD_INDEX_OF_MAC_ADDRESS = 2;
+    const int FIELD_INDEX_OF_UUID = 3;
+    const int FIELD_INDEX_OF_VIOLATION_TIMESTAMP = 4;
 
     PGresult *res = NULL;
     int total_fields = 0;
@@ -1778,26 +1840,30 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
     total_rows = PQntuples(res);
     total_fields = PQnfields(res);
     
-    if(total_rows > 0 && total_fields == 5){
+    if(total_rows > 0 && 
+       total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
         for(i = 0 ; i < total_rows ; i++){
             memset(one_record, 0, sizeof(one_record));
-            sprintf(one_record, "%s,%s,%s,%s,%s;", PQgetvalue(res, i, 0),
-                                                   PQgetvalue(res, i, 1),
-                                                   PQgetvalue(res, i, 2),
-                                                   PQgetvalue(res, i, 3),
-                                                   PQgetvalue(res, i, 4));
+            sprintf(one_record, "%s,%s,%s,%s,%s;", 
+                    PQgetvalue(res, i, FIELD_INDEX_OF_ID),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_MONITOR_TYPE),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_MAC_ADDRESS),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_UUID),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_VIOLATION_TIMESTAMP));
             
             if(buf_len > strlen(buf) + strlen(one_record)){
                 strcat(buf, one_record);
             
                 memset(sql, 0, sizeof(sql));
-                if(PQgetvalue(res, i, 0) == NULL){
+                if(PQgetvalue(res, i, FIELD_INDEX_OF_ID) == NULL){
                     PQclear(res);
                     return E_API_PROTOCOL_FORMAT;
                 }
-                sprintf(sql, sql_update_template, atoi(PQgetvalue(res, i, 0)));
+                sprintf(sql, 
+                        sql_update_template, 
+                        atoi(PQgetvalue(res, i, FIELD_INDEX_OF_ID)));
 
-                SQL_execute(db, sql);        
+                ret_val = SQL_execute(db, sql);        
             }
         }
     }
@@ -1814,10 +1880,16 @@ ErrorCode SQL_get_object_monitor_type(void *db,
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
+
     char *sql_select_template = "SELECT monitor_type " \
                                 "FROM object_table " \
                                 "WHERE " \
                                 "mac_address = %s";
+    const int NUMBER_ROWS_OF_SQL_SELECT_TEMPLATE = 1;
+    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 1;
+    const int ROW_INDEX_OF_SQL_SELECT_TEMPLATE = 0;
+    const int FIELD_INDEX_OF_MONITOR_TYPE = 0;
+
     PGresult *res = NULL;
     int total_fields = 0;
     int total_rows = 0;
@@ -1850,8 +1922,11 @@ ErrorCode SQL_get_object_monitor_type(void *db,
     total_rows = PQntuples(res);
 
     *monitor_type = MONITOR_NORMAL;
-    if(total_rows == 1 && total_fields == 1){
-        object_monitor_type = PQgetvalue(res, 0, 0);
+    if(total_rows == NUMBER_ROWS_OF_SQL_SELECT_TEMPLATE && 
+       total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
+        object_monitor_type = PQgetvalue(res, 
+                                         ROW_INDEX_OF_SQL_SELECT_TEMPLATE,
+                                         FIELD_INDEX_OF_MONITOR_TYPE);
         if(object_monitor_type == NULL){
             PQclear(res);
             return E_API_PROTOCOL_FORMAT;
@@ -1948,10 +2023,18 @@ ErrorCode SQL_get_geo_fence_config(void *db,
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
+
     char *sql_select_template = "SELECT enable, hour_start, hour_end " \
                                 "FROM geo_fence_config " \
                                 "WHERE " \
                                 "unique_key = %s";
+    const int NUMBER_ROWS_OF_SQL_SELECT_TEMPLATE = 1;
+    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 3;
+    const int ROW_INDEX_OF_SQL_SELECT_TEMPLATE = 0;
+    const int FIELD_INDEX_OF_ENABLE = 0;
+    const int FIELD_INDEX_OF_HOUR_START = 1;
+    const int FIELD_INDEX_OF_HOUR_END = 2;
+
     PGresult *res = NULL;
     int total_fields = 0;
     int total_rows = 0;
@@ -1985,16 +2068,28 @@ ErrorCode SQL_get_geo_fence_config(void *db,
     *enable = 0;
     *hour_start = 0;
     *hour_end = 0;
-    if(total_rows == 1 && total_fields == 3){
-        if(PQgetvalue(res, 0, 0) == NULL || 
-           PQgetvalue(res, 0, 1) == NULL || 
-           PQgetvalue(res, 0, 2) == NULL){
+    if(total_rows == NUMBER_ROWS_OF_SQL_SELECT_TEMPLATE && 
+       total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
+        if(PQgetvalue(res, 
+                      ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
+                      FIELD_INDEX_OF_ENABLE) == NULL || 
+           PQgetvalue(res, 
+                      ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
+                      FIELD_INDEX_OF_HOUR_START) == NULL || 
+           PQgetvalue(res, 
+                      ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
+                      FIELD_INDEX_OF_HOUR_END) == NULL){
             PQclear(res);
             return E_API_PROTOCOL_FORMAT;
         }
-        *enable = atoi(PQgetvalue(res, 0, 0));
-        *hour_start = atoi(PQgetvalue(res, 0, 1));
-        *hour_end = atoi(PQgetvalue(res, 0, 2));
+        *enable = atoi(PQgetvalue(res,
+                                  ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
+                                  FIELD_INDEX_OF_ENABLE));
+        *hour_start = atoi(PQgetvalue(res, 
+                                      ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
+                                      FIELD_INDEX_OF_HOUR_START));
+        *hour_end = atoi(PQgetvalue(res, ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
+                                         FIELD_INDEX_OF_HOUR_END));
     }
 
     PQclear(res);

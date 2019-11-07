@@ -47,6 +47,7 @@
 #define SERVER_H
 
 #define _GNU_SOURCE
+#define BOT_SERVER
 
 #include "BeDIS.h"
 #include "SqlWrapper.h"
@@ -58,10 +59,10 @@
 
 /* Server config file location and the config file definition. */
 
-/* File path of the config file of the Server */
+/* File path of the config file of the server */
 #define CONFIG_FILE_NAME "./config/server.conf"
 
-/* File path of the config file of the Server */
+/* File path of the log config file of the server */
 #define ZLOG_CONFIG_FILE_NAME "./config/zlog.conf"
 
 /* Length of geo_fence unique key in byte */
@@ -70,19 +71,30 @@
 /* Length of geo_fence name in byte */
 #define LENGTH_OF_GEO_FENCE_NAME 32
 
-/* Maximum length for each array of database information */
+/* Maximum length in number of bytes of database information */
 #define MAXIMUM_DATABASE_INFO 1024
 
-/* Maximum number of LBeacons can be defined as the perimeter in each 
-geo-fence rule */
+/* The number of slots in the memory pool for buffer nodes */
+#define SLOTS_IN_MEM_POOL_BUFFER_NODE 2048
+
+/* The number of slots in the memory pool for buffer nodes */
+#define SLOTS_IN_MEM_POOL_GEO_FENCE 1024
+
+/* The number of slots in the memory pool for buffer nodes */
+#define SLOTS_IN_MEM_POOL_NOTIFICATION 128
+
+/* Number of times to retry allocating memory, because memory allocating 
+   operation may have transient failure. */
+#define MEMORY_ALLOCATE_RETRY 5
+
+/* Maximum number of LBeacons can be defined as the perimeter of each 
+   geo-fence */
 #define MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER 20
 
-/* Maximum number of LBeacons can be defined as the fence in each 
-geo-fence rule */
+/* Maximum number of LBeacons can be defined as the fence of each 
+   geo-fence */
 #define MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE 20
 
-/* Maximum number of monitor types can be monitored in each geo-fence rule */
-#define MAXIMUM_MONITOR_TYPE_IN_GEO_FENCE 20
 
 typedef struct {
    /* The unique key of the geo fence */
@@ -91,8 +103,8 @@ typedef struct {
    /* The name of the geo fence */
    char name[LENGTH_OF_GEO_FENCE_NAME];
 
-   int number_perimeters;
-   int number_fences;
+   int number_LBeacons_in_perimeter;
+   int number_LBeacons_in_fence;
    
    int rssi_of_perimeters;
    int rssi_of_fences;
@@ -100,16 +112,16 @@ typedef struct {
    char perimeters[MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER][LENGTH_OF_UUID];
    char fences[MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE][LENGTH_OF_UUID];
    
-   /* The list entry for inserting the geofence rule into the list of the geo 
+   /* The list entry for inserting the geofence into the list of the geo 
       fences */
    List_Entry geo_fence_list_entry;
 
 } GeoFenceListNode;
 
 typedef struct {
-    /* The length of the time window in which an object is monitored for 
-       movements.*/
-    int time_interval_in_min;
+    /* The length of the time window in which movements of an object is 
+       monitored. */
+    int monitor_interval_in_min;
 
     /* The time slot in minutes in which the running average of RSSI is 
        calculated to compare with the running average of RSSI in adjacent 
@@ -117,7 +129,8 @@ typedef struct {
        */
     int each_time_slot_in_min;
 
-    /* The delta value of RSSI which an object is treated as moved. */
+    /* The delta value of RSSI larger than which an object is treated 
+       as moved. */
     int rssi_delta;
 
 } MovementMonitorConfig;
@@ -139,68 +152,72 @@ typedef struct {
 } NotificationListNode;
 
 /* The configuration file structure */
+
 typedef struct {
 
-    /* The IP address of the Server for WiFi netwok connection. */
+    /* The IP address of the server for WiFi netwok connection. */
     char server_ip[NETWORK_ADDR_LENGTH];
 
-    /* The IP address of database for the Server to connect. */
+    /* The IP address of database for the server to connect. */
     char db_ip[NETWORK_ADDR_LENGTH];
 
-    /* The maximum number of Gateway nodes allowed in the star network of 
-    this Server */
+    /* The maximum number of gateway nodes allowed in the star network of 
+    this server */
     int allowed_number_nodes;
 
-    /* The time interval in seconds between consecutive Server requests for 
+    /* The time interval in seconds between consecutive server requests for 
        health reports from LBeacons */
     int period_between_RFHR;
 
-    /* The time interval in seconds between consecutive Server requests for 
+    /* The time interval in seconds between consecutive server requests for 
        tracked object data from LBeacons */
     int period_between_RFTOD;
     
-    /* The time interval in seconds between consecutive checks by the Server 
+    /* The time interval in seconds between consecutive checks by the server 
        for object activity information */
     int period_between_check_object_activity;
 
-    /* A port that gateways are listening on and for the Server to send to. */
+    /* A port that gateways are listening on and for the server to send to. */
     int send_port;
 
-    /* A port that the Server is listening for gateways to send to */
+    /* A port that the server is listening for and gateways to send to */
     int recv_port;
 
-    /* A port that the database is listening on and for the Server to send to */
+    /* A port that the database is listening on and for the server to send to */
     int database_port;
 
     /* The name of the database */
     char database_name[MAXIMUM_DATABASE_INFO];
 
-    /* The account for accessing to the database */
+    /* The account for accessing the database */
     char database_account[MAXIMUM_DATABASE_INFO];
 
-    /* The password for accessing to the database */
+    /* The password for accessing the database */
     char database_password[MAXIMUM_DATABASE_INFO];
 
     /* The number of days in which data are kept in the database */
     int database_keep_days;
 
-    /* The length of the loose time window in which tracked data is filtered
-    to limit the database processing time. */
+    /* The length of time window which server applies to each SQL query when it 
+       queries tracked data from time-series database. The purpose of this 
+       condition is to guarantee the database response time is predicatble and 
+       make database not to query all records.
+    */
     int database_loose_time_window_in_sec;
 
     /* The length of the time window in which each object is shown and 
        made visiable by BOT system. */
     int location_time_interval_in_sec;
 
-    /* The flag of enable panic button monitor */
+    /* The flag indicating panic button monitor is enabled. */
     int is_enabled_panic_button_monitor;
 
     /* The length of the time window in which the object is in the panic 
-       condition often the user of the object presses the panic buton of the 
+       condition after the user of the object presses the panic buton of the 
        object. */
     int panic_time_interval_in_sec;
 
-    /* The flag of enable geo-fence monitor */
+    /* The flag indicating whether geo-fence monitor is enabled. */
     int is_enabled_geofence_monitor;
 
     /* The time duration geo-fence perimeter violation lasts valid */
@@ -209,13 +226,15 @@ typedef struct {
     /* The list head of the geo gence list */
     struct List_Entry geo_fence_list_head;
 
-    /* The flag of enable movement monitor */
+    /* The flag indicating whether movement monitor is enabled. */
     int is_enabled_movement_monitor;
 
     /* The specific settings for checking movement rules */
     MovementMonitorConfig movement_monitor_config;
         
-    /* The flag of enable collect violation event */
+    /* The flag indicating collect violation event is enabled. When this flag 
+       is set, panic and geo-fence violation events will be collected in 
+       notification_table. */
     int is_enabled_collect_violation_event;
 
     /* The length of the time window in which a violation event in 
@@ -235,17 +254,18 @@ typedef struct {
 
 } ServerConfig;
 
-/* A Server config struct for storing config parameters from the config file */
+/* A server config struct for storing config parameters from the config file */
 
+/* global variables */
 ServerConfig config;
 
 /* The database argument for opening database */
 char database_argument[SQL_TEMP_BUFFER_LENGTH];
 
-/* The mempool for the GeoFence node structure to allocate memory */
+/* The mempool for the GeoFence node structures */
 Memory_Pool geofence_mempool;
 
-/* The mempool for the Notification node structure to allocate memory */
+/* The mempool for the Notification node structures */
 Memory_Pool notification_mempool;
 
 /* An array of address maps */
@@ -257,7 +277,7 @@ BufferListHead Geo_fence_receive_buffer_list_head;
 
 /* Variables for storing the last polling times in seconds. Server keeps 
    comparing current MONOTONIC timestamp with these last polling times to 
-   determine the timing of triggering next polling requests periodically. */
+   determine the timing of periodic polling requests. */
 int last_polling_LBeacon_for_HR_time;
 int last_polling_object_tracking_time;
 
@@ -270,14 +290,15 @@ int last_polling_object_tracking_time;
 
   Parameters:
      config - Server related configration settings
-     common_config - Common configuration settings among Gateway and Server
-     file_name - The name of the config file that stores the Server data
+     common_config - Common configuration settings among gateway and server
+     file_name - The name of the config file that stores the server data
 
   Return value:
 
      ErrorCode - WORK_SUCCESSFULLY: work successfully.
                  E_OPEN_FILE: config file  fail to open.
  */
+
 ErrorCode get_server_config(ServerConfig *config, 
                             CommonConfig *common_config, 
                             char *file_name);
@@ -285,7 +306,7 @@ ErrorCode get_server_config(ServerConfig *config,
 /*
   maintain_database:
 
-     This function is executed as a dedicated thread to maintain database 
+     This function is executed by a dedicated thread to maintain database 
      records by retaining old data from database and doing vacuum on all the 
      tables.
 
@@ -298,12 +319,13 @@ ErrorCode get_server_config(ServerConfig *config,
      None
 
  */
+
 void *maintain_database();
 
 /*
   Server_NSI_routine:
 
-     This function is executed by worker threads on a Server when they process 
+     This function is executed by worker threads on a server when they process 
      the buffer nodes in NSI receive buffer list.
 
   Parameters:
@@ -315,12 +337,13 @@ void *maintain_database();
      None
 
  */
+
 void *Server_NSI_routine(void *_buffer_node);
 
 /*
   Server_BHM_routine:
 
-     This function is executed by worker threads on a Server when they process 
+     This function is executed by worker threads on a server when they process 
      the buffer nodes in BHM receive buffer list.
 
   Parameters:
@@ -332,15 +355,15 @@ void *Server_NSI_routine(void *_buffer_node);
      None
 
  */
+
 void *Server_BHM_routine(void *_buffer_node);
 
 
 /*
   Server_LBeacon_routine:
 
-     This function is executed by worker threads on a Server when they process 
-     the buffer nodes in LBeacon receive buffer list and send to the server 
-     directly.
+     This function is executed by worker threads on a server when they process 
+     the buffer nodes in LBeacon receive buffer list.
 
   Parameters:
 
@@ -351,13 +374,14 @@ void *Server_BHM_routine(void *_buffer_node);
      None
 
  */
+
 void *Server_LBeacon_routine(void *_buffer_node);
 
 
 /*
   process_tracked_data_from_geofence_gateway:
 
-     This function is executed by worker threads on a Server when processing
+     This function is executed by worker threads on a server when processing
      buffer nodes in the GeoFence receive buffer list.
 
   Parameters:
@@ -369,13 +393,14 @@ void *Server_LBeacon_routine(void *_buffer_node);
      None
 
  */
+
 void *process_tracked_data_from_geofence_gateway(void *_buffer_node);
 
 /*
   Gateway_join_request:
 
-     This function is executed on the Server in response to a request from a 
-     Gateway to join the Server. When executed, it fills the AddressMap with 
+     This function is executed on the server in response to a request from a 
+     gateway to join the server. When executed, it fills the AddressMap with 
      the inputs and sets the network_address if not exceed MAX_NUMBER_NODES.
 
   Parameters:
@@ -389,14 +414,15 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node);
             false : Fail to join
 
  */
+
 bool Gateway_join_request(AddressMapArray *address_map, char *address);
 
 
 /*
   broadcast_to_gateway:
 
-     This function is executed when a command needs to be broadcast to Gateways.
-     When called, this function sends msg to all Gateways registered in the
+     This function is executed when a command needs to be broadcast to gateways.
+     When called, this function sends msg to all gateways registered in the
      Gateway_address_map.
 
   Parameters:
@@ -409,6 +435,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address);
      None
 
  */
+
 void broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size);
 
 
@@ -426,6 +453,7 @@ void broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size);
 
      None
  */
+
 void *Server_process_wifi_send(void *_buffer_node);
 
 
@@ -444,6 +472,7 @@ void *Server_process_wifi_send(void *_buffer_node);
 
      None
  */
+
 void *Server_process_wifi_receive();
 
 /*
@@ -461,6 +490,7 @@ void *Server_process_wifi_receive();
 
      None
  */
+
 void *Server_summarize_location_information(); 
 
 /*
@@ -477,6 +507,7 @@ void *Server_summarize_location_information();
 
      None
  */
+
 void *Server_collect_violation_event(); 
 
 
@@ -493,6 +524,7 @@ void *Server_collect_violation_event();
 
      None
  */
+
 void *Server_send_notification(); 
 
 
@@ -500,9 +532,10 @@ void *Server_send_notification();
   send_notification_alarm_to_gateway:
 
      This function is executed when a notification alarm needs to be sent 
-     to Gateways. When called, this function sends notification alarms to the
-     gateways specified in notification settings, and gateway will propagate 
-     the notification alarm requests to all agents.
+     to gateways. When called, this function sends notification alarms to the
+     gateways specified in notification settings, and gateways will propagate 
+     the notification alarm requests to the agents specified in the request 
+     packet.
 
   Parameters:
 
@@ -511,6 +544,7 @@ void *Server_send_notification();
      None
 
  */
+
 void send_notification_alarm_to_gateway();
 
 /*
@@ -533,6 +567,7 @@ void send_notification_alarm_to_gateway();
      ErrorCode
 
  */
+
 ErrorCode add_geo_fence_settings(struct List_Entry * geo_fence_list_head,
                                 char *buf);
 
@@ -556,16 +591,17 @@ ErrorCode add_geo_fence_settings(struct List_Entry * geo_fence_list_head,
      ErrorCode
 
  */
+
 ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
                                     char *buf);
 
 /*
   check_geo_fence_violations:
 
-     This function first iterates all enabled and valid geo-fence rules and then 
-     checks if the LBeacon that sent out this message buffer is part of fences. 
-     If YES, it invokes helper function examine_tracked_objects_status() to 
-     examine each detected object against geo-fence rule.
+     This function first iterates overall enabled and valid geo-fence and then 
+     checks if the LBeacon that sent out this message is part of fences. If 
+     YES, it invokes helper function examine_tracked_objects_status() to 
+     examine each detected object against geo-fence.
 
   Parameters:
 
@@ -577,7 +613,6 @@ ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
 
  */
 
-
 ErrorCode check_geo_fence_violations(BufferNode* buffer_node);
 
 
@@ -585,7 +620,7 @@ ErrorCode check_geo_fence_violations(BufferNode* buffer_node);
   examine_tracked_objects_status:
 
      This function extracts each detected object data from the buffer and
-     checks if the object violates the geo-fence rules.
+     checks if the object violates any geo-fence.
 
   Parameters:
 
@@ -594,19 +629,19 @@ ErrorCode check_geo_fence_violations(BufferNode* buffer_node);
      
      buf - the packet content sent out by LBeacon
 
-     geofence_key - the unique key of geo-fence rule
+     geofence_key - the unique key of geo-fence
 
-     is_fence_lbeacon - flag to specify if LBeacon that sent out the input buf 
-                        is part of fence
+     is_fence_lbeacon - a flag that indicates whether the LBeacon that sent out 
+                        the input buf is part of a fence
 
-     fence_rssi - the rssi criteria of fence to determine the detected object 
-                  violates fence rule
+     fence_rssi - the RSSI criteria of fence to determine the detected object 
+                  violates fence 
 
-     is_perimeter_lbeacon - flag to specify if LBeacon that sent out the input buf 
-                            is part of perimeter
+     is_perimeter_lbeacon - a flag that indicates whether the LBeacon that sent 
+                            out the input buf is part of a perimeter
 
-     perimeter_rssi - the rssi criteria of perimeter to determine the detected
-                      object violates perimeter rule
+     perimeter_rssi - the RSSI criteria of perimeter to determine the detected
+                      object violates perimeter 
 
 
   Return value:
@@ -614,6 +649,7 @@ ErrorCode check_geo_fence_violations(BufferNode* buffer_node);
      ErrorCode - WORK_SUCCESSFULLY: work successfully.
 
  */
+
 ErrorCode examine_tracked_objects_status(float api_version,
                                          char *buf,
                                          char *geofence_key,

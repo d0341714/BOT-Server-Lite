@@ -66,16 +66,17 @@
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 static ErrorCode SQL_execute(void *db, char *sql_statement);
 
 
 /*
   SQL_begin_transaction
 
-     Begins transaction makes the operations specified by the follows SQL
+     Begins transaction makes the operations specified by the following SQL
      database statement a transaction and holds a lock on the table until
      the transaction either is committed or rollbed back. Begin transaction
-     makes the starting boundary of a transaction.
+     marks the starting boundary of a transaction.
 
   Parameter:
 
@@ -86,6 +87,7 @@ static ErrorCode SQL_execute(void *db, char *sql_statement);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 static ErrorCode SQL_begin_transaction(void *db);
 
 
@@ -103,13 +105,14 @@ static ErrorCode SQL_begin_transaction(void *db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 static ErrorCode SQL_commit_transaction(void *db);
 
 
 /*
   SQL_rollback_transaction
 
-     Rolls back the transaction marked by a previous begine transaction.
+     Rolls back the transaction marked by a previous begin transaction.
 
   Parameter:
 
@@ -120,6 +123,7 @@ static ErrorCode SQL_commit_transaction(void *db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 static ErrorCode SQL_rollback_transaction(void *db);
 
 
@@ -139,6 +143,7 @@ static ErrorCode SQL_rollback_transaction(void *db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 ErrorCode SQL_open_database_connection(char *db_filepath, void **db);
 
 
@@ -156,6 +161,7 @@ ErrorCode SQL_open_database_connection(char *db_filepath, void **db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 ErrorCode SQL_close_database_connection(void *db);
 
 
@@ -174,11 +180,12 @@ ErrorCode SQL_close_database_connection(void *db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 ErrorCode SQL_vacuum_database(void *db);
 
 
 /*
-  SQL_retain_data();
+  SQL_delte_old_data();
 
      Deletes the rows and catelogues which are older than the specified number
      of hours ago.
@@ -194,13 +201,14 @@ ErrorCode SQL_vacuum_database(void *db);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_retain_data(void *db, int retention_hours);
+
+ErrorCode SQL_delete_old_data(void *db, int retention_hours);
 
 
 /*
   SQL_update_gateway_registration_status
 
-     Updates the input gateways as registered.
+     Updates the status of the input gateways as registered.
 
   Parameter:
 
@@ -218,6 +226,7 @@ ErrorCode SQL_retain_data(void *db, int retention_hours);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 ErrorCode SQL_update_gateway_registration_status(void *db,
                                                  char *buf,
                                                  size_t buf_len);
@@ -240,13 +249,14 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
 
      buf_len - Length in number of bytes of buf input string
 
-     gateway_ip_address - the real ip address of Gateway
+     gateway_ip_address - the real ip address of gateway
 
   Return Value:
 
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 ErrorCode SQL_update_lbeacon_registration_status(void *db,
                                                  char *buf,
                                                  size_t buf_len,
@@ -269,13 +279,14 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
 
      buf_len - Length in number of bytes of buf input string
 
-     gateway_ip_address - the real ip address of Gateway
+     gateway_ip_address - the real ip address of gateway
 
   Return Value:
 
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 ErrorCode SQL_update_gateway_health_status(void *db,
                                            char *buf,
                                            size_t buf_len,
@@ -298,13 +309,14 @@ ErrorCode SQL_update_gateway_health_status(void *db,
 
      buf_len - Length in number of bytes of buf input string
 
-     gateway_ip_address - the real ip address of Gateway
+     gateway_ip_address - the real ip address of gateway
 
   Return Value:
 
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 ErrorCode SQL_update_lbeacon_health_status(void *db,
                                            char *buf,
                                            size_t buf_len,
@@ -335,6 +347,7 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_update_object_tracking_data(void *db,
                                           char *buf,
                                           size_t buf_len);
@@ -365,6 +378,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                                                                char *buf,
                                                                size_t buf_len);
@@ -373,11 +387,11 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
   SQL_summarize_object_location
 
      This function queries tracking_table (Time-Series database) within time 
-     window to find out the lbeacon_uuid with the strongest RSSI value for each
-     object mac_address. It is also responsible for maintaining the first seen 
-     timestamp and last seen timestamp of the object mac_address and 
-     lbeacon_uuid pair. The summary information is updated to the summary table 
-     object_summary_table.
+     window to find out the lbeacon_uuid of Lbeacons with the strongest RSSI 
+     value for each object mac_address. It is also responsible for maintaining 
+     the first seen timestamp and last seen timestamp of the object mac_address 
+     and lbeacon_uuid pair. The summary information is updated to the summary 
+     table object_summary_table.
 
   Parameter:
 
@@ -387,14 +401,15 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
          the length of time window in which tracked data is filtered to limit 
          database processing time
                                            
-     time_interval_in_sec - the time window in which we treat this object as 
-                            shown and visiable by BOT system
+     time_interval_in_sec - the time window in which we treat this object been
+                            seen and visiable by BOT system
 
   Return Value:
 
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_summarize_object_location(void *db, 
                                         int database_loose_time_window_in_sec,
                                         int time_interval_in_sec);
@@ -403,7 +418,7 @@ ErrorCode SQL_summarize_object_location(void *db,
 /*
   SQL_identify_geofence_violation
 
-     This function updates geofence violation information into 
+     This function updates geo-fence violation information in 
      object_summary_table and sets perimeter valid timestamp as current
      timestamp to disable previous perimeter violation.
      
@@ -413,7 +428,7 @@ ErrorCode SQL_summarize_object_location(void *db,
 
      mac_address -  MAC address of detected object.
 
-     geofence_key - name of geo-fence rule
+     geofence_key - name of geo-fence 
 
      geofence_uuid - UUID of the LBeacon scanned the detected object.
 
@@ -424,6 +439,7 @@ ErrorCode SQL_summarize_object_location(void *db,
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_identify_geofence_violation(
     void *db,
     char *mac_address,
@@ -434,7 +450,7 @@ ErrorCode SQL_identify_geofence_violation(
 /*
   SQL_insert_geofence_perimeter_valid_deadline
 
-     This function updates geofence perimter violation information into 
+     This function updates geofence perimter violation information in
      object_summary_table. The information includes geofence name and perimter
      violation timestamp.
      
@@ -444,7 +460,7 @@ ErrorCode SQL_identify_geofence_violation(
 
      mac_address -  MAC address of detected object.
 
-     geofence_key - the unique key of geo-fence rule
+     geofence_key - the unique key of geo-fence 
 
      valid_duration_in_sec - the duration in seconds within which this 
                              perimeter violation is treated as valid
@@ -455,6 +471,7 @@ ErrorCode SQL_identify_geofence_violation(
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
     void *db,
     char *mac_address,
@@ -464,7 +481,7 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
 /*
   SQL_check_perimeter_violation_valid
 
-     This function updates geofence perimter violation information into 
+     This function updates geofence perimter violation information in
      object_summary_table. The information includes geofence name and perimter
      violation timestamp.
      
@@ -474,7 +491,7 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
 
      mac_address -  MAC address of detected object.
 
-     geofence_key - the unique key of geo-fence rule
+     geofence_key - the unique key of geo-fence 
 
      is_valid_perimeter - output value to specify if perimter violation is 
                           still valid
@@ -484,6 +501,7 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_check_perimeter_violation_valid(
     void *db,
     char *mac_address,
@@ -515,6 +533,7 @@ ErrorCode SQL_check_perimeter_violation_valid(
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_identify_panic(void *db,
                              int database_loose_time_window_in_sec,
                              int time_interval_in_sec);
@@ -528,7 +547,7 @@ ErrorCode SQL_identify_panic(void *db,
      records stored in tracking_table (Time-Series database). It uses the 
      features called TIME_BUCKET and Delta provided by timescaleDB (TSDB) to
      identify the activity status. The activity status is updated to the 
-     summary table object_summary_table.
+     object_summary_table.
 
   Parameter:
 
@@ -548,6 +567,7 @@ ErrorCode SQL_identify_panic(void *db,
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_identify_last_movement_status(void *db, 
                                             int time_interval_in_min, 
                                             int each_time_slot_in_min,
@@ -557,7 +577,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
 /*
   SQL_insert_geofence_violation_event
 
-     This function inserts geofence violation event into notification_table 
+     This function inserts a geo-fence violation event into notification_table 
      directly, because geofence violation is time-critical.
      
   Parameter:
@@ -579,6 +599,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_insert_geofence_violation_event(
     void *db,
     char *mac_address,
@@ -590,7 +611,7 @@ ErrorCode SQL_insert_geofence_violation_event(
 
      This function checks object_summary_table to see if there are any 
      violation events. If YES, the violation events of all monitoring 
-     types are recored into notification_table. 
+     types are recorded in notification_table. 
 
   Parameter:
 
@@ -611,6 +632,7 @@ ErrorCode SQL_insert_geofence_violation_event(
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_collect_violation_events(
     void *db, 
     ObjectMonitorType monitor_type,
@@ -622,7 +644,7 @@ ErrorCode SQL_collect_violation_events(
 
      This function checks object_summary_table to see if there are any 
      violation events. If YES, the violation events of all monitoring 
-     types are recored into notification_table. 
+     types are recorded in notification_table. 
 
   Parameter:
 
@@ -637,6 +659,7 @@ ErrorCode SQL_collect_violation_events(
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_get_and_update_violation_events(void *db,
                                               char *buf,
                                               size_t buf_len);
@@ -661,6 +684,7 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_get_object_monitor_type(void *db, 
                                       char *mac_address, 
                                       ObjectMonitorType *monitor_type);
@@ -668,25 +692,25 @@ ErrorCode SQL_get_object_monitor_type(void *db,
 /*
   SQL_update_geo_fence_config
 
-     Updates start hour and end hour of geo-fence rule
+     Updates start hour and end hour of geo-fence 
 
   Parameter:
 
      db - a pointer pointing to the connection to the database backend server
 
-     unique_key - pointer to unique key to identify this geo-fence rule
+     unique_key - pointer to unique key to identify this geo-fence 
 
-     name - pointer to the name of the geo-fence rule specified by the input 
+     name - pointer to the name of the geo-fence specified by the input 
             unique key
 
      perimeters - set of LBeacons that are in perimeter of a geofence. 
 
      fences - set of LBeacons that are in a fence
 
-     hour_start - pointer to start hour of the geo-fence rule specified by the 
+     hour_start - pointer to start hour of the geo-fence specified by the 
                   input unique key
 
-     hour_end - pointer to start hour of the geo-fence rule specified by the 
+     hour_end - pointer to start hour of the geo-fence specified by the 
                 input unique key
 
   Return Value:
@@ -694,6 +718,7 @@ ErrorCode SQL_get_object_monitor_type(void *db,
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
+
 ErrorCode SQL_update_geo_fence_config(void *db,
                                       char *unique_key, 
                                       char *name,
@@ -706,22 +731,22 @@ ErrorCode SQL_update_geo_fence_config(void *db,
   SQL_get_geo_fence_config
 
      This function queries geo_fence_config to extract configurations of 
-     the specified geo_fence rule
+     the specified geo_fence 
 
   Parameter:
 
      db - a pointer pointing to the connection to the database backend server
 
-     unique_key - pointer to unique key to identify this geo-fence rule
+     unique_key - pointer to unique key to identify this geo-fence 
 
      enable - a pointer to output of this function. It stores enable status of
-              the geo-fence rule specified by the input unique key
+              the geo-fence specified by the input unique key
      
      hour_start - a pointer to output of this function. It stores start hour of
-                  the geo-fence rule specified by the input unique key
+                  the geo-fence specified by the input unique key
 
      hour_end - a pointer to output of this function. It stores end hour of
-                the geo-fence rule specified by the input unique key
+                the geo-fence specified by the input unique key
               
 
   Return Value:
@@ -729,6 +754,7 @@ ErrorCode SQL_update_geo_fence_config(void *db,
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
+
 ErrorCode SQL_get_geo_fence_config(void *db, 
                                    char *unique_key, 
                                    int *enable,

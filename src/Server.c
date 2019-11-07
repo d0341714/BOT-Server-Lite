@@ -17,8 +17,8 @@
   File Description:
 
      This file contains programs to transmit and receive data to and from
-     Gateway through Wi-Fi network, and programs executed by network setup and
-     initialization, Beacon health monitor and comminication unit.
+     gateways through Wi-Fi network, and programs executed by network setup and
+     initialization, beacon health monitor and comminication unit.
 
   Version:
 
@@ -59,16 +59,16 @@ int main(int argc, char **argv)
     /* The main thread of the communication Unit */
     pthread_t CommUnit_thread;
 
-    /* The thread of maintenance database */
+    /* The thread of database maintenance */
     pthread_t database_maintenance_thread;
 
-    /* The thread of summarizing location information */
+    /* The thread for summarizing location information */
     pthread_t location_information_thread;
 
-    /* The thread of collecting violation events */
+    /* The thread for collecting violation events */
     pthread_t collect_violation_thread;
 
-    /* The thread of sending notification */
+    /* The thread for sending notification */
     pthread_t send_notification_thread;
 
     /* The thread to listen for messages from Wi-Fi interface */
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
     /* Initialize the memory pool for buffer nodes */
     if(MEMORY_POOL_SUCCESS != mp_init( &node_mempool, 
                                        sizeof(BufferNode), 
-                                       SLOTS_IN_MEM_POOL))
+                                       SLOTS_IN_MEM_POOL_BUFFER_NODE))
     {
         return E_MALLOC;
     }
@@ -110,15 +110,15 @@ int main(int argc, char **argv)
     /* Initialize the memory pool for geo-fence structs */
     if(MEMORY_POOL_SUCCESS != mp_init( &geofence_mempool, 
                                        sizeof(GeoFenceListNode), 
-                                       SLOTS_IN_MEM_POOL))
+                                       SLOTS_IN_MEM_POOL_GEO_FENCE))
     {
         return E_MALLOC;
     }
 
-    /* Initialize the memory pool for geo-fence structs */
+    /* Initialize the memory pool for notification structs */
     if(MEMORY_POOL_SUCCESS != mp_init( &notification_mempool, 
                                        sizeof(NotificationListNode), 
-                                       SLOTS_IN_MEM_POOL))
+                                       SLOTS_IN_MEM_POOL_NOTIFICATION))
     {
         return E_MALLOC;
     }
@@ -153,10 +153,10 @@ int main(int argc, char **argv)
     insert_list_tail( &Geo_fence_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
-    init_buffer( &LBeacon_receive_buffer_list_head,
+    init_buffer( &data_receive_buffer_list_head,
                 (void *) Server_LBeacon_routine, 
                 common_config.normal_priority);
-    insert_list_tail( &LBeacon_receive_buffer_list_head.priority_list_entry,
+    insert_list_tail( &data_receive_buffer_list_head.priority_list_entry,
                       &priority_list_head.priority_list_entry);
 
     init_buffer( &NSI_send_buffer_list_head,
@@ -228,7 +228,7 @@ int main(int argc, char **argv)
         return return_value;
     }
 
-    /* Create thread to main database */
+    /* Create thread to maintain database */
     return_value = startThread( &database_maintenance_thread, 
                                 maintain_database, 
                                 NULL);
@@ -330,7 +330,7 @@ int main(int argc, char **argv)
 
             /* Broadcast poll messenge to gateways */
             broadcast_to_gateway(&Gateway_address_map, command_msg,
-                                 WIFI_MESSAGE_LENGTH);
+                                 strlen(command_msg));
 
             /* Update the last_polling_object_tracking_time */
             last_polling_object_tracking_time = uptime;
@@ -355,7 +355,7 @@ int main(int argc, char **argv)
 
             /* broadcast to gateways */
             broadcast_to_gateway(&Gateway_address_map, command_msg,
-                                 WIFI_MESSAGE_LENGTH);
+                                 strlen(command_msg));
 
             /* Update the last_polling_LBeacon_for_HR_time */
             last_polling_LBeacon_for_HR_time = uptime;
@@ -602,11 +602,11 @@ ErrorCode get_server_config(ServerConfig *config,
               config->is_enabled_movement_monitor);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->movement_monitor_config.time_interval_in_min = atoi(config_message);
+    config->movement_monitor_config.monitor_interval_in_min = atoi(config_message);
     zlog_info(category_debug,
               "The time_interval_in_min is [%d]", 
               config->movement_monitor_config.
-              time_interval_in_min);
+              monitor_interval_in_min);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->movement_monitor_config.each_time_slot_in_min = atoi(config_message);
@@ -675,6 +675,8 @@ ErrorCode get_server_config(ServerConfig *config,
 void *maintain_database()
 {
     void *db = NULL;
+    ErrorCode ret = WORK_SUCCESSFULLY;
+
 
     if(WORK_SUCCESSFULLY != 
        SQL_open_database_connection(database_argument, &db)){
@@ -686,12 +688,26 @@ void *maintain_database()
 
     while(true == ready_to_work){
         zlog_info(category_debug, 
-                  "SQL_retain_data with database_keep_days=[%d]", 
+                  "SQL_delete_old_data with database_keep_days=[%d]", 
                   config.database_keep_days); 
-        SQL_retain_data(db, config.database_keep_days * HOURS_EACH_DAY);
+
+        ret = SQL_delete_old_data(db, config.database_keep_days * HOURS_EACH_DAY);
+
+        if(WORK_SUCCESSFULLY != ret){
+            zlog_error(category_debug, 
+                       "SQL_delete_old_data failed ret=[%d]", 
+                       ret); 
+        }
 
         zlog_info(category_debug, "SQL_vacuum_database");
-        SQL_vacuum_database(db);
+
+        ret = SQL_vacuum_database(db);
+
+        if(WORK_SUCCESSFULLY != ret){
+            zlog_error(category_debug, 
+                       "SQL_vacuum_database failed ret=[%d]", 
+                       ret); 
+        }
 
         //Sleep one day before next check
         sleep_t(MS_EACH_DAY);
@@ -741,7 +757,7 @@ void *Server_summarize_location_information(){
 
                 SQL_identify_last_movement_status(
                     db, 
-                    config.movement_monitor_config.time_interval_in_min, 
+                    config.movement_monitor_config.monitor_interval_in_min, 
                     config.movement_monitor_config.each_time_slot_in_min,
                     config.movement_monitor_config.rssi_delta);    
             }
@@ -919,10 +935,7 @@ void *Server_NSI_routine(void *_buffer_node)
     current_node -> pkt_direction = from_server;
     current_node -> pkt_type = join_response;
 
-    sprintf(current_node->content, "%d;%d;%s;%d;", current_node->pkt_direction, 
-                                                   current_node->pkt_type,
-                                                   BOT_SERVER_API_VERSION_LATEST,
-                                                   join_status);
+    sprintf(current_node->content, "%d;", join_status);
 
     current_node->content_size = strlen(current_node->content);
 
@@ -1079,7 +1092,7 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     answer = is_in_Address_Map(address_map, address, 0);
     if(answer >=0)
     {
-        /* Need to update last request time for each Gateway */
+        /* Need to update last request time for each gateway */
         address_map -> address_map_list[answer].last_request_time =
             get_system_time();
 
@@ -1202,12 +1215,14 @@ void *Server_process_wifi_receive()
 
     sPkt temppkt;
 
+    int retry_times = 0;
     char buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
     char *from_direction = NULL;
     char *request_type = NULL;
     char *API_version = NULL;
     char *remain_string = NULL;
+
 
     while (ready_to_work == true)
     {
@@ -1224,8 +1239,13 @@ void *Server_process_wifi_receive()
            and copy the data from Wi-Fi receive queue to the node. */
         new_node = NULL;
 
-        new_node = mp_alloc( &node_mempool);
-        
+        retry_times = MEMORY_ALLOCATE_RETRY;
+        while(retry_times --){
+            new_node = mp_alloc( &node_mempool);
+
+            if(NULL != new_node)
+                break;
+        }
         if(NULL == new_node){
              zlog_info(category_debug, 
                        "Server_process_wifi_receive (new_node) mp_alloc " \
@@ -1336,12 +1356,12 @@ void *Server_process_wifi_receive()
                     zlog_info(category_debug, "Get Tracked Object Data from "
                               "normal Gateway");
 
-                    pthread_mutex_lock(&LBeacon_receive_buffer_list_head
+                    pthread_mutex_lock(&data_receive_buffer_list_head
                                        .list_lock);
                     insert_list_tail(&new_node -> buffer_entry, 
-                                     &LBeacon_receive_buffer_list_head
+                                     &data_receive_buffer_list_head
                                      .list_head);
-                    pthread_mutex_unlock(&LBeacon_receive_buffer_list_head
+                    pthread_mutex_unlock(&data_receive_buffer_list_head
                                          .list_lock);
                         
                     break;
@@ -1381,6 +1401,16 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
     char *current_ptr = NULL;
     char *save_ptr = NULL;
 
+    /* Each geo-fence is defined in server.conf as following format:
+
+       geofence_1=前門;0001;0,24;1,00010018000000006660000000011910,-53,; \
+       1,00010018000000006660000000011900,-53,;
+       
+       The active period of this geo-fence is defined in the "0,24" 
+       setting, and we call it "hours_duration" here. The hours_duration
+       setting is in the format of "hour_start,hour_end" to specify the 
+       active starting hour and ending hour.
+    */
     char *name = NULL;
     char *unique_key = NULL;
     char *hours_duration = NULL;
@@ -1396,6 +1426,7 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
 
     int i = 0;
     char *temp_value = NULL;
+    int retry_times;
 
 
     memset(perimeters_config, 0, sizeof(perimeters_config));
@@ -1420,7 +1451,13 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
               "name=[%s], perimeters=[%s], fences=[%s]", 
               name, perimeters, fences);
 
-    new_node = mp_alloc( &geofence_mempool);
+    retry_times = MEMORY_ALLOCATE_RETRY;
+    while(retry_times --){
+        new_node = mp_alloc( &geofence_mempool);
+
+        if(NULL != new_node)
+            break;
+    }
            
     if(NULL == new_node){
         zlog_error(category_health_report,
@@ -1443,19 +1480,19 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
 
     // parse perimeters settings
     current_ptr = strtok_save(perimeters, DELIMITER_COMMA, &save_ptr);
-    new_node->number_perimeters = atoi (current_ptr);
-    if(new_node->number_perimeters > 
+    new_node->number_LBeacons_in_perimeter = atoi (current_ptr);
+    if(new_node->number_LBeacons_in_perimeter > 
        MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER)
     {
         zlog_error(category_debug,
                    "number_perimeters[%d] exceeds our maximum support number[%d]",
-                   new_node->number_perimeters,
+                   new_node->number_LBeacons_in_perimeter,
                    MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER);
     }
     else
     {
-        if(new_node->number_perimeters > 0){
-            for(i = 0 ; i < new_node->number_perimeters ; i++){
+        if(new_node->number_LBeacons_in_perimeter > 0){
+            for(i = 0 ; i < new_node->number_LBeacons_in_perimeter ; i++){
                 temp_value = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
                 strcpy(new_node->perimeters[i], temp_value);
             }
@@ -1466,19 +1503,19 @@ ErrorCode add_geo_fence_settings(struct List_Entry *geo_fence_list_head,
 
     // parse fences settings
     current_ptr = strtok_save(fences, DELIMITER_COMMA, &save_ptr);
-    new_node->number_fences = atoi (current_ptr);
-    if(new_node->number_fences > 
+    new_node->number_LBeacons_in_fence = atoi (current_ptr);
+    if(new_node->number_LBeacons_in_fence > 
        MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE)
     {
         zlog_error(category_debug,
                    "number_fences[%d] exceeds our maximum support number[%d]",
-                   new_node->number_fences,
+                   new_node->number_LBeacons_in_fence,
                    MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE);
     }
     else
     {
-        if(new_node->number_fences > 0){
-            for(i = 0 ; i < new_node->number_fences ; i++){
+        if(new_node->number_LBeacons_in_fence > 0){
+            for(i = 0 ; i < new_node->number_LBeacons_in_fence ; i++){
                 temp_value = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
                 strcpy(new_node->fences[i], temp_value);
             }
@@ -1531,6 +1568,7 @@ ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
 
     int i;
     char *temp_value = NULL;
+    int retry_times;
 
 
     zlog_info(category_debug, ">> add_notification_settings");
@@ -1548,7 +1586,13 @@ ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
               "alarm_type=[%s], gateway_ip=[%s], agents_list=[%s]", 
               alarm_type, gateway_ip, agents_list);
 
-    new_node = mp_alloc( &notification_mempool);
+    retry_times = MEMORY_ALLOCATE_RETRY;
+    while(retry_times --){
+        new_node = mp_alloc( &notification_mempool);
+    
+        if(NULL != new_node)
+            break;
+    }
            
     if(NULL == new_node){
         zlog_error(category_health_report,
@@ -1635,7 +1679,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                                      GeoFenceListNode,
                                      geo_fence_list_entry);
 
-        /* check if geo-fence rule is turn-on */
+        /* check if geo-fence is turn-on */
         if(WORK_SUCCESSFULLY != 
            SQL_open_database_connection(database_argument, &db)){
 
@@ -1654,7 +1698,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
 
         if(is_rule_enabled == 0){
             zlog_debug(category_debug, 
-                       "Skip geo-fence rule=[%s], enable=[%d]", 
+                       "Skip geo-fence=[%s], enable=[%d]", 
                        current_list_ptr->unique_key, is_rule_enabled);
             continue;
         }
@@ -1665,7 +1709,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
                 rule_hour_end < current_hour){
 
                 zlog_debug(category_debug, 
-                           "Skip geo-fence rule=[%s], start=[%d], end=[%d], " \
+                           "Skip geo-fence=[%s], start=[%d], end=[%d], " \
                            "current_hour=[%d]", 
                            current_list_ptr->unique_key, rule_hour_start,
                            rule_hour_end, current_hour);
@@ -1675,7 +1719,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
             if(rule_hour_end < current_hour && 
                 current_hour < rule_hour_start){
                 zlog_debug(category_debug, 
-                           "Skip geo-fence rule=[%s], start=[%d], end=[%d], " \
+                           "Skip geo-fence=[%s], start=[%d], end=[%d], " \
                            "current_hour=[%d]", 
                            current_list_ptr->unique_key, rule_hour_start,
                            rule_hour_end, current_hour);
@@ -1688,7 +1732,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
         is_perimeter_lbeacon = false;
         is_fence_lbeacon = false;
 
-        for(i = 0 ; i < current_list_ptr->number_perimeters ; i++){
+        for(i = 0 ; i < current_list_ptr->number_LBeacons_in_perimeter ; i++){
             if(0 == strncmp_caseinsensitive(lbeacon_uuid, 
                                             current_list_ptr->perimeters[i], 
                                             strlen(lbeacon_uuid))){
@@ -1697,7 +1741,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node)
             }
         }
 
-        for(i = 0 ; i < current_list_ptr->number_fences ; i++){
+        for(i = 0 ; i < current_list_ptr->number_LBeacons_in_fence ; i++){
             if(0 == strncmp_caseinsensitive(lbeacon_uuid, 
                                             current_list_ptr->fences[i], 
                                             strlen(lbeacon_uuid))){
@@ -1860,7 +1904,7 @@ ErrorCode examine_tracked_objects_status(float api_version,
                 continue;
             }
 
-            /* check fence rule and perimeter rule */
+            /* check fence and perimeter */
             if(is_fence_lbeacon && ( detected_rssi > fence_rssi)){
 
                 zlog_info(category_debug, 
