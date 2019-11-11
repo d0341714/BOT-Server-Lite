@@ -190,7 +190,7 @@ ErrorCode SQL_delete_old_data(void *db, int retention_hours){
     PGresult *res;
 
 
-    SQL_begin_transaction(db);
+    //SQL_begin_transaction(db);
 
     for(idx = 0; idx< sizeof(table_name)/sizeof(table_name[0]); idx++){
 
@@ -201,7 +201,7 @@ ErrorCode SQL_delete_old_data(void *db, int retention_hours){
         ret_val = SQL_execute(db, sql);
 
         if(WORK_SUCCESSFULLY != ret_val){
-            SQL_rollback_transaction(db);
+            //SQL_rollback_transaction(db);
             return E_SQL_EXECUTE;
         }
 
@@ -226,7 +226,7 @@ ErrorCode SQL_delete_old_data(void *db, int retention_hours){
             PQclear(res);
             zlog_info(category_debug, "SQL_execute failed: %s", 
                       PQerrorMessage(conn));
-            SQL_rollback_transaction(db);
+            //SQL_rollback_transaction(db);
 
             return E_SQL_EXECUTE;
 
@@ -234,7 +234,7 @@ ErrorCode SQL_delete_old_data(void *db, int retention_hours){
         PQclear(res);
     }
 
-    SQL_commit_transaction(db);
+   //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -279,7 +279,7 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
         return E_SQL_PARSE;
     }
 
-    SQL_begin_transaction(db);
+    //SQL_begin_transaction(db);
 
     while( numbers-- ){
         
@@ -300,13 +300,13 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
         ret_val = SQL_execute(db, sql);
 
         if(WORK_SUCCESSFULLY != ret_val){
-            SQL_rollback_transaction(db);
+            //SQL_rollback_transaction(db);
             return E_SQL_EXECUTE;
         }
 
     }
 
-    SQL_commit_transaction(db);
+    //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -365,7 +365,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
 
     not_used_gateway_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-    SQL_begin_transaction(db);
+    //SQL_begin_transaction(db);
 
     while( numbers-- ){
         uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
@@ -405,13 +405,13 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
         ret_val = SQL_execute(db, sql);
 
         if(WORK_SUCCESSFULLY != ret_val){
-            SQL_rollback_transaction(db);
+            //SQL_rollback_transaction(db);
             return E_SQL_EXECUTE;
         }
 
     }
 
-    SQL_commit_transaction(db);
+    //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -443,7 +443,7 @@ ErrorCode SQL_update_gateway_health_status(void *db,
     not_used_ip_address = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
     health_status = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-    SQL_begin_transaction(db);
+    //SQL_begin_transaction(db);
 
     /* Create SQL statement */
     pqescape_ip_address =
@@ -462,11 +462,11 @@ ErrorCode SQL_update_gateway_health_status(void *db,
     /* Execute SQL statement */
     ret_val = SQL_execute(db, sql);
     if(WORK_SUCCESSFULLY != ret_val){
-        SQL_rollback_transaction(db);
+        //SQL_rollback_transaction(db);
         return E_SQL_EXECUTE;
     }
 
-    SQL_commit_transaction(db);
+    //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -504,7 +504,7 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
     health_status = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-    SQL_begin_transaction(db);
+    //SQL_begin_transaction(db);
 
     /* Create SQL statement */
     pqescape_lbeacon_uuid = 
@@ -528,11 +528,11 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
     ret_val = SQL_execute(db, sql);
 
     if(WORK_SUCCESSFULLY != ret_val){
-        SQL_rollback_transaction(db);
+        //SQL_rollback_transaction(db);
         return E_SQL_EXECUTE;
     }
 
-    SQL_commit_transaction(db);
+    //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -598,7 +598,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
                "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);
 
-    SQL_begin_transaction(db);
+    //SQL_begin_transaction(db);
 
     while(num_types --){
 
@@ -609,7 +609,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
         zlog_debug(category_debug, "object_type=[%s], object_number=[%s]", 
                    object_type, object_number);
         if(object_number == NULL){
-            SQL_rollback_transaction(db);
+            //SQL_rollback_transaction(db);
             return E_API_PROTOCOL_FORMAT;
         }
         numbers = atoi(object_number);
@@ -672,13 +672,13 @@ ErrorCode SQL_update_object_tracking_data(void *db,
             ret_val = SQL_execute(db, sql);
 
             if(WORK_SUCCESSFULLY != ret_val){
-                SQL_rollback_transaction(db);
+                //SQL_rollback_transaction(db);
                 return E_SQL_EXECUTE;
             }
         }
     }
 
-    SQL_commit_transaction(db);
+    //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -747,7 +747,7 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
                "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);
 
-    SQL_begin_transaction(db);
+    //SQL_begin_transaction(db);
 
     while(num_types --){
 
@@ -758,7 +758,7 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
         zlog_debug(category_debug, "object_type=[%s], object_number=[%s]", 
                    object_type, object_number);
         if(object_number == NULL){
-            SQL_rollback_transaction(db);
+            //SQL_rollback_transaction(db);
             return E_API_PROTOCOL_FORMAT;
         }
         numbers = atoi(object_number);
@@ -828,13 +828,13 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
             ret_val = SQL_execute(db, sql);
 
             if(WORK_SUCCESSFULLY != ret_val){
-                SQL_rollback_transaction(db);
+                //SQL_rollback_transaction(db);
                 return E_SQL_EXECUTE;
             }
         }
     }
 
-    SQL_commit_transaction(db);
+    //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -947,7 +947,7 @@ ErrorCode SQL_summarize_object_location(void *db,
 
         memset(prev_mac_address, 0, sizeof(prev_mac_address));
 
-        SQL_begin_transaction(db);
+        //SQL_begin_transaction(db);
 
         for(current_row = 0 ; current_row < total_rows ; current_row++){
 
@@ -984,7 +984,7 @@ ErrorCode SQL_summarize_object_location(void *db,
                            mac_address, lbeacon_uuid, avg_rssi);
 
                 if(avg_rssi == NULL || battery_voltage == NULL){
-                    SQL_rollback_transaction(db);
+                    //SQL_rollback_transaction(db);
                     return E_API_PROTOCOL_FORMAT;                   
                 }
                 avg_rssi_int = atoi(avg_rssi);
@@ -1007,7 +1007,7 @@ ErrorCode SQL_summarize_object_location(void *db,
 
                 if(PQresultStatus(res_mac_address) != PGRES_TUPLES_OK){
                     PQclear(res_mac_address);
-                    SQL_rollback_transaction(db);
+                    //SQL_rollback_transaction(db);
                     PQclear(res);
                     
                     zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
@@ -1055,7 +1055,7 @@ ErrorCode SQL_summarize_object_location(void *db,
 
                     if(WORK_SUCCESSFULLY != ret_val){
                         PQclear(res_mac_address);   
-                        SQL_rollback_transaction(db);
+                        //SQL_rollback_transaction(db);
                         PQclear(res);
 
                         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
@@ -1093,7 +1093,7 @@ ErrorCode SQL_summarize_object_location(void *db,
 
                         if(WORK_SUCCESSFULLY != ret_val){
                             PQclear(res_mac_address);    
-                            SQL_rollback_transaction(db);
+                            //SQL_rollback_transaction(db);
                             PQclear(res);
 
                             zlog_error(category_debug, 
@@ -1108,7 +1108,7 @@ ErrorCode SQL_summarize_object_location(void *db,
             }
         }
 
-        SQL_commit_transaction(db);
+        //SQL_commit_transaction(db);
     }
 
     PQclear(res);
@@ -1161,7 +1161,7 @@ ErrorCode SQL_identify_geofence_violation(
             detected_rssi,
             pqescape_mac_address);
             
-    SQL_begin_transaction(db);
+    //SQL_begin_transaction(db);
 
     ret_val = SQL_execute(db, sql);
 
@@ -1170,14 +1170,14 @@ ErrorCode SQL_identify_geofence_violation(
     PQfreemem(pqescape_geofence_uuid);
 
     if(WORK_SUCCESSFULLY != ret_val){
-        SQL_rollback_transaction(db);
+        //SQL_rollback_transaction(db);
         
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
                    ret_val, PQerrorMessage(conn));
 
         return E_SQL_EXECUTE;
     }     
-    SQL_commit_transaction(db);
+    //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -1218,7 +1218,7 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
             valid_duration_in_sec,
             pqescape_mac_address);
             
-    SQL_begin_transaction(db);
+    //SQL_begin_transaction(db);
 
     ret_val = SQL_execute(db, sql);
 
@@ -1226,14 +1226,14 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
     PQfreemem(pqescape_geofence_key);
 
     if(WORK_SUCCESSFULLY != ret_val){
-        SQL_rollback_transaction(db);
+        //SQL_rollback_transaction(db);
         
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
                    ret_val, PQerrorMessage(conn));
 
         return E_SQL_EXECUTE;
     }     
-    SQL_commit_transaction(db);
+    //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -1381,7 +1381,7 @@ ErrorCode SQL_identify_panic(void *db,
 
         memset(prev_mac_address, 0, sizeof(prev_mac_address));
         
-        SQL_begin_transaction(db);
+        //SQL_begin_transaction(db);
 
         for(current_row = 0 ; current_row < total_rows ; current_row++){
 
@@ -1430,7 +1430,7 @@ ErrorCode SQL_identify_panic(void *db,
 
                 if(WORK_SUCCESSFULLY != ret_val){
                     
-                    SQL_rollback_transaction(db);
+                   //SQL_rollback_transaction(db);
                     PQclear(res);
 
                     zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
@@ -1442,7 +1442,7 @@ ErrorCode SQL_identify_panic(void *db,
             }
         }
 
-        SQL_commit_transaction(db);
+        //SQL_commit_transaction(db);
     }
 
     PQclear(res);
@@ -1530,7 +1530,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
     if(total_rows > 0 && 
        total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
 
-        SQL_begin_transaction(db);
+        //SQL_begin_transaction(db);
 
         for(current_row = 0 ; current_row < total_rows ; current_row++){
             mac_address = PQgetvalue(res, 
@@ -1577,7 +1577,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
 
             if(PQresultStatus(res_activity) != PGRES_TUPLES_OK){
                 PQclear(res_activity);
-                SQL_rollback_transaction(db);
+                //SQL_rollback_transaction(db);
                 PQclear(res);
                     
                 zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
@@ -1604,7 +1604,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
                
                 if(WORK_SUCCESSFULLY != ret_val){
                     PQclear(res_activity);   
-                    SQL_rollback_transaction(db);
+                    //SQL_rollback_transaction(db);
                     PQclear(res);
 
                     zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
@@ -1619,7 +1619,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
             PQclear(res_activity);
         }
 
-        SQL_commit_transaction(db);
+        //SQL_commit_transaction(db);
     }
 
     PQclear(res);
@@ -1682,7 +1682,7 @@ ErrorCode SQL_insert_geofence_violation_event(
             pqescape_geofence_uuid,
             granularity_for_continuous_violations_in_sec);
             
-    SQL_begin_transaction(db);
+    //SQL_begin_transaction(db);
 
     ret_val = SQL_execute(db, sql);
 
@@ -1690,14 +1690,14 @@ ErrorCode SQL_insert_geofence_violation_event(
     PQfreemem(pqescape_geofence_uuid);
 
     if(WORK_SUCCESSFULLY != ret_val){
-        SQL_rollback_transaction(db);
+        //SQL_rollback_transaction(db);
         
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
                    ret_val, PQerrorMessage(conn));
 
         return E_SQL_EXECUTE;
     }     
-    SQL_commit_transaction(db);
+    //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
@@ -1769,10 +1769,10 @@ ErrorCode SQL_collect_violation_events(
             violation_timestamp_name,
             granularity_for_continuous_violations_in_sec);
 
-    SQL_begin_transaction(db);
+    //SQL_begin_transaction(db);
     ret_val = SQL_execute(db, sql);
     if(WORK_SUCCESSFULLY != ret_val){
-        SQL_rollback_transaction(db);
+        //SQL_rollback_transaction(db);
         
         zlog_error(category_debug, 
                    "SQL_execute failed [%d]: %s", 
@@ -1781,7 +1781,7 @@ ErrorCode SQL_collect_violation_events(
 
         return E_SQL_EXECUTE;
     }     
-    SQL_commit_transaction(db);
+    //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
