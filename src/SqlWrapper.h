@@ -48,6 +48,10 @@
 /* Maximum length of message to communicate with SQL wrapper API in bytes */
 #define SQL_TEMP_BUFFER_LENGTH 4096
 
+#define SQL_TRACK_DATA_BULK_INSERT_BUFFER_LENGTH 16384
+
+#define SQL_TRACK_DATA_BULK_INSERT_ONE_RECORD_LENGTH 256
+
 /* When debugging is needed */
 //#define debugging
 

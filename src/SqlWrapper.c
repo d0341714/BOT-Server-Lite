@@ -50,8 +50,6 @@ static ErrorCode SQL_execute(void *db, char *sql_statement){
     PGconn *conn = (PGconn *) db;
     PGresult *res;
 
-    zlog_info(category_debug, "SQL command = [%s]", sql_statement);
-
     res = PQexec(conn, sql_statement);
 
     if(PQresultStatus(res) != PGRES_COMMAND_OK){
@@ -692,9 +690,11 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char sql[SQL_TRACK_DATA_BULK_INSERT_BUFFER_LENGTH];
+    char sql_bulk_insert_one_record[SQL_TRACK_DATA_BULK_INSERT_ONE_RECORD_LENGTH];
     int num_types = 2; // BR_EDR and BLE types
-    char *sql_template = "INSERT INTO tracking_table " \
+    char *sql_bulk_insert_first_template = 
+                         "INSERT INTO tracking_table " \
                          "(object_mac_address, " \
                          "lbeacon_uuid, " \
                          "rssi, " \
@@ -707,7 +707,15 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                          "(%s, %s, %s, %s, %s," \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
-                         "%d);";
+                         "%d)";
+     char *sql_bulk_insert_more_value_template = 
+                         ", " \
+                         "(%s, %s, %s, %s, %s," \
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
+                         "%d)";
+      char *sql_bulk_insert_end_template = ";";
+
     char *lbeacon_uuid = NULL;
     char *lbeacon_ip = NULL;
     char *lbeacon_timestamp = NULL;
@@ -729,6 +737,8 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     char *pqescape_battery_voltage = NULL;
     char *pqescape_initial_timestamp_GMT = NULL;
     char *pqescape_final_timestamp_GMT = NULL;
+    int number_of_insertion = 0;
+    bool sql_preparation_failed = false;
 
 
     zlog_debug(category_debug, "buf=[%s]", buf);
@@ -747,7 +757,9 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
                "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);
 
-   // SQL_begin_transaction(db);
+    number_of_insertion = 0;
+    memset(sql, 0, sizeof(sql));
+    // SQL_begin_transaction(db);
 
     while(num_types --){
 
@@ -764,6 +776,8 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
         numbers = atoi(object_number);
 
         while(numbers--){
+            number_of_insertion++;
+
             object_mac_address = 
                 strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
@@ -805,16 +819,42 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                 PQescapeLiteral(conn, final_timestamp_GMT,
                                 strlen(final_timestamp_GMT));
 
-            memset(sql, 0, sizeof(sql));
-            sprintf(sql, sql_template,
-                    pqescape_object_mac_address,
-                    pqescape_lbeacon_uuid,
-                    pqescape_rssi,
-                    pqescape_panic_button,
-                    pqescape_battery_voltage,
-                    pqescape_initial_timestamp_GMT,
-                    pqescape_final_timestamp_GMT,
-                    current_time - lbeacon_timestamp_value);
+            if(number_of_insertion == 1)
+            {
+                sprintf(sql, 
+                        sql_bulk_insert_first_template,
+                        pqescape_object_mac_address,
+                        pqescape_lbeacon_uuid,
+                        pqescape_rssi,
+                        pqescape_panic_button,
+                        pqescape_battery_voltage,
+                        pqescape_initial_timestamp_GMT,
+                        pqescape_final_timestamp_GMT,
+                        current_time - lbeacon_timestamp_value);
+            }
+            else
+            {
+                memset(sql_bulk_insert_one_record, 
+                       0, 
+                       sizeof(sql_bulk_insert_one_record));
+
+                sprintf(sql_bulk_insert_one_record, 
+                        sql_bulk_insert_more_value_template,
+                        pqescape_object_mac_address,
+                        pqescape_lbeacon_uuid,
+                        pqescape_rssi,
+                        pqescape_panic_button,
+                        pqescape_battery_voltage,
+                        pqescape_initial_timestamp_GMT,
+                        pqescape_final_timestamp_GMT,
+                        current_time - lbeacon_timestamp_value);
+                
+                if(sizeof(sql) < strlen(sql) + strlen(sql_bulk_insert_one_record)){
+                    sql_preparation_failed = true;
+                }else{
+                    strcat(sql, sql_bulk_insert_one_record); 
+                }
+            }
 
             PQfreemem(pqescape_object_mac_address);
             PQfreemem(pqescape_lbeacon_uuid);
@@ -824,17 +864,25 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
             PQfreemem(pqescape_initial_timestamp_GMT);
             PQfreemem(pqescape_final_timestamp_GMT);
 
-            /* Execute SQL statement */
-            ret_val = SQL_execute(db, sql);
-
-            if(WORK_SUCCESSFULLY != ret_val){
-                //SQL_rollback_transaction(db);
-                return E_SQL_EXECUTE;
+            if(sql_preparation_failed){
+                zlog_error(category_debug, 
+                           "insufficient buffer size=%d", 
+                           sizeof(sql));
+                return E_BUFFER_SIZE;
             }
+            
         }
     }
-
+    strcat(sql, sql_bulk_insert_end_template);
     //SQL_commit_transaction(db);
+    
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db, sql);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        //SQL_rollback_transaction(db);
+        return E_SQL_EXECUTE;
+    }
 
     return WORK_SUCCESSFULLY;
 }
