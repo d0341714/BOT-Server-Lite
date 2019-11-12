@@ -1231,7 +1231,7 @@ void *Server_process_wifi_receive()
         /* If there is no pkt received */
         if(temppkt.is_null == true)
         {
-            sleep_t(BUSY_WAITING_TIME_IN_MS);
+            sleep_t(BUSY_WAITING_TIME_IN_WIFI_REXEIVE_PACKET_IN_MS);
             continue;
         }
 
