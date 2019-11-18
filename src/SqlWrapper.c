@@ -692,9 +692,11 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char sql[SQL_TRACK_DATA_BULK_INSERT_BUFFER_LENGTH];
+    char sql_bulk_insert_one_record[SQL_TRACK_DATA_BULK_INSERT_ONE_RECORD_LENGTH];
     int num_types = 2; // BR_EDR and BLE types
-    char *sql_template = "INSERT INTO tracking_table " \
+    char *sql_bulk_insert_first_template = 
+                         "INSERT INTO tracking_table " \
                          "(object_mac_address, " \
                          "lbeacon_uuid, " \
                          "rssi, " \
@@ -707,7 +709,15 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                          "(%s, %s, %s, %s, %s," \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
-                         "%d);";
+                         "%d)";
+     char *sql_bulk_insert_more_value_template = 
+                         ", " \
+                         "(%s, %s, %s, %s, %s," \
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
+                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
+                         "%d)";
+      char *sql_bulk_insert_end_template = ";";
+
     char *lbeacon_uuid = NULL;
     char *lbeacon_ip = NULL;
     char *lbeacon_timestamp = NULL;
@@ -729,6 +739,8 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     char *pqescape_battery_voltage = NULL;
     char *pqescape_initial_timestamp_GMT = NULL;
     char *pqescape_final_timestamp_GMT = NULL;
+    int number_of_insertion = 0;
+    bool sql_preparation_failed = false;
 
 
     zlog_debug(category_debug, "buf=[%s]", buf);
@@ -747,7 +759,9 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
                "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);
 
-    //SQL_begin_transaction(db);
+    number_of_insertion = 0;
+    memset(sql, 0, sizeof(sql));
+    // SQL_begin_transaction(db);
 
     while(num_types --){
 
@@ -764,6 +778,8 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
         numbers = atoi(object_number);
 
         while(numbers--){
+            number_of_insertion++;
+
             object_mac_address = 
                 strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
@@ -805,16 +821,42 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                 PQescapeLiteral(conn, final_timestamp_GMT,
                                 strlen(final_timestamp_GMT));
 
-            memset(sql, 0, sizeof(sql));
-            sprintf(sql, sql_template,
-                    pqescape_object_mac_address,
-                    pqescape_lbeacon_uuid,
-                    pqescape_rssi,
-                    pqescape_panic_button,
-                    pqescape_battery_voltage,
-                    pqescape_initial_timestamp_GMT,
-                    pqescape_final_timestamp_GMT,
-                    current_time - lbeacon_timestamp_value);
+            if(number_of_insertion == 1)
+            {
+                sprintf(sql, 
+                        sql_bulk_insert_first_template,
+                        pqescape_object_mac_address,
+                        pqescape_lbeacon_uuid,
+                        pqescape_rssi,
+                        pqescape_panic_button,
+                        pqescape_battery_voltage,
+                        pqescape_initial_timestamp_GMT,
+                        pqescape_final_timestamp_GMT,
+                        current_time - lbeacon_timestamp_value);
+            }
+            else
+            {
+                memset(sql_bulk_insert_one_record, 
+                       0, 
+                       sizeof(sql_bulk_insert_one_record));
+
+                sprintf(sql_bulk_insert_one_record, 
+                        sql_bulk_insert_more_value_template,
+                        pqescape_object_mac_address,
+                        pqescape_lbeacon_uuid,
+                        pqescape_rssi,
+                        pqescape_panic_button,
+                        pqescape_battery_voltage,
+                        pqescape_initial_timestamp_GMT,
+                        pqescape_final_timestamp_GMT,
+                        current_time - lbeacon_timestamp_value);
+                
+                if(sizeof(sql) < strlen(sql) + strlen(sql_bulk_insert_one_record)){
+                    sql_preparation_failed = true;
+                }else{
+                    strcat(sql, sql_bulk_insert_one_record); 
+                }
+            }
 
             PQfreemem(pqescape_object_mac_address);
             PQfreemem(pqescape_lbeacon_uuid);
@@ -824,17 +866,25 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
             PQfreemem(pqescape_initial_timestamp_GMT);
             PQfreemem(pqescape_final_timestamp_GMT);
 
-            /* Execute SQL statement */
-            ret_val = SQL_execute(db, sql);
-
-            if(WORK_SUCCESSFULLY != ret_val){
-                //SQL_rollback_transaction(db);
-                return E_SQL_EXECUTE;
+            if(sql_preparation_failed){
+                zlog_error(category_debug, 
+                           "insufficient buffer size=%d", 
+                           sizeof(sql));
+                return E_BUFFER_SIZE;
             }
+            
         }
     }
-
+    strcat(sql, sql_bulk_insert_end_template);
     //SQL_commit_transaction(db);
+    
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db, sql);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        //SQL_rollback_transaction(db);
+        return E_SQL_EXECUTE;
+    }
 
     return WORK_SUCCESSFULLY;
 }
@@ -847,80 +897,67 @@ ErrorCode SQL_summarize_object_location(void *db,
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
 
-    char *sql_select_template = "SELECT object_mac_address, lbeacon_uuid, " \
-                                "ROUND( AVG(rssi), 2) as avg_rssi, " \
+    char *sql_select_template = "UPDATE object_summary_table " \
+                                "SET " \
+                                "first_seen_timestamp = CASE " \
+                                "WHEN first_seen_timestamp IS NULL OR " \
+                                "object_summary_table.uuid != " \
+                                "location_information.lbeacon_uuid THEN " \
+                                "location_information.initial_timestamp " \
+                                "ELSE first_seen_timestamp " \
+                                "END, " \
+                                "rssi = location_information.avg_rssi, " \
+                                "battery_voltage = " \
+                                "location_information.battery_voltage, " \
+                                "last_seen_timestamp = " \
+                                "location_information.final_timestamp, " \
+                                "uuid = location_information.lbeacon_uuid " \
+                                "FROM " \
+                                "(SELECT " \
+                                "object_mac_address, " \
+                                "lbeacon_uuid, " \
+                                "avg_rssi, " \
+                                "battery_voltage, " \
+                                "initial_timestamp, " \
+                                "final_timestamp " \
+                                "FROM " \
+                                "(SELECT " \
+                                "ROW_NUMBER() OVER (" \
+                                "PARTITION BY object_mac_address " \
+                                "ORDER BY object_mac_address ASC, avg_rssi DESC" \
+                                ") as rank, " \
+                                "object_beacon_rssi_table.* " \
+                                "FROM "\
+                                "(SELECT " \
+                                "t.object_mac_address, " \
+                                "t.lbeacon_uuid, " \
+                                "ROUND(AVG(rssi), 2) as avg_rssi, " \
                                 "MIN(battery_voltage) as battery_voltage, " \
                                 "MIN(initial_timestamp) as initial_timestamp, " \
                                 "MAX(final_timestamp) as final_timestamp " \
-                                "FROM tracking_table " \
-                                "WHERE final_timestamp >= " \
+                                "FROM " \
+                                "tracking_table t " \
+                                "WHERE " \
+                                "final_timestamp >= " \
                                 "NOW() - INTERVAL '%d seconds' AND " \
-                                "final_timestamp >= NOW() - " \
-                                "(server_time_offset|| 'seconds')::INTERVAL - " \
-                                "INTERVAL '%d seconds' GROUP BY " \
-                                "object_mac_address, lbeacon_uuid " \
-                                "HAVING AVG(rssi) > -100 ORDER BY " \
-                                "object_mac_address ASC, avg_rssi DESC";
-    const int NUMBER_FILEDS_OF_SQL_SELECT_TEMPLATE = 6;
-    const int FIELD_INDEX_OF_OBJECT_MAC_ADDRESS = 0;
-    const int FIELD_INDEX_OF_LBEACON_UUID = 1;
-    const int FIELD_INDEX_OF_AVG_RSSI = 2;
-    const int FIELD_INDEX_OF_BATTERY_VOLTAGE = 3;
-    const int FIELD_INDEX_OF_INITIAL_TIMESTAMP = 4;
-    const int FIELD_INDEX_OF_FINAL_TIMESTAMP = 5;
-
-    PGresult *res = NULL;
-    int current_row = 0;
-    int total_fields = 0;
-    int total_rows = 0;
-
-    char *mac_address = NULL;
-    char prev_mac_address[LENGTH_OF_MAC_ADDRESS];
-
-    char *lbeacon_uuid = NULL;
-    char *avg_rssi = NULL;
-    char *battery_voltage = NULL;
-    char *initial_timestamp = NULL;
-    char *final_timestamp = NULL;
-
-    char *pqescape_mac_address = NULL;
-    char *pqescape_lbeacon_uuid = NULL;
-    char *pqescape_rssi = NULL;
-    char *pqescape_initial_timestamp = NULL;
-    char *pqescape_final_timestamp = NULL;
-
-    char *sql_select_mac_address_lbeacon_uuid_template = 
-        "SELECT mac_address, uuid " \
-        "from " \
-        "object_summary_table where " \
-        "mac_address = %s AND uuid = %s";
-    const int EXPECTED_ROWS_FOR_NOT_FOUND = 0;
-    const int EXPECTED_ROWS_FOR_FOUND = 1;
-    const int RESULT_FIELDS_OF_SQL_SELECT_MAC_ADDRESS_LBEACON_UUID_TEMPLATE = 2;
-
-    PGresult *res_mac_address = NULL;
-    int rows_mac_address = 0;
-    int fields_mac_address = 0;
-
-    char *sql_update_location_information_template = 
-        "UPDATE object_summary_table " \
-        "set uuid = %s, " \
-        "rssi = %d, " \
-        "battery_voltage = %d, " \
-        "first_seen_timestamp = %s, " \
-        "last_seen_timestamp = %s" \
-        "WHERE mac_address = %s";
-
-    char *sql_update_status_template = 
-        "UPDATE object_summary_table " \
-        "set rssi = %d, " \
-        "battery_voltage = %d, " \
-        "last_seen_timestamp = %s " \
-        "WHERE mac_address = %s";
-
-    int avg_rssi_int;
-    int battery_voltage_int;
-
+                                "final_timestamp >= " \
+                                "NOW() - (server_time_offset || 'seconds')::INTERVAL - " \
+                                "INTERVAL '%d seconds' " \
+                                "GROUP BY " \
+                                "object_mac_address, " \
+                                "lbeacon_uuid " \
+                                "HAVING AVG(rssi) > -100 " \
+                                "ORDER BY " \
+                                "object_mac_address ASC, " \
+                                "avg_rssi DESC " \
+                                ") object_beacon_rssi_table " \
+                                ") object_location_table " \
+                                "WHERE " \
+                                "object_location_table.rank <= 1 " \
+                                ") location_information " \
+                                "WHERE " \
+                                "object_summary_table.mac_address = " \
+                                "location_information.object_mac_address;";
 
     memset(sql, 0, sizeof(sql));
 
@@ -928,191 +965,13 @@ ErrorCode SQL_summarize_object_location(void *db,
             database_loose_time_window_in_sec, 
             time_interval_in_sec);
 
-    res = PQexec(conn, sql);
-
-    if(PQresultStatus(res) != PGRES_TUPLES_OK){
-        PQclear(res);
-
+    ret_val = SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != ret_val){
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   res, PQerrorMessage(conn));
+                   ret_val, PQerrorMessage(conn));
 
         return E_SQL_EXECUTE;
     }
-
-    total_fields = PQnfields(res);
-    total_rows = PQntuples(res);
-
-    if(total_rows > 0 && 
-       total_fields == NUMBER_FILEDS_OF_SQL_SELECT_TEMPLATE){
-
-        memset(prev_mac_address, 0, sizeof(prev_mac_address));
-
-        //SQL_begin_transaction(db);
-
-        for(current_row = 0 ; current_row < total_rows ; current_row++){
-
-            mac_address = PQgetvalue(res, 
-                                     current_row, 
-                                     FIELD_INDEX_OF_OBJECT_MAC_ADDRESS);
-
-            // we only need to handle the first row of each pair of 
-            // mac_address and lbeacon_uuid, because we have sorted 
-            // the result by avg_rssi in the SQL command.
-            if(0 != strncmp(prev_mac_address, 
-                            mac_address, 
-                            strlen(mac_address))){
-
-                strncpy(prev_mac_address, mac_address, strlen(mac_address));
-
-                lbeacon_uuid = PQgetvalue(res, 
-                                          current_row, 
-                                          FIELD_INDEX_OF_LBEACON_UUID);
-                avg_rssi = PQgetvalue(res, 
-                                      current_row, 
-                                      FIELD_INDEX_OF_AVG_RSSI);
-                battery_voltage = PQgetvalue(res, 
-                                             current_row, 
-                                             FIELD_INDEX_OF_BATTERY_VOLTAGE);
-                initial_timestamp = PQgetvalue(res, 
-                                               current_row, 
-                                               FIELD_INDEX_OF_INITIAL_TIMESTAMP);
-                final_timestamp = PQgetvalue(res, 
-                                             current_row, 
-                                             FIELD_INDEX_OF_FINAL_TIMESTAMP);
-
-                zlog_debug(category_debug, "get location [%s] [%s] [%s]",
-                           mac_address, lbeacon_uuid, avg_rssi);
-
-                if(avg_rssi == NULL || battery_voltage == NULL){
-                    //SQL_rollback_transaction(db);
-                    return E_API_PROTOCOL_FORMAT;                   
-                }
-                avg_rssi_int = atoi(avg_rssi);
-                battery_voltage_int = atoi(battery_voltage);
-                // first, check if the pair of mac_address and lbeacon_uuid 
-                // exists in the object_summary_table.
-                pqescape_mac_address = 
-                    PQescapeLiteral(conn, mac_address, strlen(mac_address));
-                pqescape_lbeacon_uuid = 
-                    PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid));
-                
-                sprintf(sql, sql_select_mac_address_lbeacon_uuid_template, 
-                        pqescape_mac_address,
-                        pqescape_lbeacon_uuid);
-
-                res_mac_address = PQexec(conn, sql);
-
-                PQfreemem(pqescape_mac_address);
-                PQfreemem(pqescape_lbeacon_uuid);
-
-                if(PQresultStatus(res_mac_address) != PGRES_TUPLES_OK){
-                    PQclear(res_mac_address);
-                    //SQL_rollback_transaction(db);
-                    PQclear(res);
-                    
-                    zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                               res_mac_address, PQerrorMessage(conn));
-
-                    return E_SQL_EXECUTE;
-                }
-
-                rows_mac_address = PQntuples(res_mac_address);
-                fields_mac_address = PQnfields(res_mac_address);
-
-                if(rows_mac_address == EXPECTED_ROWS_FOR_NOT_FOUND){
-                    // if the pair of mac_address and lbeacon_uuid does not exist
-                    // in the object_summary_table, we update the whole location 
-                    // information
-
-                    pqescape_mac_address = 
-                        PQescapeLiteral(conn, mac_address, 
-                                        strlen(mac_address));
-                    pqescape_lbeacon_uuid = 
-                        PQescapeLiteral(conn, lbeacon_uuid, 
-                                        strlen(lbeacon_uuid));
-                    pqescape_initial_timestamp = 
-                        PQescapeLiteral(conn, initial_timestamp, 
-                                        strlen(initial_timestamp));
-                    pqescape_final_timestamp = 
-                        PQescapeLiteral(conn, final_timestamp, 
-                                        strlen(final_timestamp));
-
-                    memset(sql, 0, sizeof(sql));
-                    sprintf(sql, sql_update_location_information_template,  
-                                 pqescape_lbeacon_uuid,
-                                 avg_rssi_int,
-                                 battery_voltage_int,
-                                 pqescape_initial_timestamp, 
-                                 pqescape_final_timestamp,
-                                 pqescape_mac_address);
-
-                    ret_val = SQL_execute(db, sql);
-
-                    PQfreemem(pqescape_mac_address);
-                    PQfreemem(pqescape_lbeacon_uuid);
-                    PQfreemem(pqescape_initial_timestamp);
-                    PQfreemem(pqescape_final_timestamp);
-
-                    if(WORK_SUCCESSFULLY != ret_val){
-                        PQclear(res_mac_address);   
-                        //SQL_rollback_transaction(db);
-                        PQclear(res);
-
-                        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                                   ret_val, PQerrorMessage(conn));
-
-                        return E_SQL_EXECUTE;
-                    }
-                }
-                else if(rows_mac_address == EXPECTED_ROWS_FOR_NOT_FOUND)
-                {
-                    if(fields_mac_address == 
-                       RESULT_FIELDS_OF_SQL_SELECT_MAC_ADDRESS_LBEACON_UUID_TEMPLATE){
-                    // if the pair of mac_address and lbeacon_uuid exists
-                    // in the object_summary_table, we update the timing 
-                    // information
-                       
-                        pqescape_mac_address = 
-                            PQescapeLiteral(conn, mac_address, 
-                                            strlen(mac_address));
-                        pqescape_final_timestamp = 
-                            PQescapeLiteral(conn, final_timestamp, 
-                                        strlen(final_timestamp));
-                     
-                        memset(sql, 0, sizeof(sql));
-                        sprintf(sql, sql_update_status_template,  
-                                avg_rssi_int,
-                                battery_voltage_int,
-                                pqescape_final_timestamp,
-                                pqescape_mac_address);
-
-                        ret_val = SQL_execute(db, sql);
-
-                        PQfreemem(pqescape_mac_address);
-                        PQfreemem(pqescape_final_timestamp);
-
-                        if(WORK_SUCCESSFULLY != ret_val){
-                            PQclear(res_mac_address);    
-                            //SQL_rollback_transaction(db);
-                            PQclear(res);
-
-                            zlog_error(category_debug, 
-                                       "SQL_execute failed [%d]: %s", 
-                                       ret_val, PQerrorMessage(conn));
-
-                            return E_SQL_EXECUTE;
-                        }
-                    }
-                }
-                PQclear(res_mac_address);                
-            }
-        }
-
-        //SQL_commit_transaction(db);
-    }
-
-    PQclear(res);
-
     return WORK_SUCCESSFULLY;
 }
 
@@ -1315,137 +1174,49 @@ ErrorCode SQL_identify_panic(void *db,
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-
-    char *sql_select_template = "SELECT object_mac_address, " \
+    char *sql_select_template = "UPDATE " \
+                                "object_summary_table " \
+                                "SET " \
+                                "panic_timestamp = panic_information.final_timestamp " \
+                                "FROM " \
+                                "(SELECT " \
+                                "object_mac_address, " \
                                 "lbeacon_uuid, " \
                                 "panic_button, " \
                                 "MAX(final_timestamp) as final_timestamp " \
-                                "FROM tracking_table " \
-                                "WHERE final_timestamp >= " \
+                                "FROM " \
+                                "tracking_table " \
+                                "WHERE " \
+                                "final_timestamp >= " \
                                 "NOW() - INTERVAL '%d seconds' AND " \
-                                "final_timestamp >= NOW() - " \
-                                "(server_time_offset|| 'seconds')::INTERVAL - " \
+                                "final_timestamp >= " \
+                                "NOW() - (server_time_offset|| 'seconds')::INTERVAL - " \
                                 "INTERVAL '%d seconds' AND " \
                                 "panic_button = 1 " \
                                 "GROUP BY " \
-                                "object_mac_address, lbeacon_uuid, panic_button " \
+                                "object_mac_address, " \
+                                "lbeacon_uuid, " \
+                                "panic_button " \
                                 "ORDER BY " \
-                                "object_mac_address ASC";
-    const int NUMBER_FILEDS_OF_SQL_SELECT_TEMPLATE = 4;
-    const int FIELD_INDEX_OF_OBJECT_MAC_ADDRESS = 0;
-    const int FIELD_INDEX_OF_FINAL_TIMESTAMP = 3;
+                                "object_mac_address ASC " \
+                                ") panic_information " \
+                                "WHERE " \
+                                "object_summary_table.mac_address = " \
+                                "panic_information.object_mac_address;";
 
-    PGresult *res = NULL;
-    int current_row = 0;
-    int total_fields = 0;
-    int total_rows = 0;
-
-    char *mac_address;
-    char prev_mac_address[LENGTH_OF_MAC_ADDRESS];
-
-    char *pqescape_mac_address = NULL;
-
-    char *final_timestamp = NULL;
-    char *pqescape_final_timestamp = NULL;
-
-    char *sql_update_panic_template = 
-        "UPDATE object_summary_table " \
-        "set panic_timestamp = %s " \
-        "WHERE mac_address = %s";
-
-    ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
-
-    
     memset(sql, 0, sizeof(sql));
 
     sprintf(sql, sql_select_template, 
             database_loose_time_window_in_sec, 
             time_interval_in_sec);
 
-    res = PQexec(conn, sql);
-
-    if(PQresultStatus(res) != PGRES_TUPLES_OK){
-        PQclear(res);
-
+    ret_val = SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != ret_val){
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   res, PQerrorMessage(conn));
+                   ret_val, PQerrorMessage(conn));
 
         return E_SQL_EXECUTE;
     }
-
-    total_fields = PQnfields(res);
-    total_rows = PQntuples(res);
-
-    if(total_rows > 0 && 
-       total_fields == NUMBER_FILEDS_OF_SQL_SELECT_TEMPLATE){
-
-        memset(prev_mac_address, 0, sizeof(prev_mac_address));
-        
-        //SQL_begin_transaction(db);
-
-        for(current_row = 0 ; current_row < total_rows ; current_row++){
-
-            mac_address = PQgetvalue(res, 
-                                     current_row, 
-                                     FIELD_INDEX_OF_OBJECT_MAC_ADDRESS);
-            final_timestamp = PQgetvalue(res, 
-                                         current_row, 
-                                         FIELD_INDEX_OF_FINAL_TIMESTAMP);
-
-            // we only need to handle the first row of each mac_address, 
-            // because we care about the object (user) who has pressed 
-            // the panic button within time interval and its latest lbeacon
-            // location but not the lbeacon_uuid opon which the object (user)
-            // pressed the button.
-            if(0 != strncmp(prev_mac_address, 
-                            mac_address, 
-                            strlen(mac_address))){
-
-                strncpy(prev_mac_address, mac_address, strlen(mac_address));
-
-                SQL_get_object_monitor_type(db, mac_address, 
-                                            &object_monitor_type);
-                if(MONITOR_PANIC != 
-                   (MONITOR_PANIC & (ObjectMonitorType)object_monitor_type)){
-
-                    continue;
-                }
-
-                pqescape_mac_address = 
-                    PQescapeLiteral(conn, mac_address, 
-                                    strlen(mac_address));
-                pqescape_final_timestamp = 
-                    PQescapeLiteral(conn, final_timestamp, 
-                                    strlen(final_timestamp));
-                     
-                memset(sql, 0, sizeof(sql));
-                sprintf(sql, sql_update_panic_template,  
-                             pqescape_final_timestamp,
-                             pqescape_mac_address);
-
-                ret_val = SQL_execute(db, sql);
-
-                PQfreemem(pqescape_mac_address);
-                PQfreemem(pqescape_final_timestamp);
-
-                if(WORK_SUCCESSFULLY != ret_val){
-                    
-                   //SQL_rollback_transaction(db);
-                    PQclear(res);
-
-                    zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                               ret_val, PQerrorMessage(conn));
-
-                    return E_SQL_EXECUTE;
-                }
-
-            }
-        }
-
-        //SQL_commit_transaction(db);
-    }
-
-    PQclear(res);
     return WORK_SUCCESSFULLY;
 }
 
