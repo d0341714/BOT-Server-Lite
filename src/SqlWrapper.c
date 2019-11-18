@@ -963,7 +963,13 @@ ErrorCode SQL_summarize_object_location(void *db,
             database_loose_time_window_in_sec, 
             time_interval_in_sec);
 
-    SQL_execute(db, sql);
+    ret_val = SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != ret_val){
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   ret_val, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }
     return WORK_SUCCESSFULLY;
 }
 
@@ -978,7 +984,8 @@ ErrorCode SQL_identify_geofence_violation(
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
 
-    char *sql_insert_summary_table = 
+    char *sql_insert_summary_table =
+
         "UPDATE object_summary_table " \
         "SET " \
         "geofence_key = %s, " \
@@ -1163,126 +1170,49 @@ ErrorCode SQL_identify_panic(void *db,
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_select_template = "SELECT object_mac_address, lbeacon_uuid, " \
+    char *sql_select_template = "UPDATE " \
+                                "object_summary_table " \
+                                "SET " \
+                                "panic_timestamp = panic_information.final_timestamp " \
+                                "FROM " \
+                                "(SELECT " \
+                                "object_mac_address, " \
+                                "lbeacon_uuid, " \
                                 "panic_button, " \
                                 "MAX(final_timestamp) as final_timestamp " \
-                                "FROM tracking_table " \
-                                "WHERE final_timestamp >= " \
+                                "FROM " \
+                                "tracking_table " \
+                                "WHERE " \
+                                "final_timestamp >= " \
                                 "NOW() - INTERVAL '%d seconds' AND " \
-                                "final_timestamp >= NOW() - " \
-                                "(server_time_offset|| 'seconds')::INTERVAL - " \
+                                "final_timestamp >= " \
+                                "NOW() - (server_time_offset|| 'seconds')::INTERVAL - " \
                                 "INTERVAL '%d seconds' AND " \
                                 "panic_button = 1 " \
                                 "GROUP BY " \
-                                "object_mac_address, lbeacon_uuid, panic_button " \
+                                "object_mac_address, " \
+                                "lbeacon_uuid, " \
+                                "panic_button " \
                                 "ORDER BY " \
-                                "object_mac_address ASC";
-    PGresult *res = NULL;
-    int current_row = 0;
-    int total_fields = 0;
-    int total_rows = 0;
+                                "object_mac_address ASC " \
+                                ") panic_information " \
+                                "WHERE " \
+                                "object_summary_table.mac_address = " \
+                                "panic_information.object_mac_address;";
 
-    char *mac_address;
-    char prev_mac_address[LENGTH_OF_MAC_ADDRESS];
-
-    char *pqescape_mac_address = NULL;
-
-    char *final_timestamp = NULL;
-    char *pqescape_final_timestamp = NULL;
-
-    char *sql_update_panic_template = 
-        "UPDATE object_summary_table " \
-        "set panic_timestamp = %s " \
-        "WHERE mac_address = %s";
-
-    ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
-
-    
     memset(sql, 0, sizeof(sql));
 
     sprintf(sql, sql_select_template, 
             database_loose_time_window_in_sec, 
             time_interval_in_sec);
 
-    res = PQexec(conn, sql);
-
-    if(PQresultStatus(res) != PGRES_TUPLES_OK){
-        PQclear(res);
-
+    ret_val = SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != ret_val){
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   res, PQerrorMessage(conn));
+                   ret_val, PQerrorMessage(conn));
 
         return E_SQL_EXECUTE;
     }
-
-    total_fields = PQnfields(res);
-    total_rows = PQntuples(res);
-
-    if(total_rows > 0 && total_fields == 4){
-
-        memset(prev_mac_address, 0, sizeof(prev_mac_address));
-        
-       // SQL_begin_transaction(db);
-
-        for(current_row = 0 ; current_row < total_rows ; current_row++){
-
-            mac_address = PQgetvalue(res, current_row, 0);
-            final_timestamp = PQgetvalue(res, current_row, 3);
-
-            // we only need to handle the first row of each mac_address, 
-            // because we care about the object (user) who has pressed 
-            // the panic button within time interval and its latest lbeacon
-            // location but not the lbeacon_uuid opon which the object (user)
-            // pressed the button.
-            if(0 != strncmp(prev_mac_address, 
-                            mac_address, 
-                            strlen(mac_address))){
-
-                strncpy(prev_mac_address, mac_address, strlen(mac_address));
-
-                SQL_get_object_monitor_type(db, mac_address, 
-                                            &object_monitor_type);
-                if(MONITOR_PANIC != 
-                   (MONITOR_PANIC & (ObjectMonitorType)object_monitor_type)){
-
-                    continue;
-                }
-
-                pqescape_mac_address = 
-                    PQescapeLiteral(conn, mac_address, 
-                                    strlen(mac_address));
-                pqescape_final_timestamp = 
-                    PQescapeLiteral(conn, final_timestamp, 
-                                    strlen(final_timestamp));
-                     
-                memset(sql, 0, sizeof(sql));
-                sprintf(sql, sql_update_panic_template,  
-                             pqescape_final_timestamp,
-                             pqescape_mac_address);
-
-                SQL_execute(db, sql);
-
-                PQfreemem(pqescape_mac_address);
-                PQfreemem(pqescape_final_timestamp);
-
-                if(WORK_SUCCESSFULLY != ret_val){
-                    
-                   // SQL_rollback_transaction(db);
-                    PQclear(res);
-
-                    zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                               ret_val, PQerrorMessage(conn));
-
-                    return E_SQL_EXECUTE;
-                }
-
-            }
-        }
-
-        //SQL_commit_transaction(db);
-    }
-
-    PQclear(res);
     return WORK_SUCCESSFULLY;
 }
 
