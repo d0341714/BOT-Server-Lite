@@ -336,6 +336,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\GeoFence.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\import\LinkedList.c"
 				>
 			</File>
@@ -371,6 +375,10 @@
 			>
 			<File
 				RelativePath="..\..\..\import\BeDIS.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\GeoFence.h"
 				>
 			</File>
 			<File

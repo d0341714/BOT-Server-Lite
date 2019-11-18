@@ -51,6 +51,7 @@
 
 #include "BeDIS.h"
 #include "SqlWrapper.h"
+#include "GeoFence.h"
 
 /* When debugging is needed */
 //#define debugging
@@ -65,12 +66,6 @@
 /* File path of the log config file of the server */
 #define ZLOG_CONFIG_FILE_NAME "./config/zlog.conf"
 
-/* Length of geo_fence unique key in byte */
-#define LENGTH_OF_GEO_FENCE_KEY 32
-
-/* Length of geo_fence name in byte */
-#define LENGTH_OF_GEO_FENCE_NAME 32
-
 /* Maximum length in number of bytes of database information */
 #define MAXIMUM_DATABASE_INFO 1024
 
@@ -82,41 +77,6 @@
 
 /* The number of slots in the memory pool for buffer nodes */
 #define SLOTS_IN_MEM_POOL_NOTIFICATION 128
-
-/* Number of times to retry allocating memory, because memory allocating 
-   operation may have transient failure. */
-#define MEMORY_ALLOCATE_RETRY 5
-
-/* Maximum number of LBeacons can be defined as the perimeter of each 
-   geo-fence */
-#define MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER 20
-
-/* Maximum number of LBeacons can be defined as the fence of each 
-   geo-fence */
-#define MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE 20
-
-
-typedef struct {
-   /* The unique key of the geo fence */
-   char unique_key[LENGTH_OF_GEO_FENCE_KEY];
-
-   /* The name of the geo fence */
-   char name[LENGTH_OF_GEO_FENCE_NAME];
-
-   int number_LBeacons_in_perimeter;
-   int number_LBeacons_in_fence;
-   
-   int rssi_of_perimeters;
-   int rssi_of_fences;
-
-   char perimeters[MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER][LENGTH_OF_UUID];
-   char fences[MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE][LENGTH_OF_UUID];
-   
-   /* The list entry for inserting the geofence into the list of the geo 
-      fences */
-   List_Entry geo_fence_list_entry;
-
-} GeoFenceListNode;
 
 typedef struct {
     /* The length of the time window in which movements of an object is 
@@ -548,30 +508,6 @@ void *Server_send_notification();
 void send_notification_alarm_to_gateway();
 
 /*
-  add_geo_fence_settings:
-
-     This function parses the configuraion of a geo-fence setting and stores 
-     the resultant geo-fence setting struct in the geo-fence setting buffer 
-     list.
-
-  Parameters:
-
-     geo_fence_list_head - The pointer to the head of the geo-fence setting 
-                           buffer list head.
-
-     buf - The pointer to the buffer containing the configuraion of a 
-           geo-fence.
-
-  Return value:
-
-     ErrorCode
-
- */
-
-ErrorCode add_geo_fence_settings(struct List_Entry * geo_fence_list_head,
-                                char *buf);
-
-/*
   add_notification_settings:
 
      This function parses the configuraion of a notification setting and stores 
@@ -595,66 +531,4 @@ ErrorCode add_geo_fence_settings(struct List_Entry * geo_fence_list_head,
 ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
                                     char *buf);
 
-/*
-  check_geo_fence_violations:
-
-     This function first iterates overall enabled and valid geo-fence and then 
-     checks if the LBeacon that sent out this message is part of fences. If 
-     YES, it invokes helper function examine_tracked_objects_status() to 
-     examine each detected object against geo-fence.
-
-  Parameters:
-
-     buffer_node - The pointer points to the buffer node.
-
-  Return value:
-
-     ErrorCode - WORK_SUCCESSFULLY: work successfully.
-
- */
-
-ErrorCode check_geo_fence_violations(BufferNode* buffer_node);
-
-
-/*
-  examine_tracked_objects_status:
-
-     This function extracts each detected object data from the buffer and
-     checks if the object violates any geo-fence.
-
-  Parameters:
-
-     api_version - API protocol version of BOT_GATEWAY_API used by LBeacon to
-                   send out the input message buffer
-     
-     buf - the packet content sent out by LBeacon
-
-     geofence_key - the unique key of geo-fence
-
-     is_fence_lbeacon - a flag that indicates whether the LBeacon that sent out 
-                        the input buf is part of a fence
-
-     fence_rssi - the RSSI criteria of fence to determine the detected object 
-                  violates fence 
-
-     is_perimeter_lbeacon - a flag that indicates whether the LBeacon that sent 
-                            out the input buf is part of a perimeter
-
-     perimeter_rssi - the RSSI criteria of perimeter to determine the detected
-                      object violates perimeter 
-
-
-  Return value:
-
-     ErrorCode - WORK_SUCCESSFULLY: work successfully.
-
- */
-
-ErrorCode examine_tracked_objects_status(float api_version,
-                                         char *buf,
-                                         char *geofence_key,
-                                         bool is_fence_lbeacon,
-                                         int fence_rssi,
-                                         bool is_perimeter_lbeacon,
-                                         int perimeter_rssi);
 #endif
