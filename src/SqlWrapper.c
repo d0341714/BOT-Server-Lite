@@ -1186,7 +1186,10 @@ ErrorCode SQL_identify_panic(void *db,
                                 "MAX(final_timestamp) as final_timestamp " \
                                 "FROM " \
                                 "tracking_table " \
+                                "INNER JOIN object_table ON " \
+                                "tracking_table.object_mac_address = object_table.mac_address " \
                                 "WHERE " \
+                                "object_table.monitor_type & %d = %d AND " \
                                 "final_timestamp >= " \
                                 "NOW() - INTERVAL '%d seconds' AND " \
                                 "final_timestamp >= " \
@@ -1207,6 +1210,8 @@ ErrorCode SQL_identify_panic(void *db,
     memset(sql, 0, sizeof(sql));
 
     sprintf(sql, sql_select_template, 
+            MONITOR_PANIC,
+            MONITOR_PANIC,
             database_loose_time_window_in_sec, 
             time_interval_in_sec);
 
