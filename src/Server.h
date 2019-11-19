@@ -48,6 +48,8 @@
 
 #define _GNU_SOURCE
 
+#define BOT_SERVER
+
 #include "BeDIS.h"
 #include "SqlWrapper.h"
 
