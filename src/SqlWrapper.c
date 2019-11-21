@@ -1225,6 +1225,56 @@ ErrorCode SQL_identify_panic(void *db,
     return WORK_SUCCESSFULLY;
 }
 
+
+ErrorCode SQL_identify_location_long_stay(void *db,
+                                          int long_stay_period_in_mins){
+
+    PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char *sql_select_template = "UPDATE object_summary_table " \
+                                "SET " \
+                                "location_violation_timestamp = NOW() " \
+                                "FROM " \
+                                "(SELECT " \
+                                "object_summary_table.mac_address, " \
+                                "object_summary_table.uuid, " \
+                                "monitor_type, " \
+                                "danger_area " \
+                                "FROM "\
+                                "object_summary_table " \
+                                "INNER JOIN object_table ON " \
+                                "object_summary_table.mac_address = " \
+                                "object_table.mac_address " \
+                                "INNER JOIN lbeacon_table ON " \
+                                "object_summary_table.uuid = " \
+                                "lbeacon_table.uuid " \
+                                "WHERE monitor_type & %d = %d " \
+                                "AND danger_area = 1 " \
+                                "AND EXTRACT(MIN FROM last_seen_timestamp - " \
+                                "first_seen_timestamp) > %d "\
+                                ") location_information " \
+                                "WHERE object_summary_table.mac_address = " \
+                                "location_information.mac_address;";
+
+
+    memset(sql, 0, sizeof(sql));
+
+    sprintf(sql, sql_select_template, 
+            MONITOR_LOCATION,
+            MONITOR_LOCATION,
+            long_stay_period_in_mins);
+
+    ret_val = SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != ret_val){
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   ret_val, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }
+    return WORK_SUCCESSFULLY;
+}
+
 ErrorCode SQL_identify_last_movement_status(void *db, 
                                             int time_interval_in_min, 
                                             int each_time_slot_in_min,
@@ -1516,6 +1566,7 @@ ErrorCode SQL_collect_violation_events(
     char *geofence_violation_timestamp = "geofence_violation_timestamp";
     char *panic_violation_timestamp = "panic_timestamp";
     char *movement_violation_timestamp = "movement_violation_timestamp";
+    char *location_violation_timestamp = "location_violation_timestamp";
     char *violation_timestamp_name = NULL;
 
     switch (monitor_type){
@@ -1527,6 +1578,9 @@ ErrorCode SQL_collect_violation_events(
             break;
         case MONITOR_MOVEMENT:
             violation_timestamp_name = movement_violation_timestamp;
+            break;
+        case MONITOR_LOCATION:
+            violation_timestamp_name = location_violation_timestamp;
             break;
         default:
             zlog_error(category_debug, "Unknown monitor_type=[%d]", 

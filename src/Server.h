@@ -79,6 +79,23 @@
 #define SLOTS_IN_MEM_POOL_NOTIFICATION 128
 
 typedef struct {
+    /* The length of the time window in which the location of an object is 
+       monitored. */
+
+    /* The flag indicating whether stay in his/her room monitor is enabled. */
+    int is_enabled_location_stay_room;
+    int start_hour_of_stay_room;
+    int end_hour_of_stay_room;
+    int long_stay_period_in_mins;
+
+    /* The flag indicating whether long stay in dangerous area is 
+    enabled. */
+    int is_enabled_location_long_stay_in_dangerous_area;
+    int start_hour_of_long_stay;
+    int end_hour_of_long_stay;
+} LocationMonitorConfig;
+
+typedef struct {
     /* The length of the time window in which the movements of an object is 
        monitored. */
     int monitor_interval_in_min;
@@ -130,8 +147,8 @@ typedef struct {
     int period_between_RFTOD;
     
     /* The time interval in seconds between consecutive checks by the server 
-       for object activity information */
-    int period_between_check_object_activity;
+       for object movement information */
+    int period_between_check_object_movement;
 
     /* A port that the server is to send from. */
     int send_port;
@@ -181,10 +198,16 @@ typedef struct {
     /* The list head of the geo gence list */
     struct List_Entry geo_fence_list_head;
 
+    /* The flag indicating whether location monitor is enabled. */
+    int is_enabled_location_monitor;
+ 
+    /* The specific settnigs for monitoring location */
+    LocationMonitorConfig location_monitor_config;
+
     /* The flag indicating whether movement monitor is enabled. */
     int is_enabled_movement_monitor;
 
-    /* The specific settings for checking movement rules */
+    /* The specific settings for monitoring movement */
     MovementMonitorConfig movement_monitor_config;
         
     /* The flag indicating collect violation event is enabled. When this flag 
@@ -526,5 +549,7 @@ void send_notification_alarm_to_gateway();
 ErrorCode add_notification_to_the_notification_list(
     struct List_Entry * notification_list_head,
     char *buf);
+
+
 
 #endif

@@ -232,25 +232,9 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node,
     int is_rule_enabled = 0;
     int rule_hour_start = 0;
     int rule_hour_end = 0;
-    int current_hour = 0;
-
-    time_t current_time = get_system_time();
-    struct tm ts;
-    char string_hour[80];
-
-    ts = *localtime(&current_time);
-    strftime(string_hour, sizeof(string_hour), "%H", &ts);
-    current_hour = atoi(string_hour);
-
 
     zlog_info(category_debug, ">>check_geo_fence_violations");
 
-    // get current hour
-    ts = *localtime(&current_time);
-    strftime(string_hour, sizeof(string_hour), "%H", &ts);
-    current_hour = atoi(string_hour);
-
- 
     memset(content_temp, 0, WIFI_MESSAGE_LENGTH);
     memcpy(content_temp, buffer_node -> content, buffer_node -> content_size);
 
@@ -288,27 +272,13 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node,
         }
 
         /* check if geo-fence is valid at current time */
-        if(rule_hour_start < rule_hour_end){
-            if(current_hour < rule_hour_start || 
-                rule_hour_end < current_hour){
-
-                zlog_debug(category_debug, 
-                           "Skip geo-fence=[%s], start=[%d], end=[%d], " \
-                           "current_hour=[%d]", 
-                           current_list_ptr->unique_key, rule_hour_start,
-                           rule_hour_end, current_hour);
-                continue;
-            }
-        }else{
-            if(rule_hour_end < current_hour && 
-                current_hour < rule_hour_start){
-                zlog_debug(category_debug, 
-                           "Skip geo-fence=[%s], start=[%d], end=[%d], " \
-                           "current_hour=[%d]", 
-                           current_list_ptr->unique_key, rule_hour_start,
-                           rule_hour_end, current_hour);
-                continue;
-            }
+        if(0 == is_in_active_hours(rule_hour_start, rule_hour_end)){
+            zlog_debug(category_debug, 
+                       "Skip geo-fence=[%s], start=[%d], end=[%d]",
+                       current_list_ptr->unique_key, 
+                       rule_hour_start,
+                       rule_hour_end);
+            continue;
         }
 
         // Check if lbeacon_uuid is listed as perimeter LBeacon or 

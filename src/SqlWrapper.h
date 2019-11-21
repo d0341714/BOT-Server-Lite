@@ -544,6 +544,29 @@ ErrorCode SQL_identify_panic(void *db,
 
 
 /*
+  SQL_identify_location_long_stay
+
+     This function checks object_summary_table to determine if objects are 
+     staying in dangerous area for unexpected long time.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     long_stay_period_in_mins - the length of time in minutes which is used as 
+                                criteria to determine if objects are staying 
+                                too long
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+
+ErrorCode SQL_identify_location_long_stay(void *db,
+                                          int long_stay_period_in_mins);
+
+/*
   SQL_identify_last_movement_status
 
      This function uses each pair of object mac_address and lbeacon_uuid from
