@@ -308,10 +308,8 @@ int main(int argc, char **argv)
     {
         uptime = get_clock_time();
 
-        /* Time: period_between_RFTOD 7 < period_between_RFHR 3600 */
 
-        /* If it is the time to poll track object data from LBeacons, 
-           get a thread to do this work */
+        /* If it is the time to poll track object data from LBeacons, do it */
         if(uptime - last_polling_object_tracking_time >=
            config.period_between_RFTOD)
         {
@@ -664,8 +662,9 @@ ErrorCode get_server_config(ServerConfig *config,
     for(i = 0; i < number_notification_settings ; i++){
           
         fetch_next_string(file, config_message, sizeof(config_message)); 
-        add_notification_settings(&(config->notification_list_head), 
-                                  config_message);
+        add_notification_to_the_notification_list(
+            &(config->notification_list_head), 
+            config_message);
     }
        
     zlog_info(category_debug, "notification list initialized");
@@ -912,6 +911,9 @@ void *Server_NSI_routine(void *_buffer_node)
 
         zlog_error(category_debug, 
                   "cannot open database"); 
+
+        mp_free( &node_mempool, current_node);
+
         return (void *)NULL;
 
     }
@@ -967,6 +969,9 @@ void *Server_BHM_routine(void *_buffer_node)
 
         zlog_error(category_debug, 
                   "cannot open database"); 
+
+        mp_free( &node_mempool, current_node);
+
         return (void *)NULL;
     }
 
@@ -1006,6 +1011,9 @@ void *Server_LBeacon_routine(void *_buffer_node)
 
         zlog_error(category_debug, 
                   "cannot open database"); 
+
+        mp_free( &node_mempool, current_node);
+
         return (void *)NULL;
     }
 
@@ -1044,6 +1052,9 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 
         zlog_error(category_debug, 
                   "cannot open database"); 
+
+        mp_free( &node_mempool, current_node);
+
         return (void *)NULL;
 
     }
@@ -1406,8 +1417,9 @@ void *Server_process_wifi_receive()
 
 
 
-ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
-                                    char *buf){
+ErrorCode add_notification_to_the_notification_list(
+    struct List_Entry * notification_list_head,
+    char *buf){
 
     char *current_ptr = NULL;
     char *save_ptr = NULL;
@@ -1424,7 +1436,7 @@ ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
     int retry_times;
 
 
-    zlog_info(category_debug, ">> add_notification_settings");
+    zlog_info(category_debug, ">> add_notification_to_the_notification_list");
     zlog_info(category_debug, "Notification data=[%s]", buf);
 
     alarm_type = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
@@ -1449,8 +1461,8 @@ ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
            
     if(NULL == new_node){
         zlog_error(category_health_report,
-                   "[add_notification_settings] mp_alloc failed, " \
-                   "abort this data");
+                   "[add_notification_to_the_notification_list] " \
+                   "mp_alloc failed, abort this data");
 
         return E_MALLOC;
     }
@@ -1470,7 +1482,7 @@ ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
     insert_list_tail( &new_node -> notification_list_entry,
                       notification_list_head);
  
-    zlog_info(category_debug, "<<add_notification_settings");
+    zlog_info(category_debug, "<<add_notification_to_the_notification_list");
 
     return WORK_SUCCESSFULLY;
 }

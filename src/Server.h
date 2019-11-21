@@ -162,21 +162,20 @@ typedef struct {
     int database_pre_filter_time_window_in_sec;
 
     /* The length of the time window in which each object is shown and 
-       made visiable by BOT system. */
+       made visiable to BOT system. */
     int location_time_interval_in_sec;
 
-    /* The flag indicating panic button monitor is enabled. */
+    /* The flag indicating whether panic button monitor is enabled. */
     int is_enabled_panic_button_monitor;
 
     /* The length of the time window in which the object is in the panic 
-       condition after the user of the object presses the panic buton of the 
-       object. */
+       condition after the user presses the panic buton on the object. */
     int panic_time_interval_in_sec;
 
     /* The flag indicating whether geo-fence monitor is enabled. */
     int is_enabled_geofence_monitor;
 
-    /* The time duration geo-fence perimeter violation lasts valid */
+    /* The time duration geo-fence perimeter violation remains valid */
     int perimeter_valid_duration_in_sec;
 
     /* The list head of the geo gence list */
@@ -193,7 +192,7 @@ typedef struct {
        notification_table. */
     int is_enabled_collect_violation_event;
 
-    /* The length of the time window in which a violation event in 
+    /* The length of the time window in which a violation event in the 
        object_summary_table is treated as valid event.
     */
     int collect_violation_event_time_interval_in_sec;
@@ -319,7 +318,8 @@ void *Server_BHM_routine(void *_buffer_node);
   Server_LBeacon_routine:
 
      This function is executed by worker threads on a server when they process 
-     the buffer nodes in LBeacon receive buffer list.
+     the buffer nodes in LBeacon receive buffer list and send the data in nodes 
+     to the server directly.
 
   Parameters:
 
@@ -416,9 +416,8 @@ void *Server_process_wifi_send(void *_buffer_node);
 /*
   Server_process_wifi_receive:
 
-     This function listens for messages or command received from the server or
-     LBeacons. After getting the message, push the received data into the 
-     buffer.
+     This function listens for messages or command received from gateways. 
+     After getting the message, push the received data into a buffer.
 
   Parameters:
 
@@ -504,7 +503,7 @@ void *Server_send_notification();
 void send_notification_alarm_to_gateway();
 
 /*
-  add_notification_settings:
+  add_notification_to_the_notification_list:
 
      This function parses the configuraion of a notification setting and stores 
      the resultant notification setting struct in the notification setting 
@@ -524,7 +523,8 @@ void send_notification_alarm_to_gateway();
 
  */
 
-ErrorCode add_notification_settings(struct List_Entry * notification_list_head,
-                                    char *buf);
+ErrorCode add_notification_to_the_notification_list(
+    struct List_Entry * notification_list_head,
+    char *buf);
 
 #endif

@@ -164,14 +164,14 @@ ErrorCode check_geo_fence_violations(BufferNode* buffer_node,
 
      geofence_key - the unique key of geo-fence
 
-     is_fence_lbeacon - a flag that indicates whether the LBeacon that sent out 
-                        the input buf is part of a fence
+     is_fence_lbeacon - a flag that indicates whether the LBeacon that sent 
+                        the data in the input buf is part of a fence
 
      fence_rssi - the RSSI criteria of fence to determine the detected object 
                   violates fence 
 
      is_perimeter_lbeacon - a flag that indicates whether the LBeacon that sent 
-                            out the input buf is part of a perimeter
+                            the input buf is part of a perimeter
 
      perimeter_rssi - the RSSI criteria of perimeter to determine the detected
                       object violates perimeter 
