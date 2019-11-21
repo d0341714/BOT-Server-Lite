@@ -121,10 +121,6 @@ typedef struct {
     /* The IP address of database for the server to connect. */
     char db_ip[NETWORK_ADDR_LENGTH];
 
-    /* The maximum number of gateway nodes allowed in the star network of 
-    this server */
-    int allowed_number_nodes;
-
     /* The time interval in seconds between consecutive server requests for 
        health reports from LBeacons */
     int period_between_RFHR;
@@ -155,8 +151,8 @@ typedef struct {
     /* The password for accessing the database */
     char database_password[MAXIMUM_DATABASE_INFO];
 
-    /* The number of days in which data are kept in the database */
-    int database_keep_days;
+    /* The number of hours in which data are kept in the database */
+    int database_keep_hours;
 
     /* The length of time window which server applies to each SQL query when it 
        queries tracked data from time-series database. The purpose of this 

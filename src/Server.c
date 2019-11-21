@@ -408,11 +408,6 @@ ErrorCode get_server_config(ServerConfig *config,
     zlog_info(category_debug,"Database IP [%s]", config->db_ip);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->allowed_number_nodes = atoi(config_message);
-    zlog_info(category_debug,"Allow Number of Nodes [%d]", 
-              config->allowed_number_nodes);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
     config->period_between_RFHR = atoi(config_message);
     zlog_info(category_debug,
               "Periods between request for health report " \
@@ -437,6 +432,12 @@ ErrorCode get_server_config(ServerConfig *config,
     zlog_info(category_debug,
               "Number of worker threads [%d]",
               common_config->number_worker_threads);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    common_config->omit_out_of_date_packet_in_sec = atoi(config_message);
+    zlog_info(category_debug,
+              "Omit out-of-date packet in seconds [%d]",
+              common_config->omit_out_of_date_packet_in_sec);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->send_port = atoi(config_message);
@@ -482,10 +483,10 @@ ErrorCode get_server_config(ServerConfig *config,
     memset(config->database_password, 0, sizeof(config->database_password));
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->database_keep_days = atoi(config_message);
+    config->database_keep_hours = atoi(config_message);
     zlog_info(category_debug,
-              "Database database_keep_days [%d]", 
-              config->database_keep_days);
+              "Database database_keep_hours [%d]", 
+              config->database_keep_hours);
         
     fetch_next_string(file, config_message, sizeof(config_message)); 
     common_config->time_critical_priority = atoi(config_message);
@@ -691,10 +692,10 @@ void *maintain_database()
 
     while(true == ready_to_work){
         zlog_info(category_debug, 
-                  "SQL_delete_old_data with database_keep_days=[%d]", 
-                  config.database_keep_days); 
+                  "SQL_delete_old_data with database_keep_hours=[%d]", 
+                  config.database_keep_hours); 
 
-        ret = SQL_delete_old_data(db, config.database_keep_days * HOURS_EACH_DAY);
+        ret = SQL_delete_old_data(db, config.database_keep_hours);
 
         if(WORK_SUCCESSFULLY != ret){
             zlog_error(category_debug, 
@@ -712,8 +713,8 @@ void *maintain_database()
                        ret); 
         }
 
-        //Sleep one day before next check
-        sleep_t(MS_EACH_DAY);
+        //Sleep one hour before next check
+        sleep_t(MS_EACH_HOUR);
     }
 
     SQL_close_database_connection(db);
@@ -1264,6 +1265,8 @@ void *Server_process_wifi_receive()
 
         /* Initialize the entry of the buffer node */
         init_entry( &new_node -> buffer_entry);
+
+        new_node -> uptime_at_receive = get_clock_time();
 
         memset(buf, 0, sizeof(buf));
         strcpy(buf, temppkt.content);
