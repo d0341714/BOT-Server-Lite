@@ -401,8 +401,8 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
 
      db - a pointer pointing to the connection to the database backend server
 
-     database_loose_time_window_in_sec - 
-         the length of time window in which tracked data is filtered to limit 
+     database_pre_filter_time_window_in_sec - 
+         The length of time window in which tracked data is filtered to limit 
          database processing time
                                            
      time_interval_in_sec - the time window in which we treat this object been
@@ -415,7 +415,7 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
 */
 
 ErrorCode SQL_summarize_object_location(void *db, 
-                                        int database_loose_time_window_in_sec,
+                                        int database_pre_filter_time_window_in_sec,
                                         int time_interval_in_sec);
 
 
@@ -524,7 +524,7 @@ ErrorCode SQL_check_perimeter_violation_valid(
 
      db - a pointer pointing to the connection to the database backend server
 
-     database_loose_time_window_in_sec - 
+     database_pre_filter_time_window_in_sec - 
          the length of time window in which tracked data is filtered to limit 
          database processing time
 
@@ -539,7 +539,7 @@ ErrorCode SQL_check_perimeter_violation_valid(
 */
 
 ErrorCode SQL_identify_panic(void *db,
-                             int database_loose_time_window_in_sec,
+                             int database_pre_filter_time_window_in_sec,
                              int time_interval_in_sec);
 
 

@@ -79,7 +79,7 @@
 #define SLOTS_IN_MEM_POOL_NOTIFICATION 128
 
 typedef struct {
-    /* The length of the time window in which movements of an object is 
+    /* The length of the time window in which the movements of an object is 
        monitored. */
     int monitor_interval_in_min;
 
@@ -133,10 +133,10 @@ typedef struct {
        for object activity information */
     int period_between_check_object_activity;
 
-    /* A port that gateways are listening on and for the server to send to. */
+    /* A port that the server is to send from. */
     int send_port;
 
-    /* A port that the server is listening for and gateways to send to */
+    /* A port that the gateways are to send to */
     int recv_port;
 
     /* A port that the database is listening on and for the server to send to */
@@ -159,7 +159,7 @@ typedef struct {
        condition is to guarantee the database response time is predicatble and 
        make database not to query all records.
     */
-    int database_loose_time_window_in_sec;
+    int database_pre_filter_time_window_in_sec;
 
     /* The length of the time window in which each object is shown and 
        made visiable by BOT system. */
