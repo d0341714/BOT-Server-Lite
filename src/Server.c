@@ -605,22 +605,23 @@ ErrorCode get_server_config(ServerConfig *config,
               config->is_enabled_location_monitor);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->location_monitor_config.is_enabled_location_stay_room = 
+    config->location_monitor_config.is_enabled_location_not_stay_room = 
         atoi(config_message);
     zlog_info(category_debug,
-              "The is_enabled_location_stay_room is [%d]", 
-              config->location_monitor_config.is_enabled_location_stay_room);
+              "The is_enabled_location_not_stay_room is [%d]", 
+              config->location_monitor_config.is_enabled_location_not_stay_room);
 
     /* read and parse location_stay_room_setting */
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->location_monitor_config.start_hour_of_stay_room = 
+    config->location_monitor_config.start_hour_of_not_stay_room = 
         atoi(strtok_save(config_message, DELIMITER_COMMA, &save_ptr));
-    config->location_monitor_config.end_hour_of_stay_room = 
+    config->location_monitor_config.end_hour_of_not_stay_room = 
         atoi(strtok_save(NULL, DELIMITER_COMMA, &save_ptr));
     zlog_info(category_debug,
-              "The start and end hours of is_enabled_location_stay_room is [%d]-[%d]", 
-              config->location_monitor_config.start_hour_of_stay_room,
-              config->location_monitor_config.end_hour_of_stay_room);
+              "The start and end hours of " \
+              "is_enabled_location_not_stay_room is [%d]-[%d]", 
+              config->location_monitor_config.start_hour_of_not_stay_room,
+              config->location_monitor_config.end_hour_of_not_stay_room);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->location_monitor_config.
@@ -633,22 +634,22 @@ ErrorCode get_server_config(ServerConfig *config,
 
     /* read and parse location_long_stay_in_dangerous_area_setting */
      fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->location_monitor_config.start_hour_of_long_stay = 
+    config->location_monitor_config.start_hour_of_long_stay_in_danger = 
         atoi(strtok_save(config_message, DELIMITER_COMMA, &save_ptr));
-    config->location_monitor_config.end_hour_of_long_stay = 
+    config->location_monitor_config.end_hour_of_long_stay_in_danger = 
         atoi(strtok_save(NULL, DELIMITER_COMMA, &save_ptr));
     zlog_info(category_debug,
               "The start and end hours of " \
               "is_enabled_location_long_stay_in_dangerous_area is [%d]-[%d]", 
-              config->location_monitor_config.start_hour_of_long_stay,
-              config->location_monitor_config.end_hour_of_long_stay);
+              config->location_monitor_config.start_hour_of_long_stay_in_danger,
+              config->location_monitor_config.end_hour_of_long_stay_in_danger);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->location_monitor_config.long_stay_period_in_mins = 
+    config->location_monitor_config.long_stay_in_danger_in_mins = 
         atoi(config_message);
     zlog_info(category_debug,
-              "The long_stay_period_in_mins is [%d]", 
-              config->location_monitor_config.long_stay_period_in_mins);
+              "The long_stay_in_danger_in_mins is [%d]", 
+              config->location_monitor_config.long_stay_in_danger_in_mins);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->is_enabled_movement_monitor = atoi(config_message);
@@ -822,32 +823,27 @@ void *Server_summarize_location_information(){
         if(config.is_enabled_location_monitor){
 
             if(config.location_monitor_config.
-               is_enabled_location_stay_room && 
+               is_enabled_location_not_stay_room && 
                1 == is_in_active_hours(config.location_monitor_config.
-                                       start_hour_of_stay_room,
+                                       start_hour_of_not_stay_room,
                                        config.location_monitor_config.
-                                       end_hour_of_stay_room)){
+                                       end_hour_of_not_stay_room)){
 
                 
-                SQL_identify_location_long_stay(db,
-                                                config.location_monitor_config.
-                                                long_stay_period_in_mins);
+                SQL_identify_location_not_stay_room(db);
             
             }
             if(config.location_monitor_config.
                is_enabled_location_long_stay_in_dangerous_area && 
                1 == is_in_active_hours(config.location_monitor_config.
-                                       start_hour_of_long_stay, 
+                                       start_hour_of_long_stay_in_danger, 
                                        config.location_monitor_config.
-                                       end_hour_of_long_stay)){
+                                       end_hour_of_long_stay_in_danger)){
             
- /*
-               SQL_identify_location_(
-                    db, 
-                    config.movement_monitor_config.monitor_interval_in_min, 
-                    config.movement_monitor_config.each_time_slot_in_min,
-                    config.movement_monitor_config.rssi_delta); 
-                    */
+ 
+                SQL_identify_location_long_stay(db,
+                                                config.location_monitor_config.
+                                                long_stay_in_danger_in_mins);
             }
         }
 

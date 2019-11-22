@@ -82,17 +82,28 @@ typedef struct {
     /* The length of the time window in which the location of an object is 
        monitored. */
 
-    /* The flag indicating whether stay in his/her room monitor is enabled. */
-    int is_enabled_location_stay_room;
-    int start_hour_of_stay_room;
-    int end_hour_of_stay_room;
-    int long_stay_period_in_mins;
+    /* The flag indicating whether patients are not staying in his/her 
+    dedicated room monitor is enabled. */
+    int is_enabled_location_not_stay_room;
 
-    /* The flag indicating whether long stay in dangerous area is 
+    /* The start o'clock and end o'clock of the not staying in 
+    his/her dedicatedroom monitor */
+    int start_hour_of_not_stay_room;
+    int end_hour_of_not_stay_room;
+
+    /* The flag indicating whether long stay in dangerous area monitor is 
     enabled. */
     int is_enabled_location_long_stay_in_dangerous_area;
-    int start_hour_of_long_stay;
-    int end_hour_of_long_stay;
+
+    /* The start o'clock and end o'clock of the staying in dangerous area 
+    monitor */
+    int start_hour_of_long_stay_in_danger;
+    int end_hour_of_long_stay_in_danger;
+
+    /* The length of staying time in minutes the system allows patient to 
+    stay in the potential dangerous area */
+    int long_stay_in_danger_in_mins;
+
 } LocationMonitorConfig;
 
 typedef struct {

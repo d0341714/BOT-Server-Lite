@@ -1225,6 +1225,51 @@ ErrorCode SQL_identify_panic(void *db,
     return WORK_SUCCESSFULLY;
 }
 
+ErrorCode SQL_identify_location_not_stay_room(void *db){
+
+    PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char *sql_select_template = "UPDATE object_summary_table " \
+                                "SET " \
+                                "location_violation_timestamp = NOW() " \
+                                "FROM " \
+                                "(SELECT " \
+                                "object_summary_table.mac_address, " \
+                                "object_summary_table.uuid, " \
+                                "monitor_type, " \
+                                "lbeacon_table.room, " \
+                                "object_table.room " \
+                                "FROM "\
+                                "object_summary_table " \
+                                "INNER JOIN object_table ON " \
+                                "object_summary_table.mac_address = " \
+                                "object_table.mac_address " \
+                                "INNER JOIN lbeacon_table ON " \
+                                "object_summary_table.uuid = " \
+                                "lbeacon_table.uuid " \
+                                "WHERE monitor_type & %d = %d " \
+                                "AND lbeacon_table.room <> object_table.room " \
+                                ") location_information " \
+                                "WHERE object_summary_table.mac_address = " \
+                                "location_information.mac_address;";
+
+    memset(sql, 0, sizeof(sql));
+
+    sprintf(sql, sql_select_template, 
+            MONITOR_LOCATION,
+            MONITOR_LOCATION);
+
+    ret_val = SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != ret_val){
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   ret_val, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }
+    
+    return WORK_SUCCESSFULLY;
+}
 
 ErrorCode SQL_identify_location_long_stay(void *db,
                                           int long_stay_period_in_mins){

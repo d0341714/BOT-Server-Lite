@@ -544,10 +544,28 @@ ErrorCode SQL_identify_panic(void *db,
 
 
 /*
+  SQL_identify_location_not_stay_room
+
+     This function checks object_summary_table to determine if patients are
+     not staying in his/her dedicated rooms.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+  Return Value:
+
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
+*/
+
+ErrorCode SQL_identify_location_not_stay_room(void *db);
+
+/*
   SQL_identify_location_long_stay
 
-     This function checks object_summary_table to determine if objects are 
-     staying in dangerous area for unexpected long time.
+     This function checks object_summary_table to determine if patients are 
+     staying in potential dangerous areas for too long.
 
   Parameter:
 
