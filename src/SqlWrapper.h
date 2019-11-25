@@ -571,18 +571,13 @@ ErrorCode SQL_identify_location_not_stay_room(void *db);
 
      db - a pointer pointing to the connection to the database backend server
 
-     long_stay_period_in_mins - the length of time in minutes which is used as 
-                                criteria to determine if objects are staying 
-                                too long
-
   Return Value:
 
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_identify_location_long_stay(void *db,
-                                          int long_stay_period_in_mins);
+ErrorCode SQL_identify_location_long_stay_in_danger(void *db);
 
 /*
   SQL_identify_last_movement_status
@@ -806,5 +801,110 @@ ErrorCode SQL_get_geo_fence_config(void *db,
                                    int *hour_start,
                                    int *hour_end);
 
+/*
+  SQL_update_location_not_stay_room_config
+
+     Updates start hour and end hour of location monitor of not staying room
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+     
+     area_id - the area_id of this location monitor of not staying room
+
+     hour_start - pointer to start hour of the geo-fence specified by the 
+                  input unique key
+
+     hour_end - pointer to start hour of the geo-fence specified by the 
+                input unique key
+
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_update_location_not_stay_room_config(void *db,
+                                                   char *area_id,
+                                                   char *hour_start,
+                                                   char *hour_end);
+
+/*
+  SQL_update_location_long_stay_in_danger_config
+
+     Updates start hour and end hour of location monitor of long staying in 
+     dangerous area
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+     
+     area_id - the area_id of this location monitor of long staying in dangerous
+               area
+
+     hour_start - pointer to start hour of the geo-fence specified by the 
+                  input unique key
+
+     hour_end - pointer to start hour of the geo-fence specified by the 
+                input unique key
+
+     stay_duration - the length of time in minutes petients are allowed to stay 
+                     in dangerous area
+
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_update_location_long_stay_in_danger_config(void *db,
+                                                         char *area_id,
+                                                         char *hour_start,
+                                                         char *hour_end,
+                                                         char *stay_duration);
+
+
+/*
+  SQL_update_movement_config
+
+     Updates start hour and end hour of movement monitor.
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+     
+     area_id - the area_id of this location monitor of long staying in dangerous
+               area
+
+     hour_start - pointer to start hour of the geo-fence specified by the 
+                  input unique key
+
+     hour_end - pointer to start hour of the geo-fence specified by the 
+                input unique key
+
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_update_movement_config(void *db,
+                                     char *area_id,
+                                     char *hour_start,
+                                     char *hour_end);
+
+/*
+  SQL_sync_up_active_monitor_config
+
+     Updates start hour and end hour of location monitor of long staying in 
+     dangerous area
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+     
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_sync_up_active_monitor_config(void *db);
 
 #endif

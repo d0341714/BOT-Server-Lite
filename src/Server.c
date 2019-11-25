@@ -384,6 +384,9 @@ ErrorCode get_server_config(ServerConfig *config,
     FILE *file = fopen(file_name, "r");
     char config_message[CONFIG_BUFFER_SIZE];
     int number_geofence_settings = 0;
+    int number_location_not_stay_room_settings = 0;
+    int number_location_long_stay_settings = 0;
+    int number_movement_settings = 0;
     int number_notification_settings = 0;
     int i = 0;
     char *save_ptr = NULL;
@@ -605,57 +608,39 @@ ErrorCode get_server_config(ServerConfig *config,
               config->is_enabled_location_monitor);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->location_monitor_config.is_enabled_location_not_stay_room = 
-        atoi(config_message);
-    zlog_info(category_debug,
-              "The is_enabled_location_not_stay_room is [%d]", 
-              config->location_monitor_config.is_enabled_location_not_stay_room);
+    number_location_not_stay_room_settings = atoi(config_message);
 
-    /* read and parse location_stay_room_setting */
+    for(i = 0; i < number_location_not_stay_room_settings ; i++){
+        fetch_next_string(file, config_message, sizeof(config_message)); 
+        
+        add_location_not_stay_room_settings(config_message, 
+                                            database_argument);
+    }
+    
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->location_monitor_config.start_hour_of_not_stay_room = 
-        atoi(strtok_save(config_message, DELIMITER_COMMA, &save_ptr));
-    config->location_monitor_config.end_hour_of_not_stay_room = 
-        atoi(strtok_save(NULL, DELIMITER_COMMA, &save_ptr));
-    zlog_info(category_debug,
-              "The start and end hours of " \
-              "is_enabled_location_not_stay_room is [%d]-[%d]", 
-              config->location_monitor_config.start_hour_of_not_stay_room,
-              config->location_monitor_config.end_hour_of_not_stay_room);
+    number_location_long_stay_settings = atoi(config_message);
 
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->location_monitor_config.
-        is_enabled_location_long_stay_in_dangerous_area = 
-        atoi(config_message);
-    zlog_info(category_debug,
-              "The is_enabled_location_long_stay_in_dangerous_area is [%d]", 
-              config->location_monitor_config.
-              is_enabled_location_long_stay_in_dangerous_area);
-
-    /* read and parse location_long_stay_in_dangerous_area_setting */
-     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->location_monitor_config.start_hour_of_long_stay_in_danger = 
-        atoi(strtok_save(config_message, DELIMITER_COMMA, &save_ptr));
-    config->location_monitor_config.end_hour_of_long_stay_in_danger = 
-        atoi(strtok_save(NULL, DELIMITER_COMMA, &save_ptr));
-    zlog_info(category_debug,
-              "The start and end hours of " \
-              "is_enabled_location_long_stay_in_dangerous_area is [%d]-[%d]", 
-              config->location_monitor_config.start_hour_of_long_stay_in_danger,
-              config->location_monitor_config.end_hour_of_long_stay_in_danger);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->location_monitor_config.long_stay_in_danger_in_mins = 
-        atoi(config_message);
-    zlog_info(category_debug,
-              "The long_stay_in_danger_in_mins is [%d]", 
-              config->location_monitor_config.long_stay_in_danger_in_mins);
-
+    for(i = 0; i < number_location_long_stay_settings ; i++){
+        fetch_next_string(file, config_message, sizeof(config_message)); 
+        
+        add_location_long_stay_in_danger_settings(config_message,
+                                                  database_argument);
+    }
+    
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->is_enabled_movement_monitor = atoi(config_message);
     zlog_info(category_debug,
               "The is_enabled_movement_monitor is [%d]", 
               config->is_enabled_movement_monitor);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    number_movement_settings = atoi(config_message);
+
+    for(i = 0; i < number_movement_settings ; i++){
+        fetch_next_string(file, config_message, sizeof(config_message)); 
+        
+        add_movement_settings(config_message, database_argument);
+    }
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->movement_monitor_config.monitor_interval_in_min = atoi(config_message);
@@ -778,6 +763,7 @@ void *maintain_database()
 void *Server_summarize_location_information(){
     void *db = NULL;
     int uptime = 0;
+    int last_sync_monitor_config = 0;
     int last_sync_location_timestamp = 0;
     int last_sync_movement_timestamp = 0;
 
@@ -790,7 +776,7 @@ void *Server_summarize_location_information(){
     }
 
     uptime = get_clock_time();
-
+    
     while(true == ready_to_work){
     
         uptime = get_clock_time();
@@ -805,6 +791,11 @@ void *Server_summarize_location_information(){
                                config.database_pre_filter_time_window_in_sec,
                                config.panic_time_interval_in_sec);
         }
+
+        if(uptime - last_sync_monitor_config > SECONDS_EACH_MINUTE){
+            SQL_sync_up_active_monitor_config(db);
+            last_sync_monitor_config = uptime;
+        } 
 
         if(config.is_enabled_movement_monitor){
             if(uptime - last_sync_movement_timestamp >= 
@@ -821,30 +812,10 @@ void *Server_summarize_location_information(){
         }
 
         if(config.is_enabled_location_monitor){
-
-            if(config.location_monitor_config.
-               is_enabled_location_not_stay_room && 
-               1 == is_in_active_hours(config.location_monitor_config.
-                                       start_hour_of_not_stay_room,
-                                       config.location_monitor_config.
-                                       end_hour_of_not_stay_room)){
-
                 
-                SQL_identify_location_not_stay_room(db);
-            
-            }
-            if(config.location_monitor_config.
-               is_enabled_location_long_stay_in_dangerous_area && 
-               1 == is_in_active_hours(config.location_monitor_config.
-                                       start_hour_of_long_stay_in_danger, 
-                                       config.location_monitor_config.
-                                       end_hour_of_long_stay_in_danger)){
-            
+            SQL_identify_location_not_stay_room(db);
  
-                SQL_identify_location_long_stay(db,
-                                                config.location_monitor_config.
-                                                long_stay_in_danger_in_mins);
-            }
+            SQL_identify_location_long_stay_in_danger(db);
         }
 
         sleep_t(BUSY_WAITING_TIME_IN_MS);
@@ -1576,4 +1547,155 @@ ErrorCode add_notification_to_the_notification_list(
 }
 
 
+ErrorCode add_location_not_stay_room_settings(char *buf,
+                                              char *database_argument)
+{
+    char *save_ptr = NULL;
+    char *area_id = NULL;
+   /* Each location monitor for not stay room is defined in server.conf as 
+       following format:
+
+       location_not_stay_room_area_1=0001;0,24;
+       
+       The active period is defined in the "0,24" setting, and we call it 
+       "hours_duration" here. The hours_duration setting is in the format of 
+       "hour_start,hour_end" to specify the active starting hour and ending hour.
+    */
+    char *hours_duration = NULL;
+    char *hour_start = NULL;
+    char *hour_end = NULL;
+    void *db = NULL;
+
+    int i = 0;
+
+    zlog_info(category_debug, ">> add_location_not_stay_room_settings");
+
+    area_id = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
+
+    hours_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+
+    // parse hours duration
+    hour_start = strtok_save(hours_duration, DELIMITER_COMMA, &save_ptr);
+    hour_end = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
+        zlog_error(category_debug, 
+                   "cannot open database"); 
+        return E_SQL_OPEN_DATABASE;
+    }
+    SQL_update_location_not_stay_room_config(db, area_id, hour_start, hour_end);
+    
+    SQL_close_database_connection(db);
+ 
+    zlog_info(category_debug, "<< add_location_not_stay_room_settings");
+
+    return WORK_SUCCESSFULLY;
+
+}
+
+
+ErrorCode add_location_long_stay_in_danger_settings(char *buf,
+                                                    char *database_argument)
+{
+    char *save_ptr = NULL;
+    char *area_id = NULL;
+   /* Each location monitor for not stay room is defined in server.conf as 
+       following format:
+
+       location_not_stay_room_area_1=0001;0,24;
+       
+       The active period is defined in the "0,24" setting, and we call it 
+       "hours_duration" here. The hours_duration setting is in the format of 
+       "hour_start,hour_end" to specify the active starting hour and ending hour.
+    */
+    char *hours_duration = NULL;
+    char *hour_start = NULL;
+    char *hour_end = NULL;
+    char *stay_duration = NULL;
+    void *db = NULL;
+
+    int i = 0;
+
+    zlog_info(category_debug, ">> add_location_long_stay_in_danger_settings");
+
+    area_id = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
+
+    hours_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+
+    stay_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+
+    // parse hours duration
+    hour_start = strtok_save(hours_duration, DELIMITER_COMMA, &save_ptr);
+    hour_end = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
+        zlog_error(category_debug, 
+                   "cannot open database"); 
+        return E_SQL_OPEN_DATABASE;
+    }
+    SQL_update_location_long_stay_in_danger_config(db, 
+                                                   area_id, 
+                                                   hour_start, 
+                                                   hour_end,
+                                                   stay_duration);
+    
+    SQL_close_database_connection(db);
+ 
+    zlog_info(category_debug, "<< add_location_long_stay_in_danger_settings");
+
+    return WORK_SUCCESSFULLY;
+}
+
+ErrorCode add_movement_settings(char *buf, char *database_argument)
+{
+    char *save_ptr = NULL;
+    char *area_id = NULL;
+   /* Each location monitor for not stay room is defined in server.conf as 
+       following format:
+
+       location_not_stay_room_area_1=0001;0,24;
+       
+       The active period is defined in the "0,24" setting, and we call it 
+       "hours_duration" here. The hours_duration setting is in the format of 
+       "hour_start,hour_end" to specify the active starting hour and ending hour.
+    */
+    char *hours_duration = NULL;
+    char *hour_start = NULL;
+    char *hour_end = NULL;
+    void *db = NULL;
+
+    int i = 0;
+
+    zlog_info(category_debug, ">> add_movement_settings");
+
+    area_id = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
+
+    hours_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+
+    // parse hours duration
+    hour_start = strtok_save(hours_duration, DELIMITER_COMMA, &save_ptr);
+    hour_end = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
+        zlog_error(category_debug, 
+                   "cannot open database"); 
+        return E_SQL_OPEN_DATABASE;
+    }
+    SQL_update_movement_config(db, 
+                               area_id, 
+                               hour_start, 
+                               hour_end);
+    
+    SQL_close_database_connection(db);
+ 
+    zlog_info(category_debug, "<< add_movement_settings");
+
+    return WORK_SUCCESSFULLY;
+}
 

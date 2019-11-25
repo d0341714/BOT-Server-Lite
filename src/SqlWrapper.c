@@ -1248,7 +1248,12 @@ ErrorCode SQL_identify_location_not_stay_room(void *db){
                                 "INNER JOIN lbeacon_table ON " \
                                 "object_summary_table.uuid = " \
                                 "lbeacon_table.uuid " \
-                                "WHERE monitor_type & %d = %d " \
+                                "INNER JOIN location_not_stay_room_config ON " \
+                                "object_table.area_id = " \
+                                "location_not_stay_room_config.area_id " \
+                                "WHERE " \
+                                "location_not_stay_room_config.is_active = 1 " \
+                                "AND monitor_type & %d = %d " \
                                 "AND lbeacon_table.room <> object_table.room " \
                                 ") location_information " \
                                 "WHERE object_summary_table.mac_address = " \
@@ -1271,8 +1276,7 @@ ErrorCode SQL_identify_location_not_stay_room(void *db){
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_location_long_stay(void *db,
-                                          int long_stay_period_in_mins){
+ErrorCode SQL_identify_location_long_stay_in_danger(void *db){
 
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
@@ -1294,10 +1298,16 @@ ErrorCode SQL_identify_location_long_stay(void *db,
                                 "INNER JOIN lbeacon_table ON " \
                                 "object_summary_table.uuid = " \
                                 "lbeacon_table.uuid " \
-                                "WHERE monitor_type & %d = %d " \
+                                "INNER JOIN location_long_stay_in_danger_config ON " \
+                                "object_table.area_id = " \
+                                "location_long_stay_in_danger_config.area_id " \
+                                "WHERE " \
+                                "location_long_stay_in_danger_config.is_active = 1 " \
+                                "AND monitor_type & %d = %d " \
                                 "AND danger_area = 1 " \
                                 "AND EXTRACT(MIN FROM last_seen_timestamp - " \
-                                "first_seen_timestamp) > %d "\
+                                "first_seen_timestamp) > "\
+                                "location_long_stay_in_danger_config.stay_duration " \
                                 ") location_information " \
                                 "WHERE object_summary_table.mac_address = " \
                                 "location_information.mac_address;";
@@ -1307,8 +1317,7 @@ ErrorCode SQL_identify_location_long_stay(void *db,
 
     sprintf(sql, sql_select_template, 
             MONITOR_LOCATION,
-            MONITOR_LOCATION,
-            long_stay_period_in_mins);
+            MONITOR_LOCATION);
 
     ret_val = SQL_execute(db, sql);
     if(WORK_SUCCESSFULLY != ret_val){
@@ -1331,6 +1340,14 @@ ErrorCode SQL_identify_last_movement_status(void *db,
 
     char *sql_select_template = "SELECT mac_address, uuid " \
                                 "FROM object_summary_table " \
+                                "INNER JOIN object_table ON " \
+                                "object_summary_table.mac_address = " \
+                                "object_table.mac_address " \
+                                "INNER JOIN movement_config ON " \
+                                "object_table.area_id = " \
+                                "movement_config.area_id " \
+                                "WHERE " \
+                                "movement_config.is_active = 1 "
                                 "ORDER BY " \
                                 "mac_address ASC";
     const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 2;
@@ -1971,3 +1988,257 @@ ErrorCode SQL_get_geo_fence_config(void *db,
 
     return WORK_SUCCESSFULLY;
 }
+
+ErrorCode SQL_update_location_not_stay_room_config(void *db,
+                                                   char *area_id,
+                                                   char *hour_start,
+                                                   char *hour_end)
+{
+
+    PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char *sql_template = "INSERT INTO location_not_stay_room_config " \
+                         "(area_id, " \
+                         "hour_start, " \
+                         "hour_end) " \
+                         "VALUES " \
+                         "(%s, %s, %s)" \
+                         "ON CONFLICT (area_id) " \
+                         "DO UPDATE SET " \
+                         "hour_start = %s, " \
+                         "hour_end = %s;";
+
+    char *pqescape_area_id = NULL;
+    char *pqescape_hour_start = NULL;
+    char *pqescape_hour_end = NULL;
+
+    pqescape_area_id = 
+        PQescapeLiteral(conn, area_id, strlen(area_id));
+    pqescape_hour_start = 
+        PQescapeLiteral(conn, hour_start, strlen(hour_start));
+    pqescape_hour_end = 
+        PQescapeLiteral(conn, hour_end, strlen(hour_end));
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template,
+            pqescape_area_id,
+            pqescape_hour_start, 
+            pqescape_hour_end,
+            pqescape_hour_start,
+            pqescape_hour_end);
+
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db, sql);
+
+    PQfreemem(pqescape_area_id);
+    PQfreemem(pqescape_hour_start);
+    PQfreemem(pqescape_hour_end);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        return E_SQL_EXECUTE;
+    }
+
+    return WORK_SUCCESSFULLY;
+}
+
+ErrorCode SQL_update_location_long_stay_in_danger_config(void *db,
+                                                         char *area_id,
+                                                         char *hour_start,
+                                                         char *hour_end,
+                                                         char *stay_duration)
+{
+
+    PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char *sql_template = "INSERT INTO location_long_stay_in_danger_config " \
+                         "(area_id, " \
+                         "hour_start, " \
+                         "hour_end, " \
+                         "stay_duration) " \
+                         "VALUES " \
+                         "(%s, %s, %s, %s)" \
+                         "ON CONFLICT (area_id) " \
+                         "DO UPDATE SET " \
+                         "hour_start = %s, " \
+                         "hour_end = %s, " \
+                         "stay_duration = %s;";
+
+    char *pqescape_area_id = NULL;
+    char *pqescape_hour_start = NULL;
+    char *pqescape_hour_end = NULL;
+    char *pqescape_stay_duration = NULL;
+
+    pqescape_area_id = 
+        PQescapeLiteral(conn, area_id, strlen(area_id));
+    pqescape_hour_start = 
+        PQescapeLiteral(conn, hour_start, strlen(hour_start));
+    pqescape_hour_end = 
+        PQescapeLiteral(conn, hour_end, strlen(hour_end));
+    pqescape_stay_duration = 
+        PQescapeLiteral(conn, stay_duration, strlen(stay_duration));
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template,
+            pqescape_area_id,
+            pqescape_hour_start, 
+            pqescape_hour_end,
+            pqescape_stay_duration,
+            pqescape_hour_start,
+            pqescape_hour_end,
+            pqescape_stay_duration);
+
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db, sql);
+
+    PQfreemem(pqescape_area_id);
+    PQfreemem(pqescape_hour_start);
+    PQfreemem(pqescape_hour_end);
+    PQfreemem(pqescape_stay_duration);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        return E_SQL_EXECUTE;
+    }
+
+    return WORK_SUCCESSFULLY;
+}
+
+ErrorCode SQL_update_movement_config(void *db,
+                                     char *area_id,
+                                     char *hour_start,
+                                     char *hour_end){
+    PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char *sql_template = "INSERT INTO movement_config " \
+                         "(area_id, " \
+                         "hour_start, " \
+                         "hour_end) " \
+                         "VALUES " \
+                         "(%s, %s, %s)" \
+                         "ON CONFLICT (area_id) " \
+                         "DO UPDATE SET " \
+                         "hour_start = %s, " \
+                         "hour_end = %s;";
+
+    char *pqescape_area_id = NULL;
+    char *pqescape_hour_start = NULL;
+    char *pqescape_hour_end = NULL;
+   
+    pqescape_area_id = 
+        PQescapeLiteral(conn, area_id, strlen(area_id));
+    pqescape_hour_start = 
+        PQescapeLiteral(conn, hour_start, strlen(hour_start));
+    pqescape_hour_end = 
+        PQescapeLiteral(conn, hour_end, strlen(hour_end));
+   
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template,
+            pqescape_area_id,
+            pqescape_hour_start, 
+            pqescape_hour_end,
+            pqescape_hour_start,
+            pqescape_hour_end);
+
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db, sql);
+
+    PQfreemem(pqescape_area_id);
+    PQfreemem(pqescape_hour_start);
+    PQfreemem(pqescape_hour_end);
+    
+    if(WORK_SUCCESSFULLY != ret_val){
+        return E_SQL_EXECUTE;
+    }
+
+    return WORK_SUCCESSFULLY;
+
+}
+
+ErrorCode SQL_sync_up_active_monitor_config(void *db)
+{
+    PGconn *conn = (PGconn *) db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char *table_name[] = {"location_not_stay_room_config", 
+                          "location_long_stay_in_danger_config",
+                          "movement_config" };
+
+    char *sql_select_template = "SELECT id, enable, hour_start, hour_end " \
+                                "FROM %s;";
+    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 4;
+    const int FIELD_INDEX_OF_ID = 0;
+    const int FIELD_INDEX_OF_ENABLE = 1;
+    const int FIELD_INDEX_OF_HOUR_START = 2;
+    const int FIELD_INDEX_OF_HOUR_END = 3;
+
+    char *sql_update_template = "UPDATE %s " \
+                                "SET is_active = %d " \
+                                "WHERE id = %d;";
+    PGresult *res = NULL;
+    int total_rows = 0;
+    int total_fields = 0;
+    int idx = 0;
+    int i = 0;
+    int id = 0;
+    int enable = 0;
+    int start_hour = 0;
+    int end_hour = 0;
+    int is_active = 0;
+  
+
+    for(idx = 0; idx< sizeof(table_name)/sizeof(table_name[0]); idx++){
+        memset(sql, 0, sizeof(sql));
+
+        sprintf(sql, sql_select_template, table_name[idx]);
+
+        res = PQexec(conn, sql);
+
+        if(PQresultStatus(res) != PGRES_TUPLES_OK){
+            PQclear(res);
+
+            zlog_error(category_debug, "SQL_execute failed [%d]: %s",
+                       res, PQerrorMessage(conn));
+
+            return E_SQL_EXECUTE;
+        }
+
+        total_fields = PQnfields(res);
+        total_rows = PQntuples(res);
+
+        if(total_rows > 0 &&
+            total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
+
+            for(i = 0 ; i < total_rows; i++){
+                is_active = 0;
+                id = atoi(PQgetvalue(res, i, FIELD_INDEX_OF_ID));
+                enable = atoi(PQgetvalue(res, i, FIELD_INDEX_OF_ENABLE));
+                start_hour = atoi(PQgetvalue(res, i, FIELD_INDEX_OF_HOUR_START));
+                end_hour = atoi(PQgetvalue(res, i, FIELD_INDEX_OF_HOUR_END));
+
+                if(enable && is_in_active_hours(start_hour, end_hour)){
+                    is_active = 1;
+                }
+                
+                memset(sql, 0, sizeof(sql));
+
+                sprintf(sql, sql_update_template, table_name[idx], is_active, id);
+                ret_val = SQL_execute(db, sql);
+
+                if(WORK_SUCCESSFULLY != ret_val){
+                    PQclear(res);
+
+                    zlog_error(category_debug, "SQL_execute failed [%d]: %s",
+                       res, PQerrorMessage(conn));
+
+                    return E_SQL_EXECUTE;
+                }
+            }
+        }
+        PQclear(res);
+    }
+
+    return WORK_SUCCESSFULLY;
+}
+

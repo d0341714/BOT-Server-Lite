@@ -79,34 +79,6 @@
 #define SLOTS_IN_MEM_POOL_NOTIFICATION 128
 
 typedef struct {
-    /* The length of the time window in which the location of an object is 
-       monitored. */
-
-    /* The flag indicating whether patients are not staying in his/her 
-    dedicated room monitor is enabled. */
-    int is_enabled_location_not_stay_room;
-
-    /* The start o'clock and end o'clock of the not staying in 
-    his/her dedicatedroom monitor */
-    int start_hour_of_not_stay_room;
-    int end_hour_of_not_stay_room;
-
-    /* The flag indicating whether long stay in dangerous area monitor is 
-    enabled. */
-    int is_enabled_location_long_stay_in_dangerous_area;
-
-    /* The start o'clock and end o'clock of the staying in dangerous area 
-    monitor */
-    int start_hour_of_long_stay_in_danger;
-    int end_hour_of_long_stay_in_danger;
-
-    /* The length of staying time in minutes the system allows patient to 
-    stay in the potential dangerous area */
-    int long_stay_in_danger_in_mins;
-
-} LocationMonitorConfig;
-
-typedef struct {
     /* The length of the time window in which the movements of an object is 
        monitored. */
     int monitor_interval_in_min;
@@ -211,9 +183,6 @@ typedef struct {
 
     /* The flag indicating whether location monitor is enabled. */
     int is_enabled_location_monitor;
- 
-    /* The specific settnigs for monitoring location */
-    LocationMonitorConfig location_monitor_config;
 
     /* The flag indicating whether movement monitor is enabled. */
     int is_enabled_movement_monitor;
@@ -562,5 +531,69 @@ ErrorCode add_notification_to_the_notification_list(
     char *buf);
 
 
+/*
+  add_location_not_stay_room_settings:
+
+     This function parses the configuraion of a location monitor setting for 
+     not staying room violation and stores the resultant setting into database.
+
+  Parameters:
+
+     buf - The pointer to the buffer containing the configuraion of a 
+           location monitor setting for an area
+
+     database_argument - The database argument for opening database 
+
+  Return value:
+
+     ErrorCode
+
+ */
+
+ErrorCode add_location_not_stay_room_settings(char *buf,
+                                              char *database_argument);
+
+/*
+  add_location_long_stay_in_dangerous_area_settings:
+
+     This function parses the configuraion of a location monitor setting for long
+     staying in dangerous area and stores the resultant setting into database.
+
+  Parameters:
+
+     buf - The pointer to the buffer containing the configuraion of a 
+           location monitor setting for an area
+
+     database_argument - The database argument for opening database 
+
+  Return value:
+
+     ErrorCode
+
+ */
+
+ErrorCode add_location_long_stay_in_danger_settings(char *buf,
+                                                    char *database_argument);
+
+/*
+  add_movement_settings:
+
+     This function parses the configuraion of a movment monitor setting and 
+     stores the resultant setting into database.
+
+  Parameters:
+
+     buf - The pointer to the buffer containing the configuraion of a 
+           location monitor setting for an area
+
+     database_argument - The database argument for opening database 
+
+  Return value:
+
+     ErrorCode
+
+ */
+
+ErrorCode add_movement_settings(char *buf, char *database_argument);
 
 #endif
