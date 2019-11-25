@@ -1338,7 +1338,9 @@ ErrorCode SQL_identify_last_movement_status(void *db,
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
 
-    char *sql_select_template = "SELECT mac_address, uuid " \
+    char *sql_select_template = "SELECT " \
+                                "object_summary_table.mac_address, " \
+                                "object_summary_table.uuid " \
                                 "FROM object_summary_table " \
                                 "INNER JOIN object_table ON " \
                                 "object_summary_table.mac_address = " \

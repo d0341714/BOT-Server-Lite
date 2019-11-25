@@ -766,6 +766,13 @@ void *Server_summarize_location_information(){
     int last_sync_monitor_config = 0;
     int last_sync_location_timestamp = 0;
     int last_sync_movement_timestamp = 0;
+    List_Entry * current_list_entry = NULL;
+    GeoFenceListNode *current_list_ptr = NULL;
+    int enable = 0;
+    int hour_start = 0;
+    int hour_end = 0;
+    int is_active= 0;
+
 
     if(WORK_SUCCESSFULLY != 
        SQL_open_database_connection(database_argument, &db)){
@@ -781,6 +788,37 @@ void *Server_summarize_location_information(){
     
         uptime = get_clock_time();
         
+        if(uptime - last_sync_monitor_config > SECONDS_EACH_MINUTE){
+
+            list_for_each(current_list_entry, &config.geo_fence_list_head){
+
+                current_list_ptr = ListEntry(current_list_entry,
+                                             GeoFenceListNode,
+                                             geo_fence_list_entry);
+
+                // sync up geo-fence monitor
+                SQL_get_geo_fence_config(db, 
+                                         current_list_ptr->unique_key, 
+                                         &enable,
+                                         &hour_start,
+                                         &hour_end);
+
+                is_active= 0;
+                if(enable && is_in_active_hours(hour_start, hour_end)){
+                    zlog_debug(category_debug, 
+                               "Active geo-fence with unique key = %s", 
+                               current_list_ptr->unique_key); 
+                    is_active = 1;
+                }
+                current_list_ptr->is_active = is_active;
+            }
+
+            // sync up configurations for location monitor and movement monitor
+            SQL_sync_up_active_monitor_config(db);
+
+            last_sync_monitor_config = uptime;
+        }
+
         SQL_summarize_object_location(db,
                                       config.database_pre_filter_time_window_in_sec,
                                       config.location_time_interval_in_sec);
@@ -791,11 +829,6 @@ void *Server_summarize_location_information(){
                                config.database_pre_filter_time_window_in_sec,
                                config.panic_time_interval_in_sec);
         }
-
-        if(uptime - last_sync_monitor_config > SECONDS_EACH_MINUTE){
-            SQL_sync_up_active_monitor_config(db);
-            last_sync_monitor_config = uptime;
-        } 
 
         if(config.is_enabled_movement_monitor){
             if(uptime - last_sync_movement_timestamp >= 

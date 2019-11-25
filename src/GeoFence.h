@@ -72,6 +72,10 @@ typedef struct {
    int rssi_of_perimeters;
    int rssi_of_fences;
 
+   /* The flag indicating whether this geo-fence is active at current time according to 
+   user's geo-fence monitor configurations. */
+   int is_active;
+
    char perimeters[MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER][LENGTH_OF_UUID];
    char fences[MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE][LENGTH_OF_UUID];
    

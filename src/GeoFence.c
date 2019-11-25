@@ -228,10 +228,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node,
     bool is_fence_lbeacon = false;
 
     void *db = NULL;
-    
-    int is_rule_enabled = 0;
-    int rule_hour_start = 0;
-    int rule_hour_end = 0;
+
 
     zlog_info(category_debug, ">>check_geo_fence_violations");
 
@@ -247,37 +244,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node,
                                      GeoFenceListNode,
                                      geo_fence_list_entry);
 
-        /* check if geo-fence is turn-on */
-        if(WORK_SUCCESSFULLY != 
-           SQL_open_database_connection(database_argument, &db)){
-
-            zlog_error(category_debug, 
-                       "cannot open database"); 
-            continue;
-        }
-
-        SQL_get_geo_fence_config(db, 
-                                 current_list_ptr->unique_key, 
-                                 &is_rule_enabled,
-                                 &rule_hour_start,
-                                 &rule_hour_end);
-
-        SQL_close_database_connection(db);
-
-        if(is_rule_enabled == 0){
-            zlog_debug(category_debug, 
-                       "Skip geo-fence=[%s], enable=[%d]", 
-                       current_list_ptr->unique_key, is_rule_enabled);
-            continue;
-        }
-
-        /* check if geo-fence is valid at current time */
-        if(0 == is_in_active_hours(rule_hour_start, rule_hour_end)){
-            zlog_debug(category_debug, 
-                       "Skip geo-fence=[%s], start=[%d], end=[%d]",
-                       current_list_ptr->unique_key, 
-                       rule_hour_start,
-                       rule_hour_end);
+        if(current_list_ptr->is_active == false){
             continue;
         }
 
