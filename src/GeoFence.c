@@ -244,7 +244,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node,
                                      GeoFenceListNode,
                                      geo_fence_list_entry);
 
-        if(current_list_ptr->is_active == false){
+        if(current_list_ptr->is_active == 0){
             continue;
         }
 
