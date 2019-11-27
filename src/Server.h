@@ -129,9 +129,17 @@ typedef struct {
        tracked object data from LBeacons */
     int period_between_RFTOD;
     
+    /* The time interval in seconds between consecutive reloads monitor 
+    settings. */
+    int period_between_reload_monitor_setting_in_sec;
+
     /* The time interval in seconds between consecutive checks by the server 
        for object movement information */
-    int period_between_check_object_movement;
+    int period_between_check_object_movement_in_sec;
+
+    /* The time difference between server localtime against UTC. For example, 
+    this value for servers in Taiwan should be 8, because Taiwan is UTC+8. */
+    int server_localtime_against_UTC_in_hour;
 
     /* A port that the server is to send from. */
     int send_port;
@@ -450,6 +458,40 @@ void *Server_process_wifi_receive();
  */
 
 void *Server_summarize_location_information(); 
+
+/*
+  Server_monitor_object_violations:
+
+     This function triggers SQL wrapper functions to check if objects violates
+     monitoring behaviors.
+
+  Parameters:
+
+     None
+
+  Return value:
+
+     None
+ */
+
+void *Server_monitor_object_violations(); 
+
+/*
+  Server_reload_monitor_config:
+
+     This function checks if it is time to reload monitoring configurations. 
+     If YES, it triggers SQL wrapper functions to reload the settings.
+
+  Parameters:
+
+     None
+
+  Return value:
+
+     None
+ */
+
+void *Server_reload_monitor_config(); 
 
 /*
   Server_collect_violation_event:

@@ -432,8 +432,6 @@ ErrorCode SQL_summarize_object_location(void *db,
 
      mac_address -  MAC address of detected object.
 
-     geofence_key - name of geo-fence 
-
      geofence_uuid - UUID of the LBeacon scanned the detected object.
 
      detected_rssi - rssi signal fo the detected object
@@ -447,7 +445,6 @@ ErrorCode SQL_summarize_object_location(void *db,
 ErrorCode SQL_identify_geofence_violation(
     void *db,
     char *mac_address,
-    char *geofence_key,
     char *geofence_uuid,
     int detected_rssi);
 
@@ -464,8 +461,6 @@ ErrorCode SQL_identify_geofence_violation(
 
      mac_address -  MAC address of detected object.
 
-     geofence_key - the unique key of geo-fence 
-
      valid_duration_in_sec - the duration in seconds within which this 
                              perimeter violation is treated as valid
 
@@ -479,7 +474,6 @@ ErrorCode SQL_identify_geofence_violation(
 ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
     void *db,
     char *mac_address,
-    char *geofence_key,
     int valid_duration_in_sec);
 
 /*
@@ -495,8 +489,6 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
 
      mac_address -  MAC address of detected object.
 
-     geofence_key - the unique key of geo-fence 
-
      is_valid_perimeter - output value to specify if perimter violation is 
                           still valid
 
@@ -509,7 +501,6 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
 ErrorCode SQL_check_perimeter_violation_valid(
     void *db,
     char *mac_address,
-    char *geofence_key,
     int *is_valid_perimeter);
 
 /*
@@ -730,106 +721,7 @@ ErrorCode SQL_get_object_monitor_type(void *db,
                                       ObjectMonitorType *monitor_type);
 
 /*
-  SQL_update_geo_fence_config
-
-     Updates start hour and end hour of geo-fence 
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     unique_key - pointer to unique key to identify this geo-fence 
-
-     name - pointer to the name of the geo-fence specified by the input 
-            unique key
-
-     perimeters - set of LBeacons that are in perimeter of a geofence. 
-
-     fences - set of LBeacons that are in a fence
-
-     hour_start - pointer to start hour of the geo-fence specified by the 
-                  input unique key
-
-     hour_end - pointer to start hour of the geo-fence specified by the 
-                input unique key
-
-  Return Value:
-
-     ErrorCode - indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY
-*/
-
-ErrorCode SQL_update_geo_fence_config(void *db,
-                                      char *unique_key, 
-                                      char *name,
-                                      char *perimeters,
-                                      char *fences,
-                                      char *hour_start,
-                                      char *hour_end);
-
-/*
-  SQL_get_geo_fence_config
-
-     This function queries geo_fence_config to extract configurations of 
-     the specified geo_fence 
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     unique_key - pointer to unique key to identify this geo-fence 
-
-     enable - a pointer to output of this function. It stores enable status of
-              the geo-fence specified by the input unique key
-     
-     hour_start - a pointer to output of this function. It stores start hour of
-                  the geo-fence specified by the input unique key
-
-     hour_end - a pointer to output of this function. It stores end hour of
-                the geo-fence specified by the input unique key
-              
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-
-ErrorCode SQL_get_geo_fence_config(void *db, 
-                                   char *unique_key, 
-                                   int *enable,
-                                   int *hour_start,
-                                   int *hour_end);
-
-/*
-  SQL_update_location_not_stay_room_config
-
-     Updates start hour and end hour of location monitor of not staying room
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-     
-     area_id - the area_id of this location monitor of not staying room
-
-     hour_start - pointer to start hour of the geo-fence specified by the 
-                  input unique key
-
-     hour_end - pointer to start hour of the geo-fence specified by the 
-                input unique key
-
-  Return Value:
-
-     ErrorCode - indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY
-*/
-ErrorCode SQL_update_location_not_stay_room_config(void *db,
-                                                   char *area_id,
-                                                   char *hour_start,
-                                                   char *hour_end);
-
-/*
-  SQL_update_location_long_stay_in_danger_config
+  SQL_reload_monitor_config
 
      Updates start hour and end hour of location monitor of long staying in 
      dangerous area
@@ -837,74 +729,16 @@ ErrorCode SQL_update_location_not_stay_room_config(void *db,
   Parameter:
 
      db - a pointer pointing to the connection to the database backend server
-     
-     area_id - the area_id of this location monitor of long staying in dangerous
-               area
 
-     hour_start - pointer to start hour of the geo-fence specified by the 
-                  input unique key
-
-     hour_end - pointer to start hour of the geo-fence specified by the 
-                input unique key
-
-     stay_duration - the length of time in minutes petients are allowed to stay 
-                     in dangerous area
-
-  Return Value:
-
-     ErrorCode - indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY
-*/
-ErrorCode SQL_update_location_long_stay_in_danger_config(void *db,
-                                                         char *area_id,
-                                                         char *hour_start,
-                                                         char *hour_end,
-                                                         char *stay_duration);
-
-
-/*
-  SQL_update_movement_config
-
-     Updates start hour and end hour of movement monitor.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-     
-     area_id - the area_id of this location monitor of long staying in dangerous
-               area
-
-     hour_start - pointer to start hour of the geo-fence specified by the 
-                  input unique key
-
-     hour_end - pointer to start hour of the geo-fence specified by the 
-                input unique key
-
-  Return Value:
-
-     ErrorCode - indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY
-*/
-ErrorCode SQL_update_movement_config(void *db,
-                                     char *area_id,
-                                     char *hour_start,
-                                     char *hour_end);
-
-/*
-  SQL_sync_up_active_monitor_config
-
-     Updates start hour and end hour of location monitor of long staying in 
-     dangerous area
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
+     server_localtime_against_UTC_in_hour - The time difference between server 
+                                            localtime against UTC. 
      
   Return Value:
 
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_sync_up_active_monitor_config(void *db);
+ErrorCode SQL_reload_monitor_config(void *db, 
+                                    int server_localtime_against_UTC_in_hour);
 
 #endif

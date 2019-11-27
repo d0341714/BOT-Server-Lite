@@ -902,7 +902,8 @@ ErrorCode SQL_summarize_object_location(void *db,
                                 "first_seen_timestamp = CASE " \
                                 "WHEN first_seen_timestamp IS NULL OR " \
                                 "object_summary_table.uuid != " \
-                                "location_information.lbeacon_uuid THEN " \
+                                "location_information.lbeacon_uuid " \
+                                "THEN " \
                                 "location_information.initial_timestamp " \
                                 "ELSE first_seen_timestamp " \
                                 "END, " \
@@ -978,7 +979,6 @@ ErrorCode SQL_summarize_object_location(void *db,
 ErrorCode SQL_identify_geofence_violation(
     void *db,
     char *mac_address,
-    char *geofence_key,
     char *geofence_uuid,
     int detected_rssi){
 
@@ -989,7 +989,6 @@ ErrorCode SQL_identify_geofence_violation(
     char *sql_insert_summary_table = 
         "UPDATE object_summary_table " \
         "SET " \
-        "geofence_key = %s, " \
         "geofence_uuid = %s, " \
         "geofence_rssi = %d, " \
         "geofence_violation_timestamp = NOW(), " \
@@ -997,7 +996,6 @@ ErrorCode SQL_identify_geofence_violation(
         "WHERE mac_address = %s";
 
     char *pqescape_mac_address = NULL;
-    char *pqescape_geofence_key = NULL;
     char *pqescape_geofence_uuid = NULL;
 
 
@@ -1006,16 +1004,12 @@ ErrorCode SQL_identify_geofence_violation(
     pqescape_mac_address = 
         PQescapeLiteral(conn, mac_address, 
                         strlen(mac_address)); 
-    pqescape_geofence_key = 
-        PQescapeLiteral(conn, geofence_key, 
-                        strlen(geofence_key));
     pqescape_geofence_uuid = 
         PQescapeLiteral(conn, geofence_uuid, 
                         strlen(geofence_uuid));
     
     sprintf(sql, 
             sql_insert_summary_table, 
-            pqescape_geofence_key, 
             pqescape_geofence_uuid,
             detected_rssi,
             pqescape_mac_address);
@@ -1025,7 +1019,6 @@ ErrorCode SQL_identify_geofence_violation(
     ret_val = SQL_execute(db, sql);
 
     PQfreemem(pqescape_mac_address);
-    PQfreemem(pqescape_geofence_key);
     PQfreemem(pqescape_geofence_uuid);
 
     if(WORK_SUCCESSFULLY != ret_val){
@@ -1045,7 +1038,6 @@ ErrorCode SQL_identify_geofence_violation(
 ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
     void *db,
     char *mac_address,
-    char *geofence_key,
     int valid_duration_in_sec){
 
     PGconn *conn = (PGconn *)db;
@@ -1055,25 +1047,19 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
     char *sql_insert_summary_table = 
         "UPDATE object_summary_table " \
         "SET " \
-        "geofence_key = %s, " \
         "perimeter_valid_timestamp = NOW() + INTERVAL '%d seconds' " \
         "WHERE mac_address = %s";
 
     char *pqescape_mac_address = NULL;
-    char *pqescape_geofence_key = NULL;
     
     memset(sql, 0, sizeof(sql));
 
     pqescape_mac_address = 
         PQescapeLiteral(conn, mac_address, 
                         strlen(mac_address)); 
-    pqescape_geofence_key = 
-        PQescapeLiteral(conn, geofence_key, 
-                        strlen(geofence_key));
     
     sprintf(sql, 
             sql_insert_summary_table, 
-            pqescape_geofence_key, 
             valid_duration_in_sec,
             pqescape_mac_address);
             
@@ -1082,8 +1068,7 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
     ret_val = SQL_execute(db, sql);
 
     PQfreemem(pqescape_mac_address);
-    PQfreemem(pqescape_geofence_key);
-
+    
     if(WORK_SUCCESSFULLY != ret_val){
         //SQL_rollback_transaction(db);
         
@@ -1101,7 +1086,6 @@ ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
 ErrorCode SQL_check_perimeter_violation_valid(
     void *db,
     char *mac_address,
-    char *geofence_key,
     int *is_valid_perimeter){
 
     PGconn *conn = (PGconn *)db;
@@ -1112,7 +1096,6 @@ ErrorCode SQL_check_perimeter_violation_valid(
         "SELECT mac_address " \
         "FROM object_summary_table " \
         "WHERE " \
-        "geofence_key = %s AND " \
         "perimeter_valid_timestamp > NOW() AND " \
         "mac_address = %s";
     const int EXPECTED_RESULT_ROWS_OF_SQL_SELECT_TEMPLATE = 1;
@@ -1120,8 +1103,7 @@ ErrorCode SQL_check_perimeter_violation_valid(
     const int PERIMETER_VIOLATION_IS_VALID = 1;
 
     char *pqescape_mac_address = NULL;
-    char *pqescape_geofence_key = NULL;
-
+    
     PGresult *res = NULL;
     int total_rows = 0;
     
@@ -1133,20 +1115,15 @@ ErrorCode SQL_check_perimeter_violation_valid(
     pqescape_mac_address = 
         PQescapeLiteral(conn, mac_address, 
                         strlen(mac_address)); 
-    pqescape_geofence_key = 
-        PQescapeLiteral(conn, geofence_key, 
-                        strlen(geofence_key));
     
     sprintf(sql, 
             sql_select_template, 
-            pqescape_geofence_key, 
             pqescape_mac_address);
 
     res = PQexec(conn, sql);
 
     PQfreemem(pqescape_mac_address);
-    PQfreemem(pqescape_geofence_key);
-
+    
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
         PQclear(res);
 
@@ -1833,412 +1810,72 @@ ErrorCode SQL_get_object_monitor_type(void *db,
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_update_geo_fence_config(void *db,
-                                      char *unique_key,
-                                      char *name,
-                                      char *perimeters,
-                                      char *fences,
-                                      char *hour_start,
-                                      char *hour_end){
-
-    PGconn *conn = (PGconn *) db;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_template = "INSERT INTO geo_fence_config " \
-                         "(unique_key, " \
-                         "name, " \
-                         "perimeters, " \
-                         "fences, " \
-                         "hour_start, " \
-                         "hour_end) " \
-                         "VALUES " \
-                         "(%s, %s, %s, %s, %s, %s)" \
-                         "ON CONFLICT (unique_key) " \
-                         "DO UPDATE SET " \
-                         "name = %s, " \
-                         "perimeters = %s, " \
-                         "fences = %s, " \
-                         "hour_start = %s, " \
-                         "hour_end = %s;";
-
-    char *pqescape_unique_key = NULL;
-    char *pqescape_name = NULL;
-    char *pqescape_perimeters = NULL;
-    char *pqescape_fences = NULL;
-
-
-    pqescape_unique_key = 
-        PQescapeLiteral(conn, unique_key, strlen(unique_key));
-
-    pqescape_name = 
-        PQescapeLiteral(conn, name, strlen(name));
-
-    pqescape_perimeters = 
-        PQescapeLiteral(conn, perimeters, strlen(perimeters));
-
-    pqescape_fences = 
-        PQescapeLiteral(conn, fences, strlen(fences));
-
-    memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_template,
-            pqescape_unique_key,
-            pqescape_name,
-            pqescape_perimeters,
-            pqescape_fences,
-            hour_start, 
-            hour_end,
-            pqescape_name,
-            pqescape_perimeters,
-            pqescape_fences,
-            hour_start,
-            hour_end);
-
-    /* Execute SQL statement */
-    ret_val = SQL_execute(db, sql);
-
-    PQfreemem(pqescape_unique_key);
-    PQfreemem(pqescape_name);
-    PQfreemem(pqescape_perimeters);
-    PQfreemem(pqescape_fences);
-
-    if(WORK_SUCCESSFULLY != ret_val){
-        return E_SQL_EXECUTE;
-    }
-
-    return WORK_SUCCESSFULLY;
-}
-
-ErrorCode SQL_get_geo_fence_config(void *db, 
-                                   char *unique_key, 
-                                   int *enable,
-                                   int *hour_start,
-                                   int *hour_end){
-
-    PGconn *conn = (PGconn *)db;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-
-    char *sql_select_template = "SELECT enable, hour_start, hour_end " \
-                                "FROM geo_fence_config " \
-                                "WHERE " \
-                                "unique_key = %s";
-    const int NUMBER_ROWS_OF_SQL_SELECT_TEMPLATE = 1;
-    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 3;
-    const int ROW_INDEX_OF_SQL_SELECT_TEMPLATE = 0;
-    const int FIELD_INDEX_OF_ENABLE = 0;
-    const int FIELD_INDEX_OF_HOUR_START = 1;
-    const int FIELD_INDEX_OF_HOUR_END = 2;
-
-    PGresult *res = NULL;
-    int total_fields = 0;
-    int total_rows = 0;
-
-    char *pqescape_unique_key = NULL;
-
-
-    memset(sql, 0, sizeof(sql));
-
-    pqescape_unique_key = 
-        PQescapeLiteral(conn, unique_key, strlen(unique_key));
-    
-    sprintf(sql, sql_select_template, pqescape_unique_key);
-
-    res = PQexec(conn, sql);
-
-    PQfreemem(pqescape_unique_key);
-
-    if(PQresultStatus(res) != PGRES_TUPLES_OK){
-        PQclear(res);
-
-        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   res, PQerrorMessage(conn));
-
-        return E_SQL_EXECUTE;
-    }
-
-    total_fields = PQnfields(res);
-    total_rows = PQntuples(res);
-
-    *enable = 0;
-    *hour_start = 0;
-    *hour_end = 0;
-    if(total_rows == NUMBER_ROWS_OF_SQL_SELECT_TEMPLATE && 
-       total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
-        if(PQgetvalue(res, 
-                      ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
-                      FIELD_INDEX_OF_ENABLE) == NULL || 
-           PQgetvalue(res, 
-                      ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
-                      FIELD_INDEX_OF_HOUR_START) == NULL || 
-           PQgetvalue(res, 
-                      ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
-                      FIELD_INDEX_OF_HOUR_END) == NULL){
-            PQclear(res);
-            return E_API_PROTOCOL_FORMAT;
-        }
-        *enable = atoi(PQgetvalue(res,
-                                  ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
-                                  FIELD_INDEX_OF_ENABLE));
-        *hour_start = atoi(PQgetvalue(res, 
-                                      ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
-                                      FIELD_INDEX_OF_HOUR_START));
-        *hour_end = atoi(PQgetvalue(res, ROW_INDEX_OF_SQL_SELECT_TEMPLATE, 
-                                         FIELD_INDEX_OF_HOUR_END));
-    }
-
-    PQclear(res);
-
-    return WORK_SUCCESSFULLY;
-}
-
-ErrorCode SQL_update_location_not_stay_room_config(void *db,
-                                                   char *area_id,
-                                                   char *hour_start,
-                                                   char *hour_end)
-{
-
-    PGconn *conn = (PGconn *) db;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_template = "INSERT INTO location_not_stay_room_config " \
-                         "(area_id, " \
-                         "hour_start, " \
-                         "hour_end) " \
-                         "VALUES " \
-                         "(%s, %s, %s)" \
-                         "ON CONFLICT (area_id) " \
-                         "DO UPDATE SET " \
-                         "hour_start = %s, " \
-                         "hour_end = %s;";
-
-    char *pqescape_area_id = NULL;
-    char *pqescape_hour_start = NULL;
-    char *pqescape_hour_end = NULL;
-
-    pqescape_area_id = 
-        PQescapeLiteral(conn, area_id, strlen(area_id));
-    pqescape_hour_start = 
-        PQescapeLiteral(conn, hour_start, strlen(hour_start));
-    pqescape_hour_end = 
-        PQescapeLiteral(conn, hour_end, strlen(hour_end));
-
-    memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_template,
-            pqescape_area_id,
-            pqescape_hour_start, 
-            pqescape_hour_end,
-            pqescape_hour_start,
-            pqescape_hour_end);
-
-    /* Execute SQL statement */
-    ret_val = SQL_execute(db, sql);
-
-    PQfreemem(pqescape_area_id);
-    PQfreemem(pqescape_hour_start);
-    PQfreemem(pqescape_hour_end);
-
-    if(WORK_SUCCESSFULLY != ret_val){
-        return E_SQL_EXECUTE;
-    }
-
-    return WORK_SUCCESSFULLY;
-}
-
-ErrorCode SQL_update_location_long_stay_in_danger_config(void *db,
-                                                         char *area_id,
-                                                         char *hour_start,
-                                                         char *hour_end,
-                                                         char *stay_duration)
-{
-
-    PGconn *conn = (PGconn *) db;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_template = "INSERT INTO location_long_stay_in_danger_config " \
-                         "(area_id, " \
-                         "hour_start, " \
-                         "hour_end, " \
-                         "stay_duration) " \
-                         "VALUES " \
-                         "(%s, %s, %s, %s)" \
-                         "ON CONFLICT (area_id) " \
-                         "DO UPDATE SET " \
-                         "hour_start = %s, " \
-                         "hour_end = %s, " \
-                         "stay_duration = %s;";
-
-    char *pqescape_area_id = NULL;
-    char *pqescape_hour_start = NULL;
-    char *pqescape_hour_end = NULL;
-    char *pqescape_stay_duration = NULL;
-
-    pqescape_area_id = 
-        PQescapeLiteral(conn, area_id, strlen(area_id));
-    pqescape_hour_start = 
-        PQescapeLiteral(conn, hour_start, strlen(hour_start));
-    pqescape_hour_end = 
-        PQescapeLiteral(conn, hour_end, strlen(hour_end));
-    pqescape_stay_duration = 
-        PQescapeLiteral(conn, stay_duration, strlen(stay_duration));
-
-    memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_template,
-            pqescape_area_id,
-            pqescape_hour_start, 
-            pqescape_hour_end,
-            pqescape_stay_duration,
-            pqescape_hour_start,
-            pqescape_hour_end,
-            pqescape_stay_duration);
-
-    /* Execute SQL statement */
-    ret_val = SQL_execute(db, sql);
-
-    PQfreemem(pqescape_area_id);
-    PQfreemem(pqescape_hour_start);
-    PQfreemem(pqescape_hour_end);
-    PQfreemem(pqescape_stay_duration);
-
-    if(WORK_SUCCESSFULLY != ret_val){
-        return E_SQL_EXECUTE;
-    }
-
-    return WORK_SUCCESSFULLY;
-}
-
-ErrorCode SQL_update_movement_config(void *db,
-                                     char *area_id,
-                                     char *hour_start,
-                                     char *hour_end){
-    PGconn *conn = (PGconn *) db;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_template = "INSERT INTO movement_config " \
-                         "(area_id, " \
-                         "hour_start, " \
-                         "hour_end) " \
-                         "VALUES " \
-                         "(%s, %s, %s)" \
-                         "ON CONFLICT (area_id) " \
-                         "DO UPDATE SET " \
-                         "hour_start = %s, " \
-                         "hour_end = %s;";
-
-    char *pqescape_area_id = NULL;
-    char *pqescape_hour_start = NULL;
-    char *pqescape_hour_end = NULL;
-   
-    pqescape_area_id = 
-        PQescapeLiteral(conn, area_id, strlen(area_id));
-    pqescape_hour_start = 
-        PQescapeLiteral(conn, hour_start, strlen(hour_start));
-    pqescape_hour_end = 
-        PQescapeLiteral(conn, hour_end, strlen(hour_end));
-   
-    memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_template,
-            pqescape_area_id,
-            pqescape_hour_start, 
-            pqescape_hour_end,
-            pqescape_hour_start,
-            pqescape_hour_end);
-
-    /* Execute SQL statement */
-    ret_val = SQL_execute(db, sql);
-
-    PQfreemem(pqescape_area_id);
-    PQfreemem(pqescape_hour_start);
-    PQfreemem(pqescape_hour_end);
-    
-    if(WORK_SUCCESSFULLY != ret_val){
-        return E_SQL_EXECUTE;
-    }
-
-    return WORK_SUCCESSFULLY;
-
-}
-
-ErrorCode SQL_sync_up_active_monitor_config(void *db)
+ErrorCode SQL_reload_monitor_config(void *db,
+                                    int server_localtime_against_UTC_in_hour)
 {
     PGconn *conn = (PGconn *) db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *table_name[] = {"location_not_stay_room_config", 
+    char *table_name[] = {"geo_fence_config",
+                          "location_not_stay_room_config", 
                           "location_long_stay_in_danger_config",
                           "movement_config" };
 
-    char *sql_select_template = "SELECT id, enable, hour_start, hour_end " \
-                                "FROM %s;";
-    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 4;
-    const int FIELD_INDEX_OF_ID = 0;
-    const int FIELD_INDEX_OF_ENABLE = 1;
-    const int FIELD_INDEX_OF_HOUR_START = 2;
-    const int FIELD_INDEX_OF_HOUR_END = 3;
-
     char *sql_update_template = "UPDATE %s " \
-                                "SET is_active = %d " \
-                                "WHERE id = %d;";
+                                "SET is_active = CASE " \
+                                "WHEN " \
+                                "(enable = 1 AND " \
+                                "start_time < end_time AND " \
+                                "CURRENT_TIME + interval '%d hours' >= " \
+                                "start_time AND " \
+                                "CURRENT_TIME + interval '%d hours' < " \
+                                "end_time)" \
+                                "OR " \
+                                "(enable = 1 AND " \
+                                "start_time > end_time AND " \
+                                "(" \
+                                "(CURRENT_TIME + interval '%d hours' >= " \
+                                "start_time AND " \
+                                "CURRENT_TIME + INTERVAL '%d hours' <= " \
+                                "'23:59:59') " \
+                                "OR " \
+                                "(CURRENT_TIME + INTERVAL '%d hours' >= " \
+                                "'00:00:00' AND " \
+                                "CURRENT_TIME + INTERVAL '%d hours' < " \
+                                "end_time)" \
+                                ")" \
+                                ") " \
+                                "THEN 1" \
+                                "ELSE 0" \
+                                "END;";
+
     PGresult *res = NULL;
-    int total_rows = 0;
-    int total_fields = 0;
     int idx = 0;
-    int i = 0;
-    int id = 0;
-    int enable = 0;
-    int start_hour = 0;
-    int end_hour = 0;
-    int is_active = 0;
-  
 
     for(idx = 0; idx< sizeof(table_name)/sizeof(table_name[0]); idx++){
         memset(sql, 0, sizeof(sql));
 
-        sprintf(sql, sql_select_template, table_name[idx]);
+        sprintf(sql, sql_update_template, 
+                table_name[idx],
+                server_localtime_against_UTC_in_hour,
+                server_localtime_against_UTC_in_hour,
+                server_localtime_against_UTC_in_hour,
+                server_localtime_against_UTC_in_hour,
+                server_localtime_against_UTC_in_hour,
+                server_localtime_against_UTC_in_hour);
 
-        res = PQexec(conn, sql);
+        ret_val = SQL_execute(db, sql);
 
-        if(PQresultStatus(res) != PGRES_TUPLES_OK){
-            PQclear(res);
+        if(WORK_SUCCESSFULLY != ret_val){
+        //SQL_rollback_transaction(db);
+        
+        zlog_error(category_debug, 
+                   "SQL_execute failed [%d]: %s", 
+                   ret_val, 
+                   PQerrorMessage(conn));
 
-            zlog_error(category_debug, "SQL_execute failed [%d]: %s",
-                       res, PQerrorMessage(conn));
-
-            return E_SQL_EXECUTE;
-        }
-
-        total_fields = PQnfields(res);
-        total_rows = PQntuples(res);
-
-        if(total_rows > 0 &&
-            total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
-
-            for(i = 0 ; i < total_rows; i++){
-                is_active = 0;
-                id = atoi(PQgetvalue(res, i, FIELD_INDEX_OF_ID));
-                enable = atoi(PQgetvalue(res, i, FIELD_INDEX_OF_ENABLE));
-                start_hour = atoi(PQgetvalue(res, i, FIELD_INDEX_OF_HOUR_START));
-                end_hour = atoi(PQgetvalue(res, i, FIELD_INDEX_OF_HOUR_END));
-
-                if(enable && is_in_active_hours(start_hour, end_hour)){
-                    is_active = 1;
-                }
-                
-                memset(sql, 0, sizeof(sql));
-
-                sprintf(sql, sql_update_template, table_name[idx], is_active, id);
-                ret_val = SQL_execute(db, sql);
-
-                if(WORK_SUCCESSFULLY != ret_val){
-                    PQclear(res);
-
-                    zlog_error(category_debug, "SQL_execute failed [%d]: %s",
-                       res, PQerrorMessage(conn));
-
-                    return E_SQL_EXECUTE;
-                }
-            }
-        }
-        PQclear(res);
+        return E_SQL_EXECUTE;
+    }     
     }
 
     return WORK_SUCCESSFULLY;

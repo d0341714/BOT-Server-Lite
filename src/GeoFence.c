@@ -60,7 +60,6 @@ ErrorCode add_geo_fence_settings(Memory_Pool *geofence_mempool,
        active starting hour and ending hour.
     */
     char *name = NULL;
-    char *unique_key = NULL;
     char *hours_duration = NULL;
     char *perimeters = NULL;
     char *fences = NULL;
@@ -84,8 +83,6 @@ ErrorCode add_geo_fence_settings(Memory_Pool *geofence_mempool,
     zlog_info(category_debug, "GeoFence data=[%s]", buf);
 
     name = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
-
-    unique_key = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
     hours_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
@@ -119,8 +116,6 @@ ErrorCode add_geo_fence_settings(Memory_Pool *geofence_mempool,
     init_entry(&new_node -> geo_fence_list_entry);
                     
     memcpy(new_node->name, name, strlen(name));
-
-    memcpy(new_node->unique_key, unique_key, strlen(unique_key));
 
     // parse hours duration
     hour_start = strtok_save(hours_duration, DELIMITER_COMMA, &save_ptr);
@@ -175,27 +170,6 @@ ErrorCode add_geo_fence_settings(Memory_Pool *geofence_mempool,
     insert_list_tail( &new_node -> geo_fence_list_entry,
                       geo_fence_list_head);
 
-
-    // update geo-fence configuration to database
-    if(WORK_SUCCESSFULLY != 
-       SQL_open_database_connection(database_argument, &db)){
-
-        zlog_error(category_debug, 
-                   "cannot open database"); 
-        return E_SQL_OPEN_DATABASE;
-    }
-
-    zlog_debug(category_debug, 
-               "perimeter = [%s], fences = [%s]", 
-               perimeters_config, fences_config);
-
-    SQL_update_geo_fence_config(db, unique_key, name, 
-                                perimeters_config, fences_config, 
-                                hour_start, hour_end);
-    
-    SQL_close_database_connection(db);
-
- 
     zlog_info(category_debug, "<<add_geo_fence_settings");
 
     return WORK_SUCCESSFULLY;
@@ -277,9 +251,8 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node,
 
            zlog_info(category_debug, 
                      "lbeacon_uuid=[%s] is not in geo-fence setting " \
-                     "unique_key=[%s], name=[%s]", 
+                     "name=[%s]", 
                      lbeacon_uuid, 
-                     current_list_ptr->unique_key,
                      current_list_ptr->name);
 
             continue;
@@ -293,7 +266,6 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node,
 
         examine_tracked_objects_status(buffer_node->API_version,
                                        content_temp, 
-                                       current_list_ptr->unique_key,
                                        is_fence_lbeacon,
                                        current_list_ptr->rssi_of_fences,
                                        is_perimeter_lbeacon, 
@@ -314,7 +286,6 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node,
 
 ErrorCode examine_tracked_objects_status(float api_version,
                                          char *buf,
-                                         char *geofence_key,
                                          bool is_fence_lbeacon,
                                          int fence_rssi,
                                          bool is_perimeter_lbeacon,
@@ -446,7 +417,6 @@ ErrorCode examine_tracked_objects_status(float api_version,
                 SQL_check_perimeter_violation_valid(
                     db, 
                     mac_address, 
-                    geofence_key,
                     &is_valid_perimeter);
                 
                  zlog_info(category_debug, 
@@ -464,7 +434,6 @@ ErrorCode examine_tracked_objects_status(float api_version,
                     SQL_identify_geofence_violation(
                         db,
                         mac_address,
-                        geofence_key, 
                         lbeacon_uuid,
                         detected_rssi);
                 }
@@ -479,8 +448,7 @@ ErrorCode examine_tracked_objects_status(float api_version,
                 SQL_insert_geofence_perimeter_valid_deadline(
                     db,
                     mac_address,
-                    geofence_key,
-                    perimeter_valid_duration_in_sec);
+                   perimeter_valid_duration_in_sec);
             }
         }
     }

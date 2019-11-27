@@ -65,6 +65,12 @@ int main(int argc, char **argv)
     /* The thread for summarizing location information */
     pthread_t location_information_thread;
 
+    /* The thread for monitoring object violations */
+    pthread_t monitor_object_violation_thread;
+
+    /* The thread for reloading monitoring configuration */
+    pthread_t reload_monitor_config_thread;
+
     /* The thread for collecting violation events */
     pthread_t collect_violation_thread;
 
@@ -254,6 +260,34 @@ int main(int argc, char **argv)
         return return_value;
     }
 
+    /* Create thread to summarize location information */
+    return_value = startThread( &monitor_object_violation_thread, 
+                                Server_monitor_object_violations, 
+                                NULL);
+
+    if(return_value != WORK_SUCCESSFULLY)
+    {
+        zlog_error(category_health_report, 
+                   "Server_monitor_object_violations fail");
+        zlog_error(category_debug, 
+                   "Server_monitor_object_violations fail");
+        return return_value;
+    }
+
+    /* Create thread to reload monitoring configuration */
+    return_value = startThread( &reload_monitor_config_thread, 
+                                Server_reload_monitor_config, 
+                                NULL);
+
+    if(return_value != WORK_SUCCESSFULLY)
+    {
+        zlog_error(category_health_report, 
+                   "Server_reload_monitor_config fail");
+        zlog_error(category_debug, 
+                   "Server_reload_monitor_config fail");
+        return return_value;
+    }
+
     /* Create thread to collect notification events */
     return_value = startThread( &collect_violation_thread, 
                                 Server_collect_violation_event, 
@@ -424,10 +458,22 @@ ErrorCode get_server_config(ServerConfig *config,
               config->period_between_RFTOD);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->period_between_check_object_movement = atoi(config_message);
+    config->period_between_reload_monitor_setting_in_sec = atoi(config_message);
     zlog_info(category_debug,
-              "period_between_check_object_movement [%d]",
-              config->period_between_check_object_movement);
+              "period_between_reload_monitor_setting_in_sec [%d]",
+              config->period_between_reload_monitor_setting_in_sec);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->period_between_check_object_movement_in_sec = atoi(config_message);
+    zlog_info(category_debug,
+              "period_between_check_object_movement_in_sec [%d]",
+              config->period_between_check_object_movement_in_sec);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->server_localtime_against_UTC_in_hour = atoi(config_message);
+    zlog_info(category_debug,
+              "server_localtime_against_UTC_in_hour [%d]",
+              config->server_localtime_against_UTC_in_hour);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
     common_config->number_worker_threads = atoi(config_message);
@@ -550,97 +596,17 @@ ErrorCode get_server_config(ServerConfig *config,
               "The perimeter_valid_duration_in_sec is [%d]", 
               config->perimeter_valid_duration_in_sec);
 
-    zlog_info(category_debug, "Initialize geo-fence list");
-
-    /* Initialize geo-fence list head to store all the geo-fence settings */
-    init_entry( &(config->geo_fence_list_head));
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    number_geofence_settings = atoi(config_message);
-
-    for(i = 0; i < number_geofence_settings ; i++){
-          
-        fetch_next_string(file, config_message, sizeof(config_message)); 
-        add_geo_fence_settings(&geofence_mempool, 
-                               &(config->geo_fence_list_head), 
-                               config_message,
-                               database_argument);
-    }
-
-#ifdef debugging
-    list_for_each(current_list_entry, &(config->geo_fence_list_head)){
-        current_list_ptr = ListEntry(current_list_entry,
-                                     GeoFenceListNode,
-                                     geo_fence_list_entry);
-            
-        zlog_info(category_debug, "unique_key=[%s], name=[%s]", 
-                  current_list_ptr->unique_key,
-                  current_list_ptr->name);
-
-        zlog_info(category_debug, "[perimeters] count=%d", 
-                  current_list_ptr->number_perimeters);
-        for(i = 0 ; i < current_list_ptr->number_perimeters ; i++)
-            zlog_info(category_debug, "perimeter=[%s], rssi=[%d]", 
-                      current_list_ptr->perimeters[i], 
-                      current_list_ptr->rssi_of_perimeters);
-
-        zlog_info(category_debug, "[fences] count=%d", 
-                  current_list_ptr->number_fences);
-        for(i = 0 ; i < current_list_ptr->number_fences ; i++)
-            zlog_info(category_debug, "fence=[%s], rssi=[%d]", 
-                      current_list_ptr->fences[i], 
-                      current_list_ptr->rssi_of_fences);
-
-        zlog_info(category_debug,"[mac_prefixes] count=%d", 
-                  current_list_ptr->number_mac_prefixes);
-        for(i = 0 ; i < current_list_ptr->number_mac_prefixes ; i++)
-            zlog_info(category_debug,"mac_prefix=[%s]", 
-                      current_list_ptr->mac_prefixes[i]);
-   }
-#endif
-       
-    zlog_info(category_debug, "geo-fence list initialized");
-
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->is_enabled_location_monitor = atoi(config_message);
     zlog_info(category_debug,
               "The is_enabled_location_monitor is [%d]", 
               config->is_enabled_location_monitor);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    number_location_not_stay_room_settings = atoi(config_message);
-
-    for(i = 0; i < number_location_not_stay_room_settings ; i++){
-        fetch_next_string(file, config_message, sizeof(config_message)); 
-        
-        add_location_not_stay_room_settings(config_message, 
-                                            database_argument);
-    }
-    
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    number_location_long_stay_settings = atoi(config_message);
-
-    for(i = 0; i < number_location_long_stay_settings ; i++){
-        fetch_next_string(file, config_message, sizeof(config_message)); 
-        
-        add_location_long_stay_in_danger_settings(config_message,
-                                                  database_argument);
-    }
     
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->is_enabled_movement_monitor = atoi(config_message);
     zlog_info(category_debug,
               "The is_enabled_movement_monitor is [%d]", 
               config->is_enabled_movement_monitor);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    number_movement_settings = atoi(config_message);
-
-    for(i = 0; i < number_movement_settings ; i++){
-        fetch_next_string(file, config_message, sizeof(config_message)); 
-        
-        add_movement_settings(config_message, database_argument);
-    }
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->movement_monitor_config.monitor_interval_in_min = atoi(config_message);
@@ -761,19 +727,90 @@ void *maintain_database()
 }
 
 void *Server_summarize_location_information(){
+    void *db = NULL;  
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
+        zlog_error(category_debug, 
+                  "cannot open database"); 
+        return (void *)NULL;
+    }
+
+    while(true == ready_to_work){
+    
+        SQL_summarize_object_location(db,
+                                      config.database_pre_filter_time_window_in_sec,
+                                      config.location_time_interval_in_sec);
+
+        sleep_t(BUSY_WAITING_TIME_IN_MS);
+    }
+
+    SQL_close_database_connection(db);
+
+    return (void *)NULL;
+}
+
+void *Server_monitor_object_violations(){
     void *db = NULL;
     int uptime = 0;
-    int last_sync_monitor_config = 0;
-    int last_sync_location_timestamp = 0;
-    int last_sync_movement_timestamp = 0;
-    List_Entry * current_list_entry = NULL;
-    GeoFenceListNode *current_list_ptr = NULL;
-    int enable = 0;
-    int hour_start = 0;
-    int hour_end = 0;
-    int is_active= 0;
+    int last_monitor_movement_timestamp = 0;
+   
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
+        zlog_error(category_debug, 
+                  "cannot open database"); 
+        return (void *)NULL;
+    }
+
+    uptime = get_clock_time();
+    
+    while(true == ready_to_work){
+    
+        uptime = get_clock_time();
+
+        if(config.is_enabled_panic_button_monitor){
+            // Check each object's panic_button status within time interval
+            SQL_identify_panic(db, 
+                               config.database_pre_filter_time_window_in_sec,
+                               config.panic_time_interval_in_sec);
+        }
+
+        if(config.is_enabled_location_monitor){
+                
+            SQL_identify_location_not_stay_room(db);
+ 
+            SQL_identify_location_long_stay_in_danger(db);
+        }
+
+        if(config.is_enabled_movement_monitor &&
+           (uptime - last_monitor_movement_timestamp >= 
+            config.period_between_check_object_movement_in_sec)){
+    
+            last_monitor_movement_timestamp = uptime;
+
+            SQL_identify_last_movement_status(
+                db, 
+                config.movement_monitor_config.monitor_interval_in_min, 
+                config.movement_monitor_config.each_time_slot_in_min,
+                config.movement_monitor_config.rssi_delta);    
+        }
+
+        sleep_t(BUSY_WAITING_TIME_IN_MS);
+    }
+
+    SQL_close_database_connection(db);
+
+    return (void *)NULL;
+}
 
 
+void *Server_reload_monitor_config(){
+    void *db = NULL;
+    int uptime = 0;
+    int last_reload_monitor_config = 0;
+    
     if(WORK_SUCCESSFULLY != 
        SQL_open_database_connection(database_argument, &db)){
 
@@ -788,70 +825,20 @@ void *Server_summarize_location_information(){
     
         uptime = get_clock_time();
         
-        if(uptime - last_sync_monitor_config > SECONDS_EACH_MINUTE){
+        if(uptime - last_reload_monitor_config > 
+           config.period_between_reload_monitor_setting_in_sec){
+            // sync up configurations for geo-fence monitor, location 
+            // monitor and movement monitor
+            SQL_reload_monitor_config(
+                db, 
+                config.server_localtime_against_UTC_in_hour);
 
-            list_for_each(current_list_entry, &config.geo_fence_list_head){
+            // reload geo-fence settings
 
-                current_list_ptr = ListEntry(current_list_entry,
-                                             GeoFenceListNode,
-                                             geo_fence_list_entry);
-
-                // sync up geo-fence monitor
-                SQL_get_geo_fence_config(db, 
-                                         current_list_ptr->unique_key, 
-                                         &enable,
-                                         &hour_start,
-                                         &hour_end);
-
-                is_active= 0;
-                if(enable && is_in_active_hours(hour_start, hour_end)){
-                    zlog_debug(category_debug, 
-                               "Active geo-fence with unique key = %s", 
-                               current_list_ptr->unique_key); 
-                    is_active = 1;
-                }
-                current_list_ptr->is_active = is_active;
-            }
-
-            // sync up configurations for location monitor and movement monitor
-            SQL_sync_up_active_monitor_config(db);
-
-            last_sync_monitor_config = uptime;
+            last_reload_monitor_config = uptime;
         }
 
-        SQL_summarize_object_location(db,
-                                      config.database_pre_filter_time_window_in_sec,
-                                      config.location_time_interval_in_sec);
-
-        if(config.is_enabled_panic_button_monitor){
-            // Check each object's panic_button status within time interval
-            SQL_identify_panic(db, 
-                               config.database_pre_filter_time_window_in_sec,
-                               config.panic_time_interval_in_sec);
-        }
-
-        if(config.is_enabled_movement_monitor){
-            if(uptime - last_sync_movement_timestamp >= 
-                config.period_between_check_object_movement){
-    
-                last_sync_movement_timestamp = uptime;
-
-                SQL_identify_last_movement_status(
-                    db, 
-                    config.movement_monitor_config.monitor_interval_in_min, 
-                    config.movement_monitor_config.each_time_slot_in_min,
-                    config.movement_monitor_config.rssi_delta);    
-            }
-        }
-
-        if(config.is_enabled_location_monitor){
-                
-            SQL_identify_location_not_stay_room(db);
- 
-            SQL_identify_location_long_stay_in_danger(db);
-        }
-
-        sleep_t(BUSY_WAITING_TIME_IN_MS);
+        sleep_t(NORMAL_WAITING_TIME_IN_MS);
     }
 
     SQL_close_database_connection(db);
@@ -1154,11 +1141,11 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
     if(current_node -> pkt_type == time_critical_tracked_object_data){
         
         if(config.is_enabled_geofence_monitor){
-            check_geo_fence_violations(current_node, 
+           /* check_geo_fence_violations(current_node, 
                                        &config.geo_fence_list_head, 
                                        config.perimeter_valid_duration_in_sec,
                                        config.granularity_for_continuous_violations_in_sec, 
-                                       database_argument);
+                                       database_argument);*/
         }
 
         // Server should support backward compatibility.
@@ -1579,156 +1566,4 @@ ErrorCode add_notification_to_the_notification_list(
     return WORK_SUCCESSFULLY;
 }
 
-
-ErrorCode add_location_not_stay_room_settings(char *buf,
-                                              char *database_argument)
-{
-    char *save_ptr = NULL;
-    char *area_id = NULL;
-   /* Each location monitor for not stay room is defined in server.conf as 
-       following format:
-
-       location_not_stay_room_area_1=0001;0,24;
-       
-       The active period is defined in the "0,24" setting, and we call it 
-       "hours_duration" here. The hours_duration setting is in the format of 
-       "hour_start,hour_end" to specify the active starting hour and ending hour.
-    */
-    char *hours_duration = NULL;
-    char *hour_start = NULL;
-    char *hour_end = NULL;
-    void *db = NULL;
-
-    int i = 0;
-
-    zlog_info(category_debug, ">> add_location_not_stay_room_settings");
-
-    area_id = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
-
-    hours_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
-
-    // parse hours duration
-    hour_start = strtok_save(hours_duration, DELIMITER_COMMA, &save_ptr);
-    hour_end = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
-
-    if(WORK_SUCCESSFULLY != 
-       SQL_open_database_connection(database_argument, &db)){
-
-        zlog_error(category_debug, 
-                   "cannot open database"); 
-        return E_SQL_OPEN_DATABASE;
-    }
-    SQL_update_location_not_stay_room_config(db, area_id, hour_start, hour_end);
-    
-    SQL_close_database_connection(db);
- 
-    zlog_info(category_debug, "<< add_location_not_stay_room_settings");
-
-    return WORK_SUCCESSFULLY;
-
-}
-
-
-ErrorCode add_location_long_stay_in_danger_settings(char *buf,
-                                                    char *database_argument)
-{
-    char *save_ptr = NULL;
-    char *area_id = NULL;
-   /* Each location monitor for not stay room is defined in server.conf as 
-       following format:
-
-       location_not_stay_room_area_1=0001;0,24;
-       
-       The active period is defined in the "0,24" setting, and we call it 
-       "hours_duration" here. The hours_duration setting is in the format of 
-       "hour_start,hour_end" to specify the active starting hour and ending hour.
-    */
-    char *hours_duration = NULL;
-    char *hour_start = NULL;
-    char *hour_end = NULL;
-    char *stay_duration = NULL;
-    void *db = NULL;
-
-    int i = 0;
-
-    zlog_info(category_debug, ">> add_location_long_stay_in_danger_settings");
-
-    area_id = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
-
-    hours_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
-
-    stay_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
-
-    // parse hours duration
-    hour_start = strtok_save(hours_duration, DELIMITER_COMMA, &save_ptr);
-    hour_end = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
-
-    if(WORK_SUCCESSFULLY != 
-       SQL_open_database_connection(database_argument, &db)){
-
-        zlog_error(category_debug, 
-                   "cannot open database"); 
-        return E_SQL_OPEN_DATABASE;
-    }
-    SQL_update_location_long_stay_in_danger_config(db, 
-                                                   area_id, 
-                                                   hour_start, 
-                                                   hour_end,
-                                                   stay_duration);
-    
-    SQL_close_database_connection(db);
- 
-    zlog_info(category_debug, "<< add_location_long_stay_in_danger_settings");
-
-    return WORK_SUCCESSFULLY;
-}
-
-ErrorCode add_movement_settings(char *buf, char *database_argument)
-{
-    char *save_ptr = NULL;
-    char *area_id = NULL;
-   /* Each location monitor for not stay room is defined in server.conf as 
-       following format:
-
-       location_not_stay_room_area_1=0001;0,24;
-       
-       The active period is defined in the "0,24" setting, and we call it 
-       "hours_duration" here. The hours_duration setting is in the format of 
-       "hour_start,hour_end" to specify the active starting hour and ending hour.
-    */
-    char *hours_duration = NULL;
-    char *hour_start = NULL;
-    char *hour_end = NULL;
-    void *db = NULL;
-
-    int i = 0;
-
-    zlog_info(category_debug, ">> add_movement_settings");
-
-    area_id = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
-
-    hours_duration = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
-
-    // parse hours duration
-    hour_start = strtok_save(hours_duration, DELIMITER_COMMA, &save_ptr);
-    hour_end = strtok_save(NULL, DELIMITER_COMMA, &save_ptr);
-
-    if(WORK_SUCCESSFULLY != 
-       SQL_open_database_connection(database_argument, &db)){
-
-        zlog_error(category_debug, 
-                   "cannot open database"); 
-        return E_SQL_OPEN_DATABASE;
-    }
-    SQL_update_movement_config(db, 
-                               area_id, 
-                               hour_start, 
-                               hour_end);
-    
-    SQL_close_database_connection(db);
- 
-    zlog_info(category_debug, "<< add_movement_settings");
-
-    return WORK_SUCCESSFULLY;
-}
 

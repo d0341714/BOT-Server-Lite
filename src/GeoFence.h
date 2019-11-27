@@ -44,9 +44,6 @@
 
 #include "BeDIS.h"
 
-/* Length of geo_fence unique key in byte */
-#define LENGTH_OF_GEO_FENCE_KEY 32
-
 /* Length of geo_fence name in byte */
 #define LENGTH_OF_GEO_FENCE_NAME 32
 
@@ -60,8 +57,10 @@
 
 
 typedef struct {
-   /* The unique key of the geo fence */
-   char unique_key[LENGTH_OF_GEO_FENCE_KEY];
+   /* The area id of the geo fence */
+   int area_id;
+   /* The id of the geo fence in the area id */
+   int id;
 
    /* The name of the geo fence */
    char name[LENGTH_OF_GEO_FENCE_NAME];
@@ -166,8 +165,6 @@ ErrorCode check_geo_fence_violations(BufferNode* buffer_node,
      
      buf - the packet content sent out by LBeacon
 
-     geofence_key - the unique key of geo-fence
-
      is_fence_lbeacon - a flag that indicates whether the LBeacon that sent 
                         the data in the input buf is part of a fence
 
@@ -198,7 +195,6 @@ ErrorCode check_geo_fence_violations(BufferNode* buffer_node,
 
 ErrorCode examine_tracked_objects_status(float api_version,
                                          char *buf,
-                                         char *geofence_key,
                                          bool is_fence_lbeacon,
                                          int fence_rssi,
                                          bool is_perimeter_lbeacon,
