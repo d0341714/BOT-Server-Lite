@@ -544,13 +544,20 @@ ErrorCode SQL_identify_panic(void *db,
 
      db - a pointer pointing to the connection to the database backend server
 
+     granularity_for_continuous_violations_in_sec - 
+          the length of the time window in which only one violation event is 
+          inserted into notification_table when there are continuous 
+          violations.
+
   Return Value:
 
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_identify_location_not_stay_room(void *db);
+ErrorCode SQL_identify_location_not_stay_room(
+    void *db,
+    int granularity_for_continuous_violations_in_sec);
 
 /*
   SQL_identify_location_long_stay
@@ -562,13 +569,20 @@ ErrorCode SQL_identify_location_not_stay_room(void *db);
 
      db - a pointer pointing to the connection to the database backend server
 
+     granularity_for_continuous_violations_in_sec - 
+          the length of the time window in which only one violation event is 
+          inserted into notification_table when there are continuous 
+          violations.
+
   Return Value:
 
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_identify_location_long_stay_in_danger(void *db);
+ErrorCode SQL_identify_location_long_stay_in_danger(
+    void *db,
+    int granularity_for_continuous_violations_in_sec);
 
 /*
   SQL_identify_last_movement_status
@@ -593,16 +607,23 @@ ErrorCode SQL_identify_location_long_stay_in_danger(void *db);
      rssi_delta - the delta value of RSSI which we used as a criteria to 
                   identify the movement of object
 
+     granularity_for_continuous_violations_in_sec - 
+          the length of the time window in which only one violation event is 
+          inserted into notification_table when there are continuous 
+          violations.
+
   Return Value:
 
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_identify_last_movement_status(void *db, 
-                                            int time_interval_in_min, 
-                                            int each_time_slot_in_min,
-                                            unsigned int rssi_delta);
+ErrorCode SQL_identify_last_movement_status(
+    void *db, 
+    int time_interval_in_min, 
+    int each_time_slot_in_min,
+    unsigned int rssi_delta,
+    int granularity_for_continuous_violations_in_sec);
 
 
 /*
@@ -638,39 +659,6 @@ ErrorCode SQL_insert_geofence_violation_event(
     int granularity_for_continuous_violations_in_sec);
 
 /*
-  SQL_collect_violation_events
-
-     This function checks object_summary_table to see if there are any 
-     violation events. If YES, the violation events of all monitoring 
-     types are recorded in notification_table. 
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     monitor_type - the monitor type of the violations to be collected
-
-     time_interval_in_sec - the time window in which a violation is treated as 
-                            valid event
-
-     granularity_for_continuous_violations_in_sec - 
-          the length of the time window in which only one violation event is 
-          inserted into notification_table when there are continuous 
-          violations.
- 
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-
-ErrorCode SQL_collect_violation_events(
-    void *db, 
-    ObjectMonitorType monitor_type,
-    int time_interval_in_sec,
-    int granularity_for_continuous_violations_in_sec);
-
-/*
   SQL_get_and_update_violation_events
 
      This function checks object_summary_table to see if there are any 
@@ -695,30 +683,6 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
                                               char *buf,
                                               size_t buf_len);
 
-/*
-  SQL_get_object_monitor_type
-
-     This function queries object_table to extract monitor_type of the input
-     mac_address
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     mac_address - a pointer to mac address of object
-
-     monitor_type - a pointer to output of this function. It stores 
-                    monitor_type of the input mac_address in object_table
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-
-ErrorCode SQL_get_object_monitor_type(void *db, 
-                                      char *mac_address, 
-                                      ObjectMonitorType *monitor_type);
 
 /*
   SQL_reload_monitor_config

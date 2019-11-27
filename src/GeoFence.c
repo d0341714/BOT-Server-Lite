@@ -392,15 +392,7 @@ ErrorCode examine_tracked_objects_status(float api_version,
                                               &save_ptr);
             }
 
-            /* check if mac_address has MONITOR_GEO_FENCE monitor type */
-            SQL_get_object_monitor_type(db, mac_address, &object_monitor_type);
-                
-            if(MONITOR_GEO_FENCE != 
-               (MONITOR_GEO_FENCE & 
-                (ObjectMonitorType)object_monitor_type)){
-
-                continue;
-            }
+            // get object type
 
             /* check fence and perimeter */
             if(is_fence_lbeacon && ( detected_rssi > fence_rssi)){

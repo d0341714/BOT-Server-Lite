@@ -198,16 +198,6 @@ typedef struct {
     /* The specific settings for monitoring movement */
     MovementMonitorConfig movement_monitor_config;
         
-    /* The flag indicating collect violation event is enabled. When this flag 
-       is set, panic and geo-fence violation events will be collected in 
-       notification_table. */
-    int is_enabled_collect_violation_event;
-
-    /* The length of the time window in which a violation event in the 
-       object_summary_table is treated as valid event.
-    */
-    int collect_violation_event_time_interval_in_sec;
-
     /* The length of the time window in which only one representative record 
        of continuous same violations is inserted into notification_table. */
     int granularity_for_continuous_violations_in_sec;
@@ -492,24 +482,6 @@ void *Server_monitor_object_violations();
  */
 
 void *Server_reload_monitor_config(); 
-
-/*
-  Server_collect_violation_event:
-
-     This function checks object_summary_table periodically to collect 
-     violation events into notification_table.
-
-  Parameters:
-
-     None
-
-  Return value:
-
-     None
- */
-
-void *Server_collect_violation_event(); 
-
 
 /*
   Server_send_notification:
