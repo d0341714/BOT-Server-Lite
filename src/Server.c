@@ -71,6 +71,9 @@ int main(int argc, char **argv)
     /* The thread for reloading monitoring configuration */
     pthread_t reload_monitor_config_thread;
 
+    /* The thread for collecting violation events */
+    pthread_t collect_violation_thread;
+
     /* The thread for sending notification */
     pthread_t send_notification_thread;
 
@@ -257,7 +260,7 @@ int main(int argc, char **argv)
         return return_value;
     }
 
-    /* Create thread to monitor whether object violates constraints. */
+    /* Create thread to summarize location information */
     return_value = startThread( &monitor_object_violation_thread, 
                                 Server_monitor_object_violations, 
                                 NULL);
@@ -285,7 +288,21 @@ int main(int argc, char **argv)
         return return_value;
     }
 
-    /* Create thread to send notifications */
+    /* Create thread to collect notification events */
+    return_value = startThread( &collect_violation_thread, 
+                                Server_collect_violation_event, 
+                                NULL);
+
+    if(return_value != WORK_SUCCESSFULLY)
+    {
+        zlog_error(category_health_report, 
+                   "Server_collect_violation_event fail");
+        zlog_error(category_debug, 
+                   "Server_collect_violation_event fail");
+        return return_value;
+    }
+
+    /* Create thread to collect notification events */
     return_value = startThread( &send_notification_thread, 
                                 Server_send_notification, 
                                 NULL);
@@ -613,6 +630,18 @@ ErrorCode get_server_config(ServerConfig *config,
               rssi_delta);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->is_enabled_collect_violation_event = atoi(config_message);
+    zlog_info(category_debug,
+              "The is_enabled_collect_violation_event is [%d]", 
+              config->is_enabled_collect_violation_event);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->collect_violation_event_time_interval_in_sec = atoi(config_message);
+    zlog_info(category_debug,
+              "The collect_violation_event_time_interval_in_sec is [%d]", 
+              config->collect_violation_event_time_interval_in_sec);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
     config->granularity_for_continuous_violations_in_sec = 
         atoi(config_message);
     zlog_info(category_debug,
@@ -750,13 +779,9 @@ void *Server_monitor_object_violations(){
 
         if(config.is_enabled_location_monitor){
                 
-            SQL_identify_location_not_stay_room(
-                db,
-                config.granularity_for_continuous_violations_in_sec);
+            SQL_identify_location_not_stay_room(db);
  
-            SQL_identify_location_long_stay_in_danger(
-                db, 
-                config.granularity_for_continuous_violations_in_sec);
+            SQL_identify_location_long_stay_in_danger(db);
         }
 
         if(config.is_enabled_movement_monitor &&
@@ -769,8 +794,7 @@ void *Server_monitor_object_violations(){
                 db, 
                 config.movement_monitor_config.monitor_interval_in_min, 
                 config.movement_monitor_config.each_time_slot_in_min,
-                config.movement_monitor_config.rssi_delta,
-                config.granularity_for_continuous_violations_in_sec);    
+                config.movement_monitor_config.rssi_delta);    
         }
 
         sleep_t(BUSY_WAITING_TIME_IN_MS);
@@ -821,6 +845,60 @@ void *Server_reload_monitor_config(){
 
     return (void *)NULL;
 }
+
+void *Server_collect_violation_event(){
+    void *db = NULL;
+   
+    if(WORK_SUCCESSFULLY != 
+       SQL_open_database_connection(database_argument, &db)){
+
+        zlog_error(category_debug, 
+                  "cannot open database"); 
+        return (void *)NULL;
+    }
+
+    while(true == ready_to_work){
+
+        if(config.is_enabled_collect_violation_event){
+          
+            if(config.is_enabled_geofence_monitor){
+                SQL_collect_violation_events(
+                    db,
+                    MONITOR_GEO_FENCE,
+                    config.collect_violation_event_time_interval_in_sec,
+                    config.granularity_for_continuous_violations_in_sec);
+            }
+            if(config.is_enabled_panic_button_monitor){
+                SQL_collect_violation_events(
+                    db,
+                    MONITOR_PANIC,
+                    config.collect_violation_event_time_interval_in_sec,
+                    config.granularity_for_continuous_violations_in_sec);
+            }
+            if(config.is_enabled_movement_monitor){
+                SQL_collect_violation_events(
+                    db,
+                    MONITOR_MOVEMENT,
+                    config.collect_violation_event_time_interval_in_sec,
+                    config.granularity_for_continuous_violations_in_sec);
+            }
+            if(config.is_enabled_location_monitor){
+                SQL_collect_violation_events(
+                    db,
+                    MONITOR_LOCATION,
+                    config.collect_violation_event_time_interval_in_sec,
+                    config.granularity_for_continuous_violations_in_sec);
+            }
+        }
+
+        sleep_t(BUSY_WAITING_TIME_IN_MS);
+    }
+
+    SQL_close_database_connection(db);
+
+    return (void *)NULL;
+}
+
 
 void *Server_send_notification(){
     void *db = NULL;

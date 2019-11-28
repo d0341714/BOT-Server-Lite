@@ -1202,26 +1202,21 @@ ErrorCode SQL_identify_panic(void *db,
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_location_not_stay_room(
-    void *db,
-    int granularity_for_continuous_violations_in_sec){
+ErrorCode SQL_identify_location_not_stay_room(void *db){
 
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_select_template = "INSERT INTO " \
-                                "notification_table( " \
-                                "monitor_type, " \
-                                "mac_address, " \
-                                "uuid, " \
-                                "violation_timestamp, " \
-                                "processed) " \
-                                "SELECT " \
-                                "monitor_type, " \
+    char *sql_select_template = "UPDATE object_summary_table " \
+                                "SET " \
+                                "location_violation_timestamp = NOW() " \
+                                "FROM " \
+                                "(SELECT " \
                                 "object_summary_table.mac_address, " \
                                 "object_summary_table.uuid, " \
-                                "NOW(), " \
-                                "0 " \
+                                "monitor_type, " \
+                                "lbeacon_table.room, " \
+                                "object_table.room " \
                                 "FROM "\
                                 "object_summary_table " \
                                 "INNER JOIN object_table ON " \
@@ -1237,21 +1232,15 @@ ErrorCode SQL_identify_location_not_stay_room(
                                 "location_not_stay_room_config.is_active = 1 " \
                                 "AND monitor_type & %d = %d " \
                                 "AND lbeacon_table.room <> object_table.room " \
-                                "AND NOT EXISTS(" \
-                                "SELECT * FROM notification_table " \
-                                "WHERE monitor_type = object_table.monitor_type " \
-                                "AND mac_address = object_summary_table.mac_address " \
-                                "AND uuid = object_summary_table.uuid " \
-                                "AND EXTRACT(EPOCH FROM(NOW() - " \
-                                "violation_timestamp)) < %d);";
-
+                                ") location_information " \
+                                "WHERE object_summary_table.mac_address = " \
+                                "location_information.mac_address;";
 
     memset(sql, 0, sizeof(sql));
 
     sprintf(sql, sql_select_template, 
             MONITOR_LOCATION,
-            MONITOR_LOCATION,
-            granularity_for_continuous_violations_in_sec);
+            MONITOR_LOCATION);
 
     ret_val = SQL_execute(db, sql);
     if(WORK_SUCCESSFULLY != ret_val){
@@ -1264,26 +1253,20 @@ ErrorCode SQL_identify_location_not_stay_room(
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_location_long_stay_in_danger(
-    void *db, 
-    int granularity_for_continuous_violations_in_sec){
+ErrorCode SQL_identify_location_long_stay_in_danger(void *db){
 
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_insert_template = "INSERT INTO " \
-                                "notification_table( " \
-                                "monitor_type, " \
-                                "mac_address, " \
-                                "uuid, " \
-                                "violation_timestamp, " \
-                                "processed) " \
-                                "SELECT " \
-                                "monitor_type, " \
+    char *sql_select_template = "UPDATE object_summary_table " \
+                                "SET " \
+                                "location_violation_timestamp = NOW() " \
+                                "FROM " \
+                                "(SELECT " \
                                 "object_summary_table.mac_address, " \
                                 "object_summary_table.uuid, " \
-                                "NOW(), " \
-                                "0 " \
+                                "monitor_type, " \
+                                "danger_area " \
                                 "FROM "\
                                 "object_summary_table " \
                                 "INNER JOIN object_table ON " \
@@ -1302,20 +1285,16 @@ ErrorCode SQL_identify_location_long_stay_in_danger(
                                 "AND EXTRACT(MIN FROM last_seen_timestamp - " \
                                 "first_seen_timestamp) > "\
                                 "location_long_stay_in_danger_config.stay_duration " \
-                                "AND NOT EXISTS(" \
-                                "SELECT * FROM notification_table " \
-                                "WHERE monitor_type = object_table.monitor_type " \
-                                "AND mac_address = object_summary_table.mac_address " \
-                                "AND uuid = object_summary_table.uuid " \
-                                "AND EXTRACT(EPOCH FROM(NOW() - " \
-                                "violation_timestamp)) < %d);";
+                                ") location_information " \
+                                "WHERE object_summary_table.mac_address = " \
+                                "location_information.mac_address;";
+
 
     memset(sql, 0, sizeof(sql));
 
-    sprintf(sql, sql_insert_template, 
+    sprintf(sql, sql_select_template, 
             MONITOR_LOCATION,
-            MONITOR_LOCATION,
-            granularity_for_continuous_violations_in_sec);
+            MONITOR_LOCATION);
 
     ret_val = SQL_execute(db, sql);
     if(WORK_SUCCESSFULLY != ret_val){
@@ -1327,12 +1306,10 @@ ErrorCode SQL_identify_location_long_stay_in_danger(
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_last_movement_status(
-    void *db, 
-    int time_interval_in_min, 
-    int each_time_slot_in_min,
-    unsigned int rssi_delta,
-    int granularity_for_continuous_violations_in_sec){
+ErrorCode SQL_identify_last_movement_status(void *db, 
+                                            int time_interval_in_min, 
+                                            int each_time_slot_in_min,
+                                            unsigned int rssi_delta){
 
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
@@ -1349,8 +1326,7 @@ ErrorCode SQL_identify_last_movement_status(
                                 "object_table.area_id = " \
                                 "movement_config.area_id " \
                                 "WHERE " \
-                                "movement_config.is_active = 1 AND " \
-                                "object_table.monitor_type & %d = %d " \
+                                "movement_config.is_active = 1 "
                                 "ORDER BY " \
                                 "mac_address ASC";
     const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 2;
@@ -1393,33 +1369,16 @@ ErrorCode SQL_identify_last_movement_status(
     char *time_slot_activity = NULL;
 
     char *sql_update_activity_template = 
-        "INSERT INTO " \
-        "notification_table( " \
-        "monitor_type, " \
-        "mac_address, " \
-        "uuid, " \
-        "violation_timestamp, " \
-        "processed) " \
-        "SELECT " \
-        "%d, " \
-        "%s, " \
-        "%s, " \
-        "NOW(), " \
-        "0" \
-        "WHERE NOT EXISTS(" \
-        "SELECT * FROM notification_table " \
-        "WHERE monitor_type = %d " \
-        "AND mac_address = %s " \
-        "AND uuid = %s " \
-        "AND EXTRACT(EPOCH FROM(NOW() - " \
-        "violation_timestamp)) < %d);";
+        "UPDATE object_summary_table " \
+        "SET movement_violation_timestamp = NOW()" \
+        "WHERE mac_address = %s";
     
+    ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
+   
 
     memset(sql, 0, sizeof(sql));
 
-    sprintf(sql, sql_select_template, 
-            MONITOR_MOVEMENT, 
-            MONITOR_MOVEMENT);
+    sprintf(sql, sql_select_template);
 
     res = PQexec(conn, sql);
 
@@ -1444,6 +1403,19 @@ ErrorCode SQL_identify_last_movement_status(
             mac_address = PQgetvalue(res, 
                                      current_row, 
                                      FIELD_INDEX_OF_MAC_ADDRESS);
+
+            SQL_get_object_monitor_type(db, mac_address, 
+                                        &object_monitor_type);
+            if(MONITOR_MOVEMENT != 
+               (MONITOR_MOVEMENT & (ObjectMonitorType)object_monitor_type)){
+                
+                continue;
+            }
+
+
+            mac_address = PQgetvalue(res, 
+                                     current_row, 
+                                     FIELD_INDEX_OF_MAC_ADDRESS);
             lbeacon_uuid = PQgetvalue(res, 
                                       current_row, 
                                       FIELD_INDEX_OF_UUID);
@@ -1464,6 +1436,7 @@ ErrorCode SQL_identify_last_movement_status(
                     pqescape_mac_address,
                     rssi_delta,
                     0 - rssi_delta);
+
             res_activity = PQexec(conn, sql);
 
             PQfreemem(pqescape_mac_address);
@@ -1486,26 +1459,15 @@ ErrorCode SQL_identify_last_movement_status(
                 pqescape_mac_address = 
                     PQescapeLiteral(conn, mac_address, 
                                     strlen(mac_address));
-
-                pqescape_lbeacon_uuid = 
-                    PQescapeLiteral(conn, lbeacon_uuid, 
-                                    strlen(lbeacon_uuid));
                 
                 memset(sql, 0, sizeof(sql));
                     
                 sprintf(sql, sql_update_activity_template,
-                        MONITOR_MOVEMENT,
-                        pqescape_mac_address,
-                        pqescape_lbeacon_uuid, 
-                        MONITOR_MOVEMENT,
-                        pqescape_mac_address,
-                        pqescape_lbeacon_uuid, 
-                        granularity_for_continuous_violations_in_sec);
-                        
+                        pqescape_mac_address);
+                            
                 ret_val = SQL_execute(db, sql);
 
                 PQfreemem(pqescape_mac_address);
-                PQfreemem(pqescape_lbeacon_uuid);
                
                 if(WORK_SUCCESSFULLY != ret_val){
                     PQclear(res_activity);   
@@ -1607,6 +1569,94 @@ ErrorCode SQL_insert_geofence_violation_event(
     return WORK_SUCCESSFULLY;
 }
 
+ErrorCode SQL_collect_violation_events(
+    void *db, 
+    ObjectMonitorType monitor_type,
+    int time_interval_in_sec,
+    int granularity_for_continuous_violations_in_sec){
+
+    PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+
+    char *sql_insert_template = 
+        "INSERT INTO " \
+        "notification_table( " \
+        "monitor_type, " \
+        "mac_address, " \
+        "uuid, " \
+        "violation_timestamp, " \
+        "processed) " \
+        "SELECT %d, " \
+        "mac_address, " \
+        "uuid, " \
+        "%s, " \
+        "0 " \
+        "FROM object_summary_table " \
+        "WHERE "\
+        "%s >= " \
+        "NOW() - interval '%d seconds' " \
+        "AND NOT EXISTS(" \
+        "SELECT * FROM notification_table " \
+        "WHERE monitor_type = %d " \
+        "AND mac_address = mac_address " \
+        "AND uuid = uuid " \
+        "AND EXTRACT(EPOCH FROM(%s - " \
+        "violation_timestamp)) < %d);";
+
+    char *geofence_violation_timestamp = "geofence_violation_timestamp";
+    char *panic_violation_timestamp = "panic_timestamp";
+    char *movement_violation_timestamp = "movement_violation_timestamp";
+    char *location_violation_timestamp = "location_violation_timestamp";
+    char *violation_timestamp_name = NULL;
+
+    switch (monitor_type){
+        case MONITOR_GEO_FENCE:
+            violation_timestamp_name = geofence_violation_timestamp;
+            break;
+        case MONITOR_PANIC:
+            violation_timestamp_name = panic_violation_timestamp;
+            break;
+        case MONITOR_MOVEMENT:
+            violation_timestamp_name = movement_violation_timestamp;
+            break;
+        case MONITOR_LOCATION:
+            violation_timestamp_name = location_violation_timestamp;
+            break;
+        default:
+            zlog_error(category_debug, "Unknown monitor_type=[%d]", 
+                       monitor_type);
+            return E_INPUT_PARAMETER;
+    }
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, 
+            sql_insert_template, 
+            monitor_type, 
+            violation_timestamp_name,
+            violation_timestamp_name,
+            time_interval_in_sec,
+            monitor_type,
+            violation_timestamp_name,
+            granularity_for_continuous_violations_in_sec);
+
+    //SQL_begin_transaction(db);
+    ret_val = SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != ret_val){
+        //SQL_rollback_transaction(db);
+        
+        zlog_error(category_debug, 
+                   "SQL_execute failed [%d]: %s", 
+                   ret_val, 
+                   PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }     
+    //SQL_commit_transaction(db);
+
+    return WORK_SUCCESSFULLY;
+}
+
 ErrorCode SQL_get_and_update_violation_events(void *db, 
                                               char *buf, 
                                               size_t buf_len){
@@ -1622,7 +1672,6 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
         "WHERE "\
         "processed != 1 " \
         "ORDER BY id ASC;";
-
     const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 5;
     const int FIELD_INDEX_OF_ID = 0;
     const int FIELD_INDEX_OF_MONITOR_TYPE = 1;
@@ -1695,6 +1744,71 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
     return WORK_SUCCESSFULLY;
 }
 
+ErrorCode SQL_get_object_monitor_type(void *db, 
+                                      char *mac_address, 
+                                      ObjectMonitorType *monitor_type){
+
+    PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+
+    char *sql_select_template = "SELECT monitor_type " \
+                                "FROM object_table " \
+                                "WHERE " \
+                                "mac_address = %s";
+    const int NUMBER_ROWS_OF_SQL_SELECT_TEMPLATE = 1;
+    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 1;
+    const int ROW_INDEX_OF_SQL_SELECT_TEMPLATE = 0;
+    const int FIELD_INDEX_OF_MONITOR_TYPE = 0;
+
+    PGresult *res = NULL;
+    int total_fields = 0;
+    int total_rows = 0;
+   
+    char *pqescape_mac_address = NULL;
+    char *object_monitor_type = NULL;
+   
+   
+    memset(sql, 0, sizeof(sql));
+
+    pqescape_mac_address = 
+        PQescapeLiteral(conn, mac_address, strlen(mac_address));
+
+    sprintf(sql, sql_select_template, pqescape_mac_address);
+
+    res = PQexec(conn, sql);
+
+    PQfreemem(pqescape_mac_address);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   res, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }
+
+    total_fields = PQnfields(res);
+    total_rows = PQntuples(res);
+
+    *monitor_type = MONITOR_NORMAL;
+    if(total_rows == NUMBER_ROWS_OF_SQL_SELECT_TEMPLATE && 
+       total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
+        object_monitor_type = PQgetvalue(res, 
+                                         ROW_INDEX_OF_SQL_SELECT_TEMPLATE,
+                                         FIELD_INDEX_OF_MONITOR_TYPE);
+        if(object_monitor_type == NULL){
+            PQclear(res);
+            return E_API_PROTOCOL_FORMAT;
+        }
+        *monitor_type = (ObjectMonitorType)atoi(object_monitor_type);
+    }
+
+    PQclear(res);
+
+    return WORK_SUCCESSFULLY;
+}
 
 ErrorCode SQL_reload_monitor_config(void *db,
                                     int server_localtime_against_UTC_in_hour)
