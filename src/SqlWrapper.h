@@ -449,61 +449,6 @@ ErrorCode SQL_identify_geofence_violation(
     int detected_rssi);
 
 /*
-  SQL_insert_geofence_perimeter_valid_deadline
-
-     This function updates geofence perimter violation information in
-     object_summary_table. The information includes geofence name and perimter
-     violation timestamp.
-     
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     mac_address -  MAC address of detected object.
-
-     valid_duration_in_sec - the duration in seconds within which this 
-                             perimeter violation is treated as valid
-
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-
-ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
-    void *db,
-    char *mac_address,
-    int valid_duration_in_sec);
-
-/*
-  SQL_check_perimeter_violation_valid
-
-     This function updates geofence perimter violation information in
-     object_summary_table. The information includes geofence name and perimter
-     violation timestamp.
-     
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     mac_address -  MAC address of detected object.
-
-     is_valid_perimeter - output value to specify if perimter violation is 
-                          still valid
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-
-ErrorCode SQL_check_perimeter_violation_valid(
-    void *db,
-    char *mac_address,
-    int *is_valid_perimeter);
-
-/*
   SQL_identify_panic
 
      This function queries tracking_table (Time-Series database) within time 
@@ -624,39 +569,6 @@ ErrorCode SQL_identify_last_movement_status(void *db,
           inserted into notification_table when there are continuous 
           violations.
           
- 
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-
-ErrorCode SQL_insert_geofence_violation_event(
-    void *db,
-    char *mac_address,
-    char *geofence_uuid,
-    int granularity_for_continuous_violations_in_sec);
-
-/*
-  SQL_collect_violation_events
-
-     This function checks object_summary_table to see if there are any 
-     violation events. If YES, the violation events of all monitoring 
-     types are recorded in notification_table. 
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     monitor_type - the monitor type of the violations to be collected
-
-     time_interval_in_sec - the time window in which a violation is treated as 
-                            valid event
-
-     granularity_for_continuous_violations_in_sec - 
-          the length of the time window in which only one violation event is 
-          inserted into notification_table when there are continuous 
-          violations.
  
   Return Value:
 

@@ -978,9 +978,7 @@ ErrorCode SQL_summarize_object_location(void *db,
 
 ErrorCode SQL_identify_geofence_violation(
     void *db,
-    char *mac_address,
-    char *geofence_uuid,
-    int detected_rssi){
+    char *mac_address){
 
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
@@ -989,10 +987,7 @@ ErrorCode SQL_identify_geofence_violation(
     char *sql_insert_summary_table = 
         "UPDATE object_summary_table " \
         "SET " \
-        "geofence_uuid = %s, " \
-        "geofence_rssi = %d, " \
-        "geofence_violation_timestamp = NOW(), " \
-        "perimeter_valid_timestamp = NOW() " \
+        "geofence_violation_timestamp = NOW() " \
         "WHERE mac_address = %s";
 
     char *pqescape_mac_address = NULL;
@@ -1004,14 +999,9 @@ ErrorCode SQL_identify_geofence_violation(
     pqescape_mac_address = 
         PQescapeLiteral(conn, mac_address, 
                         strlen(mac_address)); 
-    pqescape_geofence_uuid = 
-        PQescapeLiteral(conn, geofence_uuid, 
-                        strlen(geofence_uuid));
-    
+   
     sprintf(sql, 
             sql_insert_summary_table, 
-            pqescape_geofence_uuid,
-            detected_rssi,
             pqescape_mac_address);
             
     //SQL_begin_transaction(db);
@@ -1019,8 +1009,7 @@ ErrorCode SQL_identify_geofence_violation(
     ret_val = SQL_execute(db, sql);
 
     PQfreemem(pqescape_mac_address);
-    PQfreemem(pqescape_geofence_uuid);
-
+   
     if(WORK_SUCCESSFULLY != ret_val){
         //SQL_rollback_transaction(db);
         
@@ -1031,116 +1020,6 @@ ErrorCode SQL_identify_geofence_violation(
     }     
     //SQL_commit_transaction(db);
 
-    return WORK_SUCCESSFULLY;
-}
-
-
-ErrorCode SQL_insert_geofence_perimeter_valid_deadline(
-    void *db,
-    char *mac_address,
-    int valid_duration_in_sec){
-
-    PGconn *conn = (PGconn *)db;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-
-    char *sql_insert_summary_table = 
-        "UPDATE object_summary_table " \
-        "SET " \
-        "perimeter_valid_timestamp = NOW() + INTERVAL '%d seconds' " \
-        "WHERE mac_address = %s";
-
-    char *pqescape_mac_address = NULL;
-    
-    memset(sql, 0, sizeof(sql));
-
-    pqescape_mac_address = 
-        PQescapeLiteral(conn, mac_address, 
-                        strlen(mac_address)); 
-    
-    sprintf(sql, 
-            sql_insert_summary_table, 
-            valid_duration_in_sec,
-            pqescape_mac_address);
-            
-    //SQL_begin_transaction(db);
-
-    ret_val = SQL_execute(db, sql);
-
-    PQfreemem(pqescape_mac_address);
-    
-    if(WORK_SUCCESSFULLY != ret_val){
-        //SQL_rollback_transaction(db);
-        
-        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   ret_val, PQerrorMessage(conn));
-
-        return E_SQL_EXECUTE;
-    }     
-    //SQL_commit_transaction(db);
-
-    return WORK_SUCCESSFULLY;
-}
-
-
-ErrorCode SQL_check_perimeter_violation_valid(
-    void *db,
-    char *mac_address,
-    int *is_valid_perimeter){
-
-    PGconn *conn = (PGconn *)db;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-
-    char *sql_select_template = 
-        "SELECT mac_address " \
-        "FROM object_summary_table " \
-        "WHERE " \
-        "perimeter_valid_timestamp > NOW() AND " \
-        "mac_address = %s";
-    const int EXPECTED_RESULT_ROWS_OF_SQL_SELECT_TEMPLATE = 1;
-
-    const int PERIMETER_VIOLATION_IS_VALID = 1;
-
-    char *pqescape_mac_address = NULL;
-    
-    PGresult *res = NULL;
-    int total_rows = 0;
-    
-
-    *is_valid_perimeter = 0;
-
-    memset(sql, 0, sizeof(sql));
-
-    pqescape_mac_address = 
-        PQescapeLiteral(conn, mac_address, 
-                        strlen(mac_address)); 
-    
-    sprintf(sql, 
-            sql_select_template, 
-            pqescape_mac_address);
-
-    res = PQexec(conn, sql);
-
-    PQfreemem(pqescape_mac_address);
-    
-    if(PQresultStatus(res) != PGRES_TUPLES_OK){
-        PQclear(res);
-
-        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   res, PQerrorMessage(conn));
-
-        return E_SQL_EXECUTE;
-    }
-
-    total_rows = PQntuples(res);
-
-    if(total_rows == EXPECTED_RESULT_ROWS_OF_SQL_SELECT_TEMPLATE){
-        *is_valid_perimeter = PERIMETER_VIOLATION_IS_VALID;
-    }
-        
-    PQclear(res);
-    
     return WORK_SUCCESSFULLY;
 }
 
@@ -1154,7 +1033,7 @@ ErrorCode SQL_identify_panic(void *db,
     char *sql_select_template = "UPDATE " \
                                 "object_summary_table " \
                                 "SET " \
-                                "panic_timestamp = panic_information.final_timestamp " \
+                                "panic_violation_timestamp = NOW() " \
                                 "FROM " \
                                 "(SELECT " \
                                 "object_mac_address, " \
@@ -1326,9 +1205,11 @@ ErrorCode SQL_identify_last_movement_status(void *db,
                                 "object_table.area_id = " \
                                 "movement_config.area_id " \
                                 "WHERE " \
-                                "movement_config.is_active = 1 "
+                                "movement_config.is_active = 1 AND " \
+                                "object_table.monitor_type & %d = %d " \
                                 "ORDER BY " \
                                 "mac_address ASC";
+
     const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 2;
     const int FIELD_INDEX_OF_MAC_ADDRESS = 0;
     const int FIELD_INDEX_OF_UUID = 1;
@@ -1372,13 +1253,12 @@ ErrorCode SQL_identify_last_movement_status(void *db,
         "UPDATE object_summary_table " \
         "SET movement_violation_timestamp = NOW()" \
         "WHERE mac_address = %s";
-    
-    ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
-   
-
+  
     memset(sql, 0, sizeof(sql));
 
-    sprintf(sql, sql_select_template);
+    sprintf(sql, sql_select_template,
+            MONITOR_MOVEMENT,
+            MONITOR_MOVEMENT);
 
     res = PQexec(conn, sql);
 
@@ -1404,18 +1284,6 @@ ErrorCode SQL_identify_last_movement_status(void *db,
                                      current_row, 
                                      FIELD_INDEX_OF_MAC_ADDRESS);
 
-            SQL_get_object_monitor_type(db, mac_address, 
-                                        &object_monitor_type);
-            if(MONITOR_MOVEMENT != 
-               (MONITOR_MOVEMENT & (ObjectMonitorType)object_monitor_type)){
-                
-                continue;
-            }
-
-
-            mac_address = PQgetvalue(res, 
-                                     current_row, 
-                                     FIELD_INDEX_OF_MAC_ADDRESS);
             lbeacon_uuid = PQgetvalue(res, 
                                       current_row, 
                                       FIELD_INDEX_OF_UUID);
@@ -1494,81 +1362,6 @@ ErrorCode SQL_identify_last_movement_status(void *db,
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_insert_geofence_violation_event(
-    void *db,
-    char *mac_address,
-    char *geofence_uuid,
-    int granularity_for_continuous_violations_in_sec){
-
-    PGconn *conn = (PGconn *)db;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    ObjectMonitorType monitor_type = MONITOR_GEO_FENCE;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-
-    char *sql_insert_notification_table = 
-        "INSERT INTO " \
-        "notification_table( " \
-        "monitor_type, " \
-        "mac_address, " \
-        "uuid, " \
-        "violation_timestamp, " \
-        "processed) " \
-        "SELECT " \
-        "%d, " \
-        "%s, " \
-        "%s, " \
-        "NOW(), " \
-        "0 " \
-        "WHERE NOT EXISTS(" \
-        "SELECT * FROM notification_table " \
-        "WHERE monitor_type = %d " \
-        "AND mac_address = %s " \
-        "AND uuid = %s " \
-        "AND EXTRACT(EPOCH FROM(NOW() - " \
-        "violation_timestamp)) < %d);";
-
-    char *pqescape_mac_address = NULL;
-    char *pqescape_geofence_uuid = NULL;
-
-
-    memset(sql, 0, sizeof(sql));
-
-    pqescape_mac_address = 
-        PQescapeLiteral(conn, mac_address, 
-                        strlen(mac_address));
-    pqescape_geofence_uuid = 
-        PQescapeLiteral(conn, geofence_uuid, 
-                        strlen(geofence_uuid));
-    
-    sprintf(sql, sql_insert_notification_table, 
-            monitor_type,
-            pqescape_mac_address,
-            pqescape_geofence_uuid,
-            monitor_type,
-            pqescape_mac_address,
-            pqescape_geofence_uuid,
-            granularity_for_continuous_violations_in_sec);
-            
-    //SQL_begin_transaction(db);
-
-    ret_val = SQL_execute(db, sql);
-
-    PQfreemem(pqescape_mac_address);
-    PQfreemem(pqescape_geofence_uuid);
-
-    if(WORK_SUCCESSFULLY != ret_val){
-        //SQL_rollback_transaction(db);
-        
-        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   ret_val, PQerrorMessage(conn));
-
-        return E_SQL_EXECUTE;
-    }     
-    //SQL_commit_transaction(db);
-
-    return WORK_SUCCESSFULLY;
-}
-
 ErrorCode SQL_collect_violation_events(
     void *db, 
     ObjectMonitorType monitor_type,
@@ -1605,7 +1398,7 @@ ErrorCode SQL_collect_violation_events(
         "violation_timestamp)) < %d);";
 
     char *geofence_violation_timestamp = "geofence_violation_timestamp";
-    char *panic_violation_timestamp = "panic_timestamp";
+    char *panic_violation_timestamp = "panic_violation_timestamp";
     char *movement_violation_timestamp = "movement_violation_timestamp";
     char *location_violation_timestamp = "location_violation_timestamp";
     char *violation_timestamp_name = NULL;

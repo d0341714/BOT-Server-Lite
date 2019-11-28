@@ -263,7 +263,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node,
         memcpy(content_temp, 
                buffer_node -> content, 
                buffer_node -> content_size);
-
+/*
         examine_tracked_objects_status(buffer_node->API_version,
                                        content_temp, 
                                        is_fence_lbeacon,
@@ -273,6 +273,7 @@ ErrorCode check_geo_fence_violations(BufferNode *buffer_node,
                                        perimeter_valid_duration_in_sec, 
                                        granularity_for_continuous_violation_in_sec,
                                        database_argument);      
+                                       */
     }
 
 
@@ -322,7 +323,7 @@ ErrorCode examine_tracked_objects_status(float api_version,
     ObjectMonitorType object_monitor_type = MONITOR_NORMAL;
     int is_valid_perimeter;
 
-
+/*
     if(WORK_SUCCESSFULLY != 
        SQL_open_database_connection(database_argument, &db)){
  
@@ -383,16 +384,12 @@ ErrorCode examine_tracked_objects_status(float api_version,
                                        &save_ptr);
 
             if(atof(BOT_SERVER_API_VERSION_20) == api_version){
-                /* We do not have additional fields in 
-                   BOT_SERVER_API_VERSION_20, the all fields are already 
-                   listed above */           
-            }else{
+             }else{
                 battery_voltage = strtok_save(NULL, 
                                               DELIMITER_SEMICOLON, 
                                               &save_ptr);
             }
 
-            /* check if mac_address has MONITOR_GEO_FENCE monitor type */
             SQL_get_object_monitor_type(db, mac_address, &object_monitor_type);
                 
             if(MONITOR_GEO_FENCE != 
@@ -402,7 +399,6 @@ ErrorCode examine_tracked_objects_status(float api_version,
                 continue;
             }
 
-            /* check fence and perimeter */
             if(is_fence_lbeacon && ( detected_rssi > fence_rssi)){
 
                 zlog_info(category_debug, 
@@ -454,6 +450,6 @@ ErrorCode examine_tracked_objects_status(float api_version,
     }
     
     SQL_close_database_connection(db);
-
+*/
     return WORK_SUCCESSFULLY;
 }
