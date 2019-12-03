@@ -582,8 +582,6 @@ ErrorCode SQL_update_object_tracking_data(void *db,
     char *pqescape_final_timestamp_GMT = NULL;
 
 
-    zlog_debug(category_debug, "buf=[%s]", buf);
-
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
@@ -627,10 +625,6 @@ ErrorCode SQL_update_object_tracking_data(void *db,
             rssi = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
             push_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            zlog_debug(category_debug, "object_mac_address=[%s], rssi=[%s], " \
-                       "push_button=[%s]", object_mac_address, rssi, 
-                       push_button);
 
             /* Create SQL statement */
             pqescape_object_mac_address =
@@ -710,13 +704,13 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
                          "%d)";
-     char *sql_bulk_insert_more_value_template = 
+    char *sql_bulk_insert_more_value_template = 
                          ", " \
                          "(%s, %s, %s, %s, %s," \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
                          "%d)";
-      char *sql_bulk_insert_end_template = ";";
+    char *sql_bulk_insert_end_template = ";";
 
     char *lbeacon_uuid = NULL;
     char *lbeacon_ip = NULL;
@@ -742,8 +736,6 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     int number_of_insertion = 0;
     bool sql_preparation_failed = false;
 
-
-    zlog_debug(category_debug, "buf=[%s]", buf);
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -794,10 +786,6 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
             panic_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
             battery_voltage = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            zlog_debug(category_debug, "object_mac_address=[%s], rssi=[%s], " \
-                       "panic_button=[%s], battery_voltage=[%s]", 
-                       object_mac_address, rssi, panic_button, battery_voltage);
 
             /* Create SQL statement */
             pqescape_object_mac_address =

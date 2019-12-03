@@ -1396,9 +1396,8 @@ void *Server_process_wifi_receive()
         /* Copy the content to the buffer_node */
         strcpy(new_node->content, remain_string);
         zlog_debug(category_debug, "pkt_direction=[%d], pkt_type=[%d], " \
-                   "API_version=[%f], content=[%s]", new_node->pkt_direction, 
-                   new_node->pkt_type, new_node->API_version, 
-                   new_node->content);
+                   "API_version=[%f]", new_node->pkt_direction, 
+                   new_node->pkt_type, new_node->API_version);
 
         new_node -> content_size = strlen(new_node->content);
 
@@ -1436,9 +1435,7 @@ void *Server_process_wifi_receive()
 #endif
                     zlog_info(category_debug, "Get tracked object data from "
                               "geofence Gateway");
-                    zlog_info(category_debug, "new_node->content=[%s]", 
-                              new_node->content);
-
+                   
                     pthread_mutex_lock(&Geo_fence_receive_buffer_list_head
                                        .list_lock);
                     insert_list_tail(&new_node -> buffer_entry,
