@@ -48,10 +48,6 @@
 /* Maximum length of message to communicate with SQL wrapper API in bytes */
 #define SQL_TEMP_BUFFER_LENGTH 4096
 
-#define SQL_TRACK_DATA_BULK_INSERT_BUFFER_LENGTH 16384
-
-#define SQL_TRACK_DATA_BULK_INSERT_ONE_RECORD_LENGTH 256
-
 /* When debugging is needed */
 //#define debugging
 
@@ -377,15 +373,19 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
      buf_len - Length in number of bytes of buf input string
 
+     server_installation_path - the absolute file path of server installation path
+
   Return Value:
 
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
-                                                               char *buf,
-                                                               size_t buf_len);
+ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
+    void *db,
+    char *buf,
+    size_t buf_len,
+     char *server_installation_path);
 
 /*
   SQL_summarize_object_location

@@ -114,6 +114,8 @@ typedef struct {
 /* The configuration file structure */
 
 typedef struct {
+    /* The absoluate file path of server installation path */
+    char server_installation_path[MAX_PATH];
 
     /* The IP address of the server for WiFi netwok connection. */
     char server_ip[NETWORK_ADDR_LENGTH];

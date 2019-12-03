@@ -680,17 +680,18 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
 ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                                                                char *buf,
-                                                               size_t buf_len){
+                                                               size_t buf_len,
+                                                               char *server_installation_path){
 
     PGconn *conn = (PGconn *) db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
-    char sql[SQL_TRACK_DATA_BULK_INSERT_BUFFER_LENGTH];
-    char sql_bulk_insert_one_record[SQL_TRACK_DATA_BULK_INSERT_ONE_RECORD_LENGTH];
     int num_types = 2; // BR_EDR and BLE types
-    char *sql_bulk_insert_first_template = 
-                         "INSERT INTO tracking_table " \
+    char *sql_bulk_insert_template = 
+                         "COPY " \
+                         "tracking_table " \
                          "(object_mac_address, " \
                          "lbeacon_uuid, " \
                          "rssi, " \
@@ -699,19 +700,10 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                          "initial_timestamp, " \
                          "final_timestamp, " \
                          "server_time_offset) " \
-                         "VALUES " \
-                         "(%s, %s, %s, %s, %s," \
-                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
-                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
-                         "%d)";
-    char *sql_bulk_insert_more_value_template = 
-                         ", " \
-                         "(%s, %s, %s, %s, %s," \
-                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
-                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
-                         "%d)";
-    char *sql_bulk_insert_end_template = ";";
-
+                         "FROM " \
+                         "\'%s\' " \
+                         "DELIMITER \',\' CSV;";
+    
     char *lbeacon_uuid = NULL;
     char *lbeacon_ip = NULL;
     char *lbeacon_timestamp = NULL;
@@ -726,17 +718,27 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     char *battery_voltage = NULL;
     int current_time = get_system_time();
     int lbeacon_timestamp_value;
-    char *pqescape_object_mac_address = NULL;
-    char *pqescape_lbeacon_uuid = NULL;
-    char *pqescape_rssi = NULL;
-    char *pqescape_panic_button = NULL;
-    char *pqescape_battery_voltage = NULL;
-    char *pqescape_initial_timestamp_GMT = NULL;
-    char *pqescape_final_timestamp_GMT = NULL;
-    int number_of_insertion = 0;
-    bool sql_preparation_failed = false;
+    char filename[MAX_PATH];
+    FILE *file = NULL;
+    time_t rawtime;
+    struct tm ts;
+    char buf_initial_time[80];
+    char buf_final_time[80];
+   
+    /* Open temporary file with thread id as filename to prepare the tracking 
+       data for postgresql bulk-insertion */
+    memset(filename, 0, sizeof(filename));
+    sprintf(filename, "%s/temp/track_%d", 
+            server_installation_path, 
+            pthread_self());
+    
+    file = fopen(filename, "wt");
+    if(file == NULL){
+        zlog_error(category_debug, "cannot open filepath %s", filename);
+        return E_OPEN_FILE;
+    }
 
-
+    /* Parse the message buffer */
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
@@ -751,10 +753,6 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
                "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);
 
-    number_of_insertion = 0;
-    memset(sql, 0, sizeof(sql));
-    // SQL_begin_transaction(db);
-
     while(num_types --){
 
         object_type = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
@@ -763,14 +761,13 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
 
         zlog_debug(category_debug, "object_type=[%s], object_number=[%s]", 
                    object_type, object_number);
+
         if(object_number == NULL){
-            //SQL_rollback_transaction(db);
             return E_API_PROTOCOL_FORMAT;
         }
         numbers = atoi(object_number);
 
         while(numbers--){
-            number_of_insertion++;
 
             object_mac_address = 
                 strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
@@ -786,91 +783,41 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
             panic_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
             battery_voltage = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            /* Create SQL statement */
-            pqescape_object_mac_address =
-                PQescapeLiteral(conn, object_mac_address,
-                                strlen(object_mac_address));
-            pqescape_lbeacon_uuid =
-                PQescapeLiteral(conn, lbeacon_uuid, 
-                                strlen(lbeacon_uuid));
-            pqescape_rssi = 
-                PQescapeLiteral(conn, rssi, strlen(rssi));
-            pqescape_panic_button =
-                PQescapeLiteral(conn, panic_button, 
-                                strlen(panic_button));
-            pqescape_battery_voltage =
-                PQescapeLiteral(conn, battery_voltage, 
-                                strlen(battery_voltage));
-            pqescape_initial_timestamp_GMT =
-                PQescapeLiteral(conn, initial_timestamp_GMT,
-                                strlen(initial_timestamp_GMT));
-            pqescape_final_timestamp_GMT =
-                PQescapeLiteral(conn, final_timestamp_GMT,
-                                strlen(final_timestamp_GMT));
-
-            if(number_of_insertion == 1)
-            {
-                sprintf(sql, 
-                        sql_bulk_insert_first_template,
-                        pqescape_object_mac_address,
-                        pqescape_lbeacon_uuid,
-                        pqescape_rssi,
-                        pqescape_panic_button,
-                        pqescape_battery_voltage,
-                        pqescape_initial_timestamp_GMT,
-                        pqescape_final_timestamp_GMT,
-                        current_time - lbeacon_timestamp_value);
-            }
-            else
-            {
-                memset(sql_bulk_insert_one_record, 
-                       0, 
-                       sizeof(sql_bulk_insert_one_record));
-
-                sprintf(sql_bulk_insert_one_record, 
-                        sql_bulk_insert_more_value_template,
-                        pqescape_object_mac_address,
-                        pqescape_lbeacon_uuid,
-                        pqescape_rssi,
-                        pqescape_panic_button,
-                        pqescape_battery_voltage,
-                        pqescape_initial_timestamp_GMT,
-                        pqescape_final_timestamp_GMT,
-                        current_time - lbeacon_timestamp_value);
-                
-                if(sizeof(sql) < strlen(sql) + strlen(sql_bulk_insert_one_record)){
-                    sql_preparation_failed = true;
-                }else{
-                    strcat(sql, sql_bulk_insert_one_record); 
-                }
-            }
-
-            PQfreemem(pqescape_object_mac_address);
-            PQfreemem(pqescape_lbeacon_uuid);
-            PQfreemem(pqescape_rssi);
-            PQfreemem(pqescape_panic_button);
-            PQfreemem(pqescape_battery_voltage);
-            PQfreemem(pqescape_initial_timestamp_GMT);
-            PQfreemem(pqescape_final_timestamp_GMT);
-
-            if(sql_preparation_failed){
-                zlog_error(category_debug, 
-                           "insufficient buffer size=%d", 
-                           sizeof(sql));
-                return E_BUFFER_SIZE;
-            }
+           
+            // Convert Unix epoch timestamp (since 1970-1-1) to 
+            // postgre timestamp (since 2000-1-1)
+            rawtime = atoi(initial_timestamp_GMT);
+            ts = *gmtime(&rawtime);
+            strftime(buf_initial_time, sizeof(buf_initial_time), 
+                     "%Y-%m-%d %H:%M:%S", &ts);
             
+            rawtime = atoi(final_timestamp_GMT);
+            ts = *gmtime(&rawtime);
+            strftime(buf_final_time, sizeof(buf_final_time), 
+                     "%Y-%m-%d %H:%M:%S", &ts);
+                      
+            fprintf(file, "%s,%s,%s,%s,%s,%s,%s,%d\n",
+                    object_mac_address,
+                    lbeacon_uuid,
+                    rssi,
+                    panic_button,
+                    battery_voltage,
+                    buf_initial_time,
+                    buf_final_time,
+                    current_time - lbeacon_timestamp_value);
         }
     }
-    strcat(sql, sql_bulk_insert_end_template);
-    //SQL_commit_transaction(db);
+    fclose(file);
     
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_bulk_insert_template, filename); 
+
     /* Execute SQL statement */
     ret_val = SQL_execute(db, sql);
 
+    remove(filename);
+
     if(WORK_SUCCESSFULLY != ret_val){
-        //SQL_rollback_transaction(db);
         return E_SQL_EXECUTE;
     }
 

@@ -436,6 +436,12 @@ ErrorCode get_server_config(ServerConfig *config,
     }
     
     fetch_next_string(file, config_message, sizeof(config_message)); 
+    memcpy(config->server_installation_path, config_message,
+           sizeof(config->server_installation_path));
+    zlog_info(category_debug,"Server Installation Path [%s]", 
+              config->server_installation_path);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
     memcpy(config->server_ip, config_message, sizeof(config->server_ip));
     zlog_info(category_debug,"Server IP [%s]", config->server_ip);
 
@@ -1107,7 +1113,8 @@ void *Server_LBeacon_routine(void *_buffer_node)
             SQL_update_object_tracking_data_with_battery_voltage(
                 db,
                 current_node -> content,
-                strlen(current_node -> content));
+                strlen(current_node -> content),
+                config.server_installation_path);
         }
 
     }
@@ -1157,7 +1164,8 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
             SQL_update_object_tracking_data_with_battery_voltage(
                 db,
                 current_node -> content,
-                strlen(current_node -> content));
+                strlen(current_node -> content),
+                config.server_installation_path);
         }
         
     }
