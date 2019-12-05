@@ -72,10 +72,23 @@
 /* The number of slots in the memory pool for buffer nodes */
 #define SLOTS_IN_MEM_POOL_BUFFER_NODE 2048
 
-/* The number of slots in the memory pool for buffer nodes */
-#define SLOTS_IN_MEM_POOL_GEO_FENCE 1024
+/* The number of slots in the memory pool for geo-fence area. Each geo-fence
+area occupies a slot in this memory pool. */
+#define SLOTS_IN_MEM_POOL_GEO_FENCE_AREA 56
 
-/* The number of slots in the memory pool for buffer nodes */
+/* The number of slots in the memory pool for geo-fence setting. This memory 
+is global for all geo-fence settings in all geo-fence areas. */
+#define SLOTS_IN_MEM_POOL_GEO_FENCE_SETTING 2048
+
+/* The number of slots in the memory pool for mac_address of objects 
+under geo-fence monitoring. Each geo-fence area occupies a slot in this
+memory pool. */
+#define SLOTS_IN_MEM_POOL_GEO_FENCE_OBJECTS_SETTING 56
+
+/* The number of slots in the memory pool for geo-fence violation records. */
+#define SLOTS_IN_MEM_POOL_GEO_FENCE_VIOLATIONS 128
+
+/* The number of slots in the memory pool for notification */
 #define SLOTS_IN_MEM_POOL_NOTIFICATION 128
 
 typedef struct {
@@ -185,11 +198,17 @@ typedef struct {
     /* The flag indicating whether geo-fence monitor is enabled. */
     int is_enabled_geofence_monitor;
 
+    /* The list head of the geo fence list */
+    GeoFenceListHead geo_fence_list_head;
+
+    /* The list head of the objects under geo-fence monitoring */
+    ObjectWithGeoFenceListHead objects_under_geo_fence_list_head;
+
+    /* The list head of the geo-fence violation records */
+    GeoFenceViolationListHead geo_fence_violation_list_head;
+
     /* The time duration geo-fence perimeter violation remains valid */
     int perimeter_valid_duration_in_sec;
-
-    /* The list head of the geo gence list */
-    struct List_Entry geo_fence_list_head;
 
     /* The flag indicating whether location monitor is enabled. */
     int is_enabled_location_monitor;
@@ -229,9 +248,6 @@ ServerConfig config;
 
 /* The database argument for opening database */
 char database_argument[SQL_TEMP_BUFFER_LENGTH];
-
-/* The mempool for the GeoFence node structures */
-Memory_Pool geofence_mempool;
 
 /* The mempool for the Notification node structures */
 Memory_Pool notification_mempool;

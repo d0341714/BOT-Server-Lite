@@ -47,74 +47,185 @@
 /* Length of geo_fence name in byte */
 #define LENGTH_OF_GEO_FENCE_NAME 32
 
-/* Maximum number of LBeacons can be defined as the perimeter of each 
-   geo-fence */
-#define MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER 20
+/* File path of the dumped active geo-fence settings */
+#define DUMP_ACTIVE_GEO_FENCE_FILE "./temp/geo_fence_settings"
 
-/* Maximum number of LBeacons can be defined as the fence of each 
-   geo-fence */
-#define MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE 20
+/* File path of the dumped mac_address of objects under geo-fence monitor */
+#define DUMP_GEO_FENCE_OBJECTS_FILE "./temp/geofence_objects"
 
+/* Number of characters in a geo-fence setting */
+#define LENGTH_OF_MAC_ADDRESS_UNDER_GEO_FENCE_MONITOR 4096
+
+/* Number of characters in geo-fence setting */
+#define LENGTH_OF_BEACON_UUID_IN_GEO_FENCE_SETTING 4096
+
+/* Type of LBeacon. */
+typedef enum _LBeaconType{
+    LBEACON_NORMAL = 0,
+    LBEACON_PERIMETER = 1,
+    LBEACON_FENCE = 2,
+} LBeaconType;
 
 typedef struct {
-   /* The area id of the geo fence */
-   int area_id;
+
+    pthread_mutex_t list_lock;
+
+    struct List_Entry list_head;
+
+} GeoFenceListHead;
+
+typedef struct {
+
+    int area_id;
+
+    List_Entry geo_fence_area_list_entry;
+
+    List_Entry geo_fence_setting_list_head;
+
+} GeoFenceAreaNode;
+
+typedef struct {
    /* The id of the geo fence in the area id */
    int id;
 
    /* The name of the geo fence */
    char name[LENGTH_OF_GEO_FENCE_NAME];
 
-   int number_LBeacons_in_perimeter;
-   int number_LBeacons_in_fence;
-   
    int rssi_of_perimeters;
    int rssi_of_fences;
 
-   /* The flag indicating whether this geo-fence is active at current time according to 
-   user's geo-fence monitor configurations. */
-   int is_active;
+   char perimeters_lbeacon_setting[LENGTH_OF_BEACON_UUID_IN_GEO_FENCE_SETTING];
+   char fences_lbeacon_setting[LENGTH_OF_BEACON_UUID_IN_GEO_FENCE_SETTING];
 
-   char perimeters[MAXIMUM_LBEACONS_IN_GEO_FENCE_PERIMETER][LENGTH_OF_UUID];
-   char fences[MAXIMUM_LBEACONS_IN_GEO_FENCE_FENCE][LENGTH_OF_UUID];
-   
    /* The list entry for inserting the geofence into the list of the geo 
       fences */
-   List_Entry geo_fence_list_entry;
+   List_Entry geo_fence_setting_list_entry;
 
-} GeoFenceListNode;
+} GeoFenceSettingNode;
 
+typedef struct {
+
+    pthread_mutex_t list_lock;
+
+    struct List_Entry list_head;
+
+} ObjectWithGeoFenceListHead;
+
+typedef struct {
+
+    int area_id; 
+
+    char mac_address_under_monitor[LENGTH_OF_MAC_ADDRESS_UNDER_GEO_FENCE_MONITOR];
+
+    List_Entry objects_area_list_entry;
+
+} ObjectWithGeoFenceAreaNode;
+
+typedef struct {
+
+    pthread_mutex_t list_lock;
+
+    struct List_Entry list_head;
+
+} GeoFenceViolationListHead;
+
+typedef struct {
+
+    char mac_address[LENGTH_OF_MAC_ADDRESS];
+
+    int perimeter_violation_timestamp;
+
+    List_Entry geo_fence_violation_list_entry;
+
+} GeoFenceViolationNode;
+
+/* global variables */
+
+/* The mempool for the GeoFence area node structures */
+Memory_Pool geofence_area_mempool;
+
+/* The mempool for the GeoFence setting node structures */
+Memory_Pool geofence_setting_mempool;
+
+/* The mempool for the mac_address of objects under geo-fence monitor structures */
+Memory_Pool geofence_objects_area_mempool;
+
+/* The mempool for the geo-fence violation structures */
+Memory_Pool geofence_violation_mempool;
 
 /*
-  add_geo_fence_settings:
+  construct_geo_fence_list:
 
-     This function parses the configuraion of a geo-fence setting and stores 
-     the resultant geo-fence setting struct in the geo-fence setting buffer 
-     list.
+     This function constructs the geo-fence setting.
 
   Parameters:
 
-     geofence_mempool - The pointer to the memory pool for geo fence setting
-
-     geo_fence_list_head - The pointer to the head of the geo-fence setting 
-                           buffer list head.
-
-     buf - The pointer to the buffer containing the configuraion of a 
-           geo-fence.
-
      database_argument - The database argument for opening database 
+     
+     geo_fence_list_head - The pointer to geo fence list head in server global 
+                           configuration structure.
 
   Return value:
 
-     ErrorCode
+     ErrorCode - WORK_SUCCESSFULLY: work successfully.
 
  */
+ErrorCode construct_geo_fence_list(char * database_argument,
+                                   GeoFenceListHead* geo_fence_list_head);
 
-ErrorCode add_geo_fence_settings(Memory_Pool *geofence_mempool,
-                                 struct List_Entry * geo_fence_list_head,
-                                 char *buf,
-                                 char *database_argument);
+/*
+  destroy_geo_fence_list:
 
+     This function destroy the geo-fence setting.
+
+  Parameters:
+
+     geo_fence_list_head - The pointer to geo fence list head in server global 
+                           configuration structure.
+
+  Return value:
+
+     ErrorCode - WORK_SUCCESSFULLY: work successfully.
+
+ */
+ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head);
+
+/*
+  construct_objects_list_under_geo_fence_monitoring:
+
+     This function constructs the objects under geo-fence monitoring.
+
+  Parameters:
+
+     database_argument - The database argument for opening database 
+     
+     objects_list_head - The pointer to list of objects under geo-fence 
+                         monitoring
+  Return value:
+
+     ErrorCode - WORK_SUCCESSFULLY: work successfully.
+
+ */
+ErrorCode construct_objects_list_under_geo_fence_monitoring(
+    char * database_argument,
+    ObjectWithGeoFenceListHead* objects_list_head);
+
+/*
+  destroy_objects_list_under_geo_fence_monitoring:
+
+     This function destroy the objects under geo-fence monitoring.
+
+  Parameters:
+
+     objects_list_head - The pointer to list of objects under geo-fence 
+                         monitoring
+  Return value:
+
+     ErrorCode - WORK_SUCCESSFULLY: work successfully.
+
+ */
+ErrorCode destroy_objects_list_under_geo_fence_monitoring(
+    ObjectWithGeoFenceListHead* objects_list_head);
 
 /*
   check_geo_fence_violations:
@@ -128,64 +239,60 @@ ErrorCode add_geo_fence_settings(Memory_Pool *geofence_mempool,
 
      buffer_node - The pointer points to the buffer node.
 
-     list_head - The pointer to geo fence list head in server global 
-                 configuration structure.
+     database_argument - the information to connect database
+
+     geo_fence_list_head - The pointer to geo fence list head in server global 
+                           configuration structure.
+
+     objects_list_head - The pointer to list of objects under geo-fence monitoring
+
+     geo_fence_violation_list_head - The pointer to list of geo-fence violation 
+                                     records
 
      perimeter_valid_duration_in_sec - The time duration geo-fence perimeter 
                                        violation lasts valid 
      
-     granularity_for_continuous_violation_in_sec - 
-         The length of the time window in which only one representative record 
-         of continuous same violations is inserted into notification_table. 
-     
-     database_argument - The database argument for opening database 
-
   Return value:
 
      ErrorCode - WORK_SUCCESSFULLY: work successfully.
 
  */
 
-ErrorCode check_geo_fence_violations(BufferNode* buffer_node, 
-                                     struct List_Entry *list_head, 
-                                     int perimeter_valid_duration_in_sec, 
-                                     int granularity_for_continuous_violation_in_sec,
-                                     char *database_argument);
+ErrorCode check_geo_fence_violations(
+    BufferNode* buffer_node, 
+    char * database_argument,
+    GeoFenceListHead* geo_fence_list_head,
+    ObjectWithGeoFenceListHead * objects_list_head,
+    GeoFenceViolationListHead * geo_fence_violation_list_head,
+    int perimeter_valid_duration_in_sec);
+
 
 /*
-  examine_tracked_objects_status:
+  examine_object_tracking_data:
 
-     This function extracts each detected object data from the buffer and
-     checks if the object violates any geo-fence.
+     This function examine tracking data buffer content to compare against 
+     geo-fence settings. 
 
   Parameters:
 
-     api_version - API protocol version of BOT_GATEWAY_API used by LBeacon to
-                   send out the input message buffer
-     
-     buf - the packet content sent out by LBeacon
+     buffer_node - The pointer points to the buffer node.
 
-     is_fence_lbeacon - a flag that indicates whether the LBeacon that sent 
-                        the data in the input buf is part of a fence
+     area_id - The area id in which the lbeacon uuid within buffer specifies
 
-     fence_rssi - the RSSI criteria of fence to determine the detected object 
-                  violates fence 
+     lbeacon_type - a flag indicating whether the lbeacon is part of perimeter or 
+                    fence
 
-     is_perimeter_lbeacon - a flag that indicates whether the LBeacon that sent 
-                            the input buf is part of a perimeter
+     rssi_criteria - the rssi strenth to determine if objects are closed to lbeacon
 
-     perimeter_rssi - the RSSI criteria of perimeter to determine the detected
-                      object violates perimeter 
+     objects_list_head - The pointer to list of objects under geo-fence monitoring
+
+     geo_fence_violation_list_head - The pointer to list of geo-fence violation 
+                                     records
 
      perimeter_valid_duration_in_sec - The time duration geo-fence perimeter 
                                        violation lasts valid 
-
-     granularity_for_continuous_violation_in_sec - 
-         The length of the time window in which only one representative record 
-         of continuous same violations is inserted into notification_table. 
      
      database_argument - The database argument for opening database 
-
 
   Return value:
 
@@ -193,14 +300,14 @@ ErrorCode check_geo_fence_violations(BufferNode* buffer_node,
 
  */
 
-ErrorCode examine_tracked_objects_status(float api_version,
-                                         char *buf,
-                                         bool is_fence_lbeacon,
-                                         int fence_rssi,
-                                         bool is_perimeter_lbeacon,
-                                         int perimeter_rssi,
-                                         int perimeter_valid_duration_in_sec, 
-                                         int granularity_for_continuous_violation_in_sec,
-                                         char *database_argument);
+ErrorCode examine_object_tracking_data(
+    BufferNode *buffer_node,
+    int area_id,
+    LBeaconType lbeacon_type,
+    int rssi_criteria,
+    ObjectWithGeoFenceListHead * objects_list_head,
+    GeoFenceViolationListHead * geo_fence_violation_list_head,
+    int perimeter_valid_duration_in_sec,
+    char * database_argument);
 
 #endif

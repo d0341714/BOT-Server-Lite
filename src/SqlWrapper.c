@@ -911,9 +911,7 @@ ErrorCode SQL_summarize_object_location(void *db,
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_geofence_violation(
-    void *db,
-    char *mac_address){
+ErrorCode SQL_identify_geofence_violation(void *db, char *mac_address){
 
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
@@ -926,8 +924,6 @@ ErrorCode SQL_identify_geofence_violation(
         "WHERE mac_address = %s";
 
     char *pqescape_mac_address = NULL;
-    char *pqescape_geofence_uuid = NULL;
-
 
     memset(sql, 0, sizeof(sql));
 
@@ -1472,72 +1468,6 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_get_object_monitor_type(void *db, 
-                                      char *mac_address, 
-                                      ObjectMonitorType *monitor_type){
-
-    PGconn *conn = (PGconn *)db;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-
-    char *sql_select_template = "SELECT monitor_type " \
-                                "FROM object_table " \
-                                "WHERE " \
-                                "mac_address = %s";
-    const int NUMBER_ROWS_OF_SQL_SELECT_TEMPLATE = 1;
-    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 1;
-    const int ROW_INDEX_OF_SQL_SELECT_TEMPLATE = 0;
-    const int FIELD_INDEX_OF_MONITOR_TYPE = 0;
-
-    PGresult *res = NULL;
-    int total_fields = 0;
-    int total_rows = 0;
-   
-    char *pqescape_mac_address = NULL;
-    char *object_monitor_type = NULL;
-   
-   
-    memset(sql, 0, sizeof(sql));
-
-    pqescape_mac_address = 
-        PQescapeLiteral(conn, mac_address, strlen(mac_address));
-
-    sprintf(sql, sql_select_template, pqescape_mac_address);
-
-    res = PQexec(conn, sql);
-
-    PQfreemem(pqescape_mac_address);
-
-    if(PQresultStatus(res) != PGRES_TUPLES_OK){
-        PQclear(res);
-
-        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   res, PQerrorMessage(conn));
-
-        return E_SQL_EXECUTE;
-    }
-
-    total_fields = PQnfields(res);
-    total_rows = PQntuples(res);
-
-    *monitor_type = MONITOR_NORMAL;
-    if(total_rows == NUMBER_ROWS_OF_SQL_SELECT_TEMPLATE && 
-       total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
-        object_monitor_type = PQgetvalue(res, 
-                                         ROW_INDEX_OF_SQL_SELECT_TEMPLATE,
-                                         FIELD_INDEX_OF_MONITOR_TYPE);
-        if(object_monitor_type == NULL){
-            PQclear(res);
-            return E_API_PROTOCOL_FORMAT;
-        }
-        *monitor_type = (ObjectMonitorType)atoi(object_monitor_type);
-    }
-
-    PQclear(res);
-
-    return WORK_SUCCESSFULLY;
-}
-
 ErrorCode SQL_reload_monitor_config(void *db,
                                     int server_localtime_against_UTC_in_hour)
 {
@@ -1609,3 +1539,143 @@ ErrorCode SQL_reload_monitor_config(void *db,
     return WORK_SUCCESSFULLY;
 }
 
+ErrorCode SQL_dump_active_geo_fence_settings(void *db, char *filename)
+{
+    PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    
+    char *sql_select_template = "SELECT " \
+                                "area_id, " \
+                                "id, " \
+                                "name, " \
+                                "perimeters, " \
+                                "fences " \
+                                "FROM geo_fence_config " \
+                                "WHERE " \
+                                "is_active = 1;";
+
+    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 5;
+    const int FIELD_INDEX_OF_AREA_ID = 0;
+    const int FIELD_INDEX_OF_ID = 1;
+    const int FIELD_INDEX_OF_NAME = 2;
+    const int FIELD_INDEX_OF_PERIMETRS = 3;
+    const int FIELD_INDEX_OF_FENCES = 4;
+
+    FILE *file = NULL;
+
+    PGresult *res = NULL;
+    int total_fields = 0;
+    int total_rows = 0;
+    int i = 0;
+
+    file = fopen(filename, "wt");
+    if(file == NULL){
+        zlog_error(category_debug, "cannot open filepath %s", filename);
+        return E_OPEN_FILE;
+    }
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_select_template);
+
+    res = PQexec(conn, sql);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   res, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }
+
+    total_rows = PQntuples(res);
+    total_fields = PQnfields(res);
+    
+    if(total_rows > 0 && 
+       total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
+         
+        for(i = 0 ; i < total_rows ; i++){
+            fprintf(file, "%s;%s;%s;%s;%s;\n", 
+                    PQgetvalue(res, i, FIELD_INDEX_OF_AREA_ID),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_ID),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_NAME),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_PERIMETRS),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_FENCES));
+        }
+    }
+
+
+    PQclear(res);
+    fclose(file);
+
+    return WORK_SUCCESSFULLY;
+}
+
+ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(void *db, char *filename){
+
+    PGconn *conn = (PGconn *)db;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    
+    char *sql_select_template = "SELECT " \
+                                "area_id, " \
+                                "mac_address " \
+                                "FROM object_table " \
+                                "WHERE " \
+                                "monitor_type & %d = %d " \
+                                "ORDER BY area_id ASC;";
+
+    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 2;
+    const int FIELD_INDEX_OF_AREA_ID = 0;
+    const int FIELD_INDEX_OF_MAC_ADDRESS = 1;
+    
+    FILE *file = NULL;
+
+    PGresult *res = NULL;
+    int total_fields = 0;
+    int total_rows = 0;
+    int i = 0;
+
+    file = fopen(filename, "wt");
+    if(file == NULL){
+        zlog_error(category_debug, "cannot open filepath %s", filename);
+        return E_OPEN_FILE;
+    }
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_select_template, 
+            MONITOR_GEO_FENCE, 
+            MONITOR_GEO_FENCE);
+
+    res = PQexec(conn, sql);
+
+    if(PQresultStatus(res) != PGRES_TUPLES_OK){
+        PQclear(res);
+
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   res, PQerrorMessage(conn));
+
+        return E_SQL_EXECUTE;
+    }
+
+    total_rows = PQntuples(res);
+    total_fields = PQnfields(res);
+    
+    if(total_rows > 0 && 
+       total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
+         
+        for(i = 0 ; i < total_rows ; i++){
+
+            fprintf(file, "%s;%s;\n", 
+                    PQgetvalue(res, i, FIELD_INDEX_OF_AREA_ID),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_MAC_ADDRESS));
+        }
+    }
+
+    PQclear(res);
+    fclose(file);
+
+    return WORK_SUCCESSFULLY;
+
+}

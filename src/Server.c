@@ -113,10 +113,34 @@ int main(int argc, char **argv)
         return E_MALLOC;
     }
 
-    /* Initialize the memory pool for geo-fence structs */
-    if(MEMORY_POOL_SUCCESS != mp_init( &geofence_mempool, 
-                                       sizeof(GeoFenceListNode), 
-                                       SLOTS_IN_MEM_POOL_GEO_FENCE))
+    /* Initialize the memory pool for geo-fence area node structs */
+    if(MEMORY_POOL_SUCCESS != mp_init( &geofence_area_mempool, 
+                                       sizeof(GeoFenceAreaNode), 
+                                       SLOTS_IN_MEM_POOL_GEO_FENCE_AREA))
+    {
+        return E_MALLOC;
+    }
+
+    /* Initialize the memory pool for geo-fence setting node structs */
+    if(MEMORY_POOL_SUCCESS != mp_init( &geofence_setting_mempool, 
+                                       sizeof(GeoFenceSettingNode), 
+                                       SLOTS_IN_MEM_POOL_GEO_FENCE_SETTING))
+    {
+        return E_MALLOC;
+    }
+
+    /* Initialize the memory pool for mac_address of objects under geo-fence area settings */
+    if(MEMORY_POOL_SUCCESS != mp_init( &geofence_objects_area_mempool, 
+                                       sizeof(ObjectWithGeoFenceAreaNode), 
+                                       SLOTS_IN_MEM_POOL_GEO_FENCE_OBJECTS_SETTING))
+    {
+        return E_MALLOC;
+    }
+
+    /* Initialize the memory pool for mac_address of objects under geo-fence area settings */
+    if(MEMORY_POOL_SUCCESS != mp_init( &geofence_violation_mempool, 
+                                       sizeof(GeoFenceViolationNode), 
+                                       SLOTS_IN_MEM_POOL_GEO_FENCE_VIOLATIONS))
     {
         return E_MALLOC;
     }
@@ -192,6 +216,21 @@ int main(int argc, char **argv)
     sort_priority_list(&common_config, &priority_list_head);
 
     zlog_info(category_debug,"Buffer lists initialize");
+
+    /* Initialize the list of geo-fence */
+    init_entry( &(config.geo_fence_list_head.list_head));
+
+    pthread_mutex_init( &config.geo_fence_list_head.list_lock, 0);
+
+    /* Initialize the list of objects under geo fence monitoring */
+    init_entry( &(config.objects_under_geo_fence_list_head.list_head));
+
+    pthread_mutex_init( &config.objects_under_geo_fence_list_head.list_lock, 0);
+
+    /* Initialize the list of geo fence violation records */
+    init_entry( &(config.geo_fence_violation_list_head.list_head));
+
+    pthread_mutex_init( &config.geo_fence_violation_list_head.list_lock, 0);
 
     zlog_info(category_debug,"Initialize sockets");
 
@@ -403,7 +442,13 @@ int main(int argc, char **argv)
 
     mp_destroy(&node_mempool);
 
-    mp_destroy(&geofence_mempool);
+    mp_destroy(&geofence_area_mempool);
+
+    mp_destroy(&geofence_setting_mempool);
+
+    mp_destroy(&geofence_objects_area_mempool);
+
+    mp_destroy(&geofence_violation_mempool);
 
     mp_destroy(&notification_mempool);
 
@@ -426,7 +471,7 @@ ErrorCode get_server_config(ServerConfig *config,
     char *save_ptr = NULL;
 
     List_Entry *current_list_entry = NULL;
-    GeoFenceListNode *current_list_ptr = NULL;
+    GeoFenceSettingNode *current_list_ptr = NULL;
 
     if (file == NULL) 
     {
@@ -434,7 +479,7 @@ ErrorCode get_server_config(ServerConfig *config,
         zlog_info(category_debug, "Load serverconfig fail");
         return E_OPEN_FILE;
     }
-    
+
     fetch_next_string(file, config_message, sizeof(config_message)); 
     memcpy(config->server_installation_path, config_message,
            sizeof(config->server_installation_path));
@@ -840,7 +885,22 @@ void *Server_reload_monitor_config(){
                 config.server_localtime_against_UTC_in_hour);
 
             // reload geo-fence settings
+            if(config.is_enabled_geofence_monitor){
+                destroy_geo_fence_list(&config.geo_fence_list_head);
 
+                construct_geo_fence_list(database_argument, 
+                                         &config.geo_fence_list_head);
+
+                destroy_objects_list_under_geo_fence_monitoring(
+                    &config.objects_under_geo_fence_list_head);
+
+                construct_objects_list_under_geo_fence_monitoring(
+                    database_argument, 
+                    &config.objects_under_geo_fence_list_head);
+            
+            }
+
+            
             last_reload_monitor_config = uptime;
         }
 
@@ -1133,6 +1193,7 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
    
     void *db = NULL;
 
+
     if(WORK_SUCCESSFULLY != 
        SQL_open_database_connection(database_argument, &db)){
 
@@ -1146,13 +1207,16 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
     }
 
     if(current_node -> pkt_type == time_critical_tracked_object_data){
-        
+       
         if(config.is_enabled_geofence_monitor){
-           /* check_geo_fence_violations(current_node, 
+            
+            check_geo_fence_violations(current_node, 
+                                       database_argument,
                                        &config.geo_fence_list_head, 
+                                       &config.objects_under_geo_fence_list_head,
+                                       &config.geo_fence_violation_list_head,
                                        config.perimeter_valid_duration_in_sec,
-                                       config.granularity_for_continuous_violations_in_sec, 
-                                       database_argument);*/
+                                       config.granularity_for_continuous_violations_in_sec);
         }
 
         // Server should support backward compatibility.
@@ -1443,7 +1507,7 @@ void *Server_process_wifi_receive()
 #endif
                     zlog_info(category_debug, "Get tracked object data from "
                               "geofence Gateway");
-                   
+                 
                     pthread_mutex_lock(&Geo_fence_receive_buffer_list_head
                                        .list_lock);
                     insert_list_tail(&new_node -> buffer_entry,

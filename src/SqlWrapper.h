@@ -432,21 +432,14 @@ ErrorCode SQL_summarize_object_location(void *db,
 
      mac_address -  MAC address of detected object.
 
-     geofence_uuid - UUID of the LBeacon scanned the detected object.
-
-     detected_rssi - rssi signal fo the detected object
-
   Return Value:
 
      ErrorCode - Indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_identify_geofence_violation(
-    void *db,
-    char *mac_address,
-    char *geofence_uuid,
-    int detected_rssi);
+ErrorCode SQL_identify_geofence_violation(void *db,
+                                          char *mac_address);
 
 /*
   SQL_identify_panic
@@ -608,31 +601,6 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
                                               size_t buf_len);
 
 /*
-  SQL_get_object_monitor_type
-
-     This function queries object_table to extract monitor_type of the input
-     mac_address
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     mac_address - a pointer to mac address of object
-
-     monitor_type - a pointer to output of this function. It stores 
-                    monitor_type of the input mac_address in object_table
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-
-ErrorCode SQL_get_object_monitor_type(void *db, 
-                                      char *mac_address, 
-                                      ObjectMonitorType *monitor_type);
-
-/*
   SQL_reload_monitor_config
 
      Updates start hour and end hour of location monitor of long staying in 
@@ -652,5 +620,41 @@ ErrorCode SQL_get_object_monitor_type(void *db,
 */
 ErrorCode SQL_reload_monitor_config(void *db, 
                                     int server_localtime_against_UTC_in_hour);
+
+/*
+  SQL_dump_active_geo_fence_settings
+
+     This function dumps geo-fence settings from database to specified file
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     filename - the specified file name to store the dumped geo-fence settings
+     
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_dump_active_geo_fence_settings(void *db, char *filename);
+
+/*
+  SQL_dump_mac_address_under_geo_fence_monitor
+
+     This function dumps mac address objects which are under geo-fence monitoring
+
+  Parameter:
+
+     db - a pointer pointing to the connection to the database backend server
+
+     filename - the specified file name to store the dumped mac address
+     
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(void *db, char *filename);
 
 #endif
