@@ -745,6 +745,7 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
     lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
     if(lbeacon_timestamp == NULL){
+        fclose(file);
         return E_API_PROTOCOL_FORMAT;
     }
     lbeacon_timestamp_value = atoi(lbeacon_timestamp);
@@ -763,6 +764,7 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                    object_type, object_number);
 
         if(object_number == NULL){
+            fclose(file);
             return E_API_PROTOCOL_FORMAT;
         }
         numbers = atoi(object_number);
@@ -1586,6 +1588,8 @@ ErrorCode SQL_dump_active_geo_fence_settings(void *db, char *filename)
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
                    res, PQerrorMessage(conn));
 
+        fclose(file);
+
         return E_SQL_EXECUTE;
     }
 
@@ -1655,6 +1659,8 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(void *db, char *filename)
 
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
                    res, PQerrorMessage(conn));
+
+        fclose(file);
 
         return E_SQL_EXECUTE;
     }
