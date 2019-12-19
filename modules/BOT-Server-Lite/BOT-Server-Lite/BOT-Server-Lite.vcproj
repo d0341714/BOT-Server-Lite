@@ -284,6 +284,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				AdditionalIncludeDirectories="$(SolutionDir)\..\..\common\include\"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"

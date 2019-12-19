@@ -1,6 +1,8 @@
 // Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
+#include "Version.h"
+#include "Build.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -53,8 +55,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,1089
- PRODUCTVERSION 1,0,0,1
+ FILEVERSION MAJOR_VERSION,MINOR_VERSION,0,BUILD_NUMBER
+ PRODUCTVERSION MAJOR_VERSION,MINOR_VERSION,0,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -70,7 +72,7 @@ BEGIN
         BLOCK "040404b0"
         BEGIN
             VALUE "CompanyName", "BeDI Technology Inc."
-            VALUE "FileDescription", "Server to manage downstream devices"
+            VALUE "FileDescription", "Server of BOT system"
             VALUE "FileVersion", "1.0.0.0"
             VALUE "InternalName", "BOT-Server-Lite.exe"
             VALUE "LegalCopyright", "Copyright (C) 2019"
