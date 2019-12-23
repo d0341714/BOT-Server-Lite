@@ -533,10 +533,10 @@ ErrorCode get_server_config(ServerConfig *config,
               common_config->number_worker_threads);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    common_config->omit_out_of_date_packet_in_sec = atoi(config_message);
+    common_config->min_age_out_of_date_packet_in_sec = atoi(config_message);
     zlog_info(category_debug,
-              "Omit out-of-date packet in seconds [%d]",
-              common_config->omit_out_of_date_packet_in_sec);
+              "min_age_out_of_date_packet_in_sec in seconds [%d]",
+              common_config->min_age_out_of_date_packet_in_sec);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->send_port = atoi(config_message);
@@ -1019,7 +1019,7 @@ void send_notification_alarm_to_gateway(){
 
         sprintf(command_msg, "%d;%d;%s;%d;%d;%s;", 
                 from_server, 
-                send_notification_alarm, 
+                notification_alarm, 
                 BOT_SERVER_API_VERSION_LATEST,
                 current_list_ptr->alarm_type,
                 current_list_ptr->alarm_duration_in_sec,
@@ -1409,7 +1409,7 @@ void *Server_process_wifi_receive()
            and copy the data from Wi-Fi receive queue to the node. */
         new_node = NULL;
 
-        retry_times = MEMORY_ALLOCATE_RETRY;
+        retry_times = MEMORY_ALLOCATE_RETRIES;
         while(retry_times --){
             new_node = mp_alloc( &node_mempool);
 
@@ -1599,7 +1599,7 @@ ErrorCode add_notification_to_the_notification_list(
               "alarm_type=[%s], gateway_ip=[%s], agents_list=[%s]", 
               alarm_type, gateway_ip, agents_list);
 
-    retry_times = MEMORY_ALLOCATE_RETRY;
+    retry_times = MEMORY_ALLOCATE_RETRIES;
     while(retry_times --){
         new_node = mp_alloc( &notification_mempool);
     

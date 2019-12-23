@@ -122,7 +122,7 @@ ErrorCode construct_geo_fence_list(char * database_argument,
         // Create one new geo-fence area node with area_id if it does not 
         // exist in the list.
         if(is_found_area_id == false){
-            retry_times = MEMORY_ALLOCATE_RETRY;
+            retry_times = MEMORY_ALLOCATE_RETRIES;
             while(retry_times --){
                 geo_fence_area_node = mp_alloc(&geofence_area_mempool);
                 if(NULL != geo_fence_area_node)
@@ -154,7 +154,7 @@ ErrorCode construct_geo_fence_list(char * database_argument,
             if(current_area_list_ptr->area_id == atoi(area_id)){
                 // Create one new geo-fence setting node with id into the 
                 // geo-fence area node
-                retry_times = MEMORY_ALLOCATE_RETRY;
+                retry_times = MEMORY_ALLOCATE_RETRIES;
                 while(retry_times --){
                     geo_fence_setting_node = mp_alloc(&geofence_setting_mempool);
                     if(NULL != geo_fence_setting_node)
@@ -349,7 +349,7 @@ ErrorCode construct_objects_list_under_geo_fence_monitoring(
         
         if(is_found_area_id == false){
             
-            retry_times = MEMORY_ALLOCATE_RETRY;
+            retry_times = MEMORY_ALLOCATE_RETRIES;
             while(retry_times --){
                 object_with_geo_fence_area_node = 
                     mp_alloc(&geofence_objects_area_mempool);
@@ -749,7 +749,7 @@ ErrorCode examine_object_tracking_data(
                     if(lbeacon_type == LBEACON_PERIMETER && 
                        is_found_mac_address == false){
                         
-                        retry_times = MEMORY_ALLOCATE_RETRY;
+                        retry_times = MEMORY_ALLOCATE_RETRIES;
                         while(retry_times --){
                             new_node = mp_alloc(&geofence_violation_mempool);
                             if(NULL != new_node)
