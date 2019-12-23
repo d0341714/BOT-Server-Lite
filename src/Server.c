@@ -217,7 +217,7 @@ int main(int argc, char **argv)
 
     zlog_info(category_debug,"Buffer lists initialize");
 
-    /* Initialize the list of geo-fence */
+    /* Initialize the list of geo-fences */
     init_entry( &(config.geo_fence_list_head.list_head));
 
     pthread_mutex_init( &config.geo_fence_list_head.list_lock, 0);
@@ -299,7 +299,7 @@ int main(int argc, char **argv)
         return return_value;
     }
 
-    /* Create thread to summarize location information */
+    /* Create thread to monitor object violations */
     return_value = startThread( &monitor_object_violation_thread, 
                                 Server_monitor_object_violations, 
                                 NULL);
