@@ -73,7 +73,7 @@
 
 /* The number of slots in the memory pool for geo-fence area. Each geo-fence
 area occupies a slot in this memory pool. */
-#define SLOTS_IN_MEM_POOL_GEO_FENCE_AREA 56
+#define SLOTS_IN_MEM_POOL_GEO_FENCE_AREA 1024
 
 /* The number of slots in the memory pool for geo-fence setting. This memory 
 is global for all geo-fence settings in all geo-fence areas. */
@@ -82,13 +82,13 @@ is global for all geo-fence settings in all geo-fence areas. */
 /* The number of slots in the memory pool for mac_address of objects 
 under geo-fence monitoring. Each geo-fence area occupies a slot in this
 memory pool. */
-#define SLOTS_IN_MEM_POOL_GEO_FENCE_OBJECTS_SETTING 56
+#define SLOTS_IN_MEM_POOL_GEO_FENCE_OBJECTS_SETTING 2048
 
 /* The number of slots in the memory pool for geo-fence violation records. */
-#define SLOTS_IN_MEM_POOL_GEO_FENCE_VIOLATIONS 128
+#define SLOTS_IN_MEM_POOL_GEO_FENCE_VIOLATIONS 512
 
 /* The number of slots in the memory pool for notification */
-#define SLOTS_IN_MEM_POOL_NOTIFICATION 128
+#define SLOTS_IN_MEM_POOL_NOTIFICATION 512
 
 typedef struct {
     /* The length of the time window in which the movements of an object is 
