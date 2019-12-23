@@ -155,13 +155,13 @@ typedef struct {
     this value for servers in Taiwan should be 8, because Taiwan is UTC+8. */
     int server_localtime_against_UTC_in_hour;
 
-    /* A port that the server is to send from. */
+    /* A port from which that the server is to send. */
     int send_port;
 
-    /* A port that the gateways are to send to */
+    /* A port to which gateways are to send to */
     int recv_port;
 
-    /* A port that the database is listening on and for the server to send to */
+    /* A port that the database is listening on and the server to send to */
     int database_port;
 
     /* The name of the database */
@@ -179,7 +179,7 @@ typedef struct {
     /* The length of time window which server applies to each SQL query when it 
        queries tracked data from time-series database. The purpose of this 
        condition is to guarantee the database response time is predicatble and 
-       make database not to query all records.
+       make database not to access all records.
     */
     int database_pre_filter_time_window_in_sec;
 
@@ -345,9 +345,8 @@ void *Server_BHM_routine(void *_buffer_node);
 /*
   Server_LBeacon_routine:
 
-     This function is executed by worker threads on a server when they process 
-     the buffer nodes in LBeacon receive buffer list and send the data in nodes 
-     to the server directly.
+     This function is executed by worker threads to process the buffer nodes 
+     in data receive buffer list and update the tracking data to database.
 
   Parameters:
 
@@ -426,8 +425,8 @@ void broadcast_to_gateway(AddressMapArray *address_map, char *msg, int size);
 /*
   Server_process_wifi_send:
 
-     This function sends the message in the buffer list to the destination via 
-     Wi-Fi.
+     This function sends the message pointed to by an input parameter to all 
+     dessinations connected according to the address map via Wi-Fi.
 
   Parameters:
 
