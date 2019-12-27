@@ -261,6 +261,16 @@ int main(int argc, char **argv)
 
     zlog_info(category_debug,"Network Setup and Initialize success");
 
+    if(config.is_enabled_geofence_monitor){
+        construct_geo_fence_list(database_argument, 
+                                 &config.geo_fence_list_head);
+    
+        construct_objects_list_under_geo_fence_monitoring(
+            database_argument, 
+            &config.objects_under_geo_fence_list_head);
+    }
+    zlog_info(category_debug,"Initiaize geo-fence list and objects");
+
     zlog_info(category_debug,"Initialize Communication Unit");
 
     /* Create the main thread of Communication Unit  */
@@ -442,6 +452,13 @@ int main(int argc, char **argv)
 
     mp_destroy(&node_mempool);
 
+    if(config.is_enabled_geofence_monitor){
+        destroy_geo_fence_list(&config.geo_fence_list_head);
+
+        destroy_objects_list_under_geo_fence_monitoring(
+            &config.objects_under_geo_fence_list_head);
+    }
+    
     mp_destroy(&geofence_area_mempool);
 
     mp_destroy(&geofence_setting_mempool);
@@ -507,12 +524,6 @@ ErrorCode get_server_config(ServerConfig *config,
               "Periods between request for tracked object data " \
               "period_between_RFTOD [%d]",
               config->period_between_RFTOD);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->period_between_reload_monitor_setting_in_sec = atoi(config_message);
-    zlog_info(category_debug,
-              "period_between_reload_monitor_setting_in_sec [%d]",
-              config->period_between_reload_monitor_setting_in_sec);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->period_between_check_object_movement_in_sec = atoi(config_message);
@@ -859,8 +870,6 @@ void *Server_monitor_object_violations(){
 
 void *Server_reload_monitor_config(){
     void *db = NULL;
-    int uptime = 0;
-    int last_reload_monitor_config = 0;
     
     if(WORK_SUCCESSFULLY != 
        SQL_open_database_connection(database_argument, &db)){
@@ -870,39 +879,14 @@ void *Server_reload_monitor_config(){
         return (void *)NULL;
     }
 
-    uptime = get_clock_time();
-    
+   
     while(true == ready_to_work){
     
-        uptime = get_clock_time();
-        
-        if(uptime - last_reload_monitor_config > 
-           config.period_between_reload_monitor_setting_in_sec){
-            // sync up configurations for geo-fence monitor, location 
-            // monitor and movement monitor
-            SQL_reload_monitor_config(
-                db, 
-                config.server_localtime_against_UTC_in_hour);
-
-            // reload geo-fence settings
-            if(config.is_enabled_geofence_monitor){
-                destroy_geo_fence_list(&config.geo_fence_list_head);
-
-                construct_geo_fence_list(database_argument, 
-                                         &config.geo_fence_list_head);
-
-                destroy_objects_list_under_geo_fence_monitoring(
-                    &config.objects_under_geo_fence_list_head);
-
-                construct_objects_list_under_geo_fence_monitoring(
-                    database_argument, 
-                    &config.objects_under_geo_fence_list_head);
-            
-            }
-
-            
-            last_reload_monitor_config = uptime;
-        }
+        // check current time to update the active status of all monitorings 
+        // include geo-fence monitor, location monitor and movement monitor
+        SQL_reload_monitor_config(
+            db, 
+            config.server_localtime_against_UTC_in_hour);
 
         sleep_t(NORMAL_WAITING_TIME_IN_MS);
     }

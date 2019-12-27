@@ -143,10 +143,6 @@ typedef struct {
        tracked object data from LBeacons */
     int period_between_RFTOD;
     
-    /* The time interval in seconds between consecutive reloads monitor 
-    settings. */
-    int period_between_reload_monitor_setting_in_sec;
-
     /* The time interval in seconds between consecutive checks by the server 
        for object movement information */
     int period_between_check_object_movement_in_sec;
