@@ -379,6 +379,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\import\Common.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\GeoFence.h"
 				>
 			</File>
