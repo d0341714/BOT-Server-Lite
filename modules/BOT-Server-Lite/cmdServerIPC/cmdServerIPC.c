@@ -41,9 +41,9 @@ void display_usage(){
     printf("The support commands are:\n");
     printf("\n");
     printf("cmdServerIPC -p [server_port] -c RELOAD_GEO_FENCE_SETTING " \
-           "-r [geofence_setting] -f all_areas\n");
+           "-r [geofence_setting] -f area_all\n");
     printf("cmdServerIPC -p [server_port] -c RELOAD_GEO_FENCE_SETTING " \
-           "-r [geofence_setting] -f one_area -a [area_id]\n");
+           "-r [geofence_setting] -f area_one -a [area_id]\n");
     printf("\n");
     printf("\n");
     printf("-p: specify the listening port of the destination server\n\n");
