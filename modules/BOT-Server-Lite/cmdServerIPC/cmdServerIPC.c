@@ -148,7 +148,7 @@ int main(int argc, char **argv)
             if(area_scope == AREA_ALL && area_id == -1){
                 sprintf(message_content, "%d;%d;%s;%d;%d;%d", 
                         from_gui, 
-                        setting_reload, 
+                        ipc_command, 
                         BOT_SERVER_API_VERSION_LATEST, 
                         CMD_RELOAD_GEO_FENCE_SETTING,
                         geofence_setting,
@@ -156,12 +156,12 @@ int main(int argc, char **argv)
             }else if(area_scope == AREA_ONE && area_id > 0){
                 sprintf(message_content, "%d;%d;%s;%d;%d;%d;%d", 
                         from_gui, 
-                        setting_reload, 
+                        ipc_command, 
                         BOT_SERVER_API_VERSION_LATEST, 
                         CMD_RELOAD_GEO_FENCE_SETTING,
+                        geofence_setting,
                         area_scope,
-                        area_id,
-                        geofence_setting);
+                        area_id);
             }else{
                 printf("invalid argument for option -f or -a, " \
                        "use option -h to see the usage.\n");
