@@ -846,13 +846,6 @@ void *Server_monitor_object_violations(){
     
         uptime = get_clock_time();
 
-        if(config.is_enabled_panic_button_monitor){
-            // Check each object's panic_button status within time interval
-            SQL_identify_panic(db, 
-                               config.database_pre_filter_time_window_in_sec,
-                               config.panic_time_interval_in_sec);
-        }
-
         if(config.is_enabled_location_monitor){
                 
             SQL_identify_location_not_stay_room(db);
@@ -1164,15 +1157,18 @@ void *Server_LBeacon_routine(void *_buffer_node)
     {
         // Server should support backward compatibility.
         if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
+            /*
             SQL_update_object_tracking_data(db,
                                             current_node -> content,
                                             strlen(current_node -> content));
+                                            */
         }else{
             SQL_update_object_tracking_data_with_battery_voltage(
                 db,
                 current_node -> content,
                 strlen(current_node -> content),
-                config.server_installation_path);
+                config.server_installation_path,
+                config.is_enabled_panic_button_monitor);
         }
 
     }
@@ -1254,15 +1250,18 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 
         // Server should support backward compatibility.
         if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
+            /*
             SQL_update_object_tracking_data(db,
                                             current_node -> content,
                                             strlen(current_node -> content));
+                                            */
         }else{
             SQL_update_object_tracking_data_with_battery_voltage(
                 db,
                 current_node -> content,
                 strlen(current_node -> content),
-                config.server_installation_path);
+                config.server_installation_path,
+                config.is_enabled_panic_button_monitor);
         }
         
     }

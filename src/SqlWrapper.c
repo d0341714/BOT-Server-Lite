@@ -537,7 +537,7 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
     return WORK_SUCCESSFULLY;
 }
 
-
+/*
 ErrorCode SQL_update_object_tracking_data(void *db,
                                           char *buf,
                                           size_t buf_len){
@@ -626,7 +626,6 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
             push_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-            /* Create SQL statement */
             pqescape_object_mac_address =
                 PQescapeLiteral(conn, object_mac_address,
                                 strlen(object_mac_address));
@@ -662,7 +661,6 @@ ErrorCode SQL_update_object_tracking_data(void *db,
             PQfreemem(pqescape_initial_timestamp_GMT);
             PQfreemem(pqescape_final_timestamp_GMT);
 
-            /* Execute SQL statement */
             ret_val = SQL_execute(db, sql);
 
             if(WORK_SUCCESSFULLY != ret_val){
@@ -676,12 +674,14 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
     return WORK_SUCCESSFULLY;
 }
+*/
 
 
 ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
                                                                char *buf,
                                                                size_t buf_len,
-                                                               char *server_installation_path){
+                                                               char *server_installation_path,
+                                                               int is_enabled_panic_monitoring){
 
     PGconn *conn = (PGconn *) db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
@@ -724,6 +724,15 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     struct tm ts;
     char buf_initial_time[80];
     char buf_final_time[80];
+
+    char *sql_identify_panic = 
+        "UPDATE object_summary_table " \
+        "SET panic_violation_timestamp = NOW() " \
+        "FROM object_summary_table as R " \
+        "INNER JOIN object_table " \
+        "ON R.mac_address = object_table.mac_address " \
+        "WHERE object_summary_table.mac_address = %s " \
+        "AND object_table.monitor_type & %d = %d;";
    
     /* Open temporary file with thread id as filename to prepare the tracking 
        data for postgresql bulk-insertion */
@@ -783,6 +792,16 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
             rssi = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
             panic_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+            if(panic_button != NULL && 1 == atoi(panic_button)){
+                memset(sql, 0, sizeof(sql));
+                sprintf(sql, sql_identify_panic, 
+                        object_mac_address, 
+                        MONITOR_PANIC,
+                        MONITOR_PANIC);
+
+                ret_val = SQL_execute(db, sql);
+            }
 
             battery_voltage = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
            
@@ -953,64 +972,6 @@ ErrorCode SQL_identify_geofence_violation(void *db, char *mac_address){
     }     
     //SQL_commit_transaction(db);
 
-    return WORK_SUCCESSFULLY;
-}
-
-ErrorCode SQL_identify_panic(void *db, 
-                             int database_pre_filter_time_window_in_sec,
-                             int time_interval_in_sec){
-
-    PGconn *conn = (PGconn *)db;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_select_template = "UPDATE " \
-                                "object_summary_table " \
-                                "SET " \
-                                "panic_violation_timestamp = NOW() " \
-                                "FROM " \
-                                "(SELECT " \
-                                "object_mac_address, " \
-                                "lbeacon_uuid, " \
-                                "panic_button, " \
-                                "MAX(final_timestamp) as final_timestamp " \
-                                "FROM " \
-                                "tracking_table " \
-                                "INNER JOIN object_table ON " \
-                                "tracking_table.object_mac_address = object_table.mac_address " \
-                                "WHERE " \
-                                "object_table.monitor_type & %d = %d AND " \
-                                "final_timestamp >= " \
-                                "NOW() - INTERVAL '%d seconds' AND " \
-                                "final_timestamp >= " \
-                                "NOW() - (server_time_offset|| 'seconds')::INTERVAL - " \
-                                "INTERVAL '%d seconds' AND " \
-                                "panic_button = 1 " \
-                                "GROUP BY " \
-                                "object_mac_address, " \
-                                "lbeacon_uuid, " \
-                                "panic_button " \
-                                "ORDER BY " \
-                                "object_mac_address ASC " \
-                                ") panic_information " \
-                                "WHERE " \
-                                "object_summary_table.mac_address = " \
-                                "panic_information.object_mac_address;";
-
-    memset(sql, 0, sizeof(sql));
-
-    sprintf(sql, sql_select_template, 
-            MONITOR_PANIC,
-            MONITOR_PANIC,
-            database_pre_filter_time_window_in_sec, 
-            time_interval_in_sec);
-
-    ret_val = SQL_execute(db, sql);
-    if(WORK_SUCCESSFULLY != ret_val){
-        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   ret_val, PQerrorMessage(conn));
-
-        return E_SQL_EXECUTE;
-    }
     return WORK_SUCCESSFULLY;
 }
 

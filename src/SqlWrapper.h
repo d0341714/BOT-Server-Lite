@@ -347,11 +347,11 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY.
 */
-
+/*
 ErrorCode SQL_update_object_tracking_data(void *db,
                                           char *buf,
                                           size_t buf_len);
-
+*/
 
 /*
   SQL_update_object_tracking_data_with_battery_voltage
@@ -375,6 +375,9 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
      server_installation_path - the absolute file path of server installation path
 
+     is_enabled_panic_monitoring - the flag indicating whether panic monitoring is
+                                   enabled
+
   Return Value:
 
      ErrorCode - indicate the result of execution, the expected return code
@@ -385,7 +388,8 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
     void *db,
     char *buf,
     size_t buf_len,
-     char *server_installation_path);
+    char *server_installation_path,
+    int is_enabled_panic_monitoring);
 
 /*
   SQL_summarize_object_location
@@ -440,37 +444,6 @@ ErrorCode SQL_summarize_object_location(void *db,
 
 ErrorCode SQL_identify_geofence_violation(void *db,
                                           char *mac_address);
-
-/*
-  SQL_identify_panic
-
-     This function queries tracking_table (Time-Series database) within time 
-     window to find out whether the object (user) has pressed panic_button 
-     in the past time interval. The panic button status is updated to the 
-     summary table object_summary_table.
-
-  Parameter:
-
-     db - a pointer pointing to the connection to the database backend server
-
-     database_pre_filter_time_window_in_sec - 
-         the length of time window in which tracked data is filtered to limit 
-         database processing time
-
-     time_interval_in_sec - the time window in which we treat this object 
-                            as in panic situation if object (user) presses 
-                            panic button within the interval.
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-
-ErrorCode SQL_identify_panic(void *db,
-                             int database_pre_filter_time_window_in_sec,
-                             int time_interval_in_sec);
-
 
 /*
   SQL_identify_location_not_stay_room
