@@ -84,7 +84,9 @@ int main(int argc, char **argv)
     int i;
     int server_port = -1;
     int area_id = -1;
-    IPCCommand ipc_command = CMD_NONE;
+    PktDirection pkt_direction = from_gui;
+    PktType pkt_type = ipc_command;
+    IPCCommand command = CMD_NONE;
     ReloadGeoFenceSetting geofence_setting = GEO_FENCE_NONE;
     AreaScope area_scope = AREA_NONE;
 
@@ -102,7 +104,7 @@ int main(int argc, char **argv)
             case 'c':
                 for(i = 0; i < CMD_MAX; i++){
                     if(strcmp(optarg, IPCCommand_String[i]) == 0){
-                        ipc_command = (IPCCommand) i;
+                        command = (IPCCommand) i;
                         break;
                     }
                 }      
@@ -143,22 +145,22 @@ int main(int argc, char **argv)
 
     memset(message_content, 0, sizeof(message_content));
 
-    if(server_port >= 0 &&  ipc_command == CMD_RELOAD_GEO_FENCE_SETTING){
+    if(server_port >= 0 &&  command == CMD_RELOAD_GEO_FENCE_SETTING){
         if(geofence_setting > GEO_FENCE_NONE){
             if(area_scope == AREA_ALL && area_id == -1){
-                sprintf(message_content, "%d;%d;%s;%d;%d;%d", 
-                        from_gui, 
-                        ipc_command, 
+                sprintf(message_content, "%d;%d;%s;%d;%d;%d;", 
+                        pkt_direction, 
+                        pkt_type, 
                         BOT_SERVER_API_VERSION_LATEST, 
-                        CMD_RELOAD_GEO_FENCE_SETTING,
+                        command,
                         geofence_setting,
                         area_scope);
             }else if(area_scope == AREA_ONE && area_id > 0){
-                sprintf(message_content, "%d;%d;%s;%d;%d;%d;%d", 
-                        from_gui, 
-                        ipc_command, 
+                sprintf(message_content, "%d;%d;%s;%d;%d;%d;%d;", 
+                        pkt_direction, 
+                        pkt_type, 
                         BOT_SERVER_API_VERSION_LATEST, 
-                        CMD_RELOAD_GEO_FENCE_SETTING,
+                        command,
                         geofence_setting,
                         area_scope,
                         area_id);
