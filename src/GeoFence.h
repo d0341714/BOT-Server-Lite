@@ -165,13 +165,21 @@ Memory_Pool geofence_violation_mempool;
      geo_fence_list_head - The pointer to geo fence list head in server global 
                            configuration structure.
 
+     is_to_all_areas - The flag indicating whether to construct geo fence list in 
+                       all covered areas
+
+     target_area_id - The specific targeted area_id. This argument takes effects
+                      only when the input argument is_to_all_areas is false
+
   Return value:
 
      ErrorCode - WORK_SUCCESSFULLY: work successfully.
 
  */
 ErrorCode construct_geo_fence_list(char * database_argument,
-                                   GeoFenceListHead* geo_fence_list_head);
+                                   GeoFenceListHead* geo_fence_list_head,
+                                   bool is_to_all_areas,
+                                   int target_area_id);
 
 /*
   destroy_geo_fence_list:
@@ -183,12 +191,20 @@ ErrorCode construct_geo_fence_list(char * database_argument,
      geo_fence_list_head - The pointer to geo fence list head in server global 
                            configuration structure.
 
+     is_to_all_areas - The flag indicating whether to destory geo fence list in 
+                       all covered areas
+
+     target_area_id - The specific targeted area_id. This argument takes effects 
+                      only when the input argument is_to_all_areas is false
+
   Return value:
 
      ErrorCode - WORK_SUCCESSFULLY: work successfully.
 
  */
-ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head);
+ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head,
+                                 bool is_to_all_areas,
+                                 int target_area_id);
 
 /*
   construct_objects_list_under_geo_fence_monitoring:
@@ -201,6 +217,13 @@ ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head);
      
      objects_list_head - The pointer to list of objects under geo-fence 
                          monitoring
+
+     is_to_all_areas - The flag indicating whether to construct the list of 
+                       objects under geo fence monitoring in all covered areas
+
+     target_area_id - The specific targeted area_id. This argument takes effects
+                      only when the input argument is_to_all_areas is false
+
   Return value:
 
      ErrorCode - WORK_SUCCESSFULLY: work successfully.
@@ -208,7 +231,9 @@ ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head);
  */
 ErrorCode construct_objects_list_under_geo_fence_monitoring(
     char * database_argument,
-    ObjectWithGeoFenceListHead* objects_list_head);
+    ObjectWithGeoFenceListHead* objects_list_head,
+    bool is_to_all_areas,
+    int target_area_id);
 
 /*
   destroy_objects_list_under_geo_fence_monitoring:
@@ -219,13 +244,22 @@ ErrorCode construct_objects_list_under_geo_fence_monitoring(
 
      objects_list_head - The pointer to list of objects under geo-fence 
                          monitoring
+
+     is_to_all_areas - The flag indicating whether to destroy the list of 
+                       objects under geo fence monitoring in all covered areas
+
+     target_area_id - The specific targeted area_id. This argument takes effects
+                      only when the input argument is_to_all_areas is false
+                        
   Return value:
 
      ErrorCode - WORK_SUCCESSFULLY: work successfully.
 
  */
 ErrorCode destroy_objects_list_under_geo_fence_monitoring(
-    ObjectWithGeoFenceListHead* objects_list_head);
+    ObjectWithGeoFenceListHead* objects_list_head,
+    bool is_to_all_areas,
+    int target_area_id);
 
 /* 
   reload_geo_fence_settings:

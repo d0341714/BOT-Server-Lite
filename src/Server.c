@@ -269,11 +269,15 @@ int main(int argc, char **argv)
 
     if(config.is_enabled_geofence_monitor){
         construct_geo_fence_list(database_argument, 
-                                 &config.geo_fence_list_head);
+                                 &config.geo_fence_list_head,
+                                 true,
+                                 0);
     
         construct_objects_list_under_geo_fence_monitoring(
             database_argument, 
-            &config.objects_under_geo_fence_list_head);
+            &config.objects_under_geo_fence_list_head,
+            true,
+            0);
     }
     zlog_info(category_debug,"Initiaize geo-fence list and objects");
 
@@ -459,10 +463,14 @@ int main(int argc, char **argv)
     mp_destroy(&node_mempool);
 
     if(config.is_enabled_geofence_monitor){
-        destroy_geo_fence_list(&config.geo_fence_list_head);
+        destroy_geo_fence_list(&config.geo_fence_list_head,
+                               true,
+                               0);
 
         destroy_objects_list_under_geo_fence_monitoring(
-            &config.objects_under_geo_fence_list_head);
+            &config.objects_under_geo_fence_list_head,
+            true,
+            0);
     }
     
     mp_destroy(&geofence_area_mempool);

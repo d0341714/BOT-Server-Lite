@@ -46,7 +46,9 @@
 */
 
 ErrorCode construct_geo_fence_list(char * database_argument, 
-                                   GeoFenceListHead* geo_fence_list_head){
+                                   GeoFenceListHead* geo_fence_list_head,
+                                   bool is_to_all_areas,
+                                   int target_area_id){
 
     void *db = NULL;
     FILE *file_geo_fence = NULL;
@@ -103,6 +105,11 @@ ErrorCode construct_geo_fence_list(char * database_argument,
         perimeters = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
         fences = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
         
+        if(!(is_to_all_areas == true || 
+           (is_to_all_areas == false &&
+           target_area_id == atoi(area_id)))){
+               continue;
+        }
         is_found_area_id = false;
 
         // Iterate the list to check whether the geo-fence area node with 
@@ -231,7 +238,9 @@ ErrorCode construct_geo_fence_list(char * database_argument,
   destroy_geo_fence_list:
 */
 
-ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head){
+ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head,
+                                 bool is_to_all_areas,
+                                 int target_area_id){
 
     List_Entry * current_area_list_entry = NULL;
     List_Entry * next_area_list_entry = NULL;
@@ -246,29 +255,34 @@ ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head){
     list_for_each_safe(current_area_list_entry, 
                        next_area_list_entry, 
                        &geo_fence_list_head->list_head){
-        
-        remove_list_node(current_area_list_entry);
 
         current_area_list_ptr = ListEntry(current_area_list_entry,
                                           GeoFenceAreaNode,
-                                          geo_fence_area_list_entry);  
+                                          geo_fence_area_list_entry); 
 
-        list_for_each_safe(current_setting_list_entry,
-                           next_setting_list_entry,
-                           &current_area_list_ptr -> 
-                           geo_fence_setting_list_head){
+        if(is_to_all_areas == true ||
+           (is_to_all_areas == false && 
+           target_area_id == current_area_list_ptr->area_id)){
+        
+            remove_list_node(current_area_list_entry);
 
-            remove_list_node(current_setting_list_entry);
+            list_for_each_safe(current_setting_list_entry,
+                               next_setting_list_entry,
+                               &current_area_list_ptr -> 
+                               geo_fence_setting_list_head){
 
-            current_setting_list_ptr = 
-                ListEntry(current_setting_list_entry,
-                          GeoFenceSettingNode,
-                          geo_fence_setting_list_entry);
+                current_setting_list_ptr = 
+                    ListEntry(current_setting_list_entry,
+                              GeoFenceSettingNode,
+                              geo_fence_setting_list_entry);
+
+                remove_list_node(current_setting_list_entry);
          
-            mp_free(&geofence_setting_mempool, current_setting_list_ptr);
+                mp_free(&geofence_setting_mempool, current_setting_list_ptr);
+            }
+         
+            mp_free(&geofence_area_mempool, current_area_list_ptr);
         }
-         
-        mp_free(&geofence_area_mempool, current_area_list_ptr);
     }
 
     pthread_mutex_unlock(&(geo_fence_list_head->list_lock));
@@ -278,7 +292,9 @@ ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head){
 
 ErrorCode construct_objects_list_under_geo_fence_monitoring(
     char * database_argument,
-    ObjectWithGeoFenceListHead* objects_list_head){
+    ObjectWithGeoFenceListHead* objects_list_head,
+    bool is_to_all_areas,
+    int target_area_id){
 
     void *db = NULL;
     List_Entry * current_objects_in_area_list_entry = NULL;
@@ -323,6 +339,11 @@ ErrorCode construct_objects_list_under_geo_fence_monitoring(
         area_id = strtok_save(object_buf, DELIMITER_SEMICOLON, &save_ptr);
         mac_address = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
       
+        if(!(is_to_all_areas == true ||
+           (is_to_all_areas == false && 
+           target_area_id == atoi(area_id)))){
+               continue;
+        }
         is_found_area_id = false;    
         // Re-load objects under geo-fence monitoring
         list_for_each(current_objects_in_area_list_entry, 
@@ -391,7 +412,9 @@ ErrorCode construct_objects_list_under_geo_fence_monitoring(
 }
 
 ErrorCode destroy_objects_list_under_geo_fence_monitoring(
-    ObjectWithGeoFenceListHead* objects_list_head){
+    ObjectWithGeoFenceListHead* objects_list_head,
+    bool is_to_all_areas,
+    int target_area_id){
 
     List_Entry * current_objects_in_area_list_entry = NULL;
     List_Entry * next_objects_in_area_list_entry = NULL;
@@ -403,15 +426,20 @@ ErrorCode destroy_objects_list_under_geo_fence_monitoring(
                        next_objects_in_area_list_entry, 
                        &objects_list_head->list_head){
         
-        remove_list_node(current_objects_in_area_list_entry);
-
         current_objects_in_area_list_ptr = 
             ListEntry(current_objects_in_area_list_entry,
                       ObjectWithGeoFenceAreaNode,
                       objects_area_list_entry);  
+
+        if(is_to_all_areas == true || 
+           (is_to_all_areas == false && 
+           target_area_id == current_objects_in_area_list_ptr->area_id)){
+
+            remove_list_node(current_objects_in_area_list_entry);
          
-        mp_free(&geofence_objects_area_mempool, 
-                current_objects_in_area_list_ptr);
+            mp_free(&geofence_objects_area_mempool, 
+                    current_objects_in_area_list_ptr);
+        }
     }
 
     pthread_mutex_unlock(&(objects_list_head->list_lock));
@@ -458,24 +486,49 @@ ErrorCode reload_geo_fence_settings(char *command_buf,
             if(scope == AREA_ALL){
                 zlog_debug(category_debug, 
                            "reload geo fence list for all areas");
-                destroy_geo_fence_list(geo_fence_list_head);
+                destroy_geo_fence_list(geo_fence_list_head,true, 0);
                 construct_geo_fence_list(database_argument,
-                                         geo_fence_list_head);
+                                         geo_fence_list_head, 
+                                         true, 
+                                         0);
             }else if(scope == AREA_ONE && area > 0){
-            
+                zlog_debug(category_debug,
+                           "reload geo fence list in area_id = %d",
+                           area);
+                destroy_geo_fence_list(geo_fence_list_head, false, area);
+                construct_geo_fence_list(database_argument,
+                                         geo_fence_list_head,
+                                         false,
+                                         area);
             }
         }   
         //reload objects under geo-fence monitoring
         if(reload_geo_fence == GEO_FENCE_ALL || reload_geo_fence == GEO_FENCE_OBJECT){
             if(scope == AREA_ALL){
                 zlog_debug(category_debug, 
-                           "reload objects under geo fence monitoring for all areas\n");
-                destroy_objects_list_under_geo_fence_monitoring(objects_list_head);
+                           "reload the list of objects under geo fence monitoring in " \
+                           "all areas");
+                destroy_objects_list_under_geo_fence_monitoring(objects_list_head,
+                                                                true,
+                                                                0);
                 construct_objects_list_under_geo_fence_monitoring(
                     database_argument,
-                    objects_list_head);
+                    objects_list_head,
+                    true,
+                    0);
             }else if(scope == AREA_ONE && area > 0){
-            
+                zlog_debug(category_debug,
+                           "reload the list of objects under geo fence monitoring in "
+                           "area [%d]",
+                           area);
+                destroy_objects_list_under_geo_fence_monitoring(objects_list_head,
+                                                                false,
+                                                                area);
+                construct_objects_list_under_geo_fence_monitoring(
+                    database_argument,
+                    objects_list_head,
+                    false,
+                    area);
             }
         }
     }
