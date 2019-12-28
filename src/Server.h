@@ -254,6 +254,9 @@ AddressMapArray Gateway_address_map;
    of GeoFences */
 BufferListHead Geo_fence_receive_buffer_list_head;
 
+/* The head of a list of command buffer nodes */
+BufferListHead command_buffer_list_head;
+
 /* Variables for storing the last polling times in seconds. Server keeps 
    comparing current MONOTONIC timestamp with these last polling times to 
    determine the timing of periodic polling requests. */
@@ -356,6 +359,22 @@ void *Server_BHM_routine(void *_buffer_node);
 
 void *Server_LBeacon_routine(void *_buffer_node);
 
+/*
+  process_commands:
+
+     This function is executed by worker threads on a server when processing
+     buffer nodes in command buffer list.
+
+  Parameters:
+
+     _buffer_node - The pointer points to the buffer node.
+
+  Return value:
+      
+     None
+*/
+
+void *process_commands(void *_buffer_node);
 
 /*
   process_tracked_data_from_geofence_gateway:

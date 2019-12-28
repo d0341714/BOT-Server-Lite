@@ -177,6 +177,12 @@ int main(int argc, char **argv)
     init_buffer( &priority_list_head, (void *) sort_priority_list,
                 common_config.high_priority);
 
+    init_buffer( &command_buffer_list_head,
+                (void *) process_commands,
+                common_config.normal_priority);
+    insert_list_tail( &command_buffer_list_head.priority_list_entry,
+                      &priority_list_head.priority_list_entry);
+
     init_buffer( &Geo_fence_receive_buffer_list_head,
                 (void *) process_tracked_data_from_geofence_gateway, 
                 common_config.time_critical_priority);
@@ -1171,6 +1177,41 @@ void *Server_LBeacon_routine(void *_buffer_node)
 }
 
 
+
+void *process_commands(void *_buffer_node){
+    BufferNode *current_node = (BufferNode *)_buffer_node;
+    char buf[WIFI_MESSAGE_LENGTH];
+    char *save_ptr = NULL;
+    char *ipc_command = NULL;
+    IPCCommand command = CMD_NONE;
+
+    zlog_debug(category_debug, ">>process_commands [%s]", 
+               current_node->content);
+   
+    memset(buf, 0, sizeof(buf));
+    strcpy(buf, current_node->content);
+    ipc_command = strtok_save(buf, DELIMITER_SEMICOLON, &save_ptr);
+    if(ipc_command != NULL){
+        command = (IPCCommand) atoi(ipc_command);
+        switch (command){
+            case CMD_RELOAD_GEO_FENCE_SETTING:
+                reload_geo_fence_settings(current_node->content, 
+                                          database_argument,
+                                          &config.geo_fence_list_head, 
+                                          &config.objects_under_geo_fence_list_head);
+                break;
+            default:
+                break;
+        }
+    }
+
+    mp_free( &node_mempool, current_node);
+
+    zlog_debug(category_debug, "<<process_commands");
+
+    return (void* )NULL;
+}
+
 void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
@@ -1539,8 +1580,24 @@ void *Server_process_wifi_receive()
                     break;
             }
         }
-        else
-        {
+        else if(from_gui == new_node -> pkt_direction){
+            switch(new_node -> pkt_type){
+                case ipc_command:
+#ifdef debugging
+                    display_time();
+#endif
+                    zlog_info(category_debug, "Get IPC command from " \
+                                              "GUI");
+                    pthread_mutex_lock(&command_buffer_list_head.list_lock);
+                    insert_list_tail(&new_node -> buffer_entry,
+                                     &command_buffer_list_head.list_head);
+                    pthread_mutex_unlock(&command_buffer_list_head.list_lock);
+                    break;
+                default:
+                    mp_free( &node_mempool, new_node);
+                    break;
+            }
+        }else{
             mp_free( &node_mempool, new_node);
         }
     }

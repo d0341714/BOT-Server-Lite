@@ -227,6 +227,29 @@ ErrorCode construct_objects_list_under_geo_fence_monitoring(
 ErrorCode destroy_objects_list_under_geo_fence_monitoring(
     ObjectWithGeoFenceListHead* objects_list_head);
 
+/* 
+  reload_geo_fence_settings:
+
+      This function reload geo fence settings according to information specified 
+      in the input command_buf argument.
+
+  Parameters:
+
+      command_buf - The pointers to command buffer specified by user
+
+      database_argument - The database argument for opening database
+
+      geo_fence_list_head - The pointers to geo fence list head in server global 
+                            configuration structures
+
+      objects_list_head - The pointer to list of objects under geo-fence 
+                          monitoring
+*/
+
+ErrorCode reload_geo_fence_settings(char *command_buf,
+                                    char *database_argument,
+                                    GeoFenceListHead * geo_fence_list_head,
+                                    ObjectWithGeoFenceListHead * objects_list_head);
 /*
   check_geo_fence_violations:
 

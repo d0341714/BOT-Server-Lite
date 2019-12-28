@@ -419,6 +419,69 @@ ErrorCode destroy_objects_list_under_geo_fence_monitoring(
     return WORK_SUCCESSFULLY;
 }
 
+ErrorCode reload_geo_fence_settings(char *command_buf,
+                                    char *database_argument,
+                                    GeoFenceListHead * geo_fence_list_head,
+                                    ObjectWithGeoFenceListHead * objects_list_head){
+
+    char *save_ptr = NULL;
+    char *command_str = NULL;
+    char *geo_fence_setting = NULL;
+    char *area_scope = NULL;
+    char *area_id = NULL;
+    IPCCommand command = CMD_NONE;
+    ReloadGeoFenceSetting reload_geo_fence = GEO_FENCE_NONE;
+    AreaScope scope = AREA_NONE;
+    int area = 0;
+
+    command_str = strtok_save(command_buf, DELIMITER_SEMICOLON, &save_ptr);
+    if(command_str != NULL)
+        command = (IPCCommand) atoi(command_str);
+
+    geo_fence_setting = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+    if(geo_fence_setting != NULL)
+        reload_geo_fence = (ReloadGeoFenceSetting) atoi(geo_fence_setting);
+
+    area_scope = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+    if(area_scope != NULL)
+        scope = (AreaScope) atoi(area_scope);
+
+    if(scope == AREA_ONE){
+        area_id = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+        if(area_id != NULL)
+            area = atoi(area_id);
+    }
+   
+    if(command == CMD_RELOAD_GEO_FENCE_SETTING){
+        //reload geo fence list
+        if(reload_geo_fence == GEO_FENCE_ALL || reload_geo_fence == GEO_FENCE_LIST){
+            if(scope == AREA_ALL){
+                zlog_debug(category_debug, 
+                           "reload geo fence list for all areas");
+                destroy_geo_fence_list(geo_fence_list_head);
+                construct_geo_fence_list(database_argument,
+                                         geo_fence_list_head);
+            }else if(scope == AREA_ONE && area > 0){
+            
+            }
+        }   
+        //reload objects under geo-fence monitoring
+        if(reload_geo_fence == GEO_FENCE_ALL || reload_geo_fence == GEO_FENCE_OBJECT){
+            if(scope == AREA_ALL){
+                zlog_debug(category_debug, 
+                           "reload objects under geo fence monitoring for all areas\n");
+                destroy_objects_list_under_geo_fence_monitoring(objects_list_head);
+                construct_objects_list_under_geo_fence_monitoring(
+                    database_argument,
+                    objects_list_head);
+            }else if(scope == AREA_ONE && area > 0){
+            
+            }
+        }
+    }
+    return WORK_SUCCESSFULLY;
+}
+
 ErrorCode check_geo_fence_violations(
     BufferNode *buffer_node,  
     char * database_argument,
