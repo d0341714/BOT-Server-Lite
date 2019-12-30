@@ -52,11 +52,11 @@ BOT server installed on the same machine. */
 /* Readable sentence to help users of IPC tool specify IPC commands. */
 const char * const IPCCommand_String[] = {
 
-    "NONE",
+    "cmd_none",
 
-    "RELOAD_GEO_FENCE_SETTING",
+    "cmd_reload_geo_fence_setting",
 
-    "MAX",
+    "cmd_max",
 };
 
 /* Readable sentence to help users of IPC tool specify arguments of 
