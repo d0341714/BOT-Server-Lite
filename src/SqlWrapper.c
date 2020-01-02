@@ -895,7 +895,7 @@ ErrorCode SQL_summarize_object_location(void *db,
                                 "(SELECT " \
                                 "t.object_mac_address, " \
                                 "t.lbeacon_uuid, " \
-                                "ROUND(AVG(rssi), 2) as avg_rssi, " \
+                                "ROUND(AVG(rssi), 0) as avg_rssi, " \
                                 "MIN(battery_voltage) as battery_voltage, " \
                                 "MIN(initial_timestamp) as initial_timestamp, " \
                                 "MAX(final_timestamp) as final_timestamp " \
@@ -913,7 +913,8 @@ ErrorCode SQL_summarize_object_location(void *db,
                                 "HAVING AVG(rssi) > -100 " \
                                 "ORDER BY " \
                                 "object_mac_address ASC, " \
-                                "avg_rssi DESC " \
+                                "avg_rssi DESC, " \
+                                "lbeacon_uuid ASC" \
                                 ") object_beacon_rssi_table " \
                                 ") object_location_table " \
                                 "WHERE " \
