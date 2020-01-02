@@ -168,12 +168,12 @@ ErrorCode SQL_close_database_connection(void *db);
 /*
   SQL_vacuum_database();
 
-     Identifies space occupied by deleted rows and catelogues to be garbage
+     Identifies the space occupied by deleted rows and catelogues to be garbage
      collected.
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
   Return Value:
 
@@ -188,11 +188,11 @@ ErrorCode SQL_vacuum_database(void *db);
   SQL_delte_old_data();
 
      Deletes the rows and catelogues which are older than the specified number
-     of hours ago.
+     of hours.
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
      retention_hours - specify the hours for data retention
 
@@ -212,7 +212,7 @@ ErrorCode SQL_delete_old_data(void *db, int retention_hours);
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
      buf - an input string with the format below to specify the registered
            gateways
@@ -238,9 +238,9 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the
+     buf - a pointer to an input string with the format below to specify the
            registered gateways.
 
            length;gateway_ip;lbeacon_uuid_1;lbeacon_registered_timestamp_GMT; \
@@ -270,16 +270,17 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the
+     buf - a pointer to an input string with the format below to specify the
            health status of gateway
 
            gateway_ip;health_status;
 
      buf_len - Length in number of bytes of buf input string
 
-     gateway_ip_address - the real ip address of gateway
+     gateway_ip_address - the real ip address of the gateway where health 
+	 status of gateway
 
   Return Value:
 
@@ -300,16 +301,16 @@ ErrorCode SQL_update_gateway_health_status(void *db,
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
-     buf - pointer to an input string with the format below to specify the
+     buf - a pointer to an input string with the format below to specify the
            health status of lbeacon
 
            lbeacon_uuid;lbeacon_datetime;lbeacon_ip;health_status;
 
      buf_len - Length in number of bytes of buf input string
 
-     gateway_ip_address - the real ip address of gateway
+     gateway_ip_address - the real ip address of the gateway
 
   Return Value:
 
@@ -330,9 +331,9 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
-     buf - pointer to an input string with the format below.
+     buf - a pointer to an input string with the format below.
 
            lbeacon_uuid;lbeacon_datetime;lbeacon_ip;object_type; \
            object_number;object_mac_address_1;initial_timestamp_GMT_1; \
