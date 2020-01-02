@@ -59,7 +59,7 @@
   Parameter:
 
      db - a pointer pointing to the connection to the database backend server
-     sql_statement - The SQL statement to be executed
+     sql_statement - Pointer to the SQL statement to be executed
 
   Return Value:
 
