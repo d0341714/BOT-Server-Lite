@@ -80,7 +80,7 @@ static ErrorCode SQL_execute(void *db, char *sql_statement);
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
   Return Value:
 
@@ -98,7 +98,7 @@ static ErrorCode SQL_begin_transaction(void *db);
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
   Return Value:
 
@@ -116,7 +116,7 @@ static ErrorCode SQL_commit_transaction(void *db);
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
   Return Value:
 
@@ -154,7 +154,7 @@ ErrorCode SQL_open_database_connection(char *db_filepath, void **db);
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
   Return Value:
 
