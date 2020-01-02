@@ -355,15 +355,15 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 */
 
 /*
-  SQL_update_object_tracking_data_with_battery_voltage
+  SQL_update_object_tracking_data
 
-     Updates data of tracked objects
+     Updates _battery_voltage_in data of tracked objects
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
-     buf - pointer to an input string with the format below.
+     buf - a pointer to an input string with the format below.
 
            lbeacon_uuid;lbeacon_datetime;lbeacon_ip;object_type; \
            object_number;object_mac_address_1;initial_timestamp_GMT_1; \
@@ -428,14 +428,14 @@ ErrorCode SQL_summarize_object_location(void *db,
   SQL_identify_geofence_violation
 
      This function updates geo-fence violation information in 
-     object_summary_table and sets perimeter valid timestamp as current
+     object_summary_table and sets perimeter valid timestamp to current
      timestamp to disable previous perimeter violation.
      
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
-     mac_address -  MAC address of detected object.
+     mac_address - The MAC address of a detected object.
 
   Return Value:
 
@@ -447,7 +447,7 @@ ErrorCode SQL_identify_geofence_violation(void *db,
                                           char *mac_address);
 
 /*
-  SQL_identify_location_not_stay_room
+  SQL_identify_panic_object
 
      This function checks object_summary_table to determine if patients are
      not staying in his/her dedicated rooms.
@@ -465,14 +465,14 @@ ErrorCode SQL_identify_geofence_violation(void *db,
 ErrorCode SQL_identify_location_not_stay_room(void *db);
 
 /*
-  SQL_identify_location_long_stay
+  SQL_identify_location_off_limit
 
-     This function checks object_summary_table to determine if patients are 
-     staying in potential dangerous areas for too long.
+     This function checks object_summary_table to identify the object that have
+	 staged at specificed area(s) too long.
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
   Return Value:
 
@@ -494,7 +494,7 @@ ErrorCode SQL_identify_location_long_stay_in_danger(void *db);
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointer to the connection to the database backend server
 
      time_interval_in_min - the time window in which we want to monitor the 
                             movement activity
@@ -520,8 +520,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
 /*
   SQL_insert_geofence_violation_event
 
-     This function inserts a geo-fence violation event into notification_table 
-     directly, because geofence violation is time-critical.
+     This function inserts a geo-fence violation event directly into notification_table 
      
   Parameter:
 
@@ -552,9 +551,9 @@ ErrorCode SQL_collect_violation_events(
 /*
   SQL_get_and_update_violation_events
 
-     This function checks object_summary_table to see if there are any 
+     This function checks object_summary_table to see whether there are any 
      violation events. If YES, the violation events of all monitoring 
-     types are recorded in notification_table. 
+     types are recorded in a notification_table. 
 
   Parameter:
 
@@ -577,12 +576,12 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
 /*
   SQL_reload_monitor_config
 
-     Updates start hour and end hour of location monitor of long staying in 
+     Updates start time and end time of location monitor of long staying in 
      dangerous area
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db - a pointing to the connection to the database backend server
 
      server_localtime_against_UTC_in_hour - The time difference between server 
                                             localtime against UTC. 
