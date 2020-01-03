@@ -183,6 +183,14 @@ typedef struct {
        made visiable to BOT system. */
     int location_time_interval_in_sec;
 
+    /* The RSSI difference in which the tag is still treated as stable and 
+    associated to its lbeacon */
+    int rssi_difference_of_stable_tag;
+
+    /* The RSSI difference in which the tag is still treated as scanned by
+    the strongest and nearest lbeacon*/
+    int rssi_difference_of_location_accuracy_tolerance;
+
     /* The flag indicating whether panic button monitor is enabled. */
     int is_enabled_panic_button_monitor;
 

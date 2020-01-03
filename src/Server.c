@@ -648,6 +648,19 @@ ErrorCode get_server_config(ServerConfig *config,
               "The location_time_interval_in_sec is [%d]", 
               config->location_time_interval_in_sec);
 
+    fetch_next_string(file, config_message, sizeof(config_message));
+    config->rssi_difference_of_stable_tag = atoi(config_message);
+    zlog_info(category_debug,
+              "The rssi_difference_of_stable_tag is [%d]",
+              config->rssi_difference_of_stable_tag);
+
+    fetch_next_string(file, config_message, sizeof(config_message));
+    config->rssi_difference_of_location_accuracy_tolerance = 
+        atoi(config_message);
+    zlog_info(category_debug,
+              "The rssi_difference_of_location_accuracy_tolerance is [%d]",
+              config->rssi_difference_of_location_accuracy_tolerance);
+
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->is_enabled_panic_button_monitor = atoi(config_message);
     zlog_info(category_debug,
@@ -817,7 +830,9 @@ void *Server_summarize_location_information(){
     
         SQL_summarize_object_location(db,
                                       config.database_pre_filter_time_window_in_sec,
-                                      config.location_time_interval_in_sec);
+                                      config.location_time_interval_in_sec,
+                                      config.rssi_difference_of_stable_tag,
+                                      config.rssi_difference_of_location_accuracy_tolerance);
 
         sleep_t(BUSY_WAITING_TIME_IN_MS);
     }

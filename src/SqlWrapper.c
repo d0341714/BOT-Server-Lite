@@ -854,82 +854,176 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
 
 ErrorCode SQL_summarize_object_location(void *db, 
                                         int database_pre_filter_time_window_in_sec,
-                                        int time_interval_in_sec){
+                                        int time_interval_in_sec,
+                                        int rssi_difference_of_stable_tag,
+                                        int rssi_difference_of_location_accuracy_tolerance){
 
     PGconn *conn = (PGconn *)db;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
 
-    char *sql_select_template = "UPDATE object_summary_table " \
-                                "SET " \
-                                "first_seen_timestamp = CASE " \
-                                "WHEN first_seen_timestamp IS NULL OR " \
-                                "object_summary_table.uuid != " \
-                                "location_information.lbeacon_uuid " \
-                                "THEN " \
-                                "location_information.initial_timestamp " \
-                                "ELSE first_seen_timestamp " \
-                                "END, " \
-                                "rssi = location_information.avg_rssi, " \
-                                "battery_voltage = " \
-                                "location_information.battery_voltage, " \
-                                "last_seen_timestamp = " \
-                                "location_information.final_timestamp, " \
-                                "uuid = location_information.lbeacon_uuid " \
-                                "FROM " \
-                                "(SELECT " \
-                                "object_mac_address, " \
-                                "lbeacon_uuid, " \
-                                "avg_rssi, " \
-                                "battery_voltage, " \
-                                "initial_timestamp, " \
-                                "final_timestamp " \
-                                "FROM " \
-                                "(SELECT " \
-                                "ROW_NUMBER() OVER (" \
-                                "PARTITION BY object_mac_address " \
-                                "ORDER BY object_mac_address ASC, avg_rssi DESC" \
-                                ") as rank, " \
-                                "object_beacon_rssi_table.* " \
-                                "FROM "\
-                                "(SELECT " \
-                                "t.object_mac_address, " \
-                                "t.lbeacon_uuid, " \
-                                "ROUND(AVG(rssi), 0) as avg_rssi, " \
-                                "MIN(battery_voltage) as battery_voltage, " \
-                                "MIN(initial_timestamp) as initial_timestamp, " \
-                                "MAX(final_timestamp) as final_timestamp " \
-                                "FROM " \
-                                "tracking_table t " \
-                                "WHERE " \
-                                "final_timestamp >= " \
-                                "NOW() - INTERVAL '%d seconds' AND " \
-                                "final_timestamp >= " \
-                                "NOW() - (server_time_offset || 'seconds')::INTERVAL - " \
-                                "INTERVAL '%d seconds' " \
-                                "GROUP BY " \
-                                "object_mac_address, " \
-                                "lbeacon_uuid " \
-                                "HAVING AVG(rssi) > -100 " \
-                                "ORDER BY " \
-                                "object_mac_address ASC, " \
-                                "avg_rssi DESC, " \
-                                "lbeacon_uuid ASC" \
-                                ") object_beacon_rssi_table " \
-                                ") object_location_table " \
-                                "WHERE " \
-                                "object_location_table.rank <= 1 " \
-                                ") location_information " \
-                                "WHERE " \
-                                "object_summary_table.mac_address = " \
-                                "location_information.object_mac_address;";
+    char *sql_reset_state_template = 
+        "UPDATE object_summary_table "\
+        "SET is_location_updated = 0 " \
+        "WHERE id > 0";
+
+    char *sql_update_stable_tag_template = 
+        "UPDATE object_summary_table " \
+        "SET " \
+        "rssi = avg_rssi, last_seen_timestamp = final_timestamp, " \
+        "battery_voltage = stable_table.battery_voltage, " \
+        "is_location_updated = 1 " \
+        "FROM ( " \
+        "SELECT mac_address, uuid, avg_rssi, final_timestamp, " \
+        "recent_table.battery_voltage " \
+        "FROM " \
+        "object_summary_table " \
+        "INNER JOIN " \
+        "(SELECT object_mac_address, lbeacon_uuid, " \
+        "ROUND(AVG(rssi), 0) as avg_rssi, MAX(final_timestamp) as final_timestamp, " \
+        "MIN(battery_voltage) as battery_voltage " \
+        "FROM " \
+        "tracking_table " \
+        "WHERE " \
+        "final_timestamp > NOW() - interval '%d seconds' AND " \
+        "final_timestamp >= NOW() - (server_time_offset|| 'seconds')::INTERVAL - " \
+        "INTERVAL '%d seconds' " \
+        "GROUP BY object_mac_address, lbeacon_uuid " \
+        ") recent_table " \
+        "ON object_summary_table.mac_address = recent_table.object_mac_address AND " \
+        "object_summary_table.uuid = recent_table.lbeacon_uuid AND " \
+        "ABS(rssi - avg_rssi) <= %d " \
+        "INNER JOIN " \
+        "(SELECT * " \
+        "FROM " \
+        "(SELECT " \
+        "ROW_NUMBER() OVER ( " \
+        "PARTITION BY object_mac_address " \
+        "ORDER BY object_mac_address ASC, average_rssi DESC " \
+        ") as rank, " \
+        "object_beacon_rssi_table.* " \
+        "FROM " \
+        "( SELECT " \
+        "t.object_mac_address, t.lbeacon_uuid, ROUND(AVG(rssi), 0) as average_rssi " \
+        "FROM " \
+        "tracking_table t "\
+        "WHERE " \
+        "final_timestamp >= NOW() - INTERVAL '%d seconds' AND " \
+        "final_timestamp >= NOW() - (server_time_offset || 'seconds')::INTERVAL - " \
+        "INTERVAL '%d seconds' " \
+        "GROUP BY " \
+        "object_mac_address, " \
+        "lbeacon_uuid " \
+        "HAVING AVG(rssi) > -100 " \
+        "ORDER BY " \
+        "object_mac_address ASC, " \
+        "average_rssi DESC, " \
+        "lbeacon_uuid ASC " \
+        ") object_beacon_rssi_table " \
+        ") object_location_table " \
+        "WHERE object_location_table.rank <= 1 " \
+	    ") location_information " \
+        "ON recent_table.object_mac_address = location_information.object_mac_address AND " \
+        "ABS(recent_table.avg_rssi - location_information.average_rssi) < %d " \
+        ") stable_table where object_summary_table.mac_address = stable_table.mac_address AND " \
+        "object_summary_table.uuid = stable_table.uuid; ";
+        
+    char *sql_update_moving_tag_template = 
+        "UPDATE object_summary_table " \
+        "SET " \
+        "first_seen_timestamp = CASE " \
+        "WHEN first_seen_timestamp IS NULL OR " \
+        "object_summary_table.uuid != location_information.lbeacon_uuid " \
+        "THEN " \
+        "location_information.initial_timestamp " \
+        "ELSE first_seen_timestamp " \
+        "END, " \
+        "rssi = location_information.avg_rssi, " \
+        "battery_voltage = location_information.battery_voltage, " \
+        "last_seen_timestamp = location_information.final_timestamp, " \
+        "uuid = location_information.lbeacon_uuid, " \
+        "is_location_updated = 1 " \
+        "FROM " \
+        "(SELECT " \
+        "object_mac_address, " \
+        "lbeacon_uuid, " \
+        "avg_rssi, " \
+        "battery_voltage, " \
+        "initial_timestamp, " \
+        "final_timestamp " \
+        "FROM " \
+        "(SELECT " \
+        "ROW_NUMBER() OVER (" \
+        "PARTITION BY object_mac_address " \
+        "ORDER BY object_mac_address ASC, avg_rssi DESC" \
+        ") as rank, " \
+        "object_beacon_rssi_table.* " \
+        "FROM "\
+        "(SELECT " \
+        "t.object_mac_address, " \
+        "t.lbeacon_uuid, " \
+        "ROUND(AVG(rssi), 0) as avg_rssi, " \
+        "MIN(battery_voltage) as battery_voltage, " \
+        "MIN(initial_timestamp) as initial_timestamp, " \
+        "MAX(final_timestamp) as final_timestamp " \
+        "FROM " \
+        "tracking_table t " \
+        "WHERE " \
+        "final_timestamp >= NOW() - INTERVAL '%d seconds' AND " \
+        "final_timestamp >= NOW() - (server_time_offset || 'seconds')::INTERVAL - " \
+        "INTERVAL '%d seconds' " \
+        "GROUP BY " \
+        "object_mac_address, " \
+        "lbeacon_uuid " \
+        "HAVING AVG(rssi) > -100 " \
+        "ORDER BY " \
+        "object_mac_address ASC, " \
+        "avg_rssi DESC, " \
+        "lbeacon_uuid ASC" \
+        ") object_beacon_rssi_table " \
+        ") object_location_table " \
+        "WHERE " \
+        "object_location_table.rank <= 1 " \
+        ") location_information " \
+        "WHERE " \
+        "object_summary_table.mac_address = " \
+        "location_information.object_mac_address AND " \
+		"object_summary_table.is_location_updated = 0;";
+        
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_reset_state_template);
+    ret_val = SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != ret_val){
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s",
+                   ret_val, PQerrorMessage(conn));
+        return E_SQL_EXECUTE;
+    }
 
     memset(sql, 0, sizeof(sql));
 
-    sprintf(sql, sql_select_template, 
+    sprintf(sql, sql_update_stable_tag_template,
+            database_pre_filter_time_window_in_sec,
+            time_interval_in_sec,
+            rssi_difference_of_stable_tag,
+            database_pre_filter_time_window_in_sec,
+            time_interval_in_sec,
+            rssi_difference_of_location_accuracy_tolerance);
+  
+    ret_val = SQL_execute(db, sql);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s",
+                   ret_val, PQerrorMessage(conn));
+        return E_SQL_EXECUTE;
+    }
+
+    memset(sql, 0, sizeof(sql));
+
+    sprintf(sql, sql_update_moving_tag_template, 
             database_pre_filter_time_window_in_sec, 
             time_interval_in_sec);
-
+  
     ret_val = SQL_execute(db, sql);
     if(WORK_SUCCESSFULLY != ret_val){
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
@@ -937,6 +1031,7 @@ ErrorCode SQL_summarize_object_location(void *db,
 
         return E_SQL_EXECUTE;
     }
+    
     return WORK_SUCCESSFULLY;
 }
 

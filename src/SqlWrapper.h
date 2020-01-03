@@ -413,6 +413,14 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
      time_interval_in_sec - the time window in which we treat this object been
                             seen and visiable by BOT system
 
+     rssi_difference_of_stable_tag - the RSSI difference in which the tag is still
+                                     treated as stable and associated to its lbeacon
+
+     rssi_difference_of_location_accuracy_tolerance - the RSSI difference in 
+                                                      which the tag is still 
+                                                      treated as scanned by the 
+                                                      strongest and nearest 
+                                                      lbeacon
   Return Value:
 
      ErrorCode - Indicate the result of execution, the expected return code
@@ -421,7 +429,9 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
 
 ErrorCode SQL_summarize_object_location(void *db, 
                                         int database_pre_filter_time_window_in_sec,
-                                        int time_interval_in_sec);
+                                        int time_interval_in_sec,
+                                        int rssi_difference_of_stable_tag,
+                                        int rssi_difference_of_location_accuracy_tolerance);
 
 
 /*
