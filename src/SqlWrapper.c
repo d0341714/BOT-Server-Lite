@@ -114,33 +114,138 @@ static ErrorCode SQL_rollback_transaction(void *db){
     return WORK_SUCCESSFULLY;
 }
 
+ErrorCode SQL_create_database_connection_pool(char *conninfo, 
+                                              DBConnectionListHead * db_connection_list_head,
+                                              int max_connection){
+    int i;
+    int retry_times = MEMORY_ALLOCATE_RETRIES;
+    DBConnectionNode *db_connection;
 
-ErrorCode SQL_open_database_connection(char *conninfo, void **db){
+    pthread_mutex_lock(&db_connection_list_head->list_lock);
 
-    *db = (PGconn*) PQconnectdb(conninfo);
+    for(i = 0; i< max_connection; i++){
+    
+        while(retry_times --){
+            db_connection = malloc(sizeof(DBConnectionNode));
+            if(NULL != db_connection)
+                break;
+        }
+        if(NULL == db_connection){
+        
+            zlog_error(category_debug, 
+                       "SQL_create_database_connection_pool malloc failed");
 
-    /* Check to see that the backend connection was successfully made */
-    if (PQstatus(*db) != CONNECTION_OK)
-    {
-        zlog_info(category_debug, 
-                  "Connection to database failed: %s", 
-                  PQerrorMessage(*db));
+            pthread_mutex_unlock(&db_connection_list_head->list_lock);
+            return E_MALLOC;
+        }
+        memset(db_connection, 0, sizeof(DBConnectionNode));
 
-        return E_SQL_OPEN_DATABASE;
+        init_entry(&db_connection->list_entry);
+
+        db_connection->serial_id = i;
+        db_connection->is_used = 0;
+        db_connection->db = (PGconn*) PQconnectdb(conninfo);
+
+        if(PQstatus(db_connection->db) != CONNECTION_OK){
+            zlog_error(category_debug,
+                "Connect to database failed: %s",
+                PQerrorMessage(db_connection->db));
+
+            pthread_mutex_unlock(&db_connection_list_head->list_lock);
+            return E_SQL_OPEN_DATABASE;
+        }
+
+        insert_list_tail(&db_connection->list_entry, 
+                         &db_connection_list_head->list_head);
     }
 
-    return WORK_SUCCESSFULLY;
-}
-
-
-ErrorCode SQL_close_database_connection(void *db){
-
-    PGconn *conn = (PGconn *) db;
-    PQfinish(conn);
+    pthread_mutex_unlock(&db_connection_list_head->list_lock);
 
     return WORK_SUCCESSFULLY;
 }
 
+ErrorCode SQL_destroy_database_connection_pool(
+    DBConnectionListHead * db_connection_list_head){
+
+    List_Entry *current_list_entry = NULL;
+    List_Entry *next_list_entry = NULL;
+    DBConnectionNode *current_list_ptr = NULL;
+    PGconn * conn = NULL;
+
+    pthread_mutex_lock(&db_connection_list_head->list_lock);
+
+    list_for_each_safe(current_list_entry,
+                       next_list_entry, 
+                       &db_connection_list_head->list_head){
+
+        current_list_ptr = ListEntry(current_list_entry,
+                                     DBConnectionNode,
+                                     list_entry);
+
+        conn = (PGconn*) current_list_ptr->db;
+        PQfinish(conn);
+
+        remove_list_node(current_list_entry);
+
+        free(current_list_ptr);
+    }
+
+    pthread_mutex_unlock(&db_connection_list_head->list_lock);
+
+    return WORK_SUCCESSFULLY;
+}
+
+ErrorCode SQL_get_database_connection(DBConnectionListHead *db_connection_list_head,
+                                      void **db,
+                                      int *serial_id){
+
+    List_Entry *current_list_entry = NULL;
+    DBConnectionNode * current_list_ptr = NULL;
+
+    pthread_mutex_lock(&db_connection_list_head->list_lock);
+
+    list_for_each(current_list_entry,
+                  &db_connection_list_head->list_head){
+       current_list_ptr = ListEntry(current_list_entry,
+                                    DBConnectionNode,
+                                    list_entry);
+       if(current_list_ptr->is_used == 0){
+           *db = (PGconn*) current_list_ptr->db;
+           *serial_id = current_list_ptr->serial_id;
+           current_list_ptr->is_used = 1;
+
+           pthread_mutex_unlock(&db_connection_list_head->list_lock);
+           return WORK_SUCCESSFULLY;
+       } 
+    }
+    pthread_mutex_unlock(&db_connection_list_head->list_lock);
+
+    return E_SQL_OPEN_DATABASE;
+}
+
+ErrorCode SQL_release_database_connection(DBConnectionListHead *db_connection_list_head,
+                                          int serial_id){
+    List_Entry *current_list_entry = NULL;
+    DBConnectionNode *current_list_ptr = NULL;
+
+    pthread_mutex_lock(&db_connection_list_head->list_lock);
+
+    list_for_each(current_list_entry,
+                  &db_connection_list_head->list_head){
+        current_list_ptr = ListEntry(current_list_entry,
+                                     DBConnectionNode,
+                                     list_entry);
+        if(current_list_ptr->serial_id == serial_id){
+            current_list_ptr->is_used = 0;
+
+            pthread_mutex_unlock(&db_connection_list_head->list_lock);
+            return WORK_SUCCESSFULLY;
+        }    
+    }
+
+    pthread_mutex_unlock(&db_connection_list_head->list_lock);
+    return E_SQL_OPEN_DATABASE;
+}
 
 ErrorCode SQL_vacuum_database(void *db){
 

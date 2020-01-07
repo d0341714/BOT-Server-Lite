@@ -172,6 +172,12 @@ typedef struct {
     /* The number of hours in which data are kept in the database */
     int database_keep_hours;
 
+    /* The number of database connection in the connection pool */
+    int number_of_database_connection;
+
+    /* The list head of the database connection pool */
+    DBConnectionListHead db_connection_list_head;
+
     /* The length of time window which server applies to each SQL query when it 
        queries tracked data from time-series database. The purpose of this 
        condition is to guarantee the database response time is predicatble and 

@@ -176,7 +176,7 @@ Memory_Pool geofence_violation_mempool;
      ErrorCode - WORK_SUCCESSFULLY: work successfully.
 
  */
-ErrorCode construct_geo_fence_list(char * database_argument,
+ErrorCode construct_geo_fence_list(DBConnectionListHead *db_connection_list_head,
                                    GeoFenceListHead* geo_fence_list_head,
                                    bool is_to_all_areas,
                                    int target_area_id);
@@ -230,7 +230,7 @@ ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head,
 
  */
 ErrorCode construct_objects_list_under_geo_fence_monitoring(
-    char * database_argument,
+    DBConnectionListHead * db_connection_list_head,
     ObjectWithGeoFenceListHead* objects_list_head,
     bool is_to_all_areas,
     int target_area_id);
@@ -281,7 +281,7 @@ ErrorCode destroy_objects_list_under_geo_fence_monitoring(
 */
 
 ErrorCode reload_geo_fence_settings(char *command_buf,
-                                    char *database_argument,
+                                    DBConnectionListHead *db_connection_list_head,
                                     GeoFenceListHead * geo_fence_list_head,
                                     ObjectWithGeoFenceListHead * objects_list_head);
 /*

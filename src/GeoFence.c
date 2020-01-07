@@ -38,19 +38,19 @@
      Chun-Yu Lai   , chunyu1202@gmail.com
  */
 
-#include "GeoFence.h"
 #include "SqlWrapper.h"
-
+#include "GeoFence.h"
 /*
   construct_geo_fence_list:
 */
 
-ErrorCode construct_geo_fence_list(char * database_argument, 
+ErrorCode construct_geo_fence_list(DBConnectionListHead * db_connection_list_head, 
                                    GeoFenceListHead* geo_fence_list_head,
                                    bool is_to_all_areas,
                                    int target_area_id){
 
     void *db = NULL;
+    int serial_id = -1;
     FILE *file_geo_fence = NULL;
     char setting_buf[CONFIG_BUFFER_SIZE];
     char *save_ptr = NULL;
@@ -76,7 +76,7 @@ ErrorCode construct_geo_fence_list(char * database_argument,
 
     
     if(WORK_SUCCESSFULLY != 
-       SQL_open_database_connection(database_argument, &db)){
+       SQL_get_database_connection(db_connection_list_head, &db, &serial_id)){
  
         zlog_error(category_debug, 
                    "cannot open database"); 
@@ -85,7 +85,7 @@ ErrorCode construct_geo_fence_list(char * database_argument,
 
     SQL_dump_active_geo_fence_settings(db, DUMP_ACTIVE_GEO_FENCE_FILE);
 
-    SQL_close_database_connection(db);
+    SQL_release_database_connection(db_connection_list_head, serial_id);
 
     file_geo_fence = fopen(DUMP_ACTIVE_GEO_FENCE_FILE, "r");
     if(file_geo_fence == NULL){
@@ -291,12 +291,13 @@ ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head,
 }
 
 ErrorCode construct_objects_list_under_geo_fence_monitoring(
-    char * database_argument,
+    DBConnectionListHead *db_connection_list_head,
     ObjectWithGeoFenceListHead* objects_list_head,
     bool is_to_all_areas,
     int target_area_id){
 
     void *db = NULL;
+    int serial_id = -1;
     List_Entry * current_objects_in_area_list_entry = NULL;
     ObjectWithGeoFenceAreaNode *current_objects_in_area_list_ptr = NULL;
     
@@ -312,8 +313,8 @@ ErrorCode construct_objects_list_under_geo_fence_monitoring(
     int retry_times = 0;
 
     if(WORK_SUCCESSFULLY != 
-       SQL_open_database_connection(database_argument, &db)){
- 
+       SQL_get_database_connection(db_connection_list_head, &db, &serial_id)){
+
         zlog_error(category_debug, 
                    "cannot open database"); 
         return E_SQL_OPEN_DATABASE;
@@ -322,7 +323,7 @@ ErrorCode construct_objects_list_under_geo_fence_monitoring(
     SQL_dump_mac_address_under_geo_fence_monitor(db, 
                                                  DUMP_GEO_FENCE_OBJECTS_FILE);
 
-    SQL_close_database_connection(db);
+    SQL_release_database_connection(db_connection_list_head, serial_id);
 
     file_objects = fopen(DUMP_GEO_FENCE_OBJECTS_FILE, "r");
     if(file_objects == NULL){
@@ -645,7 +646,7 @@ ErrorCode examine_object_tracking_data(
     ObjectWithGeoFenceListHead * objects_list_head,
     GeoFenceViolationListHead * geo_fence_violation_list_head,
     int perimeter_valid_duration_in_sec,
-    char * database_argument)
+    DBConnectionListHead *db_connection_list_head)
 {
 
      /* The format of the tracked object data:
@@ -689,6 +690,7 @@ ErrorCode examine_object_tracking_data(
 
     GeoFenceViolationNode *new_node = NULL;
     void *db = NULL;
+    int serial_id = -1;
     int retry_times = 0;
 
     
@@ -818,9 +820,10 @@ ErrorCode examine_object_tracking_data(
                                         current_violation_list_ptr);
 
                                 if(WORK_SUCCESSFULLY != 
-                                   SQL_open_database_connection(
-                                       database_argument, 
-                                       &db)){
+                                   SQL_get_database_connection(
+                                       db_connection_list_head, 
+                                       &db,
+                                       &serial_id)){
  
                                     zlog_error(category_debug, 
                                                "cannot open database"); 
@@ -831,7 +834,8 @@ ErrorCode examine_object_tracking_data(
                                     db, 
                                     mac_address_in_lower_case);
 
-                                SQL_close_database_connection(db);
+                                SQL_release_database_connection(db_connection_list_head,
+                                                                serial_id);
 
                                 break;
 

@@ -51,6 +51,27 @@
 /* When debugging is needed */
 //#define debugging
 
+typedef struct{
+
+    int serial_id;
+
+    int is_used;
+
+    void *db;
+
+    struct List_Entry list_entry;
+
+} DBConnectionNode;
+
+typedef struct{
+
+    pthread_mutex_t list_lock;
+    
+    struct List_Entry list_head;
+
+} DBConnectionListHead;
+
+
 /*
   SQL_execute
 
@@ -126,44 +147,88 @@ static ErrorCode SQL_commit_transaction(void *db);
 
 static ErrorCode SQL_rollback_transaction(void *db);
 
-
 /*
-  SQL_open_database_connection
+  SQL_create_database_connection_pool
 
-     Opens a database connection to the database backend server
+     Create a connection pool to the database backend server
 
   Parameter:
 
-     db_filepath - the full file path of database file
+     conninfo - the information to open database connection
 
-     db - a pointer pointing to the connection to the database backend server
+     list_head - the list head of database connection pool
+
+     max_connection - the maximum number of database connection in the 
+                      connection pool
 
   Return Value:
 
-     ErrorCode - indicate the result of execution, the expected return code
+     ErrorCode - indicate the result of execution, the expected return code 
                  is WORK_SUCCESSFULLY
 */
 
-ErrorCode SQL_open_database_connection(char *db_filepath, void **db);
-
+ErrorCode SQL_create_database_connection_pool(char *conninfo, 
+                                              DBConnectionListHead * list_head, 
+                                              int max_connection);
 
 /*
-  SQL_close_database_connection
-
-     Closes a database connection
+  SQL_destroy_database_connection_pool
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+    list_head - the list head of database connection pool
+
+  Return Value:
+    
+    ErrorCode - indicate the result of exeuction, the expected return code 
+                is WORK_SUCCESSFULLY
+
+*/
+
+ErrorCode SQL_destroy_database_connection_pool(DBConnectionListHead *list_head);
+
+/*
+  SQL_get_database_connection 
+
+    Get an existing database connection from connection pool
+  
+  Parameter:
+      
+    list_head - the list head of database connection pool
+
+    db - a pointer pointing to the connection to the database backend server
+
+    serial_id - the serial id of the database connection within the pool
 
   Return Value:
 
-     ErrorCode - indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY
+    ErrorCode - indicate the result of execution, the expected return code 
+                is WORK_SUCCESSFULLY
 */
 
-ErrorCode SQL_close_database_connection(void *db);
+ErrorCode SQL_get_database_connection(DBConnectionListHead *list_head,
+                                      void **db,
+                                      int *serial_id);
 
+/*
+  SQL_release_database_connection
+
+    Release the database connection back to connection pool
+  
+  Paremeter:
+
+    list_head - the list head of database connection pool
+
+    serial_id - the serial id of the database connection within the pool
+
+  Return Value:
+
+    ErrorCode - indicate the result of execution, the expected return code 
+                is WORK_SUCCESSFULLY
+*/
+
+ErrorCode SQL_release_database_connection(DBConnectionListHead *list_head,
+                                          int serial_id);
 
 /*
   SQL_vacuum_database();
@@ -182,7 +247,6 @@ ErrorCode SQL_close_database_connection(void *db);
 */
 
 ErrorCode SQL_vacuum_database(void *db);
-
 
 /*
   SQL_delte_old_data();
