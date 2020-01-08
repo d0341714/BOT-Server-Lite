@@ -21,7 +21,7 @@
 
   Version:
 
-     2.0, 20191227
+     2.0, 20200108
 
   Abstract:
 
@@ -40,17 +40,19 @@ void display_usage(){
     printf("\n");
     printf("The support commands are:\n");
     printf("\n");
-    printf("cmdServerIPC -p [server_port] -c RELOAD_GEO_FENCE_SETTING " \
-           "-r [geofence_setting] -f area_all\n");
-    printf("cmdServerIPC -p [server_port] -c RELOAD_GEO_FENCE_SETTING " \
-           "-r [geofence_setting] -f area_one -a [area_id]\n");
+    printf("cmdServerIPC -p [server_port] -c %s " \
+           "-r [geofence_setting] -f area_all\n", IPCCommand_String[1]);
+    printf("cmdServerIPC -p [server_port] -c %s " \
+           "-r [geofence_setting] -f area_one -a [area_id]\n", IPCCommand_String[1]);
+    printf("cmdServerIPC -p [server_port] -c %s\n", IPCCommand_String[2]);
     printf("\n");
     printf("\n");
     printf("-p: specify the listening port of the destination server\n\n");
     printf("\n");
     printf("-c: specify the IPC command. The supported values are:\n");
-    printf("    %s: reload geofence setting. Please specify option -r as well\n", 
-           IPCCommand_String[1]);
+    printf("    %s: reload monitor configuration setting.\n", IPCCommand_String[1]);
+    printf("    %s: reload geofence setting. Please specify option -r and option -f as well\n", 
+           IPCCommand_String[2]);
     printf("\n");
     printf("-r: specify the settings to be loaded. The supported settings are:\n");
     printf("    %s: reload both geofence list and geofence objects\n", 
@@ -96,6 +98,7 @@ int main(int argc, char **argv)
 
     int verbose_mode = 0;
     
+    /* Parse user input of IPC command */
     while((ch = getopt(argc, argv, "p:c:r:f:a:vh")) != -1){
         switch(ch){
             case 'p':
@@ -143,11 +146,26 @@ int main(int argc, char **argv)
         }
     }
 
+    /* Prepare IPC command to be sent */
     memset(message_content, 0, sizeof(message_content));
 
-    if(server_port >= 0 &&  command == CMD_RELOAD_GEO_FENCE_SETTING){
-        if(geofence_setting > GEO_FENCE_NONE){
+    if(server_port < 0){
+        printf("invalid argument: option -p, " \
+               "use option -h to see the usage.\n");
+        return -1;
+    }
+    
+    switch (command){
+    
+        case CMD_RELOAD_GEO_FENCE_SETTING:
+            if(geofence_setting <= GEO_FENCE_NONE){
+                printf("invalid argument for option -f or -r, " \
+                       "use option -h to see the usage.\n");
+                return -1;
+            }
+
             if(area_scope == AREA_ALL && area_id == -1){
+
                 sprintf(message_content, "%d;%d;%s;%d;%d;%d;", 
                         pkt_direction, 
                         pkt_type, 
@@ -155,7 +173,9 @@ int main(int argc, char **argv)
                         command,
                         geofence_setting,
                         area_scope);
+
             }else if(area_scope == AREA_ONE && area_id > 0){
+              
                 sprintf(message_content, "%d;%d;%s;%d;%d;%d;%d;", 
                         pkt_direction, 
                         pkt_type, 
@@ -167,22 +187,25 @@ int main(int argc, char **argv)
             }else{
                 printf("invalid argument for option -f or -a, " \
                        "use option -h to see the usage.\n");
-                //display_usage();
                 return -1;
             }
-        }else{
-            printf("invalid argument for option -f or -r, " \
-                   "use option -h to see the usage.\n");
-            //display_usage();
-            return -1;
-        }    
-    }else{
-        printf("invalid argument: option -p or -c, " \
-               "use option -h to see the usage.\n");
-        //display_usage();
-        return -1;
-    }
 
+            break;
+        case CMD_RELOAD_MONITOR_SETTING:
+            sprintf(message_content, "%d;%d;%s;%d;",
+                    pkt_direction,
+                    pkt_type, 
+                    BOT_SERVER_API_VERSION_LATEST,
+                    command);
+            break;
+        default:
+            printf("invalid argument: option -c, " \
+                   "use option -h to see the usage.\n");
+            break;
+       
+    }
+        
+    /* Send the IPC command to server */
     if(verbose_mode){
         printf("IPC message content = [%s]\n", message_content);
     }

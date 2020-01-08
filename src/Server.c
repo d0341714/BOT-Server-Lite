@@ -68,9 +68,6 @@ int main(int argc, char **argv)
     /* The thread for monitoring object violations */
     pthread_t monitor_object_violation_thread;
 
-    /* The thread for reloading monitoring configuration */
-    pthread_t reload_monitor_config_thread;
-
     /* The thread for collecting violation events */
     pthread_t collect_violation_thread;
 
@@ -352,19 +349,8 @@ int main(int argc, char **argv)
         return return_value;
     }
 
-    /* Create thread to reload monitoring configuration */
-    return_value = startThread( &reload_monitor_config_thread, 
-                                Server_reload_monitor_config, 
-                                NULL);
-
-    if(return_value != WORK_SUCCESSFULLY)
-    {
-        zlog_error(category_health_report, 
-                   "Server_reload_monitor_config fail");
-        zlog_error(category_debug, 
-                   "Server_reload_monitor_config fail");
-        return return_value;
-    }
+    /* Load monitor configuration setting */
+    reload_monitor_config();
 
     /* Create thread to collect notification events */
     return_value = startThread( &collect_violation_thread, 
@@ -927,33 +913,26 @@ void *Server_monitor_object_violations(){
 }
 
 
-void *Server_reload_monitor_config(){
+void reload_monitor_config(){
     void *db = NULL;
     int serial_id = -1;
     
-    while(true == ready_to_work){
     
-        if(WORK_SUCCESSFULLY != 
-           SQL_get_database_connection(&config.db_connection_list_head,
-                                       &db,
-                                       &serial_id)){
-            zlog_error(category_debug,
-                       "cannot open database");
-            continue;
-        }
-        // check current time to update the active status of all monitorings 
-        // include geo-fence monitor, location monitor and movement monitor
-        SQL_reload_monitor_config(
-            db, 
-            config.server_localtime_against_UTC_in_hour);
-
-        SQL_release_database_connection(&config.db_connection_list_head,
-                                        serial_id);
-
-        sleep_t(NORMAL_WAITING_TIME_IN_MS);
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(&config.db_connection_list_head,
+                                   &db,
+                                   &serial_id)){
+    zlog_error(category_debug,
+               "cannot open database");
+        return;
     }
 
-    return (void *)NULL;
+    SQL_reload_monitor_config(db, 
+                              config.server_localtime_against_UTC_in_hour);
+
+    SQL_release_database_connection(&config.db_connection_list_head,
+                                    serial_id);
+    
 }
 
 void *Server_collect_violation_event(){
@@ -1274,6 +1253,9 @@ void *process_commands(void *_buffer_node){
                                           &config.db_connection_list_head,
                                           &config.geo_fence_list_head, 
                                           &config.objects_under_geo_fence_list_head);
+                break;
+            case CMD_RELOAD_MONITOR_SETTING:
+                reload_monitor_config();
                 break;
             default:
                 break;

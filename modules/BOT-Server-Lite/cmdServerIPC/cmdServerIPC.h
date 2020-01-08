@@ -56,6 +56,8 @@ const char * const IPCCommand_String[] = {
 
     "cmd_reload_geo_fence_setting",
 
+    "cmd_reload_monitor_setting",
+
     "cmd_max",
 };
 
