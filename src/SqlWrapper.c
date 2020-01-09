@@ -812,6 +812,8 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
         "WHERE object_summary_table.mac_address = %s " \
         "AND object_table.monitor_type & %d = %d;";
 
+    char *pqescape_mac_address = NULL;
+
    
     /* Open temporary file with thread id as filename to prepare the tracking 
        data for postgresql bulk-insertion */
@@ -875,11 +877,6 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
             if(panic_button != NULL && 1 == atoi(panic_button)){
                 
                 memset(sql, 0, sizeof(sql));
-                sprintf(sql, sql_identify_panic, 
-                        object_mac_address, 
-                        MONITOR_PANIC,
-                        MONITOR_PANIC);
-
                 if(WORK_SUCCESSFULLY != 
                    SQL_get_database_connection(db_connection_list_head, 
                                                &db_conn, 
@@ -890,6 +887,17 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
 
                     continue;
                 }
+
+                pqescape_mac_address = 
+                    PQescapeLiteral(db_conn, object_mac_address, 
+                                    strlen(object_mac_address)); 
+   
+                sprintf(sql, sql_identify_panic, 
+                        pqescape_mac_address, 
+                        MONITOR_PANIC,
+                        MONITOR_PANIC);
+
+                PQfreemem(pqescape_mac_address);
 
                 ret_val = SQL_execute(db_conn, sql);
 
