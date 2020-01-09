@@ -49,8 +49,7 @@ ErrorCode construct_geo_fence_list(DBConnectionListHead * db_connection_list_hea
                                    bool is_to_all_areas,
                                    int target_area_id){
 
-    void *db = NULL;
-    int serial_id = -1;
+  
     FILE *file_geo_fence = NULL;
     char setting_buf[CONFIG_BUFFER_SIZE];
     char *save_ptr = NULL;
@@ -75,17 +74,16 @@ ErrorCode construct_geo_fence_list(DBConnectionListHead * db_connection_list_hea
     int retry_times = 0;
 
     
+
     if(WORK_SUCCESSFULLY != 
-       SQL_get_database_connection(db_connection_list_head, &db, &serial_id)){
- 
-        zlog_error(category_debug, 
-                   "cannot open database"); 
+        SQL_dump_active_geo_fence_settings(db_connection_list_head, 
+                                           DUMP_ACTIVE_GEO_FENCE_FILE)){
+    
+        zlog_error(category_debug,
+                   "connot do databse operation");
+
         return E_SQL_OPEN_DATABASE;
     }
-
-    SQL_dump_active_geo_fence_settings(db, DUMP_ACTIVE_GEO_FENCE_FILE);
-
-    SQL_release_database_connection(db_connection_list_head, serial_id);
 
     file_geo_fence = fopen(DUMP_ACTIVE_GEO_FENCE_FILE, "r");
     if(file_geo_fence == NULL){
@@ -296,8 +294,6 @@ ErrorCode construct_objects_list_under_geo_fence_monitoring(
     bool is_to_all_areas,
     int target_area_id){
 
-    void *db = NULL;
-    int serial_id = -1;
     List_Entry * current_objects_in_area_list_entry = NULL;
     ObjectWithGeoFenceAreaNode *current_objects_in_area_list_ptr = NULL;
     
@@ -312,19 +308,17 @@ ErrorCode construct_objects_list_under_geo_fence_monitoring(
 
     int retry_times = 0;
 
-    if(WORK_SUCCESSFULLY != 
-       SQL_get_database_connection(db_connection_list_head, &db, &serial_id)){
 
-        zlog_error(category_debug, 
-                   "cannot open database"); 
+    if(WORK_SUCCESSFULLY != 
+       SQL_dump_mac_address_under_geo_fence_monitor(db_connection_list_head, 
+                                                    DUMP_GEO_FENCE_OBJECTS_FILE)){
+
+        zlog_error(category_debug,
+                   "cannot operate database");
         return E_SQL_OPEN_DATABASE;
     }
 
-    SQL_dump_mac_address_under_geo_fence_monitor(db, 
-                                                 DUMP_GEO_FENCE_OBJECTS_FILE);
-
-    SQL_release_database_connection(db_connection_list_head, serial_id);
-
+   
     file_objects = fopen(DUMP_GEO_FENCE_OBJECTS_FILE, "r");
     if(file_objects == NULL){
         zlog_error(category_debug, "cannot open filepath %s", 
@@ -449,7 +443,7 @@ ErrorCode destroy_objects_list_under_geo_fence_monitoring(
 }
 
 ErrorCode reload_geo_fence_settings(char *command_buf,
-                                    char *database_argument,
+                                    DBConnectionListHead *db_connection_list_head,
                                     GeoFenceListHead * geo_fence_list_head,
                                     ObjectWithGeoFenceListHead * objects_list_head){
 
@@ -488,7 +482,7 @@ ErrorCode reload_geo_fence_settings(char *command_buf,
                 zlog_debug(category_debug, 
                            "reload geo fence list for all areas");
                 destroy_geo_fence_list(geo_fence_list_head,true, 0);
-                construct_geo_fence_list(database_argument,
+                construct_geo_fence_list(db_connection_list_head,
                                          geo_fence_list_head, 
                                          true, 
                                          0);
@@ -497,7 +491,7 @@ ErrorCode reload_geo_fence_settings(char *command_buf,
                            "reload geo fence list in area_id = %d",
                            area);
                 destroy_geo_fence_list(geo_fence_list_head, false, area);
-                construct_geo_fence_list(database_argument,
+                construct_geo_fence_list(db_connection_list_head,
                                          geo_fence_list_head,
                                          false,
                                          area);
@@ -513,7 +507,7 @@ ErrorCode reload_geo_fence_settings(char *command_buf,
                                                                 true,
                                                                 0);
                 construct_objects_list_under_geo_fence_monitoring(
-                    database_argument,
+                    db_connection_list_head,
                     objects_list_head,
                     true,
                     0);
@@ -526,7 +520,7 @@ ErrorCode reload_geo_fence_settings(char *command_buf,
                                                                 false,
                                                                 area);
                 construct_objects_list_under_geo_fence_monitoring(
-                    database_argument,
+                    db_connection_list_head,
                     objects_list_head,
                     false,
                     area);
@@ -538,7 +532,7 @@ ErrorCode reload_geo_fence_settings(char *command_buf,
 
 ErrorCode check_geo_fence_violations(
     BufferNode *buffer_node,  
-    char * database_argument,
+    DBConnectionListHead *db_connection_list_head,
     GeoFenceListHead* geo_fence_list_head,
     ObjectWithGeoFenceListHead * objects_list_head,
     GeoFenceViolationListHead * geo_fence_violation_list_head,
@@ -609,7 +603,7 @@ ErrorCode check_geo_fence_violations(
                         objects_list_head,
                         geo_fence_violation_list_head,
                         perimeter_valid_duration_in_sec,
-                        database_argument);                        
+                        db_connection_list_head);                        
                 }
 
                 if(strstr(current_setting_list_ptr -> 
@@ -624,7 +618,7 @@ ErrorCode check_geo_fence_violations(
                         objects_list_head,
                         geo_fence_violation_list_head,
                         perimeter_valid_duration_in_sec,
-                        database_argument);                
+                        db_connection_list_head);                
                 }
             }            
         }        
@@ -689,8 +683,6 @@ ErrorCode examine_object_tracking_data(
     int current_time = get_system_time();
 
     GeoFenceViolationNode *new_node = NULL;
-    void *db = NULL;
-    int serial_id = -1;
     int retry_times = 0;
 
     
@@ -819,23 +811,16 @@ ErrorCode examine_object_tracking_data(
                                 mp_free(&geofence_violation_mempool, 
                                         current_violation_list_ptr);
 
+
                                 if(WORK_SUCCESSFULLY != 
-                                   SQL_get_database_connection(
+                                   SQL_identify_geofence_violation(
                                        db_connection_list_head, 
-                                       &db,
-                                       &serial_id)){
- 
-                                    zlog_error(category_debug, 
-                                               "cannot open database"); 
+                                       mac_address_in_lower_case)){
+
+                                    zlog_error(category_debug,
+                                               "cannot operate database");    
                                     continue;
                                 }
-
-                                SQL_identify_geofence_violation(
-                                    db, 
-                                    mac_address_in_lower_case);
-
-                                SQL_release_database_connection(db_connection_list_head,
-                                                                serial_id);
 
                                 break;
 

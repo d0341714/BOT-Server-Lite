@@ -44,21 +44,19 @@
 
 #include "SqlWrapper.h"
 
+static ErrorCode SQL_execute(PGconn *db_conn, char *sql_statement){
 
-static ErrorCode SQL_execute(void *db, char *sql_statement){
-
-    PGconn *conn = (PGconn *) db;
     PGresult *res;
 
     zlog_info(category_debug, "SQL command = [%s]", sql_statement);
 
-    res = PQexec(conn, sql_statement);
+    res = PQexec(db_conn, sql_statement);
 
     if(PQresultStatus(res) != PGRES_COMMAND_OK){
 
         zlog_error(category_debug, 
                    "SQL_execute failed [%d]: %s", 
-                   res, PQerrorMessage(conn));
+                   res, PQerrorMessage(db_conn));
 
         PQclear(res);
         return E_SQL_EXECUTE;
@@ -69,8 +67,7 @@ static ErrorCode SQL_execute(void *db, char *sql_statement){
     return WORK_SUCCESSFULLY;
 }
 
-
-static ErrorCode SQL_begin_transaction(void* db){
+static ErrorCode SQL_begin_transaction(PGconn* db_conn){
 
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql;
@@ -79,13 +76,12 @@ static ErrorCode SQL_begin_transaction(void* db){
     sql = "BEGIN TRANSACTION;";
 
     /* Execute SQL statement */
-    ret_val = SQL_execute(db, sql);
+    ret_val = SQL_execute(db_conn, sql);
 
     return WORK_SUCCESSFULLY;
 }
 
-
-static ErrorCode SQL_commit_transaction(void *db){
+static ErrorCode SQL_commit_transaction(PGconn *db_conn){
 
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql;
@@ -94,13 +90,12 @@ static ErrorCode SQL_commit_transaction(void *db){
     sql = "END TRANSACTION;";
 
     /* Execute SQL statement */
-    ret_val = SQL_execute(db, sql);
+    ret_val = SQL_execute(db_conn, sql);
 
     return WORK_SUCCESSFULLY;
 }
 
-
-static ErrorCode SQL_rollback_transaction(void *db){
+static ErrorCode SQL_rollback_transaction(PGconn *db_conn){
 
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *sql;
@@ -109,14 +104,16 @@ static ErrorCode SQL_rollback_transaction(void *db){
     sql = "ROLLBACK;";
 
     /* Execute SQL statement */
-    ret_val = SQL_execute(db, sql);
+    ret_val = SQL_execute(db_conn, sql);
 
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_create_database_connection_pool(char *conninfo, 
-                                              DBConnectionListHead * db_connection_list_head,
-                                              int max_connection){
+ErrorCode SQL_create_database_connection_pool(
+    char *conninfo, 
+    DBConnectionListHead * db_connection_list_head,
+    int max_connection){
+
     int i;
     int retry_times = MEMORY_ALLOCATE_RETRIES;
     DBConnectionNode *db_connection;
@@ -147,9 +144,10 @@ ErrorCode SQL_create_database_connection_pool(char *conninfo,
         db_connection->db = (PGconn*) PQconnectdb(conninfo);
 
         if(PQstatus(db_connection->db) != CONNECTION_OK){
+
             zlog_error(category_debug,
-                "Connect to database failed: %s",
-                PQerrorMessage(db_connection->db));
+                       "Connect to database failed: %s",
+                       PQerrorMessage(db_connection->db));
 
             pthread_mutex_unlock(&db_connection_list_head->list_lock);
             return E_SQL_OPEN_DATABASE;
@@ -195,9 +193,10 @@ ErrorCode SQL_destroy_database_connection_pool(
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_get_database_connection(DBConnectionListHead *db_connection_list_head,
-                                      void **db,
-                                      int *serial_id){
+static ErrorCode SQL_get_database_connection(
+    DBConnectionListHead *db_connection_list_head,
+    void **db,
+    int *serial_id){
 
     List_Entry *current_list_entry = NULL;
     DBConnectionNode * current_list_ptr = NULL;
@@ -223,8 +222,10 @@ ErrorCode SQL_get_database_connection(DBConnectionListHead *db_connection_list_h
     return E_SQL_OPEN_DATABASE;
 }
 
-ErrorCode SQL_release_database_connection(DBConnectionListHead *db_connection_list_head,
-                                          int serial_id){
+static ErrorCode SQL_release_database_connection(
+    DBConnectionListHead *db_connection_list_head,
+    int serial_id){
+
     List_Entry *current_list_entry = NULL;
     DBConnectionNode *current_list_ptr = NULL;
 
@@ -244,12 +245,15 @@ ErrorCode SQL_release_database_connection(DBConnectionListHead *db_connection_li
     }
 
     pthread_mutex_unlock(&db_connection_list_head->list_lock);
+
     return E_SQL_OPEN_DATABASE;
 }
 
-ErrorCode SQL_vacuum_database(void *db){
+ErrorCode SQL_vacuum_database(
+    DBConnectionListHead *db_connection_list_head){
 
-    PGconn *conn = (PGconn *) db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char *table_name[] = {"tracking_table",
                           "lbeacon_table",
@@ -267,11 +271,33 @@ ErrorCode SQL_vacuum_database(void *db){
         sprintf(sql, sql_template, table_name[idx]);
 
         /* Execute SQL statement */
-        ret_val = SQL_execute(db, sql);
+        if(WORK_SUCCESSFULLY != 
+           SQL_get_database_connection(db_connection_list_head, 
+                                       &db_conn, 
+                                       &db_serial_id)){
+            zlog_error(category_debug,
+                       "cannot operate database");
+
+            continue;
+        }
+
+        ret_val = SQL_execute(db_conn, sql);
 
         if(WORK_SUCCESSFULLY != ret_val){
+
+            SQL_release_database_connection(
+                db_connection_list_head,
+                db_serial_id);
+
+            zlog_error(category_debug,
+                       "cannot operate database");
+
             return E_SQL_EXECUTE;
         }
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
 
     }
 
@@ -279,9 +305,12 @@ ErrorCode SQL_vacuum_database(void *db){
 }
 
 
-ErrorCode SQL_delete_old_data(void *db, int retention_hours){
+ErrorCode SQL_delete_old_data(
+    DBConnectionListHead *db_connection_list_head,                              
+    int retention_hours){
 
-    PGconn *conn = (PGconn *) db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *table_name[] = {"notification_table"};
@@ -295,21 +324,38 @@ ErrorCode SQL_delete_old_data(void *db, int retention_hours){
     PGresult *res;
 
 
-    //SQL_begin_transaction(db);
-
     for(idx = 0; idx< sizeof(table_name)/sizeof(table_name[0]); idx++){
 
         memset(sql, 0, sizeof(sql));
 
         sprintf(sql, sql_template, table_name[idx], retention_hours);
 
-        ret_val = SQL_execute(db, sql);
+        if(WORK_SUCCESSFULLY != 
+           SQL_get_database_connection(db_connection_list_head, 
+                                       &db_conn, 
+                                       &db_serial_id)){
+            zlog_error(category_debug,
+                       "cannot operate database\n");
 
-        if(WORK_SUCCESSFULLY != ret_val){
-            //SQL_rollback_transaction(db);
-            return E_SQL_EXECUTE;
+            continue;
         }
 
+        ret_val = SQL_execute(db_conn, sql);
+
+        if(WORK_SUCCESSFULLY != ret_val){
+            
+            SQL_release_database_connection(
+                db_connection_list_head,
+                db_serial_id);
+
+            zlog_error(category_debug,
+                       "cannot operate database\n");
+
+            return E_SQL_EXECUTE;
+        }
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
     }
 
     for(idx = 0; 
@@ -322,34 +368,48 @@ ErrorCode SQL_delete_old_data(void *db, int retention_hours){
                 tsdb_table_name[idx]);
 
         /* Execute SQL statement */
-
         zlog_info(category_debug, "SQL command = [%s]", sql);
 
-        res = PQexec(conn, sql);
+        if(WORK_SUCCESSFULLY != 
+           SQL_get_database_connection(db_connection_list_head, 
+                                       &db_conn, 
+                                       &db_serial_id)){
+            zlog_error(category_debug,
+                       "cannot operate database\n");
+
+            continue;
+        }
+        res = PQexec(db_conn, sql);
         if(PQresultStatus(res) != PGRES_TUPLES_OK){
 
             PQclear(res);
             zlog_info(category_debug, "SQL_execute failed: %s", 
-                      PQerrorMessage(conn));
-            //SQL_rollback_transaction(db);
+                      PQerrorMessage(db_conn));
+
+            SQL_release_database_connection(
+                db_connection_list_head,
+                db_serial_id);
 
             return E_SQL_EXECUTE;
 
         }
         PQclear(res);
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
     }
-
-   //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
 
 
-ErrorCode SQL_update_gateway_registration_status(void *db,
-                                                 char *buf,
-                                                 size_t buf_len){
+ErrorCode SQL_update_gateway_registration_status(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len){
 
-    PGconn *conn = (PGconn *) db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
@@ -384,7 +444,15 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
         return E_SQL_PARSE;
     }
 
-    //SQL_begin_transaction(db);
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
 
     while( numbers-- ){
         
@@ -392,7 +460,7 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
        
         /* Create SQL statement */
         pqescape_ip_address =
-            PQescapeLiteral(conn, ip_address, strlen(ip_address));
+            PQescapeLiteral(db_conn, ip_address, strlen(ip_address));
 
         memset(sql, 0, sizeof(sql));
         sprintf(sql, sql_template,
@@ -402,26 +470,33 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
         PQfreemem(pqescape_ip_address);
 
         /* Execute SQL statement */
-        ret_val = SQL_execute(db, sql);
+        ret_val = SQL_execute(db_conn, sql);
 
         if(WORK_SUCCESSFULLY != ret_val){
-            //SQL_rollback_transaction(db);
+            
+            SQL_release_database_connection(
+                db_connection_list_head,
+                db_serial_id);
+
             return E_SQL_EXECUTE;
         }
-
     }
 
-    //SQL_commit_transaction(db);
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
 
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_update_lbeacon_registration_status(void *db,
-                                                 char *buf,
-                                                 size_t buf_len,
-                                                 char *gateway_ip_address){
+ErrorCode SQL_update_lbeacon_registration_status(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len,
+    char *gateway_ip_address){
 
-    PGconn *conn = (PGconn *) db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
@@ -470,7 +545,15 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
 
     not_used_gateway_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-    //SQL_begin_transaction(db);
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
 
     while( numbers-- ){
         uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
@@ -481,14 +564,15 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
         /* Create SQL statement */
         memset(sql, 0, sizeof(sql));
 
-        pqescape_uuid = PQescapeLiteral(conn, uuid, strlen(uuid));
+        pqescape_uuid = 
+            PQescapeLiteral(db_conn, uuid, strlen(uuid));
         pqescape_lbeacon_ip =
-            PQescapeLiteral(conn, lbeacon_ip, strlen(lbeacon_ip));
+            PQescapeLiteral(db_conn, lbeacon_ip, strlen(lbeacon_ip));
         pqescape_gateway_ip =
-            PQescapeLiteral(conn, gateway_ip_address, 
+            PQescapeLiteral(db_conn, gateway_ip_address, 
                             strlen(gateway_ip_address));
         pqescape_registered_timestamp_GMT =
-            PQescapeLiteral(conn, registered_timestamp_GMT,
+            PQescapeLiteral(db_conn, registered_timestamp_GMT,
                             strlen(registered_timestamp_GMT));
 
         sprintf(sql, sql_template,
@@ -507,27 +591,32 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
         PQfreemem(pqescape_registered_timestamp_GMT);
 
         /* Execute SQL statement */
-        ret_val = SQL_execute(db, sql);
+        ret_val = SQL_execute(db_conn, sql);
 
         if(WORK_SUCCESSFULLY != ret_val){
-            //SQL_rollback_transaction(db);
+            SQL_release_database_connection(
+                db_connection_list_head,
+                db_serial_id);
             return E_SQL_EXECUTE;
         }
 
     }
 
-    //SQL_commit_transaction(db);
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
 
     return WORK_SUCCESSFULLY;
 }
 
+ErrorCode SQL_update_gateway_health_status(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len,
+    char *gateway_ip_address){
 
-ErrorCode SQL_update_gateway_health_status(void *db,
-                                           char *buf,
-                                           size_t buf_len,
-                                           char *gateway_ip_address){
-
-    PGconn *conn = (PGconn *) db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
@@ -548,13 +637,21 @@ ErrorCode SQL_update_gateway_health_status(void *db,
     not_used_ip_address = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
     health_status = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-    //SQL_begin_transaction(db);
-
     /* Create SQL statement */
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
     pqescape_ip_address =
-        PQescapeLiteral(conn, gateway_ip_address, strlen(gateway_ip_address));
+        PQescapeLiteral(db_conn, gateway_ip_address, strlen(gateway_ip_address));
     pqescape_health_status =
-        PQescapeLiteral(conn, health_status, strlen(health_status));
+        PQescapeLiteral(db_conn, health_status, strlen(health_status));
 
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_template,
@@ -565,24 +662,29 @@ ErrorCode SQL_update_gateway_health_status(void *db,
     PQfreemem(pqescape_health_status);
 
     /* Execute SQL statement */
-    ret_val = SQL_execute(db, sql);
+    ret_val = SQL_execute(db_conn, sql);
+
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
+
     if(WORK_SUCCESSFULLY != ret_val){
-        //SQL_rollback_transaction(db);
+    
         return E_SQL_EXECUTE;
     }
-
-    //SQL_commit_transaction(db);
 
     return WORK_SUCCESSFULLY;
 }
 
 
-ErrorCode SQL_update_lbeacon_health_status(void *db,
-                                           char *buf,
-                                           size_t buf_len,
-                                           char *gateway_ip_address){
+ErrorCode SQL_update_lbeacon_health_status(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len,
+    char *gateway_ip_address){
 
-    PGconn *conn = (PGconn *) db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char temp_buf[WIFI_MESSAGE_LENGTH];
     char *saveptr = NULL;
@@ -609,15 +711,23 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
     health_status = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-    //SQL_begin_transaction(db);
 
     /* Create SQL statement */
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
     pqescape_lbeacon_uuid = 
-        PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid));
+        PQescapeLiteral(db_conn, lbeacon_uuid, strlen(lbeacon_uuid));
     pqescape_health_status =
-        PQescapeLiteral(conn, health_status, strlen(health_status));
+        PQescapeLiteral(db_conn, health_status, strlen(health_status));
     pqescape_gateway_ip = 
-        PQescapeLiteral(conn, gateway_ip_address, strlen(gateway_ip_address));
+        PQescapeLiteral(db_conn, gateway_ip_address, strlen(gateway_ip_address));
 
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_template,
@@ -630,165 +740,28 @@ ErrorCode SQL_update_lbeacon_health_status(void *db,
     PQfreemem(pqescape_gateway_ip);
 
     /* Execute SQL statement */
-    ret_val = SQL_execute(db, sql);
+    ret_val = SQL_execute(db_conn, sql);
+
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
 
     if(WORK_SUCCESSFULLY != ret_val){
-        //SQL_rollback_transaction(db);
         return E_SQL_EXECUTE;
     }
 
-    //SQL_commit_transaction(db);
-
     return WORK_SUCCESSFULLY;
 }
 
-/*
-ErrorCode SQL_update_object_tracking_data(void *db,
-                                          char *buf,
-                                          size_t buf_len){
+ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len,
+    char *server_installation_path,
+    int is_enabled_panic_monitoring){
 
-    PGconn *conn = (PGconn *) db;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char temp_buf[WIFI_MESSAGE_LENGTH];
-    char *saveptr = NULL;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-    int num_types = 2; // BR_EDR and BLE types
-    char *sql_template = "INSERT INTO tracking_table " \
-                         "(object_mac_address, " \
-                         "lbeacon_uuid, " \
-                         "rssi, " \
-                         "panic_button, " \
-                         "initial_timestamp, " \
-                         "final_timestamp, " \
-                         "server_time_offset) " \
-                         "VALUES " \
-                         "(%s, %s, %s, %s, " \
-                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
-                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, "
-                         "%d);";
-    char *lbeacon_uuid = NULL;
-    char *lbeacon_ip = NULL;
-    char *lbeacon_timestamp = NULL;
-    char *object_type = NULL;
-    char *object_number = NULL;
-    int numbers = 0;
-    char *object_mac_address = NULL;
-    char *initial_timestamp_GMT = NULL;
-    char *final_timestamp_GMT = NULL;
-    char *rssi = NULL;
-    char *push_button = NULL;
-    int current_time = get_system_time();
-    int lbeacon_timestamp_value;
-    char *pqescape_object_mac_address = NULL;
-    char *pqescape_lbeacon_uuid = NULL;
-    char *pqescape_rssi = NULL;
-    char *pqescape_push_button = NULL;
-    char *pqescape_initial_timestamp_GMT = NULL;
-    char *pqescape_final_timestamp_GMT = NULL;
-
-
-    memset(temp_buf, 0, sizeof(temp_buf));
-    memcpy(temp_buf, buf, buf_len);
-
-    lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
-    lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-    if(lbeacon_timestamp == NULL){
-        return E_API_PROTOCOL_FORMAT;
-    }
-    lbeacon_timestamp_value = atoi(lbeacon_timestamp);
-    lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-    zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
-               "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);
-
-    //SQL_begin_transaction(db);
-
-    while(num_types --){
-
-        object_type = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-        object_number = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-        zlog_debug(category_debug, "object_type=[%s], object_number=[%s]", 
-                   object_type, object_number);
-        if(object_number == NULL){
-            //SQL_rollback_transaction(db);
-            return E_API_PROTOCOL_FORMAT;
-        }
-        numbers = atoi(object_number);
-
-        while(numbers--){
-            object_mac_address = 
-                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            initial_timestamp_GMT = 
-                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            final_timestamp_GMT = 
-                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            rssi = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            push_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            pqescape_object_mac_address =
-                PQescapeLiteral(conn, object_mac_address,
-                                strlen(object_mac_address));
-            pqescape_lbeacon_uuid =
-                PQescapeLiteral(conn, lbeacon_uuid, 
-                                strlen(lbeacon_uuid));
-            pqescape_rssi = 
-                PQescapeLiteral(conn, rssi, strlen(rssi));
-            pqescape_push_button =
-                PQescapeLiteral(conn, push_button, 
-                                strlen(push_button));
-            pqescape_initial_timestamp_GMT =
-                PQescapeLiteral(conn, initial_timestamp_GMT,
-                                strlen(initial_timestamp_GMT));
-            pqescape_final_timestamp_GMT =
-                PQescapeLiteral(conn, final_timestamp_GMT,
-                                strlen(final_timestamp_GMT));
-
-            memset(sql, 0, sizeof(sql));
-            sprintf(sql, sql_template,
-                    pqescape_object_mac_address,
-                    pqescape_lbeacon_uuid,
-                    pqescape_rssi,
-                    pqescape_push_button,
-                    pqescape_initial_timestamp_GMT,
-                    pqescape_final_timestamp_GMT,
-                    current_time - lbeacon_timestamp_value);
-
-            PQfreemem(pqescape_object_mac_address);
-            PQfreemem(pqescape_lbeacon_uuid);
-            PQfreemem(pqescape_rssi);
-            PQfreemem(pqescape_push_button);
-            PQfreemem(pqescape_initial_timestamp_GMT);
-            PQfreemem(pqescape_final_timestamp_GMT);
-
-            ret_val = SQL_execute(db, sql);
-
-            if(WORK_SUCCESSFULLY != ret_val){
-                //SQL_rollback_transaction(db);
-                return E_SQL_EXECUTE;
-            }
-        }
-    }
-
-    //SQL_commit_transaction(db);
-
-    return WORK_SUCCESSFULLY;
-}
-*/
-
-
-ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
-                                                               char *buf,
-                                                               size_t buf_len,
-                                                               char *server_installation_path,
-                                                               int is_enabled_panic_monitoring){
-
-    PGconn *conn = (PGconn *) db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char temp_buf[WIFI_MESSAGE_LENGTH];
@@ -838,7 +811,7 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
         "ON R.mac_address = object_table.mac_address " \
         "WHERE object_summary_table.mac_address = %s " \
         "AND object_table.monitor_type & %d = %d;";
-    char *pqescape_mac_address = NULL;
+
    
     /* Open temporary file with thread id as filename to prepare the tracking 
        data for postgresql bulk-insertion */
@@ -900,19 +873,29 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
             panic_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
             if(panic_button != NULL && 1 == atoi(panic_button)){
-                pqescape_mac_address = 
-                    PQescapeLiteral(conn, object_mac_address, 
-                                    strlen(object_mac_address)); 
-
+                
                 memset(sql, 0, sizeof(sql));
                 sprintf(sql, sql_identify_panic, 
-                        pqescape_mac_address, 
+                        object_mac_address, 
                         MONITOR_PANIC,
                         MONITOR_PANIC);
 
-                ret_val = SQL_execute(db, sql);
+                if(WORK_SUCCESSFULLY != 
+                   SQL_get_database_connection(db_connection_list_head, 
+                                               &db_conn, 
+                                               &db_serial_id)){
 
-                PQfreemem(pqescape_mac_address);
+                    zlog_error(category_debug,
+                               "cannot open database\n");
+
+                    continue;
+                }
+
+                ret_val = SQL_execute(db_conn, sql);
+
+                SQL_release_database_connection(
+                    db_connection_list_head, 
+                    db_serial_id);
             }
 
             battery_voltage = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
@@ -945,8 +928,22 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_bulk_insert_template, filename); 
 
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot open database\n");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
     /* Execute SQL statement */
-    ret_val = SQL_execute(db, sql);
+    ret_val = SQL_execute(db_conn, sql);
+
+    SQL_release_database_connection(
+        db_connection_list_head, 
+        db_serial_id);
 
     remove(filename);
 
@@ -957,13 +954,15 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(void *db,
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_summarize_object_location(void *db, 
-                                        int database_pre_filter_time_window_in_sec,
-                                        int time_interval_in_sec,
-                                        int rssi_difference_of_stable_tag,
-                                        int rssi_difference_of_location_accuracy_tolerance){
+ErrorCode SQL_summarize_object_location(
+    DBConnectionListHead *db_connection_list_head,
+    int database_pre_filter_time_window_in_sec,
+    int time_interval_in_sec,
+    int rssi_difference_of_stable_tag,
+    int rssi_difference_of_location_accuracy_tolerance){
 
-    PGconn *conn = (PGconn *)db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
 
@@ -1098,13 +1097,20 @@ ErrorCode SQL_summarize_object_location(void *db,
 
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_reset_state_template);
-    ret_val = SQL_execute(db, sql);
-    if(WORK_SUCCESSFULLY != ret_val){
-        zlog_error(category_debug, "SQL_execute failed [%d]: %s",
-                   ret_val, PQerrorMessage(conn));
-        return E_SQL_EXECUTE;
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot open database\n");
+
+        return E_SQL_OPEN_DATABASE;
     }
 
+    ret_val = SQL_execute(db_conn, sql);
+
+    /* Update stable tags */
     memset(sql, 0, sizeof(sql));
 
     sprintf(sql, sql_update_stable_tag_template,
@@ -1115,34 +1121,51 @@ ErrorCode SQL_summarize_object_location(void *db,
             time_interval_in_sec,
             rssi_difference_of_location_accuracy_tolerance);
   
-    ret_val = SQL_execute(db, sql);
+    ret_val = SQL_execute(db_conn, sql);
 
     if(WORK_SUCCESSFULLY != ret_val){
         zlog_error(category_debug, "SQL_execute failed [%d]: %s",
-                   ret_val, PQerrorMessage(conn));
+                   ret_val, PQerrorMessage(db_conn));
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
+
         return E_SQL_EXECUTE;
     }
 
+    /* Update moving tags */
     memset(sql, 0, sizeof(sql));
 
     sprintf(sql, sql_update_moving_tag_template, 
             database_pre_filter_time_window_in_sec, 
             time_interval_in_sec);
   
-    ret_val = SQL_execute(db, sql);
+    ret_val = SQL_execute(db_conn, sql);
     if(WORK_SUCCESSFULLY != ret_val){
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   ret_val, PQerrorMessage(conn));
+                   ret_val, PQerrorMessage(db_conn));
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
 
         return E_SQL_EXECUTE;
     }
+
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
     
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_geofence_violation(void *db, char *mac_address){
+ErrorCode SQL_identify_geofence_violation(
+    DBConnectionListHead *db_connection_list_head,
+    char *mac_address){
 
-    PGconn *conn = (PGconn *)db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
 
@@ -1156,36 +1179,52 @@ ErrorCode SQL_identify_geofence_violation(void *db, char *mac_address){
 
     memset(sql, 0, sizeof(sql));
 
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
     pqescape_mac_address = 
-        PQescapeLiteral(conn, mac_address, 
+        PQescapeLiteral(db_conn, mac_address, 
                         strlen(mac_address)); 
    
     sprintf(sql, 
             sql_insert_summary_table, 
             pqescape_mac_address);
-            
-    //SQL_begin_transaction(db);
-
-    ret_val = SQL_execute(db, sql);
+    
+    ret_val = SQL_execute(db_conn, sql);
 
     PQfreemem(pqescape_mac_address);
    
     if(WORK_SUCCESSFULLY != ret_val){
-        //SQL_rollback_transaction(db);
         
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   ret_val, PQerrorMessage(conn));
+                   ret_val, PQerrorMessage(db_conn));
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
 
         return E_SQL_EXECUTE;
     }     
-    //SQL_commit_transaction(db);
 
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
+    
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_location_not_stay_room(void *db){
+ErrorCode SQL_identify_location_not_stay_room(
+    DBConnectionListHead *db_connection_list_head){
 
-    PGconn *conn = (PGconn *)db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_select_template = "UPDATE object_summary_table " \
@@ -1223,20 +1262,41 @@ ErrorCode SQL_identify_location_not_stay_room(void *db){
             MONITOR_LOCATION,
             MONITOR_LOCATION);
 
-    ret_val = SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    ret_val = SQL_execute(db_conn, sql);
+
     if(WORK_SUCCESSFULLY != ret_val){
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   ret_val, PQerrorMessage(conn));
+                   ret_val, PQerrorMessage(db_conn));
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
 
         return E_SQL_EXECUTE;
     }
+
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
     
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_location_long_stay_in_danger(void *db){
+ErrorCode SQL_identify_location_long_stay_in_danger(
+    DBConnectionListHead *db_connection_list_head){
 
-    PGconn *conn = (PGconn *)db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *sql_select_template = "UPDATE object_summary_table " \
@@ -1277,22 +1337,44 @@ ErrorCode SQL_identify_location_long_stay_in_danger(void *db){
             MONITOR_LOCATION,
             MONITOR_LOCATION);
 
-    ret_val = SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    ret_val = SQL_execute(db_conn, sql);
+
     if(WORK_SUCCESSFULLY != ret_val){
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   ret_val, PQerrorMessage(conn));
+                   ret_val, PQerrorMessage(db_conn));
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
 
         return E_SQL_EXECUTE;
     }
+
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
+
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_identify_last_movement_status(void *db, 
-                                            int time_interval_in_min, 
-                                            int each_time_slot_in_min,
-                                            unsigned int rssi_delta){
+ErrorCode SQL_identify_last_movement_status(
+    DBConnectionListHead *db_connection_list_head,
+    int time_interval_in_min, 
+    int each_time_slot_in_min,
+    unsigned int rssi_delta){
 
-    PGconn *conn = (PGconn *)db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
 
@@ -1362,13 +1444,27 @@ ErrorCode SQL_identify_last_movement_status(void *db,
             MONITOR_MOVEMENT,
             MONITOR_MOVEMENT);
 
-    res = PQexec(conn, sql);
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    res = PQexec(db_conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
         PQclear(res);
 
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   res, PQerrorMessage(conn));
+                   res, PQerrorMessage(db_conn));
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
 
         return E_SQL_EXECUTE;
     }
@@ -1378,8 +1474,6 @@ ErrorCode SQL_identify_last_movement_status(void *db,
 
     if(total_rows > 0 && 
        total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
-
-        //SQL_begin_transaction(db);
 
         for(current_row = 0 ; current_row < total_rows ; current_row++){
             mac_address = PQgetvalue(res, 
@@ -1395,9 +1489,9 @@ ErrorCode SQL_identify_last_movement_status(void *db,
             }
 
             pqescape_mac_address = 
-                PQescapeLiteral(conn, mac_address, strlen(mac_address));
+                PQescapeLiteral(db_conn, mac_address, strlen(mac_address));
             pqescape_lbeacon_uuid = 
-                PQescapeLiteral(conn, lbeacon_uuid, strlen(lbeacon_uuid));
+                PQescapeLiteral(db_conn, lbeacon_uuid, strlen(lbeacon_uuid));
 
             sprintf(sql, sql_select_activity_template, 
                     each_time_slot_in_min,
@@ -1407,18 +1501,21 @@ ErrorCode SQL_identify_last_movement_status(void *db,
                     rssi_delta,
                     0 - rssi_delta);
 
-            res_activity = PQexec(conn, sql);
+            res_activity = PQexec(db_conn, sql);
 
             PQfreemem(pqescape_mac_address);
             PQfreemem(pqescape_lbeacon_uuid);
 
             if(PQresultStatus(res_activity) != PGRES_TUPLES_OK){
                 PQclear(res_activity);
-                //SQL_rollback_transaction(db);
                 PQclear(res);
                     
                 zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                           res_activity, PQerrorMessage(conn));
+                           res_activity, PQerrorMessage(db_conn));
+
+                SQL_release_database_connection(
+                    db_connection_list_head,
+                    db_serial_id);
 
                 return E_SQL_EXECUTE;
             }
@@ -1427,7 +1524,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
          
             if(rows_activity == 0){
                 pqescape_mac_address = 
-                    PQescapeLiteral(conn, mac_address, 
+                    PQescapeLiteral(db_conn, mac_address, 
                                     strlen(mac_address));
                 
                 memset(sql, 0, sizeof(sql));
@@ -1435,17 +1532,20 @@ ErrorCode SQL_identify_last_movement_status(void *db,
                 sprintf(sql, sql_update_activity_template,
                         pqescape_mac_address);
                             
-                ret_val = SQL_execute(db, sql);
+                ret_val = SQL_execute(db_conn, sql);
 
                 PQfreemem(pqescape_mac_address);
                
                 if(WORK_SUCCESSFULLY != ret_val){
                     PQclear(res_activity);   
-                    //SQL_rollback_transaction(db);
                     PQclear(res);
 
                     zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                               ret_val, PQerrorMessage(conn));
+                               ret_val, PQerrorMessage(db_conn));
+
+                    SQL_release_database_connection(
+                        db_connection_list_head,
+                        db_serial_id);
 
                     return E_SQL_EXECUTE;
                 }     
@@ -1455,22 +1555,24 @@ ErrorCode SQL_identify_last_movement_status(void *db,
             }
             PQclear(res_activity);
         }
-
-        //SQL_commit_transaction(db);
     }
 
     PQclear(res);
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
 
     return WORK_SUCCESSFULLY;
 }
 
 ErrorCode SQL_collect_violation_events(
-    void *db, 
+    DBConnectionListHead *db_connection_list_head,
     ObjectMonitorType monitor_type,
     int time_interval_in_sec,
     int granularity_for_continuous_violations_in_sec){
 
-    PGconn *conn = (PGconn *)db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
 
@@ -1535,28 +1637,44 @@ ErrorCode SQL_collect_violation_events(
             violation_timestamp_name,
             granularity_for_continuous_violations_in_sec);
 
-    //SQL_begin_transaction(db);
-    ret_val = SQL_execute(db, sql);
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    ret_val = SQL_execute(db_conn, sql);
     if(WORK_SUCCESSFULLY != ret_val){
-        //SQL_rollback_transaction(db);
         
         zlog_error(category_debug, 
                    "SQL_execute failed [%d]: %s", 
                    ret_val, 
-                   PQerrorMessage(conn));
+                   PQerrorMessage(db_conn));
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
 
         return E_SQL_EXECUTE;
-    }     
-    //SQL_commit_transaction(db);
+    }    
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
 
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_get_and_update_violation_events(void *db, 
-                                              char *buf, 
-                                              size_t buf_len){
+ErrorCode SQL_get_and_update_violation_events(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len){
 
-    PGconn *conn = (PGconn *)db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
 
@@ -1592,13 +1710,27 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_select_template);
 
-    res = PQexec(conn, sql);
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    res = PQexec(db_conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
         PQclear(res);
 
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   res, PQerrorMessage(conn));
+                   res, PQerrorMessage(db_conn));
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
 
         return E_SQL_EXECUTE;
     }
@@ -1623,26 +1755,36 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
                 memset(sql, 0, sizeof(sql));
                 if(PQgetvalue(res, i, FIELD_INDEX_OF_ID) == NULL){
                     PQclear(res);
+
+                    SQL_release_database_connection(
+                        db_connection_list_head,
+                        db_serial_id);
+
                     return E_API_PROTOCOL_FORMAT;
                 }
                 sprintf(sql, 
                         sql_update_template, 
                         atoi(PQgetvalue(res, i, FIELD_INDEX_OF_ID)));
 
-                ret_val = SQL_execute(db, sql);        
+                ret_val = SQL_execute(db_conn, sql);        
             }
         }
     }
 
     PQclear(res);
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
 
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_reload_monitor_config(void *db,
-                                    int server_localtime_against_UTC_in_hour)
+ErrorCode SQL_reload_monitor_config(
+    DBConnectionListHead *db_connection_list_head,
+    int server_localtime_against_UTC_in_hour)
 {
-    PGconn *conn = (PGconn *) db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     char *table_name[] = {"geo_fence_config",
@@ -1693,26 +1835,46 @@ ErrorCode SQL_reload_monitor_config(void *db,
                 server_localtime_against_UTC_in_hour,
                 server_localtime_against_UTC_in_hour);
 
-        ret_val = SQL_execute(db, sql);
+        if(WORK_SUCCESSFULLY != 
+           SQL_get_database_connection(db_connection_list_head, 
+                                       &db_conn, 
+                                       &db_serial_id)){
+            zlog_error(category_debug,
+                       "cannot operate database");
+
+            return E_SQL_OPEN_DATABASE;
+        }
+
+        ret_val = SQL_execute(db_conn, sql);
 
         if(WORK_SUCCESSFULLY != ret_val){
-        //SQL_rollback_transaction(db);
         
-        zlog_error(category_debug, 
-                   "SQL_execute failed [%d]: %s", 
-                   ret_val, 
-                   PQerrorMessage(conn));
+            zlog_error(category_debug, 
+                       "SQL_execute failed [%d]: %s", 
+                       ret_val, 
+                       PQerrorMessage(db_conn));
+    
+            SQL_release_database_connection(
+                db_connection_list_head,
+                db_serial_id);
 
-        return E_SQL_EXECUTE;
-    }     
+            return E_SQL_EXECUTE;
+        }     
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
     }
 
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_dump_active_geo_fence_settings(void *db, char *filename)
+ErrorCode SQL_dump_active_geo_fence_settings(
+    DBConnectionListHead *db_connection_list_head, 
+    char *filename)
 {
-    PGconn *conn = (PGconn *)db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     
@@ -1749,13 +1911,30 @@ ErrorCode SQL_dump_active_geo_fence_settings(void *db, char *filename)
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_select_template);
 
-    res = PQexec(conn, sql);
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+       zlog_error(category_debug,
+                  "cannot open database");
+
+       fclose(file);
+
+       return E_SQL_OPEN_DATABASE;
+    }
+
+    res = PQexec(db_conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
+
         PQclear(res);
 
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   res, PQerrorMessage(conn));
+                   res, PQerrorMessage(db_conn));
+
+        SQL_release_database_connection(
+            db_connection_list_head, 
+            db_serial_id);
 
         fclose(file);
 
@@ -1778,16 +1957,23 @@ ErrorCode SQL_dump_active_geo_fence_settings(void *db, char *filename)
         }
     }
 
-
     PQclear(res);
+
+    SQL_release_database_connection(
+        db_connection_list_head, 
+        db_serial_id);
+
     fclose(file);
 
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(void *db, char *filename){
+ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(
+    DBConnectionListHead *db_connection_list_head, 
+    char *filename){
 
-    PGconn *conn = (PGconn *)db;
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     char sql[SQL_TEMP_BUFFER_LENGTH];
     
@@ -1821,13 +2007,30 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(void *db, char *filename)
             MONITOR_GEO_FENCE, 
             MONITOR_GEO_FENCE);
 
-    res = PQexec(conn, sql);
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+       zlog_error(category_debug,
+                  "cannot open database\n");
+
+       fclose(file);
+
+       return E_SQL_OPEN_DATABASE;
+    }
+
+    res = PQexec(db_conn, sql);
 
     if(PQresultStatus(res) != PGRES_TUPLES_OK){
+
         PQclear(res);
 
         zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   res, PQerrorMessage(conn));
+                   res, PQerrorMessage(db_conn));
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
 
         fclose(file);
 
@@ -1849,6 +2052,11 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(void *db, char *filename)
     }
 
     PQclear(res);
+
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
+
     fclose(file);
 
     return WORK_SUCCESSFULLY;

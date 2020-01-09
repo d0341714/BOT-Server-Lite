@@ -57,7 +57,7 @@ typedef struct{
 
     int is_used;
 
-    void *db;
+    PGconn *db;
 
     struct List_Entry list_entry;
 
@@ -79,7 +79,8 @@ typedef struct{
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db_conn - a pointer pointing to the connection to the database backend server
+
      sql_statement - Pointer to the SQL statement to be executed
 
   Return Value:
@@ -88,7 +89,7 @@ typedef struct{
                  is WORK_SUCCESSFULLY
 */
 
-static ErrorCode SQL_execute(void *db, char *sql_statement);
+static ErrorCode SQL_execute(PGconn *db_conn, char *sql_statement);
 
 
 /*
@@ -101,7 +102,7 @@ static ErrorCode SQL_execute(void *db, char *sql_statement);
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_conn - a pointer to the connection to the database backend server
 
   Return Value:
 
@@ -109,7 +110,7 @@ static ErrorCode SQL_execute(void *db, char *sql_statement);
                  is WORK_SUCCESSFULLY
 */
 
-static ErrorCode SQL_begin_transaction(void *db);
+static ErrorCode SQL_begin_transaction(PGconn *db_conn);
 
 
 /*
@@ -119,7 +120,7 @@ static ErrorCode SQL_begin_transaction(void *db);
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_conn - a pointer to the connection to the database backend server
 
   Return Value:
 
@@ -127,7 +128,7 @@ static ErrorCode SQL_begin_transaction(void *db);
                  is WORK_SUCCESSFULLY
 */
 
-static ErrorCode SQL_commit_transaction(void *db);
+static ErrorCode SQL_commit_transaction(PGconn *db_conn);
 
 
 /*
@@ -137,7 +138,7 @@ static ErrorCode SQL_commit_transaction(void *db);
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_conn - a pointer to the connection to the database backend server
 
   Return Value:
 
@@ -145,7 +146,7 @@ static ErrorCode SQL_commit_transaction(void *db);
                  is WORK_SUCCESSFULLY
 */
 
-static ErrorCode SQL_rollback_transaction(void *db);
+static ErrorCode SQL_rollback_transaction(PGconn *db_conn);
 
 /*
   SQL_create_database_connection_pool
@@ -156,7 +157,7 @@ static ErrorCode SQL_rollback_transaction(void *db);
 
      conninfo - the information to open database connection
 
-     list_head - the list head of database connection pool
+     db_connection_list_head - the list head of database connection pool
 
      max_connection - the maximum number of database connection in the 
                       connection pool
@@ -167,16 +168,17 @@ static ErrorCode SQL_rollback_transaction(void *db);
                  is WORK_SUCCESSFULLY
 */
 
-ErrorCode SQL_create_database_connection_pool(char *conninfo, 
-                                              DBConnectionListHead * list_head, 
-                                              int max_connection);
+ErrorCode SQL_create_database_connection_pool(
+    char *conninfo, 
+    DBConnectionListHead * db_connection_list_head, 
+    int max_connection);
 
 /*
   SQL_destroy_database_connection_pool
 
   Parameter:
 
-    list_head - the list head of database connection pool
+    db_connection_list_head - the list head of database connection pool
 
   Return Value:
     
@@ -185,7 +187,8 @@ ErrorCode SQL_create_database_connection_pool(char *conninfo,
 
 */
 
-ErrorCode SQL_destroy_database_connection_pool(DBConnectionListHead *list_head);
+ErrorCode SQL_destroy_database_connection_pool(
+    DBConnectionListHead *db_connection_list_head);
 
 /*
   SQL_get_database_connection 
@@ -194,9 +197,9 @@ ErrorCode SQL_destroy_database_connection_pool(DBConnectionListHead *list_head);
   
   Parameter:
       
-    list_head - the list head of database connection pool
+    db_connection_list_head - the list head of database connection pool
 
-    db - a pointer pointing to the connection to the database backend server
+    db_connection_list_head - the list head of database connection pool
 
     serial_id - the serial id of the database connection within the pool
 
@@ -206,9 +209,10 @@ ErrorCode SQL_destroy_database_connection_pool(DBConnectionListHead *list_head);
                 is WORK_SUCCESSFULLY
 */
 
-ErrorCode SQL_get_database_connection(DBConnectionListHead *list_head,
-                                      void **db,
-                                      int *serial_id);
+ErrorCode SQL_get_database_connection(
+    DBConnectionListHead *db_connection_list_head,
+    void **db,
+    int *serial_id);
 
 /*
   SQL_release_database_connection
@@ -217,7 +221,7 @@ ErrorCode SQL_get_database_connection(DBConnectionListHead *list_head,
   
   Paremeter:
 
-    list_head - the list head of database connection pool
+    db_connection_list_head - the list head of database connection pool
 
     serial_id - the serial id of the database connection within the pool
 
@@ -227,8 +231,9 @@ ErrorCode SQL_get_database_connection(DBConnectionListHead *list_head,
                 is WORK_SUCCESSFULLY
 */
 
-ErrorCode SQL_release_database_connection(DBConnectionListHead *list_head,
-                                          int serial_id);
+ErrorCode SQL_release_database_connection(
+    DBConnectionListHead *db_connection_list_head,
+    int serial_id);
 
 /*
   SQL_vacuum_database();
@@ -238,7 +243,7 @@ ErrorCode SQL_release_database_connection(DBConnectionListHead *list_head,
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
   Return Value:
 
@@ -246,7 +251,7 @@ ErrorCode SQL_release_database_connection(DBConnectionListHead *list_head,
                  is WORK_SUCCESSFULLY
 */
 
-ErrorCode SQL_vacuum_database(void *db);
+ErrorCode SQL_vacuum_database(DBConnectionListHead *db_connection_list_head);
 
 /*
   SQL_delte_old_data();
@@ -256,7 +261,7 @@ ErrorCode SQL_vacuum_database(void *db);
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      retention_hours - specify the hours for data retention
 
@@ -266,7 +271,8 @@ ErrorCode SQL_vacuum_database(void *db);
                  is WORK_SUCCESSFULLY
 */
 
-ErrorCode SQL_delete_old_data(void *db, int retention_hours);
+ErrorCode SQL_delete_old_data(DBConnectionListHead *db_connection_list_head, 
+                              int retention_hours);
 
 
 /*
@@ -276,7 +282,7 @@ ErrorCode SQL_delete_old_data(void *db, int retention_hours);
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      buf - an input string with the format below to specify the registered
            gateways
@@ -291,9 +297,10 @@ ErrorCode SQL_delete_old_data(void *db, int retention_hours);
                  is WORK_SUCCESSFULLY
 */
 
-ErrorCode SQL_update_gateway_registration_status(void *db,
-                                                 char *buf,
-                                                 size_t buf_len);
+ErrorCode SQL_update_gateway_registration_status(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len);
 
 /*
   SQL_update_lbeacon_registration_status
@@ -302,7 +309,7 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      buf - a pointer to an input string with the format below to specify the
            registered gateways.
@@ -321,10 +328,11 @@ ErrorCode SQL_update_gateway_registration_status(void *db,
                  is WORK_SUCCESSFULLY
 */
 
-ErrorCode SQL_update_lbeacon_registration_status(void *db,
-                                                 char *buf,
-                                                 size_t buf_len,
-                                                 char *gateway_ip_address);
+ErrorCode SQL_update_lbeacon_registration_status(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len,
+    char *gateway_ip_address);
 
 
 /*
@@ -334,7 +342,7 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      buf - a pointer to an input string with the format below to specify the
            health status of gateway
@@ -352,10 +360,11 @@ ErrorCode SQL_update_lbeacon_registration_status(void *db,
                  is WORK_SUCCESSFULLY
 */
 
-ErrorCode SQL_update_gateway_health_status(void *db,
-                                           char *buf,
-                                           size_t buf_len,
-                                           char *gateway_ip_address);
+ErrorCode SQL_update_gateway_health_status(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len,
+    char *gateway_ip_address);
 
 
 /*
@@ -365,7 +374,7 @@ ErrorCode SQL_update_gateway_health_status(void *db,
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      buf - a pointer to an input string with the format below to specify the
            health status of lbeacon
@@ -382,41 +391,11 @@ ErrorCode SQL_update_gateway_health_status(void *db,
                  is WORK_SUCCESSFULLY
 */
 
-ErrorCode SQL_update_lbeacon_health_status(void *db,
-                                           char *buf,
-                                           size_t buf_len,
-                                           char *gateway_ip_address);
-
-
-/*
-  SQL_update_object_tracking_data
-
-     Updates data of tracked objects
-
-  Parameter:
-
-     db - a pointer to the connection to the database backend server
-
-     buf - a pointer to an input string with the format below.
-
-           lbeacon_uuid;lbeacon_datetime;lbeacon_ip;object_type; \
-           object_number;object_mac_address_1;initial_timestamp_GMT_1; \
-           final_timestamp_GMT_1;rssi_1;push_button_1;object_type; \
-           object_number;object_mac_address_2;initial_timestamp_GMT_2; \
-           final_timestamp_GMT_2;rssi_2;push_button_2;
-
-     buf_len - Length in number of bytes of buf input string
-
-  Return Value:
-
-     ErrorCode - indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-/*
-ErrorCode SQL_update_object_tracking_data(void *db,
-                                          char *buf,
-                                          size_t buf_len);
-*/
+ErrorCode SQL_update_lbeacon_health_status(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len,
+    char *gateway_ip_address);
 
 /*
   SQL_update_object_tracking_data
@@ -425,7 +404,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      buf - a pointer to an input string with the format below.
 
@@ -450,7 +429,7 @@ ErrorCode SQL_update_object_tracking_data(void *db,
 */
 
 ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
-    void *db,
+    DBConnectionListHead *db_connection_list_head,
     char *buf,
     size_t buf_len,
     char *server_installation_path,
@@ -468,7 +447,7 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      database_pre_filter_time_window_in_sec - 
          The length of time window in which tracked data is filtered to limit 
@@ -491,11 +470,12 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_summarize_object_location(void *db, 
-                                        int database_pre_filter_time_window_in_sec,
-                                        int time_interval_in_sec,
-                                        int rssi_difference_of_stable_tag,
-                                        int rssi_difference_of_location_accuracy_tolerance);
+ErrorCode SQL_summarize_object_location(
+    DBConnectionListHead *db_connection_list_head, 
+    int database_pre_filter_time_window_in_sec,
+    int time_interval_in_sec,
+    int rssi_difference_of_stable_tag,
+    int rssi_difference_of_location_accuracy_tolerance);
 
 
 /*
@@ -507,7 +487,7 @@ ErrorCode SQL_summarize_object_location(void *db,
      
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      mac_address - The MAC address of a detected object.
 
@@ -517,8 +497,9 @@ ErrorCode SQL_summarize_object_location(void *db,
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_identify_geofence_violation(void *db,
-                                          char *mac_address);
+ErrorCode SQL_identify_geofence_violation(
+    DBConnectionListHead *db_connection_list_head,
+    char *mac_address);
 
 /*
   SQL_identify_panic_object
@@ -528,7 +509,7 @@ ErrorCode SQL_identify_geofence_violation(void *db,
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
   Return Value:
 
@@ -536,7 +517,8 @@ ErrorCode SQL_identify_geofence_violation(void *db,
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_identify_location_not_stay_room(void *db);
+ErrorCode SQL_identify_location_not_stay_room(
+    DBConnectionListHead *db_connection_list_head);
 
 /*
   SQL_identify_location_off_limit
@@ -546,7 +528,7 @@ ErrorCode SQL_identify_location_not_stay_room(void *db);
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
   Return Value:
 
@@ -554,7 +536,8 @@ ErrorCode SQL_identify_location_not_stay_room(void *db);
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_identify_location_long_stay_in_danger(void *db);
+ErrorCode SQL_identify_location_long_stay_in_danger(
+    DBConnectionListHead *db_connection_list_head);
 
 /*
   SQL_identify_last_movement_status
@@ -568,7 +551,8 @@ ErrorCode SQL_identify_location_long_stay_in_danger(void *db);
 
   Parameter:
 
-     db - a pointer to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
+
 
      time_interval_in_min - the time window in which we want to monitor the 
                             movement activity
@@ -585,10 +569,11 @@ ErrorCode SQL_identify_location_long_stay_in_danger(void *db);
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_identify_last_movement_status(void *db, 
-                                            int time_interval_in_min, 
-                                            int each_time_slot_in_min,
-                                            unsigned int rssi_delta);
+ErrorCode SQL_identify_last_movement_status(
+    DBConnectionListHead *db_connection_list_head, 
+    int time_interval_in_min, 
+    int each_time_slot_in_min,
+    unsigned int rssi_delta);
 
 
 /*
@@ -598,7 +583,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
      
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      mac_address -  MAC address of detected object.
 
@@ -617,7 +602,7 @@ ErrorCode SQL_identify_last_movement_status(void *db,
 */
 
 ErrorCode SQL_collect_violation_events(
-    void *db, 
+    DBConnectionListHead *db_connection_list_head, 
     ObjectMonitorType monitor_type,
     int time_interval_in_sec,
     int granularity_for_continuous_violations_in_sec);
@@ -631,7 +616,7 @@ ErrorCode SQL_collect_violation_events(
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      buf - an output string with detailed information of violations
 
@@ -643,9 +628,10 @@ ErrorCode SQL_collect_violation_events(
                  is WORK_SUCCESSFULLY.
 */
 
-ErrorCode SQL_get_and_update_violation_events(void *db,
-                                              char *buf,
-                                              size_t buf_len);
+ErrorCode SQL_get_and_update_violation_events(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len);
 
 /*
   SQL_reload_monitor_config
@@ -655,7 +641,7 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
 
   Parameter:
 
-     db - a pointing to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      server_localtime_against_UTC_in_hour - The time difference between server 
                                             localtime against UTC. 
@@ -665,8 +651,9 @@ ErrorCode SQL_get_and_update_violation_events(void *db,
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_reload_monitor_config(void *db, 
-                                    int server_localtime_against_UTC_in_hour);
+ErrorCode SQL_reload_monitor_config(
+    DBConnectionListHead *db_connection_list_head, 
+    int server_localtime_against_UTC_in_hour);
 
 /*
   SQL_dump_active_geo_fence_settings
@@ -675,7 +662,7 @@ ErrorCode SQL_reload_monitor_config(void *db,
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      filename - the specified file name to store the dumped geo-fence settings
      
@@ -684,7 +671,8 @@ ErrorCode SQL_reload_monitor_config(void *db,
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_dump_active_geo_fence_settings(void *db, char *filename);
+ErrorCode SQL_dump_active_geo_fence_settings(DBConnectionListHead *db_connection_list_head, 
+                                             char *filename);
 
 /*
   SQL_dump_mac_address_under_geo_fence_monitor
@@ -693,7 +681,7 @@ ErrorCode SQL_dump_active_geo_fence_settings(void *db, char *filename);
 
   Parameter:
 
-     db - a pointer pointing to the connection to the database backend server
+     db_connection_list_head - the list head of database connection pool
 
      filename - the specified file name to store the dumped mac address
      
@@ -702,6 +690,8 @@ ErrorCode SQL_dump_active_geo_fence_settings(void *db, char *filename);
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(void *db, char *filename);
+ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(
+    DBConnectionListHead *db_connection_list_head,
+    char *filename);
 
 #endif

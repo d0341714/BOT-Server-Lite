@@ -246,11 +246,12 @@ int main(int argc, char **argv)
 
     /* Create database connection pool */
     zlog_info(category_debug,"Initialize database connection pool");
-    if(SQL_create_database_connection_pool(
-           database_argument, 
-           &config.db_connection_list_head, 
-           config.number_of_database_connection) != WORK_SUCCESSFULLY){
-    
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_create_database_connection_pool(database_argument, 
+                                           &config.db_connection_list_head, 
+                                           config.number_of_database_connection)){ 
+       
             SQL_destroy_database_connection_pool(
                 &config.db_connection_list_head);
 
@@ -798,8 +799,6 @@ ErrorCode get_server_config(ServerConfig *config,
 
 void *maintain_database()
 {
-    void *db = NULL;
-    int serial_id = -1;
     ErrorCode ret = WORK_SUCCESSFULLY;
 
     while(true == ready_to_work){
@@ -807,16 +806,8 @@ void *maintain_database()
                   "SQL_delete_old_data with database_keep_hours=[%d]", 
                   config.database_keep_hours); 
 
-        if(WORK_SUCCESSFULLY !=
-           SQL_get_database_connection(&config.db_connection_list_head,
-                                       &db,
-                                       &serial_id)){
-            zlog_error(category_debug,
-                       "cannot open database");
-            continue;
-        }
-
-        ret = SQL_delete_old_data(db, config.database_keep_hours);
+        ret = SQL_delete_old_data(&config.db_connection_list_head, 
+                                  config.database_keep_hours);
 
         if(WORK_SUCCESSFULLY != ret){
             zlog_error(category_debug, 
@@ -827,16 +818,13 @@ void *maintain_database()
 
         zlog_info(category_debug, "SQL_vacuum_database");
 
-        ret = SQL_vacuum_database(db);
+        ret = SQL_vacuum_database(&config.db_connection_list_head);
 
         if(WORK_SUCCESSFULLY != ret){
             zlog_error(category_debug, 
                        "SQL_vacuum_database failed ret=[%d]", 
                        ret); 
         }
-
-        SQL_release_database_connection(&config.db_connection_list_head, 
-                                        serial_id);
 
         //Sleep one hour before next check
         sleep_t(MS_EACH_HOUR);
@@ -846,22 +834,10 @@ void *maintain_database()
 }
 
 void *Server_summarize_location_information(){
-    void *db = NULL;  
-    int serial_id = -1;
-
-    if(WORK_SUCCESSFULLY != 
-       SQL_get_database_connection(&config.db_connection_list_head,
-                                   &db,
-                                   &serial_id)){
-
-        zlog_error(category_debug, 
-                  "cannot open database"); 
-        return (void *)NULL;
-    }
-
+    
     while(true == ready_to_work){
     
-        SQL_summarize_object_location(db,
+        SQL_summarize_object_location(&config.db_connection_list_head,
                                       config.database_pre_filter_time_window_in_sec,
                                       config.location_time_interval_in_sec,
                                       config.rssi_difference_of_stable_tag,
@@ -870,15 +846,10 @@ void *Server_summarize_location_information(){
         sleep_t(BUSY_WAITING_TIME_IN_MS);
     }
 
-    SQL_release_database_connection(&config.db_connection_list_head,
-                                    serial_id);
-
     return (void *)NULL;
 }
 
 void *Server_monitor_object_violations(){
-    void *db = NULL;
-    int serial_id = -1;
     int uptime = 0;
     int last_monitor_movement_timestamp = 0;
    
@@ -889,20 +860,13 @@ void *Server_monitor_object_violations(){
     
         uptime = get_clock_time();
 
-        if(WORK_SUCCESSFULLY != 
-           SQL_get_database_connection(&config.db_connection_list_head,
-                                       &db,
-                                       &serial_id)){
-            zlog_error(category_debug,
-                       "cannot open database");
-            continue;
-        }
-
         if(config.is_enabled_location_monitor){
                 
-            SQL_identify_location_not_stay_room(db);
+            SQL_identify_location_not_stay_room(
+                &config.db_connection_list_head);
  
-            SQL_identify_location_long_stay_in_danger(db);
+            SQL_identify_location_long_stay_in_danger(
+                &config.db_connection_list_head);
         }
 
         if(config.is_enabled_movement_monitor &&
@@ -912,14 +876,12 @@ void *Server_monitor_object_violations(){
             last_monitor_movement_timestamp = uptime;
 
             SQL_identify_last_movement_status(
-                db, 
+                &config.db_connection_list_head, 
                 config.movement_monitor_config.monitor_interval_in_min, 
                 config.movement_monitor_config.each_time_slot_in_min,
                 config.movement_monitor_config.rssi_delta);    
         }
-        SQL_release_database_connection(&config.db_connection_list_head, 
-                                        serial_id);
-
+       
         sleep_t(BUSY_WAITING_TIME_IN_MS);
     }
 
@@ -928,25 +890,12 @@ void *Server_monitor_object_violations(){
 
 
 void *Server_reload_monitor_config(){
-    void *db = NULL;
-    int serial_id = -1;
     
     while(true == ready_to_work){
-        if(WORK_SUCCESSFULLY != 
-           SQL_get_database_connection(&config.db_connection_list_head,
-                                       &db,
-                                       &serial_id)){
-        zlog_error(category_debug,
-                   "cannot open database");
-            return;
-        }
-
-        SQL_reload_monitor_config(db, 
+       
+        SQL_reload_monitor_config(&config.db_connection_list_head, 
                                   config.server_localtime_against_UTC_in_hour);
 
-        SQL_release_database_connection(&config.db_connection_list_head,
-                                        serial_id);
- 
         sleep_t(NORMAL_WAITING_TIME_IN_MS);
 
     }
@@ -956,55 +905,41 @@ void *Server_reload_monitor_config(){
 }
 
 void *Server_collect_violation_event(){
-    void *db = NULL;
-    int serial_id = -1;
 
-  
     while(true == ready_to_work){
 
-        if(WORK_SUCCESSFULLY != 
-           SQL_get_database_connection(&config.db_connection_list_head,
-                                       &db,
-                                       &serial_id)){
-
-            zlog_error(category_debug,
-                       "cannot open database");
-            continue;
-        }
         if(config.is_enabled_collect_violation_event){
           
             if(config.is_enabled_geofence_monitor){
                 SQL_collect_violation_events(
-                    db,
+                    &config.db_connection_list_head,
                     MONITOR_GEO_FENCE,
                     config.collect_violation_event_time_interval_in_sec,
                     config.granularity_for_continuous_violations_in_sec);
             }
             if(config.is_enabled_panic_button_monitor){
                 SQL_collect_violation_events(
-                    db,
+                    &config.db_connection_list_head,
                     MONITOR_PANIC,
                     config.collect_violation_event_time_interval_in_sec,
                     config.granularity_for_continuous_violations_in_sec);
             }
             if(config.is_enabled_movement_monitor){
                 SQL_collect_violation_events(
-                    db,
+                    &config.db_connection_list_head,
                     MONITOR_MOVEMENT,
                     config.collect_violation_event_time_interval_in_sec,
                     config.granularity_for_continuous_violations_in_sec);
             }
             if(config.is_enabled_location_monitor){
                 SQL_collect_violation_events(
-                    db,
+                    &config.db_connection_list_head,
                     MONITOR_LOCATION,
                     config.collect_violation_event_time_interval_in_sec,
                     config.granularity_for_continuous_violations_in_sec);
             }
         }
-        SQL_release_database_connection(&config.db_connection_list_head, 
-                                        serial_id);
-
+      
         sleep_t(BUSY_WAITING_TIME_IN_MS);
     }
 
@@ -1013,27 +948,19 @@ void *Server_collect_violation_event(){
 
 
 void *Server_send_notification(){
-    void *db = NULL;
-    int serial_id = -1;
     char violation_info[WIFI_MESSAGE_LENGTH];
 
 
     while(true == ready_to_work){
 
-        if(WORK_SUCCESSFULLY != 
-           SQL_get_database_connection(&config.db_connection_list_head,
-                                       &db,
-                                       &serial_id)){
-            zlog_error(category_debug,
-                       "cannot open database");
-
-            continue;
-        }
-
         if(config.is_enabled_send_notification_alarm){
-             memset(violation_info, 0, sizeof(violation_info));
-            SQL_get_and_update_violation_events(db, violation_info, 
-                                                sizeof(violation_info));
+
+            memset(violation_info, 0, sizeof(violation_info));
+
+            SQL_get_and_update_violation_events(
+                &config.db_connection_list_head, 
+                violation_info, 
+                sizeof(violation_info));
 
             /* The notification alarm is sent out to all BOT agents currently.
                If needed, we can extend notification feature to support 
@@ -1044,9 +971,6 @@ void *Server_send_notification(){
                 send_notification_alarm_to_gateway();            
             }
         }
-
-        SQL_release_database_connection(&config.db_connection_list_head,
-                                        serial_id);
 
         sleep_t(BUSY_WAITING_TIME_IN_MS);
     }
@@ -1090,9 +1014,6 @@ void *Server_NSI_routine(void *_buffer_node)
 
     char gateway_record[WIFI_MESSAGE_LENGTH];
 
-    void *db = NULL;
-    int serial_id = -1;
-
     JoinStatus join_status = JOIN_UNKNOWN;
 
     zlog_info(category_debug, "Start join...(%s)", 
@@ -1102,32 +1023,17 @@ void *Server_NSI_routine(void *_buffer_node)
 
     sprintf(gateway_record, "1;%s;%d;", current_node -> net_address,
             S_NORMAL_STATUS);
-    
-    if(WORK_SUCCESSFULLY != 
-       SQL_get_database_connection(&config.db_connection_list_head, 
-                                   &db,
-                                   &serial_id)){
+   
+    SQL_update_gateway_registration_status(
+        &config.db_connection_list_head, 
+        gateway_record,
+        strlen(gateway_record));
 
-        zlog_error(category_debug, 
-                  "cannot open database"); 
-
-        mp_free( &node_mempool, current_node);
-
-        return (void *)NULL;
-
-    }
-
-    SQL_update_gateway_registration_status(db, gateway_record,
-                                           strlen(gateway_record));
-
-    SQL_update_lbeacon_registration_status(db,
-                                           current_node->content,
-                                           strlen(current_node->content),
-                                           current_node -> net_address);
-
-    SQL_release_database_connection(&config.db_connection_list_head,
-                                    serial_id);
-
+    SQL_update_lbeacon_registration_status(
+        &config.db_connection_list_head,
+        current_node->content,
+        strlen(current_node->content),
+        current_node -> net_address);
 
      /* Put the address into Gateway_address_map */
     if (true == Gateway_join_request(&Gateway_address_map, 
@@ -1162,42 +1068,25 @@ void *Server_BHM_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
     
-    void *db = NULL;
-    int serial_id = -1;
-    
-    if(WORK_SUCCESSFULLY != 
-       SQL_get_database_connection(&config.db_connection_list_head,
-                                   &db,
-                                   &serial_id)){
-
-        zlog_error(category_debug, 
-                  "cannot open database"); 
-
-        mp_free( &node_mempool, current_node);
-
-        return (void *)NULL;
-    }
-
+   
     if(current_node->pkt_direction == from_gateway){
 
         if(current_node->pkt_type == gateway_health_report){
           
-            SQL_update_gateway_health_status(db,
+            SQL_update_gateway_health_status(&config.db_connection_list_head,
                                              current_node -> content,
                                              current_node -> content_size,
                                              current_node -> net_address);
         }
         else if(current_node->pkt_type == beacon_health_report){
 
-            SQL_update_lbeacon_health_status(db,
+            SQL_update_lbeacon_health_status(&config.db_connection_list_head,
                                              current_node -> content,
                                              current_node -> content_size,
                                              current_node -> net_address);
         }
     }
-    SQL_release_database_connection(&config.db_connection_list_head, 
-                                    serial_id);
-    
+
     mp_free( &node_mempool, current_node);
 
     return (void *)NULL;
@@ -1207,34 +1096,19 @@ void *Server_LBeacon_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
     
-    void *db = NULL;
-    int serial_id = -1;
-
-    if(WORK_SUCCESSFULLY != 
-       SQL_get_database_connection(&config.db_connection_list_head,
-                                   &db,
-                                   &serial_id)){
-
-        zlog_error(category_debug, 
-                  "cannot open database"); 
-
-        mp_free( &node_mempool, current_node);
-
-        return (void *)NULL;
-    }
 
     if(current_node -> pkt_type == tracked_object_data)
     {
         // Server should support backward compatibility.
         if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
-            /*
+            /*[obsoleted-20200109]
             SQL_update_object_tracking_data(db,
                                             current_node -> content,
                                             strlen(current_node -> content));
                                             */
         }else{
             SQL_update_object_tracking_data_with_battery_voltage(
-                db,
+                &config.db_connection_list_head,
                 current_node -> content,
                 strlen(current_node -> content),
                 config.server_installation_path,
@@ -1242,8 +1116,6 @@ void *Server_LBeacon_routine(void *_buffer_node)
         }
 
     }
-
-    SQL_release_database_connection(&config.db_connection_list_head, serial_id);
 
     mp_free( &node_mempool, current_node);
 
@@ -1289,31 +1161,14 @@ void *process_commands(void *_buffer_node){
 void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
-   
-    void *db = NULL;
-    int serial_id = -1;
 
-
-    if(WORK_SUCCESSFULLY != 
-       SQL_get_database_connection(&config.db_connection_list_head,
-                                   &db,
-                                   &serial_id)){
-
-        zlog_error(category_debug, 
-                  "cannot open database"); 
-
-        mp_free( &node_mempool, current_node);
-
-        return (void *)NULL;
-
-    }
-
+    
     if(current_node -> pkt_type == time_critical_tracked_object_data){
        
         if(config.is_enabled_geofence_monitor){
-            
+
             check_geo_fence_violations(current_node, 
-                                       database_argument,
+                                       &config.db_connection_list_head,
                                        &config.geo_fence_list_head, 
                                        &config.objects_under_geo_fence_list_head,
                                        &config.geo_fence_violation_list_head,
@@ -1323,14 +1178,14 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 
         // Server should support backward compatibility.
         if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
-            /*
+            /*[obsoleted-20200109]
             SQL_update_object_tracking_data(db,
                                             current_node -> content,
                                             strlen(current_node -> content));
                                             */
         }else{
             SQL_update_object_tracking_data_with_battery_voltage(
-                db,
+                &config.db_connection_list_head,
                 current_node -> content,
                 strlen(current_node -> content),
                 config.server_installation_path,
@@ -1338,9 +1193,6 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
         }
         
     }
-
-    SQL_release_database_connection(&config.db_connection_list_head,
-                                    serial_id);
 
     mp_free( &node_mempool, current_node);
 

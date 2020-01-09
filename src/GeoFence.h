@@ -160,7 +160,7 @@ Memory_Pool geofence_violation_mempool;
 
   Parameters:
 
-     database_argument - The database argument for opening database 
+     db_connection_list_head - the list head of database connection pool
      
      geo_fence_list_head - The pointer to geo fence list head in server global 
                            configuration structure.
@@ -213,7 +213,7 @@ ErrorCode destroy_geo_fence_list(GeoFenceListHead* geo_fence_list_head,
 
   Parameters:
 
-     database_argument - The database argument for opening database 
+     db_connection_list_head - the list head of database connection pool
      
      objects_list_head - The pointer to list of objects under geo-fence 
                          monitoring
@@ -271,7 +271,7 @@ ErrorCode destroy_objects_list_under_geo_fence_monitoring(
 
       command_buf - The pointers to command buffer specified by user
 
-      database_argument - The database argument for opening database
+      db_connection_list_head - the list head of database connection pool
 
       geo_fence_list_head - The pointers to geo fence list head in server global 
                             configuration structures
@@ -296,7 +296,7 @@ ErrorCode reload_geo_fence_settings(char *command_buf,
 
      buffer_node - The pointer points to the buffer node.
 
-     database_argument - the information to connect database
+     db_connection_list_head - the list head of database connection pool
 
      geo_fence_list_head - The pointer to geo fence list head in server global 
                            configuration structure.
@@ -317,7 +317,7 @@ ErrorCode reload_geo_fence_settings(char *command_buf,
 
 ErrorCode check_geo_fence_violations(
     BufferNode* buffer_node, 
-    char * database_argument,
+    DBConnectionListHead *db_connection_list_head,
     GeoFenceListHead* geo_fence_list_head,
     ObjectWithGeoFenceListHead * objects_list_head,
     GeoFenceViolationListHead * geo_fence_violation_list_head,
@@ -349,7 +349,7 @@ ErrorCode check_geo_fence_violations(
      perimeter_valid_duration_in_sec - The time duration geo-fence perimeter 
                                        violation lasts valid 
      
-     database_argument - The database argument for opening database 
+     db_connection_list_head - the list head of database connection pool
 
   Return value:
 
@@ -365,6 +365,6 @@ ErrorCode examine_object_tracking_data(
     ObjectWithGeoFenceListHead * objects_list_head,
     GeoFenceViolationListHead * geo_fence_violation_list_head,
     int perimeter_valid_duration_in_sec,
-    char * database_argument);
+    DBConnectionListHead *db_connection_list_head);
 
 #endif
