@@ -44,15 +44,13 @@ void display_usage(){
            "-r [geofence_setting] -f area_all\n", IPCCommand_String[1]);
     printf("cmdServerIPC -p [server_port] -c %s " \
            "-r [geofence_setting] -f area_one -a [area_id]\n", IPCCommand_String[1]);
-    printf("cmdServerIPC -p [server_port] -c %s\n", IPCCommand_String[2]);
     printf("\n");
     printf("\n");
     printf("-p: specify the listening port of the destination server\n\n");
     printf("\n");
     printf("-c: specify the IPC command. The supported values are:\n");
-    printf("    %s: reload monitor configuration setting.\n", IPCCommand_String[1]);
     printf("    %s: reload geofence setting. Please specify option -r and option -f as well\n", 
-           IPCCommand_String[2]);
+           IPCCommand_String[1]);
     printf("\n");
     printf("-r: specify the settings to be loaded. The supported settings are:\n");
     printf("    %s: reload both geofence list and geofence objects\n", 
@@ -190,13 +188,6 @@ int main(int argc, char **argv)
                 return -1;
             }
 
-            break;
-        case CMD_RELOAD_MONITOR_SETTING:
-            sprintf(message_content, "%d;%d;%s;%d;",
-                    pkt_direction,
-                    pkt_type, 
-                    BOT_SERVER_API_VERSION_LATEST,
-                    command);
             break;
         default:
             printf("invalid argument: option -c, " \

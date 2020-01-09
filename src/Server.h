@@ -522,9 +522,10 @@ void *Server_summarize_location_information();
 void *Server_monitor_object_violations(); 
 
 /*
-  reload_monitor_config:
+  Server_reload_monitor_config:
 
-     This function reloads monitoring configurations. 
+     This function checks if it is time to reload monitoring configurations. If 
+     YES, it triggers SQL wrapper functions to reload the settings.
 
   Parameters:
 
@@ -535,7 +536,7 @@ void *Server_monitor_object_violations();
      None
  */
 
-void reload_monitor_config(); 
+void *Server_reload_monitor_config(); 
 
 /*
   Server_collect_violation_event:
