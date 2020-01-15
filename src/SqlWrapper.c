@@ -509,11 +509,14 @@ ErrorCode SQL_update_lbeacon_registration_status(
                          "health_status, " \
                          "gateway_ip_address, " \
                          "registered_timestamp, " \
-                         "last_report_timestamp) " \
+                         "last_report_timestamp, " \
+                         "coordinate_x, " \
+                         "coordinate_y) " \
                          "VALUES " \
                          "(%s, %s, \'%d\', %s, " \
                          "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
-                         "NOW()) " \
+                         "NOW(), " \
+                         "%d, %d) " \
                          "ON CONFLICT (uuid) " \
                          "DO UPDATE SET ip_address = %s, " \
                          "health_status = \'%d\', " \
@@ -528,7 +531,14 @@ ErrorCode SQL_update_lbeacon_registration_status(
     char *pqescape_lbeacon_ip = NULL;
     char *pqescape_gateway_ip = NULL;
     char *pqescape_registered_timestamp_GMT = NULL;
-
+    char str_uuid[LENGTH_OF_UUID];
+    char coordinate_x[LENGTH_OF_UUID];
+    char coordinate_y[LENGTH_OF_UUID];
+    int int_coordinate_x = 0;
+    int int_coordinate_y = 0;
+    const int INDEX_OF_COORDINATE_X_IN_UUID = 12;
+    const int INDEX_OF_COORDINATE_Y_IN_UUID = 24;
+    const int LENGTH_OF_COORDINATE_IN_UUID = 8;
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -557,6 +567,23 @@ ErrorCode SQL_update_lbeacon_registration_status(
 
     while( numbers-- ){
         uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+        memset(str_uuid, 0, sizeof(str_uuid));
+        strcpy(str_uuid, uuid);
+
+        memset(coordinate_x, 0, sizeof(coordinate_x));
+        memset(coordinate_y, 0, sizeof(coordinate_y));
+        
+        strncpy(coordinate_x, 
+                &str_uuid[INDEX_OF_COORDINATE_X_IN_UUID], 
+                LENGTH_OF_COORDINATE_IN_UUID);
+        strncpy(coordinate_y, 
+                &str_uuid[INDEX_OF_COORDINATE_Y_IN_UUID], 
+                LENGTH_OF_COORDINATE_IN_UUID);
+
+        int_coordinate_x = atoi(coordinate_x);
+        int_coordinate_y = atoi(coordinate_y);
+
         registered_timestamp_GMT = 
             strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
         lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
@@ -581,6 +608,8 @@ ErrorCode SQL_update_lbeacon_registration_status(
                 health_status,
                 pqescape_gateway_ip,
                 pqescape_registered_timestamp_GMT,
+                int_coordinate_x,
+                int_coordinate_y,
                 pqescape_lbeacon_ip,
                 health_status,
                 pqescape_gateway_ip);
@@ -966,8 +995,8 @@ ErrorCode SQL_summarize_object_location(
     DBConnectionListHead *db_connection_list_head,
     int database_pre_filter_time_window_in_sec,
     int time_interval_in_sec,
-    int rssi_difference_of_stable_tag,
-    int rssi_difference_of_location_accuracy_tolerance){
+    int rssi_difference_of_location_accuracy_tolerance,
+    int base_location_tolerance_in_millimeter){
 
     PGconn *db_conn = NULL;
     int db_serial_id = -1;
@@ -991,8 +1020,10 @@ ErrorCode SQL_summarize_object_location(
         "FROM " \
         "object_summary_table " \
         "INNER JOIN " \
-        "(SELECT object_mac_address, lbeacon_uuid, " \
-        "ROUND(AVG(rssi), 0) as avg_rssi, MAX(final_timestamp) as final_timestamp, " \
+        "(SELECT object_mac_address, " \
+        "lbeacon_uuid, " \
+        "ROUND(AVG(rssi), 0) as avg_rssi, " \
+        "MAX(final_timestamp) as final_timestamp, " \
         "MIN(battery_voltage) as battery_voltage " \
         "FROM " \
         "tracking_table " \
@@ -1003,8 +1034,7 @@ ErrorCode SQL_summarize_object_location(
         "GROUP BY object_mac_address, lbeacon_uuid " \
         ") recent_table " \
         "ON object_summary_table.mac_address = recent_table.object_mac_address AND " \
-        "object_summary_table.uuid = recent_table.lbeacon_uuid AND " \
-        "ABS(rssi - avg_rssi) <= %d " \
+        "object_summary_table.uuid = recent_table.lbeacon_uuid " \
         "INNER JOIN " \
         "(SELECT * " \
         "FROM " \
@@ -1101,7 +1131,45 @@ ErrorCode SQL_summarize_object_location(
         "object_summary_table.mac_address = " \
         "location_information.object_mac_address AND " \
 		"object_summary_table.is_location_updated = 0;";
-        
+		
+	char *sql_update_tag_base_location_template = 
+	    "UPDATE object_summary_table "\
+        "SET " \
+        "base_x = tag_new_base.base_x, " \
+	    "base_y = tag_new_base.base_y " \
+		"FROM " \
+        "(SELECT " \
+		"object_mac_address, " \
+        "ROUND(SUM(coordinate_x*weight)/SUM(weight),0) as base_x, " \
+        "ROUND(SUM(coordinate_y*weight)/SUM(weight),0) as base_y " \
+        "FROM " \
+        "(SELECT " \
+	    "object_mac_address, " \
+	    "lbeacon_uuid, " \
+	    "ROUND(AVG(rssi),0) as average_rssi, " \
+	    "(SELECT weight from rssi_weight_table " \
+        "WHERE avg(rssi) >= bottom_rssi AND avg(rssi) < upper_rssi LIMIT 1) " \
+        "AS weight " \
+        "FROM tracking_table " \
+		"WHERE " \
+		"final_timestamp > NOW() - interval '%d seconds' AND " \
+		"final_timestamp >= NOW() - (server_time_offset || 'seconds')::INTERVAL - " \
+        "INTERVAL '%d seconds' " \
+        "GROUP BY object_mac_address, lbeacon_uuid " \
+        "HAVING avg(rssi) >  -100" \
+        "ORDER BY object_mac_address, lbeacon_uuid, average_rssi DESC " \
+        ") beacon_rssi_table " \
+        "INNER JOIN " \
+        "lbeacon_table " \
+        "ON beacon_rssi_table.lbeacon_uuid = lbeacon_table.uuid " \
+        "GROUP BY object_mac_address) tag_new_base " \
+        "WHERE object_summary_table.mac_address = tag_new_base.object_mac_address " \
+        "AND " \
+        "(" \
+        "(ABS(object_summary_table.base_x - tag_new_base.base_x) >= %d) " \
+        "OR " \
+        "(ABS(object_summary_table.base_y - tag_new_base.base_y) >= %d) " \
+        ")";
 
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_reset_state_template);
@@ -1124,7 +1192,6 @@ ErrorCode SQL_summarize_object_location(
     sprintf(sql, sql_update_stable_tag_template,
             database_pre_filter_time_window_in_sec,
             time_interval_in_sec,
-            rssi_difference_of_stable_tag,
             database_pre_filter_time_window_in_sec,
             time_interval_in_sec,
             rssi_difference_of_location_accuracy_tolerance);
@@ -1148,6 +1215,27 @@ ErrorCode SQL_summarize_object_location(
     sprintf(sql, sql_update_moving_tag_template, 
             database_pre_filter_time_window_in_sec, 
             time_interval_in_sec);
+  
+    ret_val = SQL_execute(db_conn, sql);
+    if(WORK_SUCCESSFULLY != ret_val){
+        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
+                   ret_val, PQerrorMessage(db_conn));
+
+        SQL_release_database_connection(
+            db_connection_list_head,
+            db_serial_id);
+
+        return E_SQL_EXECUTE;
+    }
+	
+	/* Update base location of tags */
+    memset(sql, 0, sizeof(sql));
+
+    sprintf(sql, sql_update_tag_base_location_template, 
+            database_pre_filter_time_window_in_sec, 
+            time_interval_in_sec,
+            base_location_tolerance_in_millimeter,
+            base_location_tolerance_in_millimeter);
   
     ret_val = SQL_execute(db_conn, sql);
     if(WORK_SUCCESSFULLY != ret_val){

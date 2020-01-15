@@ -189,13 +189,13 @@ typedef struct {
        made visiable to BOT system. */
     int location_time_interval_in_sec;
 
-    /* The RSSI difference in which the tag is still treated as stable and 
-    associated to its lbeacon */
-    int rssi_difference_of_stable_tag;
-
     /* The RSSI difference in which the tag is still treated as scanned by
     the strongest and nearest lbeacon*/
     int rssi_difference_of_location_accuracy_tolerance;
+
+    /* The distance tolerance within which the tag is treated as stable
+    and its coordinate x and y will not be updated on map. */
+    int base_location_tolerance_in_millimeter;
 
     /* The flag indicating whether panic button monitor is enabled. */
     int is_enabled_panic_button_monitor;
