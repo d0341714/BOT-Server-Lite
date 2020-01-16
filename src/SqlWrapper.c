@@ -200,24 +200,32 @@ static ErrorCode SQL_get_database_connection(
 
     List_Entry *current_list_entry = NULL;
     DBConnectionNode * current_list_ptr = NULL;
+    int retry_times = SQL_GET_AVAILABLE_CONNECTION_RETRIES;
 
-    pthread_mutex_lock(&db_connection_list_head->list_lock);
+    while(retry_times --){
 
-    list_for_each(current_list_entry,
-                  &db_connection_list_head->list_head){
-       current_list_ptr = ListEntry(current_list_entry,
-                                    DBConnectionNode,
-                                    list_entry);
-       if(current_list_ptr->is_used == 0){
-           *db = (PGconn*) current_list_ptr->db;
-           *serial_id = current_list_ptr->serial_id;
-           current_list_ptr->is_used = 1;
+        pthread_mutex_lock(&db_connection_list_head->list_lock);
 
-           pthread_mutex_unlock(&db_connection_list_head->list_lock);
-           return WORK_SUCCESSFULLY;
-       } 
+        list_for_each(current_list_entry,
+                      &db_connection_list_head->list_head){
+            
+            current_list_ptr = ListEntry(current_list_entry,
+                                         DBConnectionNode,
+                                         list_entry);
+       
+            if(current_list_ptr->is_used == 0){
+
+               *db = (PGconn*) current_list_ptr->db;
+               *serial_id = current_list_ptr->serial_id;
+               current_list_ptr->is_used = 1;
+
+               pthread_mutex_unlock(&db_connection_list_head->list_lock);
+               return WORK_SUCCESSFULLY;
+           } 
+        }
+        pthread_mutex_unlock(&db_connection_list_head->list_lock);
+
     }
-    pthread_mutex_unlock(&db_connection_list_head->list_lock);
 
     return E_SQL_OPEN_DATABASE;
 }

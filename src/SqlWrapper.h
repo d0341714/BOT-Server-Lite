@@ -48,6 +48,10 @@
 /* Maximum length of message to communicate with SQL wrapper API in bytes */
 #define SQL_TEMP_BUFFER_LENGTH 4096
 
+/* The times of retrying to get available database connection from connection 
+pool */
+#define SQL_GET_AVAILABLE_CONNECTION_RETRIES 5
+
 /* When debugging is needed */
 //#define debugging
 
