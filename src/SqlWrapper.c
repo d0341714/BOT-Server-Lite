@@ -1166,6 +1166,10 @@ ErrorCode SQL_summarize_object_location(
         "WHERE object_summary_table.mac_address = tag_new_base.object_mac_address " \
         "AND " \
         "(" \
+        "object_summary_table.base_x IS NULL " \
+        "OR " \
+        "object_summary_table.base_y IS NULL " \
+        "OR " \
         "(ABS(object_summary_table.base_x - tag_new_base.base_x) >= %d) " \
         "OR " \
         "(ABS(object_summary_table.base_y - tag_new_base.base_y) >= %d) " \
