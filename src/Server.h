@@ -200,10 +200,6 @@ typedef struct {
     /* The flag indicating whether panic button monitor is enabled. */
     int is_enabled_panic_button_monitor;
 
-    /* The length of the time window in which the object is in the panic 
-       condition after the user presses the panic buton on the object. */
-    int panic_time_interval_in_sec;
-
     /* The flag indicating whether geo-fence monitor is enabled. */
     int is_enabled_geofence_monitor;
 

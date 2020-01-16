@@ -697,12 +697,6 @@ ErrorCode get_server_config(ServerConfig *config,
               config->is_enabled_panic_button_monitor);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->panic_time_interval_in_sec = atoi(config_message);
-    zlog_info(category_debug,
-              "The panic_time_interval_in_sec is [%d]", 
-              config->panic_time_interval_in_sec);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
     config->is_enabled_geofence_monitor = atoi(config_message);
     zlog_info(category_debug,
               "The is_enabled_geofence_monitor is [%d]", 
