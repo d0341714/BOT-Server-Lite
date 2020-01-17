@@ -529,7 +529,9 @@ ErrorCode SQL_update_lbeacon_registration_status(
                          "DO UPDATE SET ip_address = %s, " \
                          "health_status = \'%d\', " \
                          "gateway_ip_address = %s, " \
-                         "last_report_timestamp = NOW() ;";
+                         "last_report_timestamp = NOW(), " \
+                         "coordinate_x = %d, " \
+                         "coordinate_y = %d;";
     HealthStatus health_status = S_NORMAL_STATUS;
     char *uuid = NULL;
     char *lbeacon_ip = NULL;
@@ -544,10 +546,11 @@ ErrorCode SQL_update_lbeacon_registration_status(
     char coordinate_y[LENGTH_OF_UUID];
     int int_coordinate_x = 0;
     int int_coordinate_y = 0;
-    const int INDEX_OF_COORDINATE_X_IN_UUID = 12;
+	const int INDEX_OF_COORDINATE_X_IN_UUID = 12;
     const int INDEX_OF_COORDINATE_Y_IN_UUID = 24;
     const int LENGTH_OF_COORDINATE_IN_UUID = 8;
-
+    
+	
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
@@ -620,7 +623,9 @@ ErrorCode SQL_update_lbeacon_registration_status(
                 int_coordinate_y,
                 pqescape_lbeacon_ip,
                 health_status,
-                pqescape_gateway_ip);
+                pqescape_gateway_ip,
+                int_coordinate_x,
+                int_coordinate_y);
 
         PQfreemem(pqescape_uuid);
         PQfreemem(pqescape_lbeacon_ip);
@@ -729,7 +734,7 @@ ErrorCode SQL_update_lbeacon_health_status(
     char *sql_template = "UPDATE lbeacon_table " \
                          "SET health_status = %s, " \
                          "last_report_timestamp = NOW(), " \
-                         "gateway_ip_address = %s " \
+						 "gateway_ip_address = %s " \
                          "WHERE uuid = %s ;";
     char *lbeacon_uuid = NULL;
     char *lbeacon_timestamp = NULL;
@@ -738,12 +743,12 @@ ErrorCode SQL_update_lbeacon_health_status(
     char *pqescape_lbeacon_uuid = NULL;
     char *pqescape_health_status = NULL;
     char *pqescape_gateway_ip = NULL;
-
-
+ 
+ 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
-    lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);	
     lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
     health_status = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
@@ -769,7 +774,7 @@ ErrorCode SQL_update_lbeacon_health_status(
     memset(sql, 0, sizeof(sql));
     sprintf(sql, sql_template,
             pqescape_health_status,
-            pqescape_gateway_ip,
+		    pqescape_gateway_ip,
             pqescape_lbeacon_uuid);
 
     PQfreemem(pqescape_lbeacon_uuid);
@@ -1145,23 +1150,23 @@ ErrorCode SQL_summarize_object_location(
         "SET " \
         "base_x = tag_new_base.base_x, " \
 	    "base_y = tag_new_base.base_y " \
-		"FROM " \
+        "FROM " \
         "(SELECT " \
-		"object_mac_address, " \
+        "object_mac_address, " \
         "ROUND(SUM(coordinate_x*weight)/SUM(weight),0) as base_x, " \
         "ROUND(SUM(coordinate_y*weight)/SUM(weight),0) as base_y " \
         "FROM " \
         "(SELECT " \
 	    "object_mac_address, " \
-	    "lbeacon_uuid, " \
+        "lbeacon_uuid, " \
 	    "ROUND(AVG(rssi),0) as average_rssi, " \
-	    "(SELECT weight from rssi_weight_table " \
+        "(SELECT weight from rssi_weight_table " \
         "WHERE avg(rssi) >= bottom_rssi AND avg(rssi) < upper_rssi LIMIT 1) " \
         "AS weight " \
         "FROM tracking_table " \
-		"WHERE " \
-		"final_timestamp > NOW() - interval '%d seconds' AND " \
-		"final_timestamp >= NOW() - (server_time_offset || 'seconds')::INTERVAL - " \
+        "WHERE " \
+        "final_timestamp > NOW() - interval '%d seconds' AND " \
+        "final_timestamp >= NOW() - (server_time_offset || 'seconds')::INTERVAL - " \
         "INTERVAL '%d seconds' " \
         "GROUP BY object_mac_address, lbeacon_uuid " \
         "HAVING avg(rssi) >  -100" \
