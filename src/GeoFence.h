@@ -88,6 +88,8 @@ typedef struct {
    /* The id of the geo fence in the area id */
    int id;
 
+   int is_global_fence;
+
    /* The name of the geo fence */
    char name[LENGTH_OF_GEO_FENCE_NAME];
 
@@ -336,6 +338,9 @@ ErrorCode check_geo_fence_violations(
 
      area_id - The area id in which the lbeacon uuid within buffer specifies
 
+     is_global_fence - a flag indicating whether this fence setting is global 
+                       fence to monitor all objects managed by other areas
+
      lbeacon_type - a flag indicating whether the lbeacon is part of perimeter or 
                     fence
 
@@ -360,6 +365,7 @@ ErrorCode check_geo_fence_violations(
 ErrorCode examine_object_tracking_data(
     BufferNode *buffer_node,
     int area_id,
+    bool is_global_fence,
     LBeaconType lbeacon_type,
     int rssi_criteria,
     ObjectWithGeoFenceListHead * objects_list_head,

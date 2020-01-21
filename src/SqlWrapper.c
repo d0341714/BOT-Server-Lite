@@ -1993,6 +1993,7 @@ ErrorCode SQL_dump_active_geo_fence_settings(
     
     char *sql_select_template = "SELECT " \
                                 "area_id, " \
+                                "is_global_fence, " \
                                 "id, " \
                                 "name, " \
                                 "perimeters, " \
@@ -2001,12 +2002,13 @@ ErrorCode SQL_dump_active_geo_fence_settings(
                                 "WHERE " \
                                 "is_active = 1;";
 
-    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 5;
+    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 6;
     const int FIELD_INDEX_OF_AREA_ID = 0;
-    const int FIELD_INDEX_OF_ID = 1;
-    const int FIELD_INDEX_OF_NAME = 2;
-    const int FIELD_INDEX_OF_PERIMETRS = 3;
-    const int FIELD_INDEX_OF_FENCES = 4;
+    const int FIELD_INDEX_OF_IS_GLOBAL_FENCE = 1;
+    const int FIELD_INDEX_OF_ID = 2;
+    const int FIELD_INDEX_OF_NAME = 3;
+    const int FIELD_INDEX_OF_PERIMETRS = 4;
+    const int FIELD_INDEX_OF_FENCES = 5;
 
     FILE *file = NULL;
 
@@ -2061,8 +2063,9 @@ ErrorCode SQL_dump_active_geo_fence_settings(
        total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
          
         for(i = 0 ; i < total_rows ; i++){
-            fprintf(file, "%s;%s;%s;%s;%s;\n", 
+            fprintf(file, "%s;%s;%s;%s;%s;%s;\n", 
                     PQgetvalue(res, i, FIELD_INDEX_OF_AREA_ID),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_IS_GLOBAL_FENCE),
                     PQgetvalue(res, i, FIELD_INDEX_OF_ID),
                     PQgetvalue(res, i, FIELD_INDEX_OF_NAME),
                     PQgetvalue(res, i, FIELD_INDEX_OF_PERIMETRS),
