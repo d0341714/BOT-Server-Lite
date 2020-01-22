@@ -24,7 +24,7 @@ typedef struct {
 //Record array
 
 typedef struct {
-   int valid;
+   //int valid;
    char* uuid;
    char* initial_timestamp;
    char* final_timestamp;

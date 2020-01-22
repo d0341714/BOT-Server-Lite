@@ -170,7 +170,9 @@ static int _hashtable_replace(
 	}
 	return 0;
 }
+/*
 
+*/
 static int _hashtable_replace_uuid(
 	HashTable * h_table, 
 	void * key, size_t key_len, 
@@ -209,7 +211,7 @@ static int _hashtable_replace_uuid(
 			row_ptr->battery=value->battery_voltage;
 			//匹配uuid
 			for(i=0;i<record_table_size;i++){
-				if(row_ptr->uuid_record_table_ptr[i]!=NULL||row_ptr->uuid_record_table_ptr[i]->valid==1){
+				if(row_ptr->uuid_record_table_ptr[i]!=NULL){
 				//if(row_ptr->uuid_table[i].valid==1){
 					if(strcmp(lbeacon_uuid,row_ptr->uuid_record_table_ptr[i]->uuid)==0){//跟傳進來的uuid比較依樣
 					//if(strcmp(lbeacon_uuid,row_ptr->uuid_table[i].uuid)==0){
@@ -233,7 +235,7 @@ static int _hashtable_replace_uuid(
 							}								
 							rssi_array[head]=0;	
 						}
-						rssi_array[head]=value->rssi;
+						rssi_array[head]=atoi(value->rssi);
 						row_ptr->uuid_record_table_ptr[i]->head=head;
 					}
 					
@@ -252,13 +254,13 @@ static int _hashtable_replace_uuid(
 			}
 			//不再裡面,寫入invalid或擴增空間
 			if(invalid_place!=-1){		
-				if(row_ptr->uuid_record_table_ptr[i]==NULL){
-					row_ptr->uuid_record_table_ptr[i]=mp_alloc(&uuid_record_table_row_mempool);
+				if(row_ptr->uuid_record_table_ptr[invalid_place]==NULL){
+					row_ptr->uuid_record_table_ptr[invalid_place]=mp_alloc(&uuid_record_table_row_mempool);
 				}
 				row_ptr->uuid_record_table_ptr[invalid_place]->uuid=lbeacon_uuid;
 				row_ptr->uuid_record_table_ptr[invalid_place]->initial_timestamp=value->initial_timestamp_GMT;
 				row_ptr->uuid_record_table_ptr[invalid_place]->final_timestamp=value->final_timestamp_GMT;
-				row_ptr->uuid_record_table_ptr[invalid_place]->rssi_array[0]=value->rssi;
+				row_ptr->uuid_record_table_ptr[invalid_place]->rssi_array[0]=atoi(value->rssi);
 				row_ptr->uuid_record_table_ptr[invalid_place]->head=0;
 				
 			}else{//擴增
@@ -269,7 +271,7 @@ static int _hashtable_replace_uuid(
 				row_ptr->uuid_record_table_ptr[i]->uuid=lbeacon_uuid;
 				row_ptr->uuid_record_table_ptr[i]->initial_timestamp=value->initial_timestamp_GMT;
 				row_ptr->uuid_record_table_ptr[i]->final_timestamp=value->final_timestamp_GMT;
-				row_ptr->uuid_record_table_ptr[i]->rssi_array[0]=value->rssi;
+				row_ptr->uuid_record_table_ptr[i]->rssi_array[0]=atoi(value->rssi);
 				row_ptr->uuid_record_table_ptr[i]->head=0;
 				
 				curr->value_len = sizeof(*row_ptr);
@@ -390,6 +392,7 @@ void hashtable_print(HashTable * h_table) {
 }
 
 //panic
+/*
 void hashtable_go_through_panic(HashTable * h_table) {
 	int size = h_table->size;
 	HNode ** table = h_table->table;
@@ -419,6 +422,7 @@ void hashtable_go_through_panic(HashTable * h_table) {
 		}
 	}
 }
+*/
 /*
 adler32 code taken from Stack Overflow post
 
@@ -652,8 +656,8 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 				2.remove的時機?
 				3.每1秒上傳一次????
 				*/
-					hashtable_put(panic_table, object_mac_address, sizeof(object_mac_address), 
-								panic_state_ptr, sizeof(*panic_state_ptr));
+					/*hashtable_put(panic_table, object_mac_address, sizeof(object_mac_address), 
+								panic_state_ptr, sizeof(*panic_state_ptr));*/
 				//}
 				
 				/*
@@ -672,14 +676,23 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 
     return WORK_SUCCESSFULLY;
 }
+/*
+改成計算weight?
 
-ErrorCode is_variable_reasonable(int * rssi_array,int k,int head){
+*/
+int rssi_weight(int * rssi_array,int k,int head){
 	
 	if(rssi_array[k]==0) return 0;
 	//差距的部分還要再補充
 	//比較跟之前1筆的差距,差太多就歸零(當成無用資料
-	if((k-1)%10!=head&&rssi_array[(k-1)%10]!=0 && abs(rssi_array[k]-rssi_array[(k-1)%10])>20) return 0;
-		
+	if((k+9)%10!=head)		
+		if(rssi_array[(k+9)%10]!=0)
+			if(abs(rssi_array[k]-rssi_array[(k+9)%10])>20)
+				return 0;
+	
+	
+	//條件判斷weight
+	
 	return 1;
 }
 
@@ -695,30 +708,37 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 	char* uuid;
     char* initial_timestamp;
     char* final_timestamp;
-	int sum_rssi=0;
-	int avg_rssi=-100;
-	int valid_rssi_count=0;
+	int sum_rssi;
+	int avg_rssi;
+	int weight_x;
+	int weight_y;
+	int weight_count;
+	int valid_rssi_count;
 	uuid_record_table_row* uuid_table;
 	
 	for (i = 0; i < size; i++) {
 		HNode * curr = table[i];
-		while (curr != 0) {
+		while (curr != 0) {//every mac
 			// callback(curr->key, curr->key_len, curr->value, curr->value_len);
 			//printf("'%s' => %p,\n", (char *)curr->key, curr->value);
 			
+			
 			hash_table_row* table_row = curr->value;
 			
+			sum_rssi=0;
+			avg_rssi=-100;
+			valid_rssi_count=0;	
 			//先找到原本那份算avg
 			for(l=0;l<table_row->record_table_size;l++){
-				if(table_row->uuid_record_table_ptr[l]->valid && 
-				   strcmp(table_row->uuid_record_table_ptr[l]->uuid,table_row->summary_uuid)){
-					   
-					    sum_rssi=0;
-						valid_rssi_count=0;
+				if(table_row->uuid_record_table_ptr[l]!=NULL && 
+				   strcmp(table_row->uuid_record_table_ptr[l]->uuid,table_row->summary_uuid)==0){
+					    			
+					    uuid_table= table_row->uuid_record_table_ptr[l];
+						
 						for(k=0;k<10;k++){//計算avg
 							//uuid_table->rssi_array[k]
 							//check is reasonable
-							if(is_variable_reasonable(uuid_table->rssi_array,k,uuid_table->head)){
+							if(rssi_weight(uuid_table->rssi_array,k,uuid_table->head)>0){
 								sum_rssi+=uuid_table->rssi_array[k];
 								valid_rssi_count++;
 							}
@@ -726,43 +746,62 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 						avg_rssi=sum_rssi/valid_rssi_count;
 						table_row->final_timestamp= table_row->uuid_record_table_ptr[l]->final_timestamp;
 						table_row->average_rssi=avg_rssi;
+						
+						printf("%d\n",table_row->average_rssi);
+						break;
 					
 				}
 			}
 			//沒找到再拿第一個
-				
-			while(j<table_row->record_table_size){
+			j=0;
+			
+			
+			
+			weight_x=0;
+			weight_y=0;
+			weight_count=0;
+			while(j<table_row->record_table_size){//不同uuid
 				sum_rssi=0;
 				valid_rssi_count=0;
 				uuid_table= table_row->uuid_record_table_ptr[j];
 				
-				if(uuid_table->valid==0) {
+				if(uuid_table==NULL) {
 					j++;
 					continue;	
 				}
 				//把太久的資料刪掉
+				/*
 				if(atoi(uuid_table->final_timestamp)<(get_clock_time()-10)){
-					uuid_table->valid=0;
+					printf("delete");
+					mp_free(&uuid_record_table_row_mempool,uuid_table);
 					j++;
 					continue;
 				} 
-				
+				*/
 				for(k=0;k<10;k++){//計算avg
 					//uuid_table->rssi_array[k]
 					//check is reasonable
-					if(is_variable_reasonable(uuid_table->rssi_array,k,uuid_table->head)){
+					if(rssi_weight(uuid_table->rssi_array,k,uuid_table->head)>0){
 						sum_rssi+=uuid_table->rssi_array[k];
+						
 						valid_rssi_count++;
 					}
+					printf("%d %d %d\n",k,uuid_table->rssi_array[k],rssi_weight(uuid_table->rssi_array,k,uuid_table->head));
 				}
+				printf("=%d %d\n",sum_rssi,valid_rssi_count);
 				if((sum_rssi/valid_rssi_count)-avg_rssi > 5){//取avg大的(以後可能改成沒差多少的
 					table_row->summary_uuid= uuid_table->uuid;
 					table_row->initial_timestamp=uuid_table->initial_timestamp;
 					table_row->final_timestamp=uuid_table->final_timestamp;
 					table_row->average_rssi=sum_rssi/valid_rssi_count;
 				}
+				
 				j++;
 			}
+			
+			/*
+			比較x,y 差不多就不改
+			*/
 			curr = curr->next;
 		}
 	}
@@ -789,7 +828,8 @@ void hashtable_go_through_for_get_summary(HashTable * h_table) {
 			battery=table_row->battery;
 			initial_timestamp=table_row->initial_timestamp;
 			final_timestamp=table_row->final_timestamp;
-			
+			average_rssi=table_row->average_rssi;
+			printf("%s %s %s %s %d",uuid,battery,initial_timestamp,final_timestamp,average_rssi);
 			//上傳db
 			
 			//印出來看看?
@@ -869,7 +909,7 @@ void hashtable_put_mac_table(
 				hash_table_row_ptr->uuid_record_table_ptr[0]->initial_timestamp = value->initial_timestamp_GMT;
 				hash_table_row_ptr->uuid_record_table_ptr[0]->final_timestamp = value->final_timestamp_GMT;
 				hash_table_row_ptr->uuid_record_table_ptr[0]->head=0;
-				hash_table_row_ptr->uuid_record_table_ptr[0]->rssi_array[0]=value->rssi;
+				hash_table_row_ptr->uuid_record_table_ptr[0]->rssi_array[0]=atoi(value->rssi);
 			}
 			/**/
 			
@@ -888,10 +928,10 @@ void hashtable_put_mac_table(
 			new_head->value = hash_table_row_ptr;
 			new_head->value_len=sizeof(*hash_table_row_ptr);
 			
-			/*
-			new_head->deleteKey = deleteKey;
-			new_head->deleteValue = deleteValue;
-			*/
+			
+			new_head->deleteKey = h_table->deleteKey;
+			new_head->deleteValue = h_table->deleteValue;
+			/**/
 
 		}
 	
@@ -905,3 +945,6 @@ void hashtable_put_mac_table(
 	//print_HashTable(h_table);
 }
 
+void upload_all_hashtable(void){
+	
+}

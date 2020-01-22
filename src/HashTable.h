@@ -111,7 +111,7 @@ HashTable * hash_table_of_specific_area_id(char* area_id);
 
 ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len);
 
-ErrorCode is_variable_reasonable(int * rssi_array,int k,int head);
+int rssi_weight(int * rssi_array,int k,int head);
 
 void hashtable_go_through_for_summarize(HashTable * h_table);
 
@@ -121,5 +121,7 @@ void hashtable_put_mac_table(
 	HashTable * h_table, 
 	void * key, size_t key_len, 
 	DataForHashtable * value, size_t value_len);
+	
+void upload_all_hashtable(void);
 
 #endif
