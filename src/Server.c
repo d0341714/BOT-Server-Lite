@@ -1212,13 +1212,9 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
 
     zlog_info(category_debug, "Check whether joined");
 
-    answer = is_in_Address_Map(address_map, address, 0);
+    answer = is_in_Address_Map(address_map, ADDRESS_MAP_TYPE_GATEWAY, address);
     if(answer >=0)
     {
-        /* Need to update last request time for each gateway */
-        address_map -> address_map_list[answer].last_request_time =
-            get_system_time();
-
         pthread_mutex_unlock( &address_map -> list_lock);
         zlog_info(category_debug, "Exist and Return");
 
@@ -1238,12 +1234,11 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     /* If still has space for the LBeacon to register */
     if (not_in_use != -1)
     {
-        address_map -> in_use[not_in_use] = true;
-
-        memset(address_map->address_map_list[not_in_use].net_address, 0, 
-               NETWORK_ADDR_LENGTH);
-        strncpy(address_map->address_map_list[not_in_use].net_address, 
-                address, strlen(address));
+        update_entry_in_Address_Map(address_map, 
+                                    not_in_use,
+                                    ADDRESS_MAP_TYPE_GATEWAY,
+                                    address,
+                                    NULL);
 
         pthread_mutex_unlock( &address_map -> list_lock);
 
