@@ -161,6 +161,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="COPY /y $(SolutionDir)$(PlatformName)\$(ConfigurationName)\$(TargetFileName)  $(SolutionDir)\..\..\output\export\bin\$(TargetFileName)"
 			/>
 		</Configuration>
 	</Configurations>

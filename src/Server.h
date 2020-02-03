@@ -244,6 +244,10 @@ typedef struct {
     /* The list head of the notification list */
     struct List_Entry notification_list_head;
 
+    char SMS_contact_list[WIFI_MESSAGE_LENGTH];
+
+    char SMS_message[WIFI_MESSAGE_LENGTH];
+
 } ServerConfig;
 
 /* A server config struct for storing config parameters from the config file */

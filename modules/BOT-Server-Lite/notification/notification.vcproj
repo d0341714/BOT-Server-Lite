@@ -2,11 +2,10 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="BOT-Server-Lite"
-	ProjectGUID="{89E1D67B-5FC0-4897-9380-40701CCC2ED4}"
-	RootNamespace="BOTServerLite"
+	Name="notification"
+	ProjectGUID="{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}"
+	RootNamespace="notification"
 	Keyword="Win32Proj"
-	AssemblyReferenceSearchPaths="&quot;$(SolutionDir)\..\..\3rd_party&quot;"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -24,7 +23,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="1"
 			>
 			<Tool
@@ -45,12 +44,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDIR)\..\..\pthreads-win\include&quot;;&quot;$(SolutionDIR)\..\..\3rd_party\PostgreSQL\11\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NOTIFICATION_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -65,11 +63,83 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="pthreadVC2.lib libpq.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(SolutionDIR)\..\..\3rd_party\PostgreSQL\11\lib\&quot;;&quot;$(SolutionDIR)..\..\pthreads-win\lib\&quot;"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="1"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				EnableIntrinsicFunctions="true"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NOTIFICATION_EXPORTS"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkIncremental="1"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -98,7 +168,7 @@
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="1"
 			>
 			<Tool
@@ -120,12 +190,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDIR)\..\..\pthreads-win\include&quot;;&quot;$(SolutionDIR)\..\..\3rd_party\PostgreSQL\11\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NOTIFICATION_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -140,86 +209,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="pthreadVC2.lib libpq.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(SolutionDIR)\..\..\3rd_party\PostgreSQL\11\lib\&quot;;&quot;$(SolutionDIR)..\..\pthreads-win\lib\&quot;"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
 				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="1"
-			WholeProgramOptimization="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -247,7 +240,7 @@
 			Name="Release|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -271,8 +264,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\common\include\&quot;;&quot;$(SolutionDir)\..\..\import\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\include\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\inc\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\json-c\inc\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\zlog\head\&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="$(SolutionDir)\..\..\common\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NOTIFICATION_EXPORTS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -284,19 +277,16 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="$(SolutionDir)\..\..\common\include\"
+				AdditionalIncludeDirectories="$(SolutionDir)\..\..\common\include"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				LinkLibraryDependencies="false"
-				AdditionalDependencies="pthreadVC2.lib libpq.lib json-c.lib zlog.lib notification.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)\..\..\3rd_party\PostgreSQL\11\lib\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\pthreads-win\lib\x64\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\json-c\lib\&quot;;&quot;$(SolutionDir)\..\..\3rd_party\zlog\lib\x64\&quot;;&quot;$(SolutionDir)\..\..\output\export\lib\x64\&quot;"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="17"
@@ -321,7 +311,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="COPY /y $(SolutionDir)$(PlatformName)\$(ConfigurationName)\$(TargetFileName)  $(SolutionDir)\..\..\output\export\bin\$(TargetFileName)"
+				CommandLine="COPY /y $(SolutionDir)$(PlatformName)\$(ConfigurationName)\$(TargetName).lib $(SolutionDir)\..\..\output\export\lib\x64\$(TargetName).lib&#x0D;&#x0A;COPY /y $(SolutionDir)$(PlatformName)\$(ConfigurationName)\$(TargetFileName) $(SolutionDir)\..\..\output\export\lib\x64\$(TargetFileName)"
 			/>
 		</Configuration>
 	</Configurations>
@@ -334,39 +324,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\..\import\BeDIS.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\GeoFence.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\import\LinkedList.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\import\Mempool.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\import\pkt_Queue.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\Server.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\SqlWrapper.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\import\thpool.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\import\UDP_API.c"
+				RelativePath=".\Notification.c"
 				>
 			</File>
 		</Filter>
@@ -376,51 +334,11 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\..\import\BeDIS.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\common\include\Build.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\import\Common.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\GeoFence.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\import\LinkedList.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\import\Mempool.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\import\pkt_Queue.h"
+				RelativePath="..\..\..\common\include\Notification.h"
 				>
 			</File>
 			<File
 				RelativePath=".\resource.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\Server.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\SqlWrapper.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\import\thpool.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\import\UDP_API.h"
 				>
 			</File>
 		</Filter>
@@ -430,18 +348,10 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\BOT-Server-Lite.rc"
+				RelativePath=".\notification.rc"
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath="..\..\..\3rd_party\PostgreSQL\11\lib\libpq.dll"
-			>
-		</File>
-		<File
-			RelativePath="..\..\..\3rd_party\zlog\bin\zlog.dll"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

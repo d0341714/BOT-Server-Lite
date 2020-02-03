@@ -45,6 +45,7 @@
  */
 
 
+#include "Notification.h"
 #include "Server.h"
 
 int main(int argc, char **argv)
@@ -783,6 +784,16 @@ ErrorCode get_server_config(ServerConfig *config,
             &(config->notification_list_head), 
             config_message);
     }
+
+    fetch_next_string(file, config_message, sizeof(config_message));
+    strcpy(config->SMS_contact_list, config_message);
+    zlog_info(category_debug, "SMS_contact_list = [%s]", 
+              config->SMS_contact_list);
+
+    fetch_next_string(file, config_message, sizeof(config_message));
+    strcpy(config->SMS_message, config_message);
+    zlog_info(category_debug, "SMS_message = [%s]",
+              config->SMS_message);
        
     zlog_info(category_debug, "notification list initialized");
 
@@ -944,6 +955,29 @@ void *Server_collect_violation_event(){
 
 void *Server_send_notification(){
     char violation_info[WIFI_MESSAGE_LENGTH];
+    char contact_list[WIFI_MESSAGE_LENGTH];
+    char notification_message[WIFI_MESSAGE_LENGTH];
+    const int NUM_FIELDS = 10;
+    char *replace_term_info[10] = {"[ID]", 
+                                   "[MONITOR_TYPE]", 
+                                   "[MAC_ADDRESS]",
+                                   "[UUID]", 
+                                   "[VIOLATION_TIMESTAMP]", 
+                                   "[AREA_NAME]",
+                                   "[OBJECT_TYPE]", 
+                                   "[OBJECT_NAME]", 
+                                   "[OBJECT_IDENTITY]", 
+                                   "[LBEACON_DESCRIPTION]"};
+
+    char *save_ptr = NULL;
+    char *total_rows = NULL;
+    int rows = 0;
+    char *one_record = NULL;
+    char *database_field_info[10];
+    int i;
+    char *save_ptr_one_record = NULL;
+    char *term_index = NULL;
+    char message_temp[WIFI_MESSAGE_LENGTH];
 
 
     while(true == ready_to_work){
@@ -961,9 +995,59 @@ void *Server_send_notification(){
                If needed, we can extend notification feature to support 
                granularity. */
             if(strlen(violation_info) > 0){
-                zlog_debug(category_debug, "send notification for [%s]", 
-                           violation_info);
-                send_notification_alarm_to_gateway();            
+               
+                // Send notifications to gateway to forword to BOT agents.
+                send_notification_alarm_to_gateway();     
+                
+                // Send notification message SMS to mobile phones 
+                total_rows = strtok_save(violation_info, DELIMITER_SEMICOLON, &save_ptr);
+                if(total_rows != NULL){
+                
+                    rows = atoi(total_rows);
+
+                    while(rows --){
+                        memset(contact_list, 0, sizeof(contact_list));
+
+                        strcpy(contact_list, config.SMS_contact_list);
+
+                        memset(notification_message, 0, sizeof(notification_message));
+
+                        one_record = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+
+                        // parse detailed information from database record
+                        for (i = 0 ; i < NUM_FIELDS ; i++){
+                            if(i == 0){
+                                database_field_info[i] = 
+                                    strtok_save(one_record, DELIMITER_COMMA, &save_ptr_one_record);
+                            }else{
+                                database_field_info[i] =
+                                    strtok_save(NULL, DELIMITER_COMMA, &save_ptr_one_record);
+                            }
+                        }
+                        /*
+                        for(i = 0 ; i<NUM_FIELDS ;i++)
+                            printf("i=%d, [%s]\n", i, database_field_info[i]);
+                        */
+                        // replace the terms in message template with real information
+                        strcpy(notification_message, config.SMS_message);
+
+                        for (i = 0 ; i < NUM_FIELDS ; i++){
+                            term_index = strstr(notification_message, replace_term_info[i]);
+                            if(term_index != NULL){
+                                memset(message_temp, 0, sizeof(message_temp));
+                                strncpy(message_temp, notification_message, 
+                                        term_index - notification_message);
+                                strcat(message_temp, database_field_info[i]);
+                                strcat(message_temp, term_index + strlen(replace_term_info[i]));
+                                memset(notification_message, 0, sizeof(notification_message));
+                                strcpy(notification_message, message_temp);
+                            }
+                        }
+
+                        // Use function provided by DLL to send SMS
+                        SendSMS(contact_list, notification_message);
+                    }
+                }
             }
         }
 

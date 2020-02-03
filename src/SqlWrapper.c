@@ -1792,18 +1792,40 @@ ErrorCode SQL_get_and_update_violation_events(
     char sql[SQL_TEMP_BUFFER_LENGTH];
 
     char *sql_select_template = 
-        "SELECT id, monitor_type, mac_address, uuid, violation_timestamp " \
-        "FROM "
+        "SELECT " \
+        "notification_table.id, " \
+        "notification_table.monitor_type, " \
+        "notification_table.mac_address, " \
+        "notification_table.uuid, " \
+        "notification_table.violation_timestamp, " \
+        "area_table.name, " \
+        "object_table.object_type, " \
+        "object_table.name, " \
+        "object_table.asset_control_number, " \
+        "lbeacon_table.description " \
+        "FROM " \
         "notification_table " \
+        "INNER JOIN object_table " \
+        "ON notification_table.mac_address = object_table.mac_address " \
+        "INNER JOIN area_table " \
+        "ON area_table.id = object_table.area_id " \
+        "INNER JOIN lbeacon_table " \
+        "ON notification_table.uuid = lbeacon_table.uuid " \
         "WHERE "\
         "processed != 1 " \
         "ORDER BY id ASC;";
-    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 5;
+
+    const int NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE = 10;
     const int FIELD_INDEX_OF_ID = 0;
     const int FIELD_INDEX_OF_MONITOR_TYPE = 1;
     const int FIELD_INDEX_OF_MAC_ADDRESS = 2;
     const int FIELD_INDEX_OF_UUID = 3;
     const int FIELD_INDEX_OF_VIOLATION_TIMESTAMP = 4;
+    const int FIELD_INDEX_OF_AREA_NAME = 5;
+    const int FIELD_INDEX_OF_OBJECT_TYPE = 6;
+    const int FIELD_INDEX_OF_OBJECT_NAME = 7;
+    const int FIELD_INDEX_OF_OBJECT_IDENTITY = 8;
+    const int FIELD_INDEX_OF_LBEACON_DESCRIPTION = 9;
 
     PGresult *res = NULL;
     int total_fields = 0;
@@ -1851,16 +1873,23 @@ ErrorCode SQL_get_and_update_violation_events(
     total_rows = PQntuples(res);
     total_fields = PQnfields(res);
     
+    sprintf(buf, "%d;", total_rows);
+
     if(total_rows > 0 && 
        total_fields == NUMBER_FIELDS_OF_SQL_SELECT_TEMPLATE){
         for(i = 0 ; i < total_rows ; i++){
             memset(one_record, 0, sizeof(one_record));
-            sprintf(one_record, "%s,%s,%s,%s,%s;", 
+            sprintf(one_record, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s;", 
                     PQgetvalue(res, i, FIELD_INDEX_OF_ID),
                     PQgetvalue(res, i, FIELD_INDEX_OF_MONITOR_TYPE),
                     PQgetvalue(res, i, FIELD_INDEX_OF_MAC_ADDRESS),
                     PQgetvalue(res, i, FIELD_INDEX_OF_UUID),
-                    PQgetvalue(res, i, FIELD_INDEX_OF_VIOLATION_TIMESTAMP));
+                    PQgetvalue(res, i, FIELD_INDEX_OF_VIOLATION_TIMESTAMP),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_AREA_NAME),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_OBJECT_TYPE),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_OBJECT_NAME),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_OBJECT_IDENTITY),
+                    PQgetvalue(res, i, FIELD_INDEX_OF_LBEACON_DESCRIPTION));
             
             if(buf_len > strlen(buf) + strlen(one_record)){
                 strcat(buf, one_record);
