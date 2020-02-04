@@ -1632,19 +1632,17 @@ void* upload_all_hashtable(void){
 		//??
 		upload_time=get_clock_time();
 		if((upload_time-last_upload_time)>=1){
+			/*
 			for(i=0;i<area_table_max_size;i++){
 				if(area_table[i].area_id==NULL) continue;		
 				
 				//hashtable_go_through_for_summarize(area_table[i].area_id);
-				/*
-				&config.db_connection_list_head,
-                current_node -> content,
-                strlen(current_node -> content),
-                config.server_installation_path,
-				*/
+				
 				hashtable_go_through_for_get_summary(
-					area_table[i].area_id,&config.db_connection_list_head,config.server_installation_path);
+					area_table[i].area_hash_ptr,&config.db_connection_list_head,config.server_installation_path);
 			}
+			*/
+			upload_hashtable_for_all_area(&config.db_connection_list_head,config.server_installation_path);
 			last_upload_time=upload_time;
 		}else{
 			sleep_t(BUSY_WAITING_TIME_IN_MS);

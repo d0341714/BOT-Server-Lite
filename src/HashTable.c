@@ -190,7 +190,8 @@ static int _hashtable_replace_uuid(
 	uint32_t hash_val = h_table->hash(key, key_len);
 	uint32_t index = hash_val % h_table->size;
 	HNode * curr = h_table->table[index];
-	
+	char coordinateX[10];
+	char coordinateY[10];
 	/*
 	int initial_timestamp_GMT;
 	int final_timestamp_GMT;
@@ -209,6 +210,7 @@ static int _hashtable_replace_uuid(
 			row_ptr=(hash_table_row*)curr->value;
 			record_table_size = row_ptr->record_table_size;
 			row_ptr->battery=value->battery_voltage;
+			row_ptr->panic_button=value->panic_button;
 			//匹配uuid
 			for(i=0;i<record_table_size;i++){
 				if(row_ptr->uuid_record_table_ptr[i]!=NULL){
@@ -216,7 +218,7 @@ static int _hashtable_replace_uuid(
 					if(strcmp(lbeacon_uuid,row_ptr->uuid_record_table_ptr[i]->uuid)==0){//跟傳進來的uuid比較依樣
 					//if(strcmp(lbeacon_uuid,row_ptr->uuid_table[i].uuid)==0){
 					//更新uuid,ini,final,rssi,battery_voltage
-					
+					printf("exsist uuid: %s\n",lbeacon_uuid);
 					//存在的
 					time_gap=atoi(value->final_timestamp_GMT)-atoi(row_ptr->uuid_record_table_ptr[i]->final_timestamp);
 					if(time_gap>0){
@@ -262,7 +264,11 @@ static int _hashtable_replace_uuid(
 				row_ptr->uuid_record_table_ptr[invalid_place]->final_timestamp=value->final_timestamp_GMT;
 				row_ptr->uuid_record_table_ptr[invalid_place]->rssi_array[0]=atoi(value->rssi);
 				row_ptr->uuid_record_table_ptr[invalid_place]->head=0;
-				
+				strncpy(coordinateX,lbeacon_uuid+12,8);
+				row_ptr->uuid_record_table_ptr[invalid_place]->coordinateX=atof(coordinateX);
+				strncpy(coordinateY,lbeacon_uuid+24,8);
+				row_ptr->uuid_record_table_ptr[invalid_place]->coordinateY=atof(coordinateY);
+				printf("new uuid: %s\n",lbeacon_uuid);
 			}else{//擴增
 				//晚點改
 				row_ptr->record_table_size*=2;
@@ -273,8 +279,12 @@ static int _hashtable_replace_uuid(
 				row_ptr->uuid_record_table_ptr[i]->final_timestamp=value->final_timestamp_GMT;
 				row_ptr->uuid_record_table_ptr[i]->rssi_array[0]=atoi(value->rssi);
 				row_ptr->uuid_record_table_ptr[i]->head=0;
-				
+				strncpy(coordinateX,lbeacon_uuid+12,8);
+				row_ptr->uuid_record_table_ptr[invalid_place]->coordinateX=atoi(coordinateX);
+				strncpy(coordinateY,lbeacon_uuid+24,8);
+				row_ptr->uuid_record_table_ptr[invalid_place]->coordinateY=atoi(coordinateY);
 				curr->value_len = sizeof(*row_ptr);
+				printf("new uuid without enough space: %s\n",lbeacon_uuid);
 			}
 			
 			
@@ -480,6 +490,12 @@ void initial_area_table(void){
         return E_MALLOC;
     }
 	
+	if(MEMORY_POOL_SUCCESS != mp_init( &DataForHashtable_mempool, 
+                                       sizeof(DataForHashtable), 
+                                       SLOTS_IN_MEM_POOL_DataForHashtable_TABLE_ROW))
+    {
+        return E_MALLOC;
+    }
 	
 	area_table_max_size=16;
 	area_table_size=0;
@@ -540,7 +556,7 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 	char temp_buf[WIFI_MESSAGE_LENGTH];
 	char *saveptr = NULL;
 	//int num_types = 2;
-
+	
     char *lbeacon_uuid = NULL;
     char *lbeacon_ip = NULL;
     char *lbeacon_timestamp = NULL;
@@ -551,40 +567,50 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
     char *initial_timestamp_GMT = NULL;
     char *final_timestamp_GMT = NULL;
     char *rssi = NULL;
-    char *push_button = NULL;
+    char *panic_button = NULL;
+	char* battery_voltage;
     int current_time = get_system_time();
     int lbeacon_timestamp_value;
+	/*
     char *pqescape_object_mac_address = NULL;
     char *pqescape_lbeacon_uuid = NULL;
     char *pqescape_rssi = NULL;
     char *pqescape_push_button = NULL;
     char *pqescape_initial_timestamp_GMT = NULL;
     char *pqescape_final_timestamp_GMT = NULL;
-	
-	char *area_id= NULL;
+	*/
+	char area_id[5];
 	HashTable * area_table;
-	HashTable * panic_table;
+	
 	DataForHashtable* data_row;
 	int i;
 	/**/
+	//printf("%s %d\n",buf,buf_len);
+	data_row=mp_alloc(&DataForHashtable_mempool);
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 	
-    data_row->lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+	//printf("string:%s %d\n",temp_buf,buf_len);
+	/*神秘問題*/
+    //data_row->lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+	lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+	//printf("%s\n",saveptr);
 	
 	//area+uuid
-	strncpy(area_id, buf, 4);
+	
 	/**/
     lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+	//printf("lbeacon_timestamp: %s\n",lbeacon_timestamp);
     if(lbeacon_timestamp == NULL){
         return E_API_PROTOCOL_FORMAT;
     }
     lbeacon_timestamp_value = atoi(lbeacon_timestamp);
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-    zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
-               "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);
-	
+	//printf("lbeacon_ip:%s\n",lbeacon_ip);
+    /*zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
+               "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);*/
+	/*printf("lbeacon_uuid=[%s], lbeacon_timestamp=[%d], " \
+               "lbeacon_ip=[%s]\n", lbeacon_uuid, lbeacon_timestamp_value, lbeacon_ip);*/
 
     //SQL_begin_transaction(db);
 
@@ -601,21 +627,21 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
             return E_API_PROTOCOL_FORMAT;
         }
         numbers = atoi(object_number);
-		
+		//printf("n:%d",numbers);
         while(numbers--){
 			
             object_mac_address = 
                 strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-            data_row->initial_timestamp_GMT = 
+            initial_timestamp_GMT = 
                 strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-            data_row->final_timestamp_GMT = 
+            final_timestamp_GMT = 
                 strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-            data_row->rssi = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-			push_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-            data_row->battery_voltage = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+            rssi = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+			panic_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+            battery_voltage = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
             /* update hash table */
 			/*
@@ -625,50 +651,40 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 			/*
 			找area
 			*/
+			strncpy(area_id, lbeacon_uuid, 4);	
+			//printf("12345:%s %s %s %s %s\n",data_row->lbeacon_uuid,data_row->initial_timestamp_GMT,data_row->final_timestamp_GMT,data_row->rssi,data_row->battery_voltage);
+			
+			data_row->lbeacon_uuid=lbeacon_uuid;
+			data_row->initial_timestamp_GMT=initial_timestamp_GMT;
+			data_row->final_timestamp_GMT=final_timestamp_GMT;
+			data_row->rssi=rssi;
+			data_row->battery_voltage=battery_voltage;
+			data_row->panic_button=panic_button;
+			/**/
 			area_table=hash_table_of_specific_area_id(area_id);
 			
-			/*
-			=hashtable_get(area_table, object_mac_address, sizeof(object_mac_address))
-			if( == NULL){
-				
-			}
-			*/
-			/*
-			update資料
-			*/
+			printf("area:%s\n",area_id);
 			hashtable_put_mac_table(area_table, 
-							object_mac_address,sizeof(object_mac_address), 
+							object_mac_address,strlen(object_mac_address), 
 							data_row, sizeof(data_row));	
 			
 			/*
 			push_button判斷
+			
 			放到queue
 			*/
+			/*
 			if(push_button==1){
-				//check in list
-				PanicMAC* panic_state_ptr;
-				panic_state_ptr->valid=1;
-				panic_state_ptr->send=0;
-				//if(hashtable_get(panic_table, object_mac_address, sizeof(object_mac_address))==NULL){
-				//這邊再想一下?
+				printf("SOS %s\n",object_mac_address);
 				/*
-				1.比較timestamp?
-				2.remove的時機?
-				3.每1秒上傳一次????
-				*/
-					/*hashtable_put(panic_table, object_mac_address, sizeof(object_mac_address), 
-								panic_state_ptr, sizeof(*panic_state_ptr));*/
-				//}
+				char *sql_identify_panic = 
+					"UPDATE object_summary_table " \
+					"SET panic_violation_timestamp = NOW() " \
+					"object_summary_table.mac_address = %s " ;
 				
-				/*
-				跑總結上傳sql的時候
-				go-through(把01刪掉,改成01)
-				
-				
-				*/
 				
 			}
-            
+            */
         }
     }
 
@@ -692,8 +708,19 @@ int rssi_weight(int * rssi_array,int k,int head){
 	
 	
 	//條件判斷weight
-	
-	return 1;
+	if(rssi_array[k]>-50)
+		return 32;
+	else if(rssi_array[k]>-60)
+		return 16;
+	else if(rssi_array[k]>-70)
+		return 8;
+	else if(rssi_array[k]>-80)
+		return 4;
+	else if(rssi_array[k]>-90)
+		return 2;
+	else if(rssi_array[k]>=-100)
+		return 1;
+	return 0;
 }
 
 //go through
@@ -710,24 +737,32 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
     char* final_timestamp;
 	int sum_rssi;
 	int avg_rssi;
-	int weight_x;
-	int weight_y;
+	float weight_x;
+	float weight_y;
 	int weight_count;
+	int weight_count_for_specific_uuid;
 	int valid_rssi_count;
 	uuid_record_table_row* uuid_table;
+	int weight;
+	float summary_coordinateX_this_turn;
+	float summary_coordinateY_this_turn;
+	int recently_scanned;
+	hash_table_row* table_row;
+	printf("hashtable_go_through_for_summarize\n");
 	
 	for (i = 0; i < size; i++) {
 		HNode * curr = table[i];
 		while (curr != 0) {//every mac
-			// callback(curr->key, curr->key_len, curr->value, curr->value_len);
+			//callback(curr->key, curr->key_len, curr->value, curr->value_len);
 			//printf("'%s' => %p,\n", (char *)curr->key, curr->value);
 			
 			
-			hash_table_row* table_row = curr->value;
+			table_row = curr->value;
 			
 			sum_rssi=0;
 			avg_rssi=-100;
 			valid_rssi_count=0;	
+			
 			//先找到原本那份算avg
 			for(l=0;l<table_row->record_table_size;l++){
 				if(table_row->uuid_record_table_ptr[l]!=NULL && 
@@ -740,7 +775,7 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 							//check is reasonable
 							if(rssi_weight(uuid_table->rssi_array,k,uuid_table->head)>0){
 								sum_rssi+=uuid_table->rssi_array[k];
-								valid_rssi_count++;
+								valid_rssi_count++;								
 							}
 						}
 						avg_rssi=sum_rssi/valid_rssi_count;
@@ -756,39 +791,50 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 			j=0;
 			
 			
-			
 			weight_x=0;
 			weight_y=0;
 			weight_count=0;
+			recently_scanned=0;
+			
 			while(j<table_row->record_table_size){//不同uuid
 				sum_rssi=0;
 				valid_rssi_count=0;
 				uuid_table= table_row->uuid_record_table_ptr[j];
+				
 				
 				if(uuid_table==NULL) {
 					j++;
 					continue;	
 				}
 				//把太久的資料刪掉
-				/*
+				/**/
 				if(atoi(uuid_table->final_timestamp)<(get_clock_time()-10)){
-					printf("delete");
+					printf("delete %d",get_clock_time());
 					mp_free(&uuid_record_table_row_mempool,uuid_table);
 					j++;
 					continue;
 				} 
-				*/
+				weight_count_for_specific_uuid=0;
 				for(k=0;k<10;k++){//計算avg
 					//uuid_table->rssi_array[k]
 					//check is reasonable
-					if(rssi_weight(uuid_table->rssi_array,k,uuid_table->head)>0){
+					weight=rssi_weight(uuid_table->rssi_array,k,uuid_table->head);
+					if(weight>0){
 						sum_rssi+=uuid_table->rssi_array[k];
-						
+						weight_count_for_specific_uuid+=weight;
 						valid_rssi_count++;
+						
+						recently_scanned=1;
 					}
 					printf("%d %d %d\n",k,uuid_table->rssi_array[k],rssi_weight(uuid_table->rssi_array,k,uuid_table->head));
 				}
+				
+				if(valid_rssi_count==0) continue;
+				
 				printf("=%d %d\n",sum_rssi,valid_rssi_count);
+				weight_x+=uuid_table->coordinateX * weight_count_for_specific_uuid;
+				weight_y+=uuid_table->coordinateY * weight_count_for_specific_uuid;				
+				weight_count+=weight_count_for_specific_uuid;
 				if((sum_rssi/valid_rssi_count)-avg_rssi > 5){//取avg大的(以後可能改成沒差多少的
 					table_row->summary_uuid= uuid_table->uuid;
 					table_row->initial_timestamp=uuid_table->initial_timestamp;
@@ -799,41 +845,74 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 				j++;
 			}
 			
-			/*
-			比較x,y 差不多就不改
-			*/
+			if(weight_count!=0){
+				summary_coordinateX_this_turn=weight_x/(float)weight_count;
+				summary_coordinateY_this_turn=weight_y/(float)weight_count;
+				/*
+				比較x,y 差不多就不改
+				*/
+				
+				if(abs(summary_coordinateX_this_turn - table_row->summary_coordinateX)>DRIFT_DISTANCE &&
+					abs(summary_coordinateY_this_turn - table_row->summary_coordinateY)>DRIFT_DISTANCE){
+					//coordinateX
+					table_row->summary_coordinateX=summary_coordinateX_this_turn;
+					//coordinateY
+					table_row->summary_coordinateY=summary_coordinateY_this_turn;
+				}
+				table_row->recently_scanned=recently_scanned;
+			}			
+			
+			//every mac
+			printf("mac:%s, recently_scanned:%d, summary_coordinateX:%f, initial_time:%s\n",
+						(char *)curr->key,table_row->recently_scanned,table_row->summary_coordinateX,table_row->initial_timestamp);
+			
 			curr = curr->next;
 		}
 	}
 }
 
-void hashtable_go_through_for_get_summary(HashTable * h_table) {
+void hashtable_go_through_for_get_summary(
+		HashTable * h_table,DBConnectionListHead *db_connection_list_head,char *server_installation_path) {
 	int size = h_table->size;
 	HNode ** table = h_table->table;
 	char* uuid;
     char* initial_timestamp;
     char* final_timestamp;
 	char* battery;
+	char* panic_button;
 	int average_rssi;
+	int recently_scanned;
 	int i = 0;
+	hash_table_row* table_row;
+	printf("hashtable_go_through_for_get_summary\n");
 	for (i = 0; i < size; i++) {
 		HNode * curr = table[i];
 		while (curr != 0) {
 			// callback(curr->key, curr->key_len, curr->value, curr->value_len);
-			//printf("'%s' => %p,\n", (char *)curr->key, curr->value);
+			printf("'%s' => %p,\n", (char *)curr->key, curr->value);
 			
-			hash_table_row* table_row = curr->value;
+			table_row = curr->value;
 			//取下面四個,update db
-			uuid=table_row->summary_uuid;
-			battery=table_row->battery;
-			initial_timestamp=table_row->initial_timestamp;
-			final_timestamp=table_row->final_timestamp;
-			average_rssi=table_row->average_rssi;
-			printf("%s %s %s %s %d",uuid,battery,initial_timestamp,final_timestamp,average_rssi);
-			//上傳db
+			if(table_row==NULL) continue;
+			printf("NOT NULL\n");
+			if(table_row->recently_scanned==NULL) continue;
+			printf("recently_scanned NOT NULL\n");
+			if(table_row->recently_scanned>0){
+				
+				uuid=table_row->summary_uuid;
+				battery=table_row->battery;
+				initial_timestamp=table_row->initial_timestamp;
+				final_timestamp=table_row->final_timestamp;
+				average_rssi=table_row->average_rssi;
+				panic_button=table_row->panic_button;
+				//印出來看看?
+				printf("summary:%s %s %s %s %d %s\n",uuid,battery,initial_timestamp,final_timestamp,average_rssi,panic_button);
+				//上傳db
+				
+				
+			}
 			
-			//印出來看看?
-			
+			printf("crash?\n");
 			curr = curr->next;
 		}
 	}
@@ -855,6 +934,8 @@ void hashtable_put_mac_table(
 	HNode * new_head;
 	hash_table_row* hash_table_row_ptr;
 	uuid_record_table_row uuid_table;
+	char coordinateX[10];
+	char coordinateY[10];
 	//try to replace existing key's value if possible
 	pthread_mutex_t * ht_mutex = h_table->ht_mutex;
 	pthread_mutex_lock(ht_mutex);
@@ -864,12 +945,13 @@ void hashtable_put_mac_table(
 	
 	//找不到要新增一個
 	if (res == 0) {
+		
 		//  resize if needed. 
 		double load = ((double) h_table->count) / ((double) h_table->size);
 		if (load > h_table->max_load) {
 			_hashtable_resize(h_table);
 		}
-
+		printf("new %s\n",key);
 		//code to add key and value in O(1) time.
 		hash_val = h_table->hash(key, key_len);
 		index = hash_val % h_table->size;
@@ -896,20 +978,48 @@ void hashtable_put_mac_table(
 			
 			hash_table_row_ptr=mp_alloc(&hash_table_row_mempool);
 			hash_table_row_ptr->summary_uuid=value->lbeacon_uuid;
+			hash_table_row_ptr->panic_button=value->panic_button;
+			printf("%s\n",value->lbeacon_uuid);			
+			//strncpy(coordinateX,(value->lbeacon_uuid)+12,8);
+			memcpy(coordinateX,(value->lbeacon_uuid)+12,8);
+			coordinateX[8]='\0';			
+			hash_table_row_ptr->summary_coordinateX =atof(coordinateX);
+			//printf("%f\n",hash_table_row_ptr->summary_coordinateX);
+			strncpy(coordinateY,value->lbeacon_uuid+24,8);
+			hash_table_row_ptr->summary_coordinateY=atof(coordinateY);
+			/*
+			hash_table_row_ptr->summary_coordinateX=0;
+			hash_table_row_ptr->summary_coordinateY=0;
+			*/
 			hash_table_row_ptr->battery=value->battery_voltage;
 			hash_table_row_ptr->average_rssi=-100;//這邊在想一下
 			hash_table_row_ptr->initial_timestamp=value->initial_timestamp_GMT;
 			hash_table_row_ptr->final_timestamp=value->final_timestamp_GMT;
+			hash_table_row_ptr->recently_scanned=0;
 			
 			//uuid_table=hash_table_row_ptr->uuid_table[0];
 			
 			if(hash_table_row_ptr->uuid_record_table_ptr[0]==NULL){
 				hash_table_row_ptr->uuid_record_table_ptr[0]=mp_alloc(&uuid_record_table_row_mempool);
-				hash_table_row_ptr->uuid_record_table_ptr[0]->uuid = value->lbeacon_uuid;
+				hash_table_row_ptr->uuid_record_table_ptr[0]->uuid = value->lbeacon_uuid;				
 				hash_table_row_ptr->uuid_record_table_ptr[0]->initial_timestamp = value->initial_timestamp_GMT;
 				hash_table_row_ptr->uuid_record_table_ptr[0]->final_timestamp = value->final_timestamp_GMT;
 				hash_table_row_ptr->uuid_record_table_ptr[0]->head=0;
 				hash_table_row_ptr->uuid_record_table_ptr[0]->rssi_array[0]=atoi(value->rssi);
+				/* Construct UUID as aaaa00zz0000xxxxxxxx0000yyyyyyyy format to represent 
+									 1			13-20		25-32
+				   lbeacon location. In the UUID format, aaaa stands for the area id, zz 
+				   stands for the floor level with lowest_basement_level adjustment, 
+				   xxxxxxxx stands for the relative longitude, and yyyyyyyy stands for
+				   the relative latitude.
+				*/
+				printf("lbeacon_uuid:%s  \n",value->lbeacon_uuid);
+				strncpy(coordinateX,value->lbeacon_uuid+12,8);
+				//printf("coordinateX:%s\n",coordinateX);
+				hash_table_row_ptr->uuid_record_table_ptr[0]->coordinateX =atof(coordinateX);
+				
+				strncpy(coordinateY,value->lbeacon_uuid+24,8);
+				hash_table_row_ptr->uuid_record_table_ptr[0]->coordinateY=atof(coordinateY);
 			}
 			/**/
 			
@@ -941,10 +1051,42 @@ void hashtable_put_mac_table(
 	}
 	
 	pthread_mutex_unlock(ht_mutex);
+	mp_free(&DataForHashtable_mempool,value);
 	//printf("inserting, {%s => %p}\n", key, value);
 	//print_HashTable(h_table);
 }
-
-void upload_all_hashtable(void){
+/*
+	每秒
+	跑過全部的hashtable
+*/	
+void hashtable_summarize_object_location(){
 	
+	int i;
+	while(ready_to_work == true){
+		//??
+		
+			for(i=0;i<area_table_max_size;i++){
+				if(area_table[i].area_id==NULL) continue;
+				//printf("1234:%s",);
+				hashtable_go_through_for_summarize(area_table[i].area_hash_ptr);
+				
+			}
+			
+		
+			sleep_t(BUSY_WAITING_TIME_IN_MS);
+		
+	}
+	
+}
+
+void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head,char *server_installation_path){
+	int i;
+	for(i=0;i<area_table_max_size;i++){
+		if(area_table[i].area_id==NULL) continue;		
+		
+		//hashtable_go_through_for_summarize(area_table[i].area_id);
+		
+		hashtable_go_through_for_get_summary(
+			area_table[i].area_hash_ptr,db_connection_list_head,server_installation_path);
+	}
 }

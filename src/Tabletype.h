@@ -18,7 +18,7 @@ typedef struct {
    char* final_timestamp_GMT;
    char* battery_voltage;   
    char* rssi;
-   
+   char* panic_button;
 } DataForHashtable;
 
 //Record array
@@ -33,8 +33,8 @@ typedef struct {
    int rssi_array[10];
    //int average_rssi;
    int weights;
-   int coordinateX;
-   int coordinateY;
+   float coordinateX;
+   float coordinateY;
    
 } uuid_record_table_row;
 /*
@@ -54,14 +54,16 @@ typedef struct {
    char* final_timestamp;
    int average_rssi;
    //幾何平均
-   int summary_coordinateX;
-   int summary_coordinateY;
+   float summary_coordinateX;
+   float summary_coordinateY;
    //uuid_record_table uuid_table;
    //uuid_record_table_row uuid_record_table_ptr0;
    //uuid_record_table_row uuid_table[16];  
    uuid_record_table_row* uuid_record_table_ptr[16];
    size_t record_table_size;
-   
+   //控制上不上船
+   int recently_scanned;
+   char* panic_button;
 } hash_table_row;
 
 

@@ -54,6 +54,7 @@ ErrorCode construct_geo_fence_list(DBConnectionListHead * db_connection_list_hea
     char setting_buf[CONFIG_BUFFER_SIZE];
     char *save_ptr = NULL;
     char *area_id = NULL;
+    char *is_global_fence = NULL;
     char *id = NULL;
     char *name = NULL;
     char *perimeters = NULL;
@@ -98,6 +99,7 @@ ErrorCode construct_geo_fence_list(DBConnectionListHead * db_connection_list_hea
     while(fgets(setting_buf, sizeof(setting_buf), file_geo_fence) != NULL){
             
         area_id = strtok_save(setting_buf, DELIMITER_SEMICOLON, &save_ptr);
+        is_global_fence = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
         id = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
         name = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
         perimeters = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
@@ -178,6 +180,7 @@ ErrorCode construct_geo_fence_list(DBConnectionListHead * db_connection_list_hea
                            geo_fence_setting_list_entry);
 
                 geo_fence_setting_node->id = atoi(id);
+                geo_fence_setting_node->is_global_fence = atoi(is_global_fence);
                 strcpy(geo_fence_setting_node->name, name);
                 strcpy(geo_fence_setting_node->perimeters_lbeacon_setting, 
                        perimeters);            
@@ -598,6 +601,8 @@ ErrorCode check_geo_fence_violations(
                     examine_object_tracking_data(
                         buffer_node, 
                         area_id,
+                        current_setting_list_ptr->
+                        is_global_fence,
                         LBEACON_PERIMETER,   
                         current_setting_list_ptr->rssi_of_perimeters,
                         objects_list_head,
@@ -613,6 +618,8 @@ ErrorCode check_geo_fence_violations(
                     examine_object_tracking_data(
                         buffer_node, 
                         area_id,
+                        current_setting_list_ptr->
+                        is_global_fence,
                         LBEACON_FENCE,                               
                         current_setting_list_ptr->rssi_of_perimeters,
                         objects_list_head,
@@ -635,6 +642,7 @@ ErrorCode check_geo_fence_violations(
 ErrorCode examine_object_tracking_data(
     BufferNode *buffer_node,
     int area_id,
+    bool is_global_fence,
     LBeaconType lbeacon_type,
     int rssi_criteria,
     ObjectWithGeoFenceListHead * objects_list_head,
@@ -761,7 +769,15 @@ ErrorCode examine_object_tracking_data(
                               ObjectWithGeoFenceAreaNode,
                               objects_area_list_entry);
 
-                if(current_objects_in_area_list_ptr->area_id == area_id){
+                /* If this geo-fence is global fence to monitor all objects
+                under geo-fence monitoring even if the objects are managed
+                under differen areas, this examination code block should check 
+                all objects under all areas. Otherwise, this examination code
+                block only needs to check objects under the same area id as 
+                this geo-fence setting. */
+                if(is_global_fence == true ||
+                   (is_global_fence == false && 
+                   current_objects_in_area_list_ptr -> area_id == area_id)){ 
                   
                     if(NULL == strstr(current_objects_in_area_list_ptr -> 
                                       mac_address_under_monitor, 

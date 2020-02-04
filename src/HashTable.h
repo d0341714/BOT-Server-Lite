@@ -8,13 +8,18 @@
 #include "HNode.h"
 #include "Tabletype.h"
 #include "BeDIS.h"
+#include "SqlWrapper.h"
 
 #define SLOTS_IN_MEM_POOL_HASH_TABLE_ROW 2048
+#define SLOTS_IN_MEM_POOL_DataForHashtable_TABLE_ROW 512
 //totaltag*16
 #define SLOTS_IN_MEM_POOL_UUID_RECORD_TABLE_ROW 65536
+#define DRIFT_DISTANCE 50
 
 Memory_Pool hash_table_row_mempool;
 Memory_Pool uuid_record_table_row_mempool;
+Memory_Pool DataForHashtable_mempool;
+
 typedef uint32_t (* HashFunc)(const void *, size_t);
 typedef int (* EqualityFunc)(void *, void *);
 typedef void (* IteratorCallback)(void *, size_t, void *, size_t);
@@ -115,13 +120,16 @@ int rssi_weight(int * rssi_array,int k,int head);
 
 void hashtable_go_through_for_summarize(HashTable * h_table);
 
-void hashtable_go_through_for_get_summary(HashTable * h_table);
+void hashtable_go_through_for_get_summary(HashTable * h_table,DBConnectionListHead *db_connection_list_head,char *server_installation_path);
 
 void hashtable_put_mac_table(
 	HashTable * h_table, 
 	void * key, size_t key_len, 
 	DataForHashtable * value, size_t value_len);
 	
-void upload_all_hashtable(void);
+
+void hashtable_summarize_object_location(void);
+
+void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head,char *server_installation_path);
 
 #endif
