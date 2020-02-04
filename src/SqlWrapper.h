@@ -67,6 +67,7 @@ typedef struct{
 
 } DBConnectionNode;
 
+
 typedef struct{
 
     pthread_mutex_t list_lock;

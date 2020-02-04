@@ -55,7 +55,7 @@ int main(int argc, char **argv)
     char command_msg[WIFI_MESSAGE_LENGTH];
 
     int uptime;
-
+	
     /* The main thread of the communication Unit */
     pthread_t CommUnit_thread;
 
@@ -79,6 +79,8 @@ int main(int argc, char **argv)
 
     /* The thread to listen for messages from Wi-Fi interface */
     pthread_t wifi_listener_thread;
+	
+	pthread_t upload_all_hashtable_thread;
 
     /* Initialize flags */
     NSI_initialization_complete      = false;
@@ -86,7 +88,8 @@ int main(int argc, char **argv)
     initialization_failed            = false;
     ready_to_work                    = true;
 
-
+	
+	initial_area_table();
     /* Initialize zlog */
     if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0)
     {
@@ -394,7 +397,20 @@ int main(int argc, char **argv)
                    "Server_send_notification fail");
         return return_value;
     }
+	/**/
+	return_value = startThread( &upload_all_hashtable_thread, 
+                                upload_all_hashtable, 
+                                NULL);
 
+    if(return_value != WORK_SUCCESSFULLY)
+    {
+        zlog_error(category_health_report, 
+                   "upload_all_hashtable fail");
+        zlog_error(category_debug, 
+                   "upload_all_hashtable fail");
+        return return_value;
+    }
+	
     zlog_info(category_debug,"Start Communication");
 
     /* The while loop waiting for CommUnit routine to be ready */
@@ -832,12 +848,13 @@ void *Server_summarize_location_information(){
     
     while(true == ready_to_work){
     
-        SQL_summarize_object_location(&config.db_connection_list_head,
+        /*SQL_summarize_object_location(&config.db_connection_list_head,
                                       config.database_pre_filter_time_window_in_sec,
                                       config.location_time_interval_in_sec,
                                       config.rssi_difference_of_location_accuracy_tolerance,
-                                      config.base_location_tolerance_in_millimeter);
-
+                                      config.base_location_tolerance_in_millimeter);*/
+		
+		hashtable_summarize_object_location();
         sleep_t(BUSY_WAITING_TIME_IN_MS);
     }
 
@@ -1102,12 +1119,16 @@ void *Server_LBeacon_routine(void *_buffer_node)
                                             strlen(current_node -> content));
                                             */
         }else{
-            SQL_update_object_tracking_data_with_battery_voltage(
+            /*SQL_update_object_tracking_data_with_battery_voltage(
                 &config.db_connection_list_head,
                 current_node -> content,
                 strlen(current_node -> content),
                 config.server_installation_path,
-                config.is_enabled_panic_button_monitor);
+                config.is_enabled_panic_button_monitor);*/
+				hashtable_update_object_tracking_data(
+					current_node -> content,
+					strlen(current_node -> content)
+					);
         }
 
     }
@@ -1179,12 +1200,16 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
                                             strlen(current_node -> content));
                                             */
         }else{
-            SQL_update_object_tracking_data_with_battery_voltage(
+            /*SQL_update_object_tracking_data_with_battery_voltage(
                 &config.db_connection_list_head,
                 current_node -> content,
                 strlen(current_node -> content),
                 config.server_installation_path,
-                config.is_enabled_panic_button_monitor);
+                config.is_enabled_panic_button_monitor);*/
+				hashtable_update_object_tracking_data(
+					current_node -> content,
+					strlen(current_node -> content)
+					);
         }
         
     }
@@ -1212,13 +1237,9 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
 
     zlog_info(category_debug, "Check whether joined");
 
-    answer = is_in_Address_Map(address_map, address, 0);
+    answer = is_in_Address_Map(address_map, ADDRESS_MAP_TYPE_GATEWAY, address);
     if(answer >=0)
     {
-        /* Need to update last request time for each gateway */
-        address_map -> address_map_list[answer].last_request_time =
-            get_system_time();
-
         pthread_mutex_unlock( &address_map -> list_lock);
         zlog_info(category_debug, "Exist and Return");
 
@@ -1238,12 +1259,11 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
     /* If still has space for the LBeacon to register */
     if (not_in_use != -1)
     {
-        address_map -> in_use[not_in_use] = true;
-
-        memset(address_map->address_map_list[not_in_use].net_address, 0, 
-               NETWORK_ADDR_LENGTH);
-        strncpy(address_map->address_map_list[not_in_use].net_address, 
-                address, strlen(address));
+        update_entry_in_Address_Map(address_map, 
+                                    not_in_use,
+                                    ADDRESS_MAP_TYPE_GATEWAY,
+                                    address,
+                                    NULL);
 
         pthread_mutex_unlock( &address_map -> list_lock);
 
@@ -1604,4 +1624,31 @@ ErrorCode add_notification_to_the_notification_list(
     return WORK_SUCCESSFULLY;
 }
 
-
+void* upload_all_hashtable(void){
+	int last_upload_time=0;
+	int upload_time=0;
+	int i;
+	while(ready_to_work == true){
+		//??
+		upload_time=get_clock_time();
+		if((upload_time-last_upload_time)>=1){
+			for(i=0;i<area_table_max_size;i++){
+				if(area_table[i].area_id==NULL) continue;		
+				
+				//hashtable_go_through_for_summarize(area_table[i].area_id);
+				/*
+				&config.db_connection_list_head,
+                current_node -> content,
+                strlen(current_node -> content),
+                config.server_installation_path,
+				*/
+				hashtable_go_through_for_get_summary(
+					area_table[i].area_id,&config.db_connection_list_head,config.server_installation_path);
+			}
+			last_upload_time=upload_time;
+		}else{
+			sleep_t(BUSY_WAITING_TIME_IN_MS);
+		}
+	}
+	
+}

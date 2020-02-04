@@ -51,6 +51,7 @@
 #include "BeDIS.h"
 #include "SqlWrapper.h"
 #include "GeoFence.h"
+#include "HashTable.h"
 
 /* When debugging is needed */
 //#define debugging
@@ -612,5 +613,7 @@ void send_notification_alarm_to_gateway();
 ErrorCode add_notification_to_the_notification_list(
     struct List_Entry * notification_list_head,
     char *buf);
+	
+void* upload_all_hashtable(void);
 
 #endif
