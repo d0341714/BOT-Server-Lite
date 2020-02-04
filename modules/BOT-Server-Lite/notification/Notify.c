@@ -1,4 +1,4 @@
-#define NOTIFICATION_API
+#define NOTIFICATION_EXPORTS
 #include "Notification.h"
 
 NOTIFICATION_API int SendSMS(char *contact_list, char *notification_message){
@@ -7,4 +7,3 @@ NOTIFICATION_API int SendSMS(char *contact_list, char *notification_message){
     printf("To:%s\n", contact_list);
     printf("Content:%s\n", notification_message);
 }
-
