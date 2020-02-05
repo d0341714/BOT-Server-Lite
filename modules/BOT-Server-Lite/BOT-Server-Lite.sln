@@ -2,16 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BOT-Server-Lite", "BOT-Server-Lite\BOT-Server-Lite.vcproj", "{89E1D67B-5FC0-4897-9380-40701CCC2ED4}"
-	ProjectSection(ProjectDependencies) = postProject
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B} = {1A59782B-B2D9-488B-BAB7-DC4AAC79075B}
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7} = {19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cmdServerIPC", "cmdServerIPC\cmdServerIPC.vcproj", "{D94C20A0-AAA2-4948-BA02-15A6F463D886}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "notification", "notification\notification.vcproj", "{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "YunlinVeteranNotify", "YunlinVeteranNotify\YunlinVeteranNotify.vcproj", "{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -52,32 +44,6 @@ Global
 		{D94C20A0-AAA2-4948-BA02-15A6F463D886}.Release|Win32.Build.0 = Release|Win32
 		{D94C20A0-AAA2-4948-BA02-15A6F463D886}.Release|x64.ActiveCfg = Release|Win32
 		{D94C20A0-AAA2-4948-BA02-15A6F463D886}.Release|x64.Build.0 = Release|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Debug|Any CPU.ActiveCfg = Debug|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Debug|Mixed Platforms.Build.0 = Debug|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Debug|Win32.ActiveCfg = Debug|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Debug|Win32.Build.0 = Debug|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Debug|x64.ActiveCfg = Debug|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Release|Any CPU.ActiveCfg = Release|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Release|Mixed Platforms.ActiveCfg = Release|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Release|Mixed Platforms.Build.0 = Release|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Release|Win32.ActiveCfg = Release|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Release|Win32.Build.0 = Release|Win32
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Release|x64.ActiveCfg = Release|x64
-		{19D0A249-3A40-4650-BCF2-BFCE1EDB08A7}.Release|x64.Build.0 = Release|x64
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Debug|Any CPU.ActiveCfg = Debug|Win32
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Debug|Mixed Platforms.Build.0 = Debug|Win32
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Debug|Win32.ActiveCfg = Debug|Win32
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Debug|Win32.Build.0 = Debug|Win32
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Debug|x64.ActiveCfg = Debug|Win32
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Release|Any CPU.ActiveCfg = Release|Win32
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Release|Mixed Platforms.ActiveCfg = Release|Win32
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Release|Mixed Platforms.Build.0 = Release|Win32
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Release|Win32.ActiveCfg = Release|Win32
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Release|Win32.Build.0 = Release|Win32
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Release|x64.ActiveCfg = Release|x64
-		{1A59782B-B2D9-488B-BAB7-DC4AAC79075B}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

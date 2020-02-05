@@ -44,8 +44,8 @@
      Chun-Yu Lai    , chunyu1202@gmail.com
  */
 
-
-#include "Notification.h"
+#include <winsock2.h>
+#include <windows.h>
 #include "Server.h"
 
 int main(int argc, char **argv)
@@ -982,74 +982,77 @@ void *Server_send_notification(){
 
     while(true == ready_to_work){
 
-        if(config.is_enabled_send_notification_alarm){
+        if(0 == config.is_enabled_send_notification_alarm){
+            sleep_t(BUSY_WAITING_TIME_IN_MS);
+            continue;
+        }
 
-            memset(violation_info, 0, sizeof(violation_info));
+        memset(violation_info, 0, sizeof(violation_info));
 
-            SQL_get_and_update_violation_events(
-                &config.db_connection_list_head, 
-                violation_info, 
-                sizeof(violation_info));
+        SQL_get_and_update_violation_events(
+            &config.db_connection_list_head, 
+            violation_info, 
+            sizeof(violation_info));
 
-            /* The notification alarm is sent out to all BOT agents currently.
-               If needed, we can extend notification feature to support 
-               granularity. */
-            if(strlen(violation_info) > 0){
-               
-                // Send notifications to gateway to forword to BOT agents.
-                send_notification_alarm_to_gateway();     
+           
+        // Send notification message SMS to mobile phones 
+        total_rows = strtok_save(violation_info, DELIMITER_SEMICOLON, &save_ptr);
+        if(total_rows == NULL){
+            continue;
+        }
                 
-                // Send notification message SMS to mobile phones 
-                total_rows = strtok_save(violation_info, DELIMITER_SEMICOLON, &save_ptr);
-                if(total_rows != NULL){
-                
-                    rows = atoi(total_rows);
+        rows = atoi(total_rows);
 
-                    while(rows --){
-                        memset(contact_list, 0, sizeof(contact_list));
+        if(rows == 0){
+            continue;
+        }
 
-                        strcpy(contact_list, config.SMS_contact_list);
+        // Send notifications to gateway to forword to BOT agents.
+        send_notification_alarm_to_gateway();     
+            
+        while(rows --){
+            memset(contact_list, 0, sizeof(contact_list));
 
-                        memset(notification_message, 0, sizeof(notification_message));
+            strcpy(contact_list, config.SMS_contact_list);
 
-                        one_record = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+            memset(notification_message, 0, sizeof(notification_message));
 
-                        // parse detailed information from database record
-                        for (i = 0 ; i < NUM_FIELDS ; i++){
-                            if(i == 0){
-                                database_field_info[i] = 
-                                    strtok_save(one_record, DELIMITER_COMMA, &save_ptr_one_record);
-                            }else{
-                                database_field_info[i] =
-                                    strtok_save(NULL, DELIMITER_COMMA, &save_ptr_one_record);
-                            }
-                        }
-                        /*
-                        for(i = 0 ; i<NUM_FIELDS ;i++)
-                            printf("i=%d, [%s]\n", i, database_field_info[i]);
-                        */
-                        // replace the terms in message template with real information
-                        strcpy(notification_message, config.SMS_message);
+            one_record = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
-                        for (i = 0 ; i < NUM_FIELDS ; i++){
-                            term_index = strstr(notification_message, replace_term_info[i]);
-                            if(term_index != NULL){
-                                memset(message_temp, 0, sizeof(message_temp));
-                                strncpy(message_temp, notification_message, 
-                                        term_index - notification_message);
-                                strcat(message_temp, database_field_info[i]);
-                                strcat(message_temp, term_index + strlen(replace_term_info[i]));
-                                memset(notification_message, 0, sizeof(notification_message));
-                                strcpy(notification_message, message_temp);
-                            }
-                        }
-
-                        // Use function provided by DLL to send SMS
-                        SendSMS(contact_list, notification_message);
-                    }
+            // parse detailed information from database record
+            for (i = 0 ; i < NUM_FIELDS ; i++){
+                if(i == 0){
+                    database_field_info[i] = 
+                        strtok_save(one_record, DELIMITER_COMMA, &save_ptr_one_record);
+                }else{
+                    database_field_info[i] =
+                        strtok_save(NULL, DELIMITER_COMMA, &save_ptr_one_record);
                 }
             }
-        }
+            /*
+            for(i = 0 ; i<NUM_FIELDS ;i++)
+                printf("i=%d, [%s]\n", i, database_field_info[i]);
+            */
+            // replace the terms in message template with real information
+            strcpy(notification_message, config.SMS_message);
+
+            for (i = 0 ; i < NUM_FIELDS ; i++){
+                term_index = strstr(notification_message, replace_term_info[i]);
+                if(term_index != NULL){
+                    memset(message_temp, 0, sizeof(message_temp));
+                    strncpy(message_temp, notification_message, 
+                            term_index - notification_message);
+                    strcat(message_temp, database_field_info[i]);
+                    strcat(message_temp, term_index + strlen(replace_term_info[i]));
+                    memset(notification_message, 0, sizeof(notification_message));
+                    strcpy(notification_message, message_temp);
+                }
+            }
+
+            system("C:\\Users\\openISDM\\Desktop\\Server\\Notify\\calc.exe");
+            //ShellExecute(NULL, "open", "C:\\Users\\openISDM\\Desktop\\Server\\calc.exe", NULL, NULL, SW_SHOWNORMAL);
+
+        }             
 
         sleep_t(BUSY_WAITING_TIME_IN_MS);
     }
