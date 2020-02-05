@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BOT-Server-Lite", "BOT-Serv
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cmdServerIPC", "cmdServerIPC\cmdServerIPC.vcproj", "{D94C20A0-AAA2-4948-BA02-15A6F463D886}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Notify", "Notify\Notify.vcproj", "{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +46,19 @@ Global
 		{D94C20A0-AAA2-4948-BA02-15A6F463D886}.Release|Win32.Build.0 = Release|Win32
 		{D94C20A0-AAA2-4948-BA02-15A6F463D886}.Release|x64.ActiveCfg = Release|Win32
 		{D94C20A0-AAA2-4948-BA02-15A6F463D886}.Release|x64.Build.0 = Release|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Debug|Win32.Build.0 = Debug|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Debug|x64.ActiveCfg = Debug|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Release|Any CPU.ActiveCfg = Release|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Release|Win32.ActiveCfg = Release|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Release|Win32.Build.0 = Release|Win32
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Release|x64.ActiveCfg = Release|x64
+		{B8D5701D-CC2A-429D-B04C-ADC26EA0FCF6}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

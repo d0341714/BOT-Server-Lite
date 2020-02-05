@@ -785,15 +785,27 @@ ErrorCode get_server_config(ServerConfig *config,
             config_message);
     }
 
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->is_enabled_send_SMS_notification = atoi(config_message);
+    zlog_info(category_debug,
+              "The is_enabled_send_SMS_notification is [%d]", 
+              config->is_enabled_send_SMS_notification);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    memcpy(config->SMS_notification_program_install_path, config_message,
+           sizeof(config->SMS_notification_program_install_path));
+    zlog_info(category_debug,"SMS_notification_program_install_path [%s]", 
+              config->SMS_notification_program_install_path);
+
     fetch_next_string(file, config_message, sizeof(config_message));
     strcpy(config->SMS_contact_list, config_message);
     zlog_info(category_debug, "SMS_contact_list = [%s]", 
               config->SMS_contact_list);
 
     fetch_next_string(file, config_message, sizeof(config_message));
-    strcpy(config->SMS_message, config_message);
-    zlog_info(category_debug, "SMS_message = [%s]",
-              config->SMS_message);
+    strcpy(config->SMS_message_template, config_message);
+    zlog_info(category_debug, "SMS_message_template = [%s]",
+              config->SMS_message_template);
        
     zlog_info(category_debug, "notification list initialized");
 
@@ -978,14 +990,10 @@ void *Server_send_notification(){
     char *save_ptr_one_record = NULL;
     char *term_index = NULL;
     char message_temp[WIFI_MESSAGE_LENGTH];
+    char cmd_launch[CONFIG_BUFFER_SIZE];
 
 
     while(true == ready_to_work){
-
-        if(0 == config.is_enabled_send_notification_alarm){
-            sleep_t(BUSY_WAITING_TIME_IN_MS);
-            continue;
-        }
 
         memset(violation_info, 0, sizeof(violation_info));
 
@@ -997,6 +1005,7 @@ void *Server_send_notification(){
            
         // Send notification message SMS to mobile phones 
         total_rows = strtok_save(violation_info, DELIMITER_SEMICOLON, &save_ptr);
+
         if(total_rows == NULL){
             continue;
         }
@@ -1007,52 +1016,65 @@ void *Server_send_notification(){
             continue;
         }
 
-        // Send notifications to gateway to forword to BOT agents.
-        send_notification_alarm_to_gateway();     
-            
-        while(rows --){
-            memset(contact_list, 0, sizeof(contact_list));
+        if(config.is_enabled_send_notification_alarm){
+            // Send notifications to gateway to forword to BOT agents.
+            send_notification_alarm_to_gateway();     
+        }
+       
+        if(config.is_enabled_send_SMS_notification){
+            while(rows --){
+                memset(contact_list, 0, sizeof(contact_list));
 
-            strcpy(contact_list, config.SMS_contact_list);
+                strcpy(contact_list, config.SMS_contact_list);
 
-            memset(notification_message, 0, sizeof(notification_message));
+                memset(notification_message, 0, sizeof(notification_message));
 
-            one_record = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+                one_record = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
 
-            // parse detailed information from database record
-            for (i = 0 ; i < NUM_FIELDS ; i++){
-                if(i == 0){
-                    database_field_info[i] = 
-                        strtok_save(one_record, DELIMITER_COMMA, &save_ptr_one_record);
-                }else{
-                    database_field_info[i] =
-                        strtok_save(NULL, DELIMITER_COMMA, &save_ptr_one_record);
+                // parse detailed information from database record
+                for (i = 0 ; i < NUM_FIELDS ; i++){
+                    if(i == 0){
+                        database_field_info[i] = 
+                            strtok_save(one_record, DELIMITER_COMMA, &save_ptr_one_record);
+                    }else{
+                        database_field_info[i] =
+                            strtok_save(NULL, DELIMITER_COMMA, &save_ptr_one_record);
+                    }
                 }
-            }
-            /*
-            for(i = 0 ; i<NUM_FIELDS ;i++)
-                printf("i=%d, [%s]\n", i, database_field_info[i]);
-            */
-            // replace the terms in message template with real information
-            strcpy(notification_message, config.SMS_message);
+                /*
+                for(i = 0 ; i<NUM_FIELDS ;i++)
+                    printf("i=%d, [%s]\n", i, database_field_info[i]);
+                */
+                // replace the terms in message template with real information
 
-            for (i = 0 ; i < NUM_FIELDS ; i++){
-                term_index = strstr(notification_message, replace_term_info[i]);
-                if(term_index != NULL){
-                    memset(message_temp, 0, sizeof(message_temp));
-                    strncpy(message_temp, notification_message, 
-                            term_index - notification_message);
-                    strcat(message_temp, database_field_info[i]);
-                    strcat(message_temp, term_index + strlen(replace_term_info[i]));
-                    memset(notification_message, 0, sizeof(notification_message));
-                    strcpy(notification_message, message_temp);
+                strcpy(notification_message, config.SMS_message_template);
+
+                for (i = 0 ; i < NUM_FIELDS ; i++){
+
+                    term_index = strstr(notification_message, replace_term_info[i]);
+
+                    if(term_index != NULL){
+                        memset(message_temp, 0, sizeof(message_temp));
+                        strncpy(message_temp, notification_message, 
+                                term_index - notification_message);
+                        strcat(message_temp, database_field_info[i]);
+                        strcat(message_temp, term_index + strlen(replace_term_info[i]));
+                        memset(notification_message, 0, sizeof(notification_message));
+                        strcpy(notification_message, message_temp);
+                    }
                 }
-            }
 
-            system("C:\\Users\\openISDM\\Desktop\\Server\\Notify\\calc.exe");
-            //ShellExecute(NULL, "open", "C:\\Users\\openISDM\\Desktop\\Server\\calc.exe", NULL, NULL, SW_SHOWNORMAL);
+                // Prepare the notification information for notification program
+                memset(cmd_launch, 0, sizeof(cmd_launch));
+                sprintf(cmd_launch, "%s %s \"%s\"", 
+                        config.SMS_notification_program_install_path, 
+                        contact_list, 
+                        notification_message);
 
-        }             
+                // Launch the notification program
+                system(cmd_launch);
+            }   
+        }
 
         sleep_t(BUSY_WAITING_TIME_IN_MS);
     }

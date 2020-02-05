@@ -244,9 +244,17 @@ typedef struct {
     /* The list head of the notification list */
     struct List_Entry notification_list_head;
 
+    /* The flag indicating whether sending SMS notification is enabled. */
+    int is_enabled_send_SMS_notification;
+
+    /* The absoluate file path of SMS notification program */
+    char SMS_notification_program_install_path[MAX_PATH];
+
+    /* The mobile phone list to receive SMS notification messages */
     char SMS_contact_list[WIFI_MESSAGE_LENGTH];
 
-    char SMS_message[WIFI_MESSAGE_LENGTH];
+    /* The SMS notification message template */
+    char SMS_message_template[WIFI_MESSAGE_LENGTH];
 
 } ServerConfig;
 
