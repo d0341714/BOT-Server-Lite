@@ -865,6 +865,7 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 				//把太久的資料刪掉
 				/**/
 				printf("uuid_table->final_timestamp %s",uuid_table->final_timestamp);
+				printf("last time\n",get_clock_time()-10);
 				if(atoi(uuid_table->final_timestamp)<(get_clock_time()-10)){
 					
 					//要lock
@@ -939,10 +940,32 @@ void hashtable_go_through_for_get_summary(
     char* final_timestamp;
 	char* battery;
 	char* panic_button;
-	int average_rssi;
+	char* average_rssi;
 	int recently_scanned;
 	int i = 0;
 	hash_table_row* table_row;
+	char *pqescape_mac_address = NULL;
+	PGconn *db_conn = NULL;
+	int db_serial_id = -1;
+	char* coordinate_x;
+	char* coordinate_y;
+	
+	char *sql_identify_panic = 
+        "UPDATE object_summary_table " \
+        "SET rssi = %s,first_seen_timestamp = %s ," \
+        "last_seen_timestamp = %s, battery_voltage = %s , "\
+		"uuid = %s"\
+		"base_x = %s, base_y = %s , "\
+		"SET panic_violation_timestamp = NOW() " \
+        "WHERE object_summary_table.mac_address = %s " ;
+    char *sql_without_panic =
+		"UPDATE object_summary_table " \
+        "SET rssi = %s,first_seen_timestamp = %s ," \
+        "last_seen_timestamp = %s, battery_voltage = %s , "\
+		"uuid = %s"\
+		"base_x = %s, base_y = %s , "\
+        "WHERE object_summary_table.mac_address = %s " ;
+	char sql[SQL_TEMP_BUFFER_LENGTH];
 	printf("hashtable_go_through_for_get_summary\n");
 	for (i = 0; i < size; i++) {
 		HNode * curr = table[i];
@@ -962,12 +985,58 @@ void hashtable_go_through_for_get_summary(
 				battery=table_row->battery;
 				initial_timestamp=table_row->initial_timestamp;
 				final_timestamp=table_row->final_timestamp;
-				average_rssi=table_row->average_rssi;
+				average_rssi=itoa(table_row->average_rssi);
 				panic_button=table_row->panic_button;
+				coordinate_x=itoa((int)summary_coordinateX);
+				coordinate_y=itoa((int)summary_coordinateY);
 				//印出來看看?
-				printf("summary:%s %s %s %s %d %s\n",uuid,battery,initial_timestamp,final_timestamp,average_rssi,panic_button);
+				printf("summary:%s %s %s %s %s %s\n",uuid,battery,initial_timestamp,final_timestamp,average_rssi,panic_button);
+				printf("x+y:%s %s\n",coordinate_x,coordinate_y);
 				//上傳db
-				
+				//panic
+				 memset(sql, 0, sizeof(sql));
+				 if(WORK_SUCCESSFULLY != 
+                   SQL_get_database_connection(db_connection_list_head, 
+                                               &db_conn, 
+                                               &db_serial_id)){
+
+                    zlog_error(category_debug,
+                               "cannot open database\n");
+
+                    continue;
+                }
+
+                pqescape_mac_address = 
+                    PQescapeLiteral(db_conn, object_mac_address, 
+                                    strlen(object_mac_address)); 
+   
+                
+
+                
+				}
+				if(panic_button!=NULL && atoi(panic_button)==1){
+					//字串不同
+					sprintf(sql,sql_without_panic, 
+							average_rssi,initial_timestamp,
+							final_timestamp,battery,
+							uuid,
+							coordinate_x,coordinate_y,
+							pqescape_mac_address);
+				}else{
+					sprintf(sql,sql_without_panic,
+							average_rssi,initial_timestamp,
+							final_timestamp,battery,
+							uuid,
+							coordinate_x,coordinate_y,
+							pqescape_mac_address);
+				}
+				PQfreemem(pqescape_mac_address);
+
+                ret_val = SQL_execute(db_conn, sql);
+
+                SQL_release_database_connection(
+                    db_connection_list_head, 
+                    db_serial_id);
 				
 			}
 			
