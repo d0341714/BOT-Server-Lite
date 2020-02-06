@@ -11,7 +11,7 @@
 #include "SqlWrapper.h"
 
 #define SLOTS_IN_MEM_POOL_HASH_TABLE_ROW 2048
-#define SLOTS_IN_MEM_POOL_DataForHashtable_TABLE_ROW 512
+#define SLOTS_IN_MEM_POOL_DataForHashtable_TABLE_ROW 2048
 //totaltag*16
 #define SLOTS_IN_MEM_POOL_UUID_RECORD_TABLE_ROW 65536
 #define DRIFT_DISTANCE 50

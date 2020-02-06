@@ -19,6 +19,7 @@ typedef struct {
    char* battery_voltage;   
    char* rssi;
    char* panic_button;
+   pthread_mutex_t list_lock;
 } DataForHashtable;
 
 //Record array
