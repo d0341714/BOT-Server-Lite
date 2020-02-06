@@ -692,7 +692,7 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 			memset(data_row,0,sizeof(DataForHashtable));
 			//lock
 			pthread_mutex_init( &data_row->list_lock, 0);
-			pthread_mutex_lock(&data_row->list_lock);
+			
 			
 			memcpy(area_id, lbeacon_uuid, 4);
 			area_id[5]='\0';
@@ -706,6 +706,7 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 			//拆解ok
 			//printf("12345:%s %s %s %s %s\n",data_row->lbeacon_uuid,data_row->initial_timestamp_GMT,data_row->final_timestamp_GMT,data_row->rssi,data_row->battery_voltage);
 			/**/
+			//pthread_mutex_lock(&data_row->list_lock);
 			area_table=hash_table_of_specific_area_id(area_id);
 			
 			//printf("area:%s\n",area_id);
@@ -713,7 +714,7 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 			hashtable_put_mac_table(area_table, 
 							object_mac_address,strlen(object_mac_address), 
 							data_row, sizeof(*data_row));	/**/
-			pthread_mutex_lock(&data_row->list_lock);
+			//pthread_mutex_unlock(&data_row->list_lock);
 			printf("end lock:data_row->%s",data_row->lbeacon_uuid);
 			mp_free(&DataForHashtable_mempool,data_row);
 			//unlock
@@ -800,6 +801,11 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 	hash_table_row* table_row;
 	//printf("hashtable_go_through_for_summarize\n");
 	
+	pthread_mutex_t * ht_mutex = h_table->ht_mutex;
+	/*printf("12345:%s %s %s %s %s\n",value->lbeacon_uuid,value->initial_timestamp_GMT,value->final_timestamp_GMT,
+									value->rssi,value->battery_voltage);*/
+	pthread_mutex_lock(ht_mutex);
+	
 	for (i = 0; i < size; i++) {
 		HNode * curr = table[i];
 		while (curr != 0) {//every mac
@@ -858,8 +864,10 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 				}
 				//把太久的資料刪掉
 				/**/
+				printf("uuid_table->final_timestamp %s",uuid_table->final_timestamp);
 				if(atoi(uuid_table->final_timestamp)<(get_clock_time()-10)){
-					printf("delete %d",get_clock_time());
+					
+					//要lock
 					mp_free(&uuid_record_table_row_mempool,uuid_table);
 					j++;
 					continue;
@@ -919,6 +927,7 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 			curr = curr->next;
 		}
 	}
+		pthread_mutex_unlock(ht_mutex);
 }
 
 void hashtable_go_through_for_get_summary(
@@ -995,8 +1004,8 @@ void hashtable_put_mac_table(
 	DataForHashtable* data_row;
 	//try to replace existing key's value if possible
 	pthread_mutex_t * ht_mutex = h_table->ht_mutex;
-	printf("12345:%s %s %s %s %s\n",value->lbeacon_uuid,value->initial_timestamp_GMT,value->final_timestamp_GMT,
-									value->rssi,value->battery_voltage);
+	/*printf("12345:%s %s %s %s %s\n",value->lbeacon_uuid,value->initial_timestamp_GMT,value->final_timestamp_GMT,
+									value->rssi,value->battery_voltage);*/
 	pthread_mutex_lock(ht_mutex);
 	//printf("==>hashtable_put_mac_table\n");
 	/*printf("12345:%s %s %s %s %s\n",value->lbeacon_uuid,value->initial_timestamp_GMT,value->final_timestamp_GMT,
@@ -1042,7 +1051,9 @@ void hashtable_put_mac_table(
 	data_row->panic_button=panic_button;
 	*/
 	//printf("==>hashtable_replace_uuid\n");
+	
 	res = _hashtable_replace_uuid(h_table, key, key_len, value, sizeof(*value));
+	
 	//printf("replace finish\n");
 	//找不到要新增一個
 	if (res == 0 ) {
