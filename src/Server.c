@@ -1128,17 +1128,17 @@ void *Server_NSI_routine(void *_buffer_node)
 
     memset(gateway_record, 0, sizeof(gateway_record));
 
+    sprintf(gateway_record, "1;%s;%d;%s;",
+            current_node -> net_address,
+            S_NORMAL_STATUS,
+            API_version);
+    SQL_update_gateway_registration_status(
+        &config.db_connection_list_head,
+        gateway_record,
+        strlen(gateway_record));
+
     if(strncmp(BOT_SERVER_API_VERSION_20, API_version, strlen(BOT_SERVER_API_VERSION_20)) == 0 ||
         strncmp(BOT_SERVER_API_VERSION_21, API_version, strlen(BOT_SERVER_API_VERSION_21)) == 0) {
-
-        sprintf(gateway_record, "1;%s;%d;", 
-            current_node -> net_address,
-            S_NORMAL_STATUS);
-
-        SQL_update_gateway_registration_status_less_ver22(
-            &config.db_connection_list_head, 
-            gateway_record,
-            strlen(gateway_record));
 
         SQL_update_lbeacon_registration_status_less_ver22(
             &config.db_connection_list_head,
@@ -1147,16 +1147,7 @@ void *Server_NSI_routine(void *_buffer_node)
             current_node -> net_address);
 
     }else{
-        sprintf(gateway_record, "1;%s;%d;%s;", 
-            current_node -> net_address,
-            S_NORMAL_STATUS,
-            API_version);
-
-        SQL_update_gateway_registration_status(
-            &config.db_connection_list_head, 
-            gateway_record,
-            strlen(gateway_record));
-
+       
         SQL_update_lbeacon_registration_status(
             &config.db_connection_list_head,
             current_node->content,

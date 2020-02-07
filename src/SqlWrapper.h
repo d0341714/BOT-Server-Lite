@@ -278,35 +278,6 @@ ErrorCode SQL_vacuum_database(DBConnectionListHead *db_connection_list_head);
 ErrorCode SQL_delete_old_data(DBConnectionListHead *db_connection_list_head, 
                               int retention_hours);
 
-
-/*
-  SQL_update_gateway_registration_status_less_ver22
-
-     Updates the status of the input gateways as registered.
-
-  Parameter:
-
-     db_connection_list_head - the list head of database connection pool
-
-     buf - an input string with the format below to specify the registered
-           gateways
-
-           length;gateway_ip_1;status_1;gateway_ip_2;status_2;gateway_ip_3; \
-           status_3;
-
-     buf_len - Length in number of bytes of buf input string
-
-  Return Value:
-
-     ErrorCode - indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY
-*/
-
-ErrorCode SQL_update_gateway_registration_status_less_ver22(
-    DBConnectionListHead *db_connection_list_head,
-    char *buf,
-    size_t buf_len);
-
 /*
   SQL_update_gateway_registration_status
 
