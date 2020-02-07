@@ -427,6 +427,7 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node);
 
      address_map - The pointer points to the  head of the AddressMap.
      address - The pointer points to the address of the LBeacon IP.
+     API_version - API version used by gateway
 
   Return value:
 
@@ -435,7 +436,9 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node);
 
  */
 
-bool Gateway_join_request(AddressMapArray *address_map, char *address);
+bool Gateway_join_request(AddressMapArray *address_map, 
+                          char *address, 
+                          char *API_version);
 
 
 /*

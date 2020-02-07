@@ -411,7 +411,7 @@ ErrorCode SQL_delete_old_data(
 }
 
 
-ErrorCode SQL_update_gateway_registration_status(
+ErrorCode SQL_update_gateway_registration_status_less_ver22(
     DBConnectionListHead *db_connection_list_head,
     char *buf,
     size_t buf_len){
@@ -424,20 +424,23 @@ ErrorCode SQL_update_gateway_registration_status(
     char *numbers_str = NULL;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_template = "INSERT INTO gateway_table " \
-                         "(ip_address, " \
-                         "health_status, " \
-                         "registered_timestamp, " \
-                         "last_report_timestamp) " \
-                         "VALUES " \
-                         "(%s, \'%d\', NOW(), NOW())" \
-                         "ON CONFLICT (ip_address) " \
-                         "DO UPDATE SET health_status = \'%d\', " \
-                         "last_report_timestamp = NOW();";
+
+    char *sql_template = 
+        "INSERT INTO gateway_table " \
+        "(ip_address, " \
+        "health_status, " \
+        "registered_timestamp, " \
+        "last_report_timestamp) " \
+        "VALUES " \
+        "(%s, \'%d\', NOW(), NOW())" \
+        "ON CONFLICT (ip_address) " \
+        "DO UPDATE SET health_status = \'%d\', " \
+        "last_report_timestamp = NOW();";
+
     HealthStatus health_status = S_NORMAL_STATUS;
     char *ip_address = NULL;
     char *pqescape_ip_address = NULL;
-
+   
 
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -465,16 +468,18 @@ ErrorCode SQL_update_gateway_registration_status(
     while( numbers-- ){
         
         ip_address = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-       
+
         /* Create SQL statement */
         pqescape_ip_address =
             PQescapeLiteral(db_conn, ip_address, strlen(ip_address));
 
         memset(sql, 0, sizeof(sql));
+
         sprintf(sql, sql_template,
                 pqescape_ip_address,
-                health_status, health_status);
-
+                health_status, 
+                health_status);
+       
         PQfreemem(pqescape_ip_address);
 
         /* Execute SQL statement */
@@ -497,7 +502,113 @@ ErrorCode SQL_update_gateway_registration_status(
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_update_lbeacon_registration_status(
+
+ErrorCode SQL_update_gateway_registration_status(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len){
+
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char temp_buf[WIFI_MESSAGE_LENGTH];
+    char *saveptr = NULL;
+    char *numbers_str = NULL;
+    int numbers = 0;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+
+    char *sql_template = 
+        "INSERT INTO gateway_table " \
+        "(ip_address, " \
+        "health_status, " \
+        "registered_timestamp, " \
+        "last_report_timestamp, " \
+        "api_version) " \
+        "VALUES " \
+        "(%s, \'%d\', NOW(), NOW(), %s)" \
+        "ON CONFLICT (ip_address) " \
+        "DO UPDATE SET " \
+        "health_status = \'%d\', " \
+        "last_report_timestamp = NOW(), " \
+        "api_version = %s;";
+
+    HealthStatus health_status = S_NORMAL_STATUS;
+    char *ip_address = NULL;
+    char *status = NULL;
+    char *api_version = NULL;
+    char *pqescape_ip_address = NULL;
+    char *pqescape_api_version = NULL;
+   
+
+    memset(temp_buf, 0, sizeof(temp_buf));
+    memcpy(temp_buf, buf, buf_len);
+
+    numbers_str = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    if(numbers_str == NULL){
+        return E_API_PROTOCOL_FORMAT;
+    }
+    numbers = atoi(numbers_str);
+
+    if(numbers <= 0){
+        return E_SQL_PARSE;
+    }
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    while( numbers-- ){
+        
+        ip_address = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+        status = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+        api_version = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+        /* Create SQL statement */
+        pqescape_ip_address =
+            PQescapeLiteral(db_conn, ip_address, strlen(ip_address));
+
+        pqescape_api_version =
+            PQescapeLiteral(db_conn, api_version, strlen(api_version));
+
+        memset(sql, 0, sizeof(sql));
+
+        sprintf(sql, sql_template,
+                pqescape_ip_address,
+                health_status,
+                pqescape_api_version,
+                health_status,
+                pqescape_api_version);
+       
+        PQfreemem(pqescape_ip_address);
+        PQfreemem(pqescape_api_version);
+
+        /* Execute SQL statement */
+        ret_val = SQL_execute(db_conn, sql);
+
+        if(WORK_SUCCESSFULLY != ret_val){
+            
+            SQL_release_database_connection(
+                db_connection_list_head,
+                db_serial_id);
+
+            return E_SQL_EXECUTE;
+        }
+    }
+
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
+
+    return WORK_SUCCESSFULLY;
+}
+
+ErrorCode SQL_update_lbeacon_registration_status_less_ver22(
     DBConnectionListHead *db_connection_list_head,
     char *buf,
     size_t buf_len,
@@ -511,27 +622,30 @@ ErrorCode SQL_update_lbeacon_registration_status(
     char *numbers_str = NULL;
     int numbers = 0;
     char sql[SQL_TEMP_BUFFER_LENGTH];
-    char *sql_template = "INSERT INTO lbeacon_table " \
-                         "(uuid, " \
-                         "ip_address, " \
-                         "health_status, " \
-                         "gateway_ip_address, " \
-                         "registered_timestamp, " \
-                         "last_report_timestamp, " \
-                         "coordinate_x, " \
-                         "coordinate_y) " \
-                         "VALUES " \
-                         "(%s, %s, \'%d\', %s, " \
-                         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
-                         "NOW(), " \
-                         "%d, %d) " \
-                         "ON CONFLICT (uuid) " \
-                         "DO UPDATE SET ip_address = %s, " \
-                         "health_status = \'%d\', " \
-                         "gateway_ip_address = %s, " \
-                         "last_report_timestamp = NOW(), " \
-                         "coordinate_x = %d, " \
-                         "coordinate_y = %d;";
+    char *sql_template = 
+        "INSERT INTO lbeacon_table " \
+        "(uuid, " \
+        "ip_address, " \
+        "health_status, " \
+        "gateway_ip_address, " \
+        "registered_timestamp, " \
+        "last_report_timestamp, " \
+        "coordinate_x, " \
+        "coordinate_y) " \
+        "VALUES " \
+        "(%s, %s, \'%d\', %s, " \
+        "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
+        "NOW(), " \
+        "%d, %d) " \
+        "ON CONFLICT (uuid) " \
+        "DO UPDATE SET " \
+        "ip_address = %s, " \
+        "health_status = \'%d\', " \
+        "gateway_ip_address = %s, " \
+        "last_report_timestamp = NOW(), " \
+        "coordinate_x = %d, " \
+        "coordinate_y = %d;";
+
     HealthStatus health_status = S_NORMAL_STATUS;
     char *uuid = NULL;
     char *lbeacon_ip = NULL;
@@ -549,6 +663,7 @@ ErrorCode SQL_update_lbeacon_registration_status(
 	const int INDEX_OF_COORDINATE_X_IN_UUID = 12;
     const int INDEX_OF_COORDINATE_Y_IN_UUID = 24;
     const int LENGTH_OF_COORDINATE_IN_UUID = 8;
+    int current_time = get_system_time();
     
 	
     memset(temp_buf, 0, sizeof(temp_buf));
@@ -597,6 +712,7 @@ ErrorCode SQL_update_lbeacon_registration_status(
 
         registered_timestamp_GMT = 
             strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+ 
         lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
         /* Create SQL statement */
@@ -604,8 +720,10 @@ ErrorCode SQL_update_lbeacon_registration_status(
 
         pqescape_uuid = 
             PQescapeLiteral(db_conn, uuid, strlen(uuid));
+
         pqescape_lbeacon_ip =
             PQescapeLiteral(db_conn, lbeacon_ip, strlen(lbeacon_ip));
+
         pqescape_gateway_ip =
             PQescapeLiteral(db_conn, gateway_ip_address, 
                             strlen(gateway_ip_address));
@@ -631,6 +749,185 @@ ErrorCode SQL_update_lbeacon_registration_status(
         PQfreemem(pqescape_lbeacon_ip);
         PQfreemem(pqescape_gateway_ip);
         PQfreemem(pqescape_registered_timestamp_GMT);
+
+        /* Execute SQL statement */
+        ret_val = SQL_execute(db_conn, sql);
+
+        if(WORK_SUCCESSFULLY != ret_val){
+            SQL_release_database_connection(
+                db_connection_list_head,
+                db_serial_id);
+            return E_SQL_EXECUTE;
+        }
+
+    }
+
+    SQL_release_database_connection(
+        db_connection_list_head,
+        db_serial_id);
+
+    return WORK_SUCCESSFULLY;
+}
+
+
+ErrorCode SQL_update_lbeacon_registration_status(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len,
+    char *gateway_ip_address){
+
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char temp_buf[WIFI_MESSAGE_LENGTH];
+    char *saveptr = NULL;
+    char *numbers_str = NULL;
+    int numbers = 0;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+    char *sql_template = 
+        "INSERT INTO lbeacon_table " \
+        "(uuid, " \
+        "ip_address, " \
+        "health_status, " \
+        "gateway_ip_address, " \
+        "registered_timestamp, " \
+        "last_report_timestamp, " \
+        "api_version, " \
+        "coordinate_x, " \
+        "coordinate_y) " \
+        "VALUES " \
+        "(%s, %s, \'%d\', %s, " \
+        "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
+        "NOW(), " \
+        "%s, " \
+        "%d, %d) " \
+        "ON CONFLICT (uuid) " \
+        "DO UPDATE SET " \
+        "ip_address = %s, " \
+        "health_status = \'%d\', " \
+        "gateway_ip_address = %s, " \
+        "last_report_timestamp = NOW(), " \
+        "api_version = %s, " \
+        "coordinate_x = %d, " \
+        "coordinate_y = %d;";
+
+    HealthStatus health_status = S_NORMAL_STATUS;
+    char *uuid = NULL;
+    char *lbeacon_ip = NULL;
+    char *not_used_gateway_ip = NULL;
+    char *registered_timestamp_GMT = NULL;
+    char *api_version = NULL;
+    char *pqescape_uuid = NULL;
+    char *pqescape_lbeacon_ip = NULL;
+    char *pqescape_gateway_ip = NULL;
+    char *pqescape_registered_timestamp_GMT = NULL;
+    char *pqescape_api_version = NULL;
+    char str_uuid[LENGTH_OF_UUID];
+    char coordinate_x[LENGTH_OF_UUID];
+    char coordinate_y[LENGTH_OF_UUID];
+    int int_coordinate_x = 0;
+    int int_coordinate_y = 0;
+	const int INDEX_OF_COORDINATE_X_IN_UUID = 12;
+    const int INDEX_OF_COORDINATE_Y_IN_UUID = 24;
+    const int LENGTH_OF_COORDINATE_IN_UUID = 8;
+    
+	
+    memset(temp_buf, 0, sizeof(temp_buf));
+    memcpy(temp_buf, buf, buf_len);
+
+   
+    numbers_str = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
+    if(numbers_str == NULL){
+        return E_API_PROTOCOL_FORMAT;
+    }
+    numbers = atoi(numbers_str);
+
+    if(numbers <= 0){
+        return E_SQL_PARSE;
+    }
+
+    not_used_gateway_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot operate database");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    while( numbers-- ){
+        uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+        memset(str_uuid, 0, sizeof(str_uuid));
+        strcpy(str_uuid, uuid);
+
+        memset(coordinate_x, 0, sizeof(coordinate_x));
+        memset(coordinate_y, 0, sizeof(coordinate_y));
+        
+        strncpy(coordinate_x, 
+                &str_uuid[INDEX_OF_COORDINATE_X_IN_UUID], 
+                LENGTH_OF_COORDINATE_IN_UUID);
+        strncpy(coordinate_y, 
+                &str_uuid[INDEX_OF_COORDINATE_Y_IN_UUID], 
+                LENGTH_OF_COORDINATE_IN_UUID);
+
+        int_coordinate_x = atoi(coordinate_x);
+        int_coordinate_y = atoi(coordinate_y);
+
+        registered_timestamp_GMT = 
+            strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+        
+
+        lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+
+        api_version = 
+            strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+        
+
+        /* Create SQL statement */
+        memset(sql, 0, sizeof(sql));
+
+        pqescape_uuid = 
+            PQescapeLiteral(db_conn, uuid, strlen(uuid));
+
+        pqescape_lbeacon_ip =
+            PQescapeLiteral(db_conn, lbeacon_ip, strlen(lbeacon_ip));
+
+        pqescape_registered_timestamp_GMT =
+            PQescapeLiteral(db_conn, registered_timestamp_GMT,
+                            strlen(registered_timestamp_GMT));
+        pqescape_gateway_ip =
+            PQescapeLiteral(db_conn, gateway_ip_address, 
+                            strlen(gateway_ip_address));
+ 
+        pqescape_api_version =
+            PQescapeLiteral(db_conn, api_version,
+                            strlen(api_version));
+
+        sprintf(sql, sql_template,
+                pqescape_uuid,
+                pqescape_lbeacon_ip,
+                health_status,
+                pqescape_gateway_ip,
+                pqescape_registered_timestamp_GMT,
+                pqescape_api_version,
+                int_coordinate_x,
+                int_coordinate_y,
+                pqescape_lbeacon_ip,
+                health_status,
+                pqescape_gateway_ip,
+                pqescape_api_version,
+                int_coordinate_x,
+                int_coordinate_y);
+
+        PQfreemem(pqescape_uuid);
+        PQfreemem(pqescape_lbeacon_ip);
+        PQfreemem(pqescape_gateway_ip);
+        PQfreemem(pqescape_registered_timestamp_GMT);
+        PQfreemem(pqescape_api_version);
 
         /* Execute SQL statement */
         ret_val = SQL_execute(db_conn, sql);
@@ -734,7 +1031,8 @@ ErrorCode SQL_update_lbeacon_health_status(
     char *sql_template = "UPDATE lbeacon_table " \
                          "SET health_status = %s, " \
                          "last_report_timestamp = NOW(), " \
-						 "gateway_ip_address = %s " \
+						 "gateway_ip_address = %s, " \
+                         "server_time_offset = %d " \
                          "WHERE uuid = %s ;";
     char *lbeacon_uuid = NULL;
     char *lbeacon_timestamp = NULL;
@@ -743,13 +1041,16 @@ ErrorCode SQL_update_lbeacon_health_status(
     char *pqescape_lbeacon_uuid = NULL;
     char *pqescape_health_status = NULL;
     char *pqescape_gateway_ip = NULL;
- 
+    int current_time = get_system_time();
+    int lbeacon_timestamp_value = 0;
+   
  
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 
     lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);	
     lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
+    lbeacon_timestamp_value = atoi(lbeacon_timestamp);
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
     health_status = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
@@ -775,6 +1076,7 @@ ErrorCode SQL_update_lbeacon_health_status(
     sprintf(sql, sql_template,
             pqescape_health_status,
 		    pqescape_gateway_ip,
+            current_time - lbeacon_timestamp_value,
             pqescape_lbeacon_uuid);
 
     PQfreemem(pqescape_lbeacon_uuid);

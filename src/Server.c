@@ -1115,33 +1115,59 @@ void send_notification_alarm_to_gateway(){
 void *Server_NSI_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
-
     char gateway_record[WIFI_MESSAGE_LENGTH];
-
     JoinStatus join_status = JOIN_UNKNOWN;
+    char API_version[LENGTH_OF_API_VERSION];
 
+   
     zlog_info(category_debug, "Start join...(%s)", 
               current_node -> net_address);
 
+    memset(API_version, 0, sizeof(API_version));
+    sprintf(API_version, "%.1f", current_node->API_version);
+
     memset(gateway_record, 0, sizeof(gateway_record));
 
-    sprintf(gateway_record, "1;%s;%d;", current_node -> net_address,
-            S_NORMAL_STATUS);
-   
-    SQL_update_gateway_registration_status(
-        &config.db_connection_list_head, 
-        gateway_record,
-        strlen(gateway_record));
+    if(strncmp(BOT_SERVER_API_VERSION_20, API_version, strlen(BOT_SERVER_API_VERSION_20)) == 0 ||
+        strncmp(BOT_SERVER_API_VERSION_21, API_version, strlen(BOT_SERVER_API_VERSION_21)) == 0) {
 
-    SQL_update_lbeacon_registration_status(
-        &config.db_connection_list_head,
-        current_node->content,
-        strlen(current_node->content),
-        current_node -> net_address);
+        sprintf(gateway_record, "1;%s;%d;", 
+            current_node -> net_address,
+            S_NORMAL_STATUS);
+
+        SQL_update_gateway_registration_status_less_ver22(
+            &config.db_connection_list_head, 
+            gateway_record,
+            strlen(gateway_record));
+
+        SQL_update_lbeacon_registration_status_less_ver22(
+            &config.db_connection_list_head,
+            current_node->content,
+            strlen(current_node->content),
+            current_node -> net_address);
+
+    }else{
+        sprintf(gateway_record, "1;%s;%d;%s;", 
+            current_node -> net_address,
+            S_NORMAL_STATUS,
+            API_version);
+
+        SQL_update_gateway_registration_status(
+            &config.db_connection_list_head, 
+            gateway_record,
+            strlen(gateway_record));
+
+        SQL_update_lbeacon_registration_status(
+            &config.db_connection_list_head,
+            current_node->content,
+            strlen(current_node->content),
+            current_node -> net_address);
+    }
 
      /* Put the address into Gateway_address_map */
     if (true == Gateway_join_request(&Gateway_address_map, 
-                                     current_node -> net_address) ){
+                                     current_node -> net_address,
+                                     API_version) ){
         join_status = JOIN_ACK;
     }    
     else{
@@ -1184,10 +1210,11 @@ void *Server_BHM_routine(void *_buffer_node)
         }
         else if(current_node->pkt_type == beacon_health_report){
 
-            SQL_update_lbeacon_health_status(&config.db_connection_list_head,
-                                             current_node -> content,
-                                             current_node -> content_size,
-                                             current_node -> net_address);
+            SQL_update_lbeacon_health_status(
+                &config.db_connection_list_head,
+                current_node -> content,
+                current_node -> content_size,
+                current_node -> net_address);
         }
     }
 
@@ -1200,11 +1227,17 @@ void *Server_LBeacon_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
     
+    char API_version[LENGTH_OF_API_VERSION];
+
+    memset(API_version, 0, sizeof(API_version));
+    sprintf(API_version, "%.1f", current_node->API_version);
 
     if(current_node -> pkt_type == tracked_object_data)
     {
         // Server should support backward compatibility.
-        if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
+        if(0 == strncmp(BOT_SERVER_API_VERSION_20, API_version, 
+                        strlen(BOT_SERVER_API_VERSION_20))){
+
             /*[obsoleted-20200109]
             SQL_update_object_tracking_data(db,
                                             current_node -> content,
@@ -1266,6 +1299,10 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
+    char API_version[LENGTH_OF_API_VERSION];
+
+    memset(API_version, 0, sizeof(API_version));
+    sprintf(API_version, "%.1f", current_node->API_version);
     
     if(current_node -> pkt_type == time_critical_tracked_object_data){
        
@@ -1281,7 +1318,8 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
         }
 
         // Server should support backward compatibility.
-        if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
+        if(0 == strncmp(BOT_SERVER_API_VERSION_20, API_version, 
+                        strlen(BOT_SERVER_API_VERSION_20))){    
             /*[obsoleted-20200109]
             SQL_update_object_tracking_data(db,
                                             current_node -> content,
@@ -1303,11 +1341,14 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
     return (void *)NULL;
 }
 
-bool Gateway_join_request(AddressMapArray *address_map, char *address)
+bool Gateway_join_request(AddressMapArray *address_map, 
+                          char *address, 
+                          char *API_version)
 {
     int not_in_use = -1;
     int n;
     int answer = -1;
+    int current_time = get_system_time();
 
     zlog_info(category_debug, 
               "Enter Gateway_join_request address [%s]", address);
@@ -1347,7 +1388,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
                                     not_in_use,
                                     ADDRESS_MAP_TYPE_GATEWAY,
                                     address,
-                                    NULL);
+                                    NULL,
+                                    API_version);
 
         pthread_mutex_unlock( &address_map -> list_lock);
 
