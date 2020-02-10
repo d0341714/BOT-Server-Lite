@@ -1053,7 +1053,7 @@ void *Server_send_notification(){
 
                     term_index = strstr(notification_message, replace_term_info[i]);
 
-                    if(term_index != NULL){
+                    if(term_index != NULL && database_field_info[i] != NULL){
                         memset(message_temp, 0, sizeof(message_temp));
                         strncpy(message_temp, notification_message, 
                                 term_index - notification_message);
