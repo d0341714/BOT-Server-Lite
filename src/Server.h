@@ -51,7 +51,6 @@
 #include "BeDIS.h"
 #include "SqlWrapper.h"
 #include "GeoFence.h"
-#include "HashTable.h"
 
 /* When debugging is needed */
 //#define debugging
@@ -245,6 +244,18 @@ typedef struct {
     /* The list head of the notification list */
     struct List_Entry notification_list_head;
 
+    /* The flag indicating whether sending SMS notification is enabled. */
+    int is_enabled_send_SMS_notification;
+
+    /* The absoluate file path of SMS notification program */
+    char SMS_notification_program_install_path[MAX_PATH];
+
+    /* The mobile phone list to receive SMS notification messages */
+    char SMS_contact_list[WIFI_MESSAGE_LENGTH];
+
+    /* The SMS notification message template */
+    char SMS_message_template[WIFI_MESSAGE_LENGTH];
+
 } ServerConfig;
 
 /* A server config struct for storing config parameters from the config file */
@@ -416,6 +427,7 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node);
 
      address_map - The pointer points to the  head of the AddressMap.
      address - The pointer points to the address of the LBeacon IP.
+     API_version - API version used by gateway
 
   Return value:
 
@@ -424,7 +436,9 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node);
 
  */
 
-bool Gateway_join_request(AddressMapArray *address_map, char *address);
+bool Gateway_join_request(AddressMapArray *address_map, 
+                          char *address, 
+                          char *API_version);
 
 
 /*
@@ -613,7 +627,6 @@ void send_notification_alarm_to_gateway();
 ErrorCode add_notification_to_the_notification_list(
     struct List_Entry * notification_list_head,
     char *buf);
-	
-void* upload_all_hashtable(void);
 
+void* upload_all_hashtable(void);
 #endif

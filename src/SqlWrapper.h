@@ -67,7 +67,6 @@ typedef struct{
 
 } DBConnectionNode;
 
-
 typedef struct{
 
     pthread_mutex_t list_lock;
@@ -279,7 +278,6 @@ ErrorCode SQL_vacuum_database(DBConnectionListHead *db_connection_list_head);
 ErrorCode SQL_delete_old_data(DBConnectionListHead *db_connection_list_head, 
                               int retention_hours);
 
-
 /*
   SQL_update_gateway_registration_status
 
@@ -292,7 +290,8 @@ ErrorCode SQL_delete_old_data(DBConnectionListHead *db_connection_list_head,
      buf - an input string with the format below to specify the registered
            gateways
 
-           length;gateway_ip_1;gateway_ip_2;gateway_ip_3;
+           length;gateway_ip_1;status_1;api_version_1;gateway_ip_2;status_2; \
+           api_version_3;
 
      buf_len - Length in number of bytes of buf input string
 
@@ -308,7 +307,7 @@ ErrorCode SQL_update_gateway_registration_status(
     size_t buf_len);
 
 /*
-  SQL_update_lbeacon_registration_status
+  SQL_update_lbeacon_registration_status_less_ver22
 
      Updates the status of the input lbeacons as registered.
 
@@ -322,6 +321,38 @@ ErrorCode SQL_update_gateway_registration_status(
            length;gateway_ip;lbeacon_uuid_1;lbeacon_registered_timestamp_GMT; \
            lbeacon_ip_1;lbeacon_uuid_2;lbeacon_reigstered_timestamp_GMT; \
            lbeacon_ip_2;
+
+     buf_len - Length in number of bytes of buf input string
+
+     gateway_ip_address - the real ip address of gateway
+
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY
+*/
+
+ErrorCode SQL_update_lbeacon_registration_status_less_ver22(
+    DBConnectionListHead *db_connection_list_head,
+    char *buf,
+    size_t buf_len,
+    char *gateway_ip_address);
+
+/*
+  SQL_update_lbeacon_registration_status
+
+     Updates the status of the input lbeacons as registered.
+
+  Parameter:
+
+     db_connection_list_head - the list head of database connection pool
+
+     buf - a pointer to an input string with the format below to specify the
+           registered gateways.
+
+           length;gateway_ip;lbeacon_uuid_1;lbeacon_registered_timestamp_GMT; \
+           lbeacon_ip_1;lbeacon_api_version_1;lbeacon_uuid_2; \
+           lbeacon_reigstered_timestamp_GMT;lbeacon_ip_2;lbeacon_api_version_2;
 
      buf_len - Length in number of bytes of buf input string
 
@@ -384,7 +415,7 @@ ErrorCode SQL_update_gateway_health_status(
      buf - a pointer to an input string with the format below to specify the
            health status of lbeacon
 
-           lbeacon_uuid;lbeacon_datetime;lbeacon_ip;health_status;
+           lbeacon_uuid;lbeacon_timestamp;lbeacon_ip;health_status;
 
      buf_len - Length in number of bytes of buf input string
 
@@ -701,4 +732,13 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(
     DBConnectionListHead *db_connection_list_head,
     char *filename);
 
+ErrorCode SQL_upload_hashtable_summarize(
+    DBConnectionListHead *db_connection_list_head,
+    char* filename,
+    char *server_installation_path);
+	
+ErrorCode SQL_upload_location_history(
+    DBConnectionListHead *db_connection_list_head,
+    char* filename,
+    char *server_installation_path);
 #endif

@@ -2,14 +2,6 @@
 #ifndef TABLETYPE_H
 #define TABLETYPE_H
 
-typedef struct {	
-   
-   int valid;
-   int send;
-   
-   //int final_timestamp_GMT
-   
-} PanicMAC;
 
 typedef struct {
 	
@@ -33,10 +25,10 @@ typedef struct {
    //10 seconds
    int rssi_array[10];
    //int average_rssi;
-   int weights;
+   //int weights;
    float coordinateX;
    float coordinateY;
-   
+   int valid;
 } uuid_record_table_row;
 /*
 typedef struct {
@@ -59,12 +51,12 @@ typedef struct {
    float summary_coordinateY;
    //uuid_record_table uuid_table;
    //uuid_record_table_row uuid_record_table_ptr0;
-   //uuid_record_table_row uuid_table[16];  
-   uuid_record_table_row* uuid_record_table_ptr[16];
+   //uuid_record_table_row uuid_table[16];   
    size_t record_table_size;
    //控制上不上船
    int recently_scanned;
    char* panic_button;
+   uuid_record_table_row* uuid_record_table_ptr[16];
 } hash_table_row;
 
 

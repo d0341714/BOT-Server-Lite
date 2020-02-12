@@ -121,7 +121,8 @@ int rssi_weight(int * rssi_array,int k,int head);
 
 void hashtable_go_through_for_summarize(HashTable * h_table);
 
-void hashtable_go_through_for_get_summary(HashTable * h_table,DBConnectionListHead *db_connection_list_head,char *server_installation_path);
+void hashtable_go_through_for_get_summary(HashTable * h_table,DBConnectionListHead *db_connection_list_head,char *server_installation_path,
+											int ready_for_location_history_table);
 
 void hashtable_put_mac_table(
 	HashTable * h_table, 
@@ -131,6 +132,7 @@ void hashtable_put_mac_table(
 
 void hashtable_summarize_object_location(void);
 
-void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head,char *server_installation_path);
+void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head,char *server_installation_path,
+									int ready_for_location_history_table);
 
 #endif

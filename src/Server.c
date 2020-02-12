@@ -44,7 +44,8 @@
      Chun-Yu Lai    , chunyu1202@gmail.com
  */
 
-
+#include <winsock2.h>
+#include <windows.h>
 #include "Server.h"
 
 int main(int argc, char **argv)
@@ -55,7 +56,7 @@ int main(int argc, char **argv)
     char command_msg[WIFI_MESSAGE_LENGTH];
 
     int uptime;
-	
+
     /* The main thread of the communication Unit */
     pthread_t CommUnit_thread;
 
@@ -81,14 +82,13 @@ int main(int argc, char **argv)
     pthread_t wifi_listener_thread;
 	
 	pthread_t upload_all_hashtable_thread;
-
+	
     /* Initialize flags */
     NSI_initialization_complete      = false;
     CommUnit_initialization_complete = false;
     initialization_failed            = false;
     ready_to_work                    = true;
 
-	
 	initial_area_table();
     /* Initialize zlog */
     if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0)
@@ -397,7 +397,7 @@ int main(int argc, char **argv)
                    "Server_send_notification fail");
         return return_value;
     }
-	/**/
+	
 	return_value = startThread( &upload_all_hashtable_thread, 
                                 upload_all_hashtable, 
                                 NULL);
@@ -409,7 +409,7 @@ int main(int argc, char **argv)
         zlog_error(category_debug, 
                    "upload_all_hashtable fail");
         return return_value;
-    }
+    } 
 	
     zlog_info(category_debug,"Start Communication");
 
@@ -799,6 +799,28 @@ ErrorCode get_server_config(ServerConfig *config,
             &(config->notification_list_head), 
             config_message);
     }
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->is_enabled_send_SMS_notification = atoi(config_message);
+    zlog_info(category_debug,
+              "The is_enabled_send_SMS_notification is [%d]", 
+              config->is_enabled_send_SMS_notification);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    memcpy(config->SMS_notification_program_install_path, config_message,
+           sizeof(config->SMS_notification_program_install_path));
+    zlog_info(category_debug,"SMS_notification_program_install_path [%s]", 
+              config->SMS_notification_program_install_path);
+
+    fetch_next_string(file, config_message, sizeof(config_message));
+    strcpy(config->SMS_contact_list, config_message);
+    zlog_info(category_debug, "SMS_contact_list = [%s]", 
+              config->SMS_contact_list);
+
+    fetch_next_string(file, config_message, sizeof(config_message));
+    strcpy(config->SMS_message_template, config_message);
+    zlog_info(category_debug, "SMS_message_template = [%s]",
+              config->SMS_message_template);
        
     zlog_info(category_debug, "notification list initialized");
 
@@ -848,13 +870,12 @@ void *Server_summarize_location_information(){
     
     while(true == ready_to_work){
     
-        /*SQL_summarize_object_location(&config.db_connection_list_head,
+        SQL_summarize_object_location(&config.db_connection_list_head,
                                       config.database_pre_filter_time_window_in_sec,
                                       config.location_time_interval_in_sec,
                                       config.rssi_difference_of_location_accuracy_tolerance,
-                                      config.base_location_tolerance_in_millimeter);*/
-		
-		hashtable_summarize_object_location();
+                                      config.base_location_tolerance_in_millimeter);
+
         sleep_t(BUSY_WAITING_TIME_IN_MS);
     }
 
@@ -961,27 +982,113 @@ void *Server_collect_violation_event(){
 
 void *Server_send_notification(){
     char violation_info[WIFI_MESSAGE_LENGTH];
+    char contact_list[WIFI_MESSAGE_LENGTH];
+    char notification_message[WIFI_MESSAGE_LENGTH];
+    const int NUM_FIELDS = 10;
+    char *replace_term_info[10] = {"[ID]", 
+                                   "[MONITOR_TYPE]", 
+                                   "[MAC_ADDRESS]",
+                                   "[UUID]", 
+                                   "[VIOLATION_TIMESTAMP]", 
+                                   "[AREA_NAME]",
+                                   "[OBJECT_TYPE]", 
+                                   "[OBJECT_NAME]", 
+                                   "[OBJECT_IDENTITY]", 
+                                   "[LBEACON_DESCRIPTION]"};
+
+    char *save_ptr = NULL;
+    char *total_rows = NULL;
+    int rows = 0;
+    char *one_record = NULL;
+    char *database_field_info[10];
+    int i;
+    char *save_ptr_one_record = NULL;
+    char *term_index = NULL;
+    char message_temp[WIFI_MESSAGE_LENGTH];
+    char cmd_launch[CONFIG_BUFFER_SIZE];
 
 
     while(true == ready_to_work){
 
+        memset(violation_info, 0, sizeof(violation_info));
+
+        SQL_get_and_update_violation_events(
+            &config.db_connection_list_head, 
+            violation_info, 
+            sizeof(violation_info));
+
+           
+        // Send notification message SMS to mobile phones 
+        total_rows = strtok_save(violation_info, DELIMITER_SEMICOLON, &save_ptr);
+
+        if(total_rows == NULL){
+            continue;
+        }
+                
+        rows = atoi(total_rows);
+
+        if(rows == 0){
+            continue;
+        }
+
         if(config.is_enabled_send_notification_alarm){
+            // Send notifications to gateway to forword to BOT agents.
+            send_notification_alarm_to_gateway();     
+        }
+       
+        if(config.is_enabled_send_SMS_notification){
+            while(rows --){
+                memset(contact_list, 0, sizeof(contact_list));
 
-            memset(violation_info, 0, sizeof(violation_info));
+                strcpy(contact_list, config.SMS_contact_list);
 
-            SQL_get_and_update_violation_events(
-                &config.db_connection_list_head, 
-                violation_info, 
-                sizeof(violation_info));
+                memset(notification_message, 0, sizeof(notification_message));
 
-            /* The notification alarm is sent out to all BOT agents currently.
-               If needed, we can extend notification feature to support 
-               granularity. */
-            if(strlen(violation_info) > 0){
-                zlog_debug(category_debug, "send notification for [%s]", 
-                           violation_info);
-                send_notification_alarm_to_gateway();            
-            }
+                one_record = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+
+                // parse detailed information from database record
+                for (i = 0 ; i < NUM_FIELDS ; i++){
+                    if(i == 0){
+                        database_field_info[i] = 
+                            strtok_save(one_record, DELIMITER_COMMA, &save_ptr_one_record);
+                    }else{
+                        database_field_info[i] =
+                            strtok_save(NULL, DELIMITER_COMMA, &save_ptr_one_record);
+                    }
+                }
+                /*
+                for(i = 0 ; i<NUM_FIELDS ;i++)
+                    printf("i=%d, [%s]\n", i, database_field_info[i]);
+                */
+                // replace the terms in message template with real information
+
+                strcpy(notification_message, config.SMS_message_template);
+
+                for (i = 0 ; i < NUM_FIELDS ; i++){
+
+                    term_index = strstr(notification_message, replace_term_info[i]);
+
+                    if(term_index != NULL && database_field_info[i] != NULL){
+                        memset(message_temp, 0, sizeof(message_temp));
+                        strncpy(message_temp, notification_message, 
+                                term_index - notification_message);
+                        strcat(message_temp, database_field_info[i]);
+                        strcat(message_temp, term_index + strlen(replace_term_info[i]));
+                        memset(notification_message, 0, sizeof(notification_message));
+                        strcpy(notification_message, message_temp);
+                    }
+                }
+
+                // Prepare the notification information for notification program
+                memset(cmd_launch, 0, sizeof(cmd_launch));
+                sprintf(cmd_launch, "%s %s \"%s\"", 
+                        config.SMS_notification_program_install_path, 
+                        contact_list, 
+                        notification_message);
+
+                // Launch the notification program
+                system(cmd_launch);
+            }   
         }
 
         sleep_t(BUSY_WAITING_TIME_IN_MS);
@@ -1023,33 +1130,50 @@ void send_notification_alarm_to_gateway(){
 void *Server_NSI_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
-
     char gateway_record[WIFI_MESSAGE_LENGTH];
-
     JoinStatus join_status = JOIN_UNKNOWN;
+    char API_version[LENGTH_OF_API_VERSION];
 
+   
     zlog_info(category_debug, "Start join...(%s)", 
               current_node -> net_address);
 
+    memset(API_version, 0, sizeof(API_version));
+    sprintf(API_version, "%.1f", current_node->API_version);
+
     memset(gateway_record, 0, sizeof(gateway_record));
 
-    sprintf(gateway_record, "1;%s;%d;", current_node -> net_address,
-            S_NORMAL_STATUS);
-   
+    sprintf(gateway_record, "1;%s;%d;%s;",
+            current_node -> net_address,
+            S_NORMAL_STATUS,
+            API_version);
     SQL_update_gateway_registration_status(
-        &config.db_connection_list_head, 
+        &config.db_connection_list_head,
         gateway_record,
         strlen(gateway_record));
 
-    SQL_update_lbeacon_registration_status(
-        &config.db_connection_list_head,
-        current_node->content,
-        strlen(current_node->content),
-        current_node -> net_address);
+    if(strncmp(BOT_SERVER_API_VERSION_20, API_version, strlen(BOT_SERVER_API_VERSION_20)) == 0 ||
+        strncmp(BOT_SERVER_API_VERSION_21, API_version, strlen(BOT_SERVER_API_VERSION_21)) == 0) {
+
+        SQL_update_lbeacon_registration_status_less_ver22(
+            &config.db_connection_list_head,
+            current_node->content,
+            strlen(current_node->content),
+            current_node -> net_address);
+
+    }else{
+       
+        SQL_update_lbeacon_registration_status(
+            &config.db_connection_list_head,
+            current_node->content,
+            strlen(current_node->content),
+            current_node -> net_address);
+    }
 
      /* Put the address into Gateway_address_map */
     if (true == Gateway_join_request(&Gateway_address_map, 
-                                     current_node -> net_address) ){
+                                     current_node -> net_address,
+                                     API_version) ){
         join_status = JOIN_ACK;
     }    
     else{
@@ -1092,10 +1216,11 @@ void *Server_BHM_routine(void *_buffer_node)
         }
         else if(current_node->pkt_type == beacon_health_report){
 
-            SQL_update_lbeacon_health_status(&config.db_connection_list_head,
-                                             current_node -> content,
-                                             current_node -> content_size,
-                                             current_node -> net_address);
+            SQL_update_lbeacon_health_status(
+                &config.db_connection_list_head,
+                current_node -> content,
+                current_node -> content_size,
+                current_node -> net_address);
         }
     }
 
@@ -1108,24 +1233,31 @@ void *Server_LBeacon_routine(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
     
+    char API_version[LENGTH_OF_API_VERSION];
+
+    memset(API_version, 0, sizeof(API_version));
+    sprintf(API_version, "%.1f", current_node->API_version);
 
     if(current_node -> pkt_type == tracked_object_data)
     {
         // Server should support backward compatibility.
-        if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
+        if(0 == strncmp(BOT_SERVER_API_VERSION_20, API_version, 
+                        strlen(BOT_SERVER_API_VERSION_20))){
+
             /*[obsoleted-20200109]
             SQL_update_object_tracking_data(db,
                                             current_node -> content,
                                             strlen(current_node -> content));
                                             */
         }else{
-            /*SQL_update_object_tracking_data_with_battery_voltage(
+			/*
+            SQL_update_object_tracking_data_with_battery_voltage(
                 &config.db_connection_list_head,
                 current_node -> content,
                 strlen(current_node -> content),
                 config.server_installation_path,
                 config.is_enabled_panic_button_monitor);*/
-				hashtable_update_object_tracking_data(
+			hashtable_update_object_tracking_data(
 					current_node -> content,
 					strlen(current_node -> content)
 					);
@@ -1178,6 +1310,10 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
 {
     BufferNode *current_node = (BufferNode *)_buffer_node;
 
+    char API_version[LENGTH_OF_API_VERSION];
+
+    memset(API_version, 0, sizeof(API_version));
+    sprintf(API_version, "%.1f", current_node->API_version);
     
     if(current_node -> pkt_type == time_critical_tracked_object_data){
        
@@ -1193,20 +1329,22 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
         }
 
         // Server should support backward compatibility.
-        if(atof(BOT_SERVER_API_VERSION_20) == current_node -> API_version){
+        if(0 == strncmp(BOT_SERVER_API_VERSION_20, API_version, 
+                        strlen(BOT_SERVER_API_VERSION_20))){    
             /*[obsoleted-20200109]
             SQL_update_object_tracking_data(db,
                                             current_node -> content,
                                             strlen(current_node -> content));
                                             */
         }else{
-            /*SQL_update_object_tracking_data_with_battery_voltage(
+			/*
+            SQL_update_object_tracking_data_with_battery_voltage(
                 &config.db_connection_list_head,
                 current_node -> content,
                 strlen(current_node -> content),
                 config.server_installation_path,
                 config.is_enabled_panic_button_monitor);*/
-				hashtable_update_object_tracking_data(
+			hashtable_update_object_tracking_data(
 					current_node -> content,
 					strlen(current_node -> content)
 					);
@@ -1219,11 +1357,14 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
     return (void *)NULL;
 }
 
-bool Gateway_join_request(AddressMapArray *address_map, char *address)
+bool Gateway_join_request(AddressMapArray *address_map, 
+                          char *address, 
+                          char *API_version)
 {
     int not_in_use = -1;
     int n;
     int answer = -1;
+    int current_time = get_system_time();
 
     zlog_info(category_debug, 
               "Enter Gateway_join_request address [%s]", address);
@@ -1263,7 +1404,8 @@ bool Gateway_join_request(AddressMapArray *address_map, char *address)
                                     not_in_use,
                                     ADDRESS_MAP_TYPE_GATEWAY,
                                     address,
-                                    NULL);
+                                    NULL,
+                                    API_version);
 
         pthread_mutex_unlock( &address_map -> list_lock);
 
@@ -1628,22 +1770,25 @@ void* upload_all_hashtable(void){
 	int last_upload_time=0;
 	int upload_time=0;
 	int i;
+	int ready_for_location_history_table;
+	i=0;
 	while(ready_to_work == true){
 		//??
 		upload_time=get_clock_time();
 		if((upload_time-last_upload_time)>=1){
-			/*
-			for(i=0;i<area_table_max_size;i++){
-				if(area_table[i].area_id==NULL) continue;		
-				
-				//hashtable_go_through_for_summarize(area_table[i].area_id);
-				
-				hashtable_go_through_for_get_summary(
-					area_table[i].area_hash_ptr,&config.db_connection_list_head,config.server_installation_path);
+			
+			i++;
+			if(i==10) {
+				i=0;
+				ready_for_location_history_table=1;
+			}else{
+				ready_for_location_history_table=0;
 			}
-			*/
-			upload_hashtable_for_all_area(&config.db_connection_list_head,config.server_installation_path);
-			last_upload_time=upload_time;
+			upload_hashtable_for_all_area(&config.db_connection_list_head,config.server_installation_path,ready_for_location_history_table);
+			last_upload_time=get_clock_time();
+			
+			//zlog_error(category_debug, "<<upload_hashtable_for_all_area");
+			
 		}else{
 			sleep_t(BUSY_WAITING_TIME_IN_MS);
 		}
