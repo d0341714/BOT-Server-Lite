@@ -377,6 +377,7 @@ void hashtable_remove(HashTable * h_table, void * key, size_t key_len) {
 			prev->next = curr->next;
 			hnode_delete_single(curr);
 			h_table->count = h_table->count - 1;
+            pthread_mutex_unlock(ht_mutex);
 			return;
 		}
 		//below code must trigger once
