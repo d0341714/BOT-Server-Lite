@@ -1018,7 +1018,7 @@ void hashtable_go_through_for_get_summary(
 			"UPDATE object_summary_table " \
 			 "SET " \
 			 "uuid = %s, " \
-			 "rssi = %s, " \
+			 "rssi = %d, " \
 			 "first_seen_timestamp = %s, " \
 			 "last_seen_timestamp = %s, " \
 			 "battery_voltage = %s, " \
@@ -1031,7 +1031,7 @@ void hashtable_go_through_for_get_summary(
 			"UPDATE object_summary_table " \
 			 "SET " \
 			 "uuid = %s, " \
-			 "rssi = %s, " \
+			 "rssi = %d, " \
 			 "first_seen_timestamp = %s, " \
 			 "last_seen_timestamp = %s, " \
 			 "battery_voltage = %s, " \
@@ -1178,6 +1178,7 @@ void hashtable_go_through_for_get_summary(
 				*/
 				//準備location history的file
 				if(ready_for_location_history_table==1){
+                    printf("uuid = [%s], battery = [%s]\n", uuid, battery);
 					memset(sql, 0, sizeof(sql));
 					sprintf(sql, sql_template_for_history_table,
 						uuid,
