@@ -771,7 +771,7 @@ int rssi_weight(int * rssi_array,int k,int head){
 	//比較跟之前1筆的差距,差太多就歸零(當成無用資料
 	if((k+9)%10!=head)		
 		if(rssi_array[(k+9)%10]!=0)
-			if(abs(rssi_array[k]-rssi_array[(k+9)%10])>20)
+			if(abs(rssi_array[k]-rssi_array[(k+9)%10])>30)
 				return 0;
 	
 	
@@ -1001,7 +1001,89 @@ void hashtable_go_through_for_get_summary(
 	int average_rssi;
 	int recently_scanned;
 	int i = 0;
+	
+	char filename[MAX_PATH];
+	FILE *file = NULL;
+	char location_filename[MAX_PATH];
+	FILE *location_file = NULL;
+	
+	time_t rawtime;
+    struct tm ts;
+    char buf_initial_time[80];
+    char buf_final_time[80];
+	char buf_record_time[80];
+	char sql[SQL_TEMP_BUFFER_LENGTH];
+	char *sql_summary_update_with_panic=
+			"UPDATE object_summary_table " \
+			 "SET " \
+			 "uuid = %s, " \
+			 "rssi = %s, " \
+			 "first_seen_timestamp = %s, " \
+			 "last_seen_timestamp = %s, " \
+			 "battery_voltage = %s, " \
+			 "panic_violation_timestamp = NOW(), " \
+			 "base_x = %d, " \
+			 "base_y =%d " \
+			 "WHERE " \
+			 "object_summary_table.mac_address = %s; ";
+	char *sql_summary_update_without_panic=
+			"UPDATE object_summary_table " \
+			 "SET " \
+			 "uuid = %s, " \
+			 "rssi = %s, " \
+			 "first_seen_timestamp = %s, " \
+			 "last_seen_timestamp = %s, " \
+			 "battery_voltage = %s, " \
+			 "base_x = %d, " \
+			 "base_y =%d " \
+			 "WHERE " \
+			 "object_summary_table.mac_address = %s; ";
+			 
+	char *sql_template_for_history_table=
+			"INSERT INTO location_history_table " \
+			 "(lbeacon_uuid,record_timestamp,battery_voltage,base_x,base_y,mac_address ) " \
+			 "VALUES " \
+			 "(%s, NOW(),%s, %d , %d , %s); ";
+			 
 	hash_table_row* table_row;
+	
+	PGconn *db_conn = NULL;
+    int db_serial_id = -1;
+   // ErrorCode ret_val = WORK_SUCCESSFULLY;
+ //   char sql[SQL_TEMP_BUFFER_LENGTH];
+	
+	
+	/*
+	if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot open database\n");
+
+        return E_SQL_OPEN_DATABASE;
+    }*/
+	/*
+	sprintf(filename, "%s/temp/track_%d", 
+									server_installation_path, 
+									pthread_self());			
+	file = fopen(filename, "wt");
+	if(file == NULL){
+		zlog_error(category_debug, "cannot open filepath %s", filename);
+		return E_OPEN_FILE;
+	}
+	
+	if(ready_for_location_history_table==1){
+		sprintf(location_filename, "%s/temp/locationtrack_%d", 
+									server_installation_path, 
+									pthread_self());			
+		file = fopen(location_filename, "wt");
+		if(file == NULL){
+			zlog_error(category_debug, "cannot open filepath %s", filename);
+			return E_OPEN_FILE;
+		}
+	}
+	*/
 	//pthread_mutex_t * ht_mutex = h_table->ht_mutex;	
 	//pthread_mutex_lock(ht_mutex);
 	//zlog_error(category_debug,">>hashtable_go_through_for_get_summary");
@@ -1042,9 +1124,82 @@ void hashtable_go_through_for_get_summary(
 							,uuid,battery,initial_timestamp,final_timestamp,average_rssi,panic_button);
 				//寫上傳db的file
 				
+	
+				rawtime = atoi(initial_timestamp);
+				ts = *gmtime(&rawtime);
+				strftime(buf_initial_time, sizeof(buf_initial_time), 
+						 "%Y-%m-%d %H:%M:%S", &ts);
+            
+				rawtime = atoi(final_timestamp);
+				ts = *gmtime(&rawtime);
+				strftime(buf_final_time, sizeof(buf_final_time), 
+						 "%Y-%m-%d %H:%M:%S", &ts);
+				memset(sql, 0, sizeof(sql));
+				
+                if(atoi(panic_button)==1){
+					sprintf(sql, sql_summary_update_with_panic,
+						uuid,
+						average_rssi,
+						buf_initial_time,
+						buf_final_time,
+						battery,
+						(int)table_row->summary_coordinateX,
+						(int)table_row->summary_coordinateY,
+						(char *)curr->key);
+				} else{
+					sprintf(sql, sql_summary_update_without_panic,
+						uuid,
+						average_rssi,
+						buf_initial_time,
+						buf_final_time,
+						battery,
+						(int)table_row->summary_coordinateX,
+						(int)table_row->summary_coordinateY,
+						(char *)curr->key);
+				}
+				
+				//SQL_upload_hashtable_summarize(db_connection_list_head,sql);
+				 
+				
+				//SQL_execute(db_conn, sql);
+				/**/
+				/*	
+				fprintf(file, "%s,%d,%s,%s,%s,%s,%d,%d %s\n",
+						uuid,
+						average_rssi,
+						panic_button,
+						battery,
+						buf_initial_time,
+						buf_final_time,
+						(int)table_row->summary_coordinateX,
+						(int)table_row->summary_coordinateY,
+						(char *)curr->key);
+				*/
 				//準備location history的file
 				if(ready_for_location_history_table==1){
-					
+					memset(sql, 0, sizeof(sql));
+					sprintf(sql, sql_template_for_history_table,
+						uuid,
+						battery,
+						(int)table_row->summary_coordinateX,
+						(int)table_row->summary_coordinateY,
+						(char *)curr->key);
+						
+					//SQL_upload_location_history(db_connection_list_head,sql);
+					//SQL_execute(db_conn, sql);
+					/*
+					rawtime = atoi(get_clock_time());
+					ts = *gmtime(&rawtime);
+					strftime(buf_record_time, sizeof(buf_record_time), 
+							"%Y-%m-%d %H:%M:%S", &ts);
+							
+					fprintf(location_file, "%s,%s,%s,%s,%d,%d\n",
+							(char *)curr->key,
+							uuid,
+							buf_record_time,
+							battery,
+							(int)table_row->summary_coordinateX,
+							(int)table_row->summary_coordinateY);*/
 				}
 				
 			}
@@ -1057,9 +1212,23 @@ void hashtable_go_through_for_get_summary(
 	
 	}
 	//關掉file
-	
 	//呼叫SQL_upload_hashtable_summarize
 	
+	/*
+	fclose(file);	
+	SQL_upload_hashtable_summarize(db_connection_list_head,
+									filename);
+									
+	if(ready_for_location_history_table==1){
+		fclose(location_file);
+		
+		SQL_upload_hashtable_summarize(db_connection_list_head,
+										location_filename);
+	}
+	*/	
+	/*SQL_release_database_connection(
+        db_connection_list_head, 
+        db_serial_id);*/
 	//zlog_error(category_debug,"hashtable_go_through_for_get_summary<<");
 	//pthread_mutex_unlock(ht_mutex);
 }
@@ -1175,10 +1344,9 @@ void hashtable_put_mac_table(
 		);
 		*/
 		new_head = malloc(sizeof(HNode));
-		if (new_head != 0 ) {
+		memset(new_head,0,sizeof(HNode));
+		if (new_head != 0 ) {		
 			
-			new_head->key = key;
-			new_head->key_len =key_len;
 			//生一個DataForHashtable
 			
 			//hn->value = value;			
@@ -1266,6 +1434,9 @@ void hashtable_put_mac_table(
 
 			hash_table_row_ptr->record_table_size=16;
 			//sizeof?????
+			new_head->key = key;
+			new_head->key_len =key_len;
+			
 			new_head->value = hash_table_row_ptr;
 			new_head->value_len=sizeof(*hash_table_row_ptr);
 			

@@ -92,7 +92,7 @@ typedef struct{
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-
+//static
 static ErrorCode SQL_execute(PGconn *db_conn, char *sql_statement);
 
 
@@ -734,11 +734,9 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(
 
 ErrorCode SQL_upload_hashtable_summarize(
     DBConnectionListHead *db_connection_list_head,
-    char* filename,
-    char *server_installation_path);
+    char* filename);
 	
 ErrorCode SQL_upload_location_history(
     DBConnectionListHead *db_connection_list_head,
-    char* filename,
-    char *server_installation_path);
+    char* filename);
 #endif

@@ -43,7 +43,7 @@
  */
 
 #include "SqlWrapper.h"
-
+//static
 static ErrorCode SQL_execute(PGconn *db_conn, char *sql_statement){
 
     PGresult *res;
@@ -2419,9 +2419,35 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(
 
 ErrorCode SQL_upload_hashtable_summarize(
     DBConnectionListHead *db_connection_list_head,
-    char* filename,
-    char *server_installation_path){
-	char* sql_template_for_summary_table;
+    char* sql){
+		
+	PGconn *db_conn = NULL;
+    int db_serial_id = -1;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+   	
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot open database\n");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db_conn, sql);
+
+    SQL_release_database_connection(
+        db_connection_list_head, 
+        db_serial_id);
+
+    //remove(filename);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        return E_SQL_EXECUTE;
+    }
 	
 	return WORK_SUCCESSFULLY;	
 
@@ -2430,9 +2456,36 @@ ErrorCode SQL_upload_hashtable_summarize(
 	
 ErrorCode SQL_upload_location_history(
     DBConnectionListHead *db_connection_list_head,
-    char* filename,
-    char *server_installation_path){
-	char* sql_template_for_history_table;	
+    char* sql){
+	//char* sql_template_for_history_table;	
 
+	PGconn *db_conn = NULL;
+    int db_serial_id = -1;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot open database\n");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    /* Execute SQL statement */
+    ret_val = SQL_execute(db_conn, sql);
+
+    SQL_release_database_connection(
+        db_connection_list_head, 
+        db_serial_id);
+
+    //remove(filename);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        return E_SQL_EXECUTE;
+    }
+	
 	return WORK_SUCCESSFULLY;
 }
