@@ -341,6 +341,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\HashTable.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\HNode.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\import\LinkedList.c"
 				>
 			</File>
@@ -391,6 +399,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\HashTable.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\HNode.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\import\LinkedList.h"
 				>
 			</File>
@@ -412,6 +428,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\SqlWrapper.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\Tabletype.h"
 				>
 			</File>
 			<File
