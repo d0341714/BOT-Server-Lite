@@ -1057,10 +1057,9 @@ ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
     char *sql_identify_panic = 
         "UPDATE object_summary_table " \
         "SET panic_violation_timestamp = NOW() " \
-        "FROM object_summary_table as R " \
-        "INNER JOIN object_table " \
-        "ON R.mac_address = object_table.mac_address " \
+        "FROM object_table " \
         "WHERE object_summary_table.mac_address = %s " \
+        "AND object_summary_table.mac_address = object_table.mac_address " \
         "AND object_table.monitor_type & %d = %d;";
 
     char *pqescape_mac_address = NULL;
