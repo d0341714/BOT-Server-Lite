@@ -11,13 +11,18 @@
 #include "SqlWrapper.h"
 
 #define SLOTS_IN_MEM_POOL_HASH_TABLE_ROW 2048
-#define SLOTS_IN_MEM_POOL_DataForHashtable_TABLE_ROW 2048
 //totaltag*16
-#define SLOTS_IN_MEM_POOL_UUID_RECORD_TABLE_ROW 10000
+#define SLOTS_IN_MEM_POOL_UUID_RECORD_TABLE_ROW 256
 #define DRIFT_DISTANCE 50
+#define DRIFT_RSSI 10
+#define INITIAL_AVERAGE_RSSI -100
+#define LENGTH_OF_COORDINATE 9
+#define INITIAL_AREA_TABLE_MAX_SIZE 16
+#define AREA_ID_LENGTH 5
+#define UNRESAONABLE_RSSI 30
 
 Memory_Pool hash_table_row_mempool;
-Memory_Pool uuid_record_table_row_mempool;
+Memory_Pool mac_address_mempool;
 Memory_Pool DataForHashtable_mempool;
 
 typedef uint32_t (* HashFunc)(const void *, size_t);
@@ -40,7 +45,6 @@ typedef struct HashTable {
 
 
 HashTable * area_hash_table;
-HashTable * panic_table;
 /*
 
 */
@@ -49,11 +53,7 @@ typedef struct {
    HashTable * area_hash_ptr;
    pthread_mutex_t list_lock;
 } AreaTable;
-/*
-PanicMAC panic_mac_array[64];
-int panic_mac_array_size=64;
-int max_panic_address=0;
-*/
+
 
 AreaTable area_table[16];
 int area_table_max_size;

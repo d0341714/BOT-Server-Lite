@@ -186,156 +186,93 @@ static int _hashtable_replace_uuid(
 	//char* lbeacon_uuid;
 	int record_table_size;
 	int invalid_place=-1;
-	hash_table_row* row_ptr;
+	hash_table_row* exist_MAC_address_row;
 	uint32_t hash_val = h_table->hash(key, key_len);
 	uint32_t index = hash_val % h_table->size;
 	HNode * curr = h_table->table[index];
-	char coordinateX[9];
-	char coordinateY[9];
-	
-	char* lbeacon_uuid;
-    char* initial_timestamp_GMT;
-    char* final_timestamp_GMT;
-    char* battery_voltage;   
-    char* rssi;
-    char* panic_button;
-	
-	lbeacon_uuid=value->lbeacon_uuid;
-	initial_timestamp_GMT=value->initial_timestamp_GMT;
-	final_timestamp_GMT=value->final_timestamp_GMT;
-	battery_voltage=value->battery_voltage;
-	rssi=value->rssi;
-	panic_button=value->panic_button;
-	//mp_free(&DataForHashtable_mempool,value);
-	/*
-	int initial_timestamp_GMT;
-	int final_timestamp_GMT;
-	char* battery_voltage;
-	int rssi;
-	*/
-   //10 seconds
-   //char* rssi;
-   /*printf("hashtable_replace_uuid ret\n");
-	return 0;
-	printf("hashtable_replace_uuid urn\n");*/
+	char coordinateX[LENGTH_OF_COORDINATE];
+	char coordinateY[LENGTH_OF_COORDINATE];
+		
 	while (curr) {		
 		int res = h_table->equal(curr->key, key);
-		if (res == 1) {
-			//return 1;
-			//printf("exsist MAC address\n");
-			//curr->value = value;
-			//lbeacon_uuid=value->lbeacon_uuid;
-			/*if(strlen(lbeacon_uuid)!=32) {
-				printf("UUID size errorrrrrrrrrrrr\n");
-				return 1;
-			}*/
-			row_ptr=(hash_table_row*)curr->value;
-			record_table_size = row_ptr->record_table_size;
-			row_ptr->battery=battery_voltage;
-			row_ptr->panic_button=panic_button;
-			row_ptr->final_timestamp=final_timestamp_GMT;
+		if (res == 1) {			
+			exist_MAC_address_row=curr->value;
+			record_table_size = exist_MAC_address_row->record_table_size;
+			strcpy(exist_MAC_address_row->battery,value->battery_voltage);
+			strcpy(exist_MAC_address_row->panic_button,value->panic_button);
+			strcpy(exist_MAC_address_row->final_timestamp,value->final_timestamp_GMT);
 			
 			//匹配uuid
 			for(i=0;i<record_table_size;i++){
-				if(row_ptr->uuid_record_table_ptr[i]!=NULL && row_ptr->uuid_record_table_ptr[i]->valid==1){
-				//if(row_ptr->uuid_table[i].valid==1){
-					if(strcmp(lbeacon_uuid,row_ptr->uuid_record_table_ptr[i]->uuid)==0){//跟傳進來的uuid比較依樣
-					//if(strcmp(lbeacon_uuid,row_ptr->uuid_table[i].uuid)==0){
-					//更新uuid,ini,final,rssi,battery_voltage
-					//printf("exsist uuid: %s\n",lbeacon_uuid);
-					//存在的
-					//printf("final_timestamp_GMT:%s,uuid->final_timestamp:%s",final_timestamp_GMT,row_ptr->uuid_record_table_ptr[i]->final_timestamp);
-					time_gap=atoi(final_timestamp_GMT)-atoi(row_ptr->uuid_record_table_ptr[i]->final_timestamp);
+				if(exist_MAC_address_row->uuid_record_table_array[i].valid==1){
+					if(strcmp(value->lbeacon_uuid,exist_MAC_address_row->uuid_record_table_array[i].uuid)==0){//跟傳進來的uuid比較依樣
+					
+					time_gap=atoi(value->final_timestamp_GMT)-atoi(exist_MAC_address_row->uuid_record_table_array[i].final_timestamp);
 					if(time_gap>0){
-						row_ptr->uuid_record_table_ptr[i]->final_timestamp=final_timestamp_GMT;
+						strcpy(exist_MAC_address_row->uuid_record_table_array[i].final_timestamp,value->final_timestamp_GMT);
 						
-						/*
-						time_gap=1
-						>1 補0
-						*/
-						//rssi_array=row_ptr->uuid_record_table_ptr[i]->rssi_array;
-						head=row_ptr->uuid_record_table_ptr[i]->head;
+						head=exist_MAC_address_row->uuid_record_table_array[i].head;
 						for(j=0;j<time_gap;j++){
 							head++;
-							if(head==10){
+							if(head==SIZE_OF_RSSI_ARRAY){
 								head=0;
 							}								
-							row_ptr->uuid_record_table_ptr[i]->rssi_array[head]=0;	
+							exist_MAC_address_row->uuid_record_table_array[i].rssi_array[head]=0;	
 						}
-						row_ptr->uuid_record_table_ptr[i]->rssi_array[head]=atoi(rssi);
-						row_ptr->uuid_record_table_ptr[i]->head=head;
-					}
+						exist_MAC_address_row->uuid_record_table_array[i].rssi_array[head]=atoi(value->rssi);
+						exist_MAC_address_row->uuid_record_table_array[i].head=head;
+					}			
 					
-					
-					//curr->value_len = value_len;
-					curr->value=row_ptr;
-					curr->value_len = sizeof(*row_ptr);
-					//zlog_error(category_debug,"exist mac %s uuid %s final %s ",(char*)key,lbeacon_uuid,row_ptr->uuid_record_table_ptr[i]->final_timestamp);
+										
 					return 1;
 					
 					}
-				}else{//紀錄invalid的位置
+				}else{
 					invalid_place=i;
 				}
 					
 				
 			}
-			return 1;
+			
 			//不再裡面,寫入invalid或擴增空間
 			if(invalid_place!=-1){
 				
-				if(row_ptr->uuid_record_table_ptr[invalid_place]==NULL){
-					row_ptr->uuid_record_table_ptr[invalid_place]=mp_alloc(&uuid_record_table_row_mempool);
-					memset(row_ptr->uuid_record_table_ptr[invalid_place],0,sizeof(uuid_record_table_row));
-				}
-				if(row_ptr->uuid_record_table_ptr[invalid_place]==NULL){
-					printf("uuid_record_table_row_mempool NOT ENOUGH!!!!!!!!!!!!!!\n");
-					break;
-				}
-				
-				//printf("invalid_place %d new uuid: %s %d \n",invalid_place,lbeacon_uuid,strlen(lbeacon_uuid));
-				row_ptr->uuid_record_table_ptr[invalid_place]->uuid=lbeacon_uuid;
-				row_ptr->uuid_record_table_ptr[invalid_place]->initial_timestamp=initial_timestamp_GMT;
-				row_ptr->uuid_record_table_ptr[invalid_place]->final_timestamp=final_timestamp_GMT;
-				row_ptr->uuid_record_table_ptr[invalid_place]->rssi_array[0]=atoi(rssi);
-				row_ptr->uuid_record_table_ptr[invalid_place]->head=0;
-				memcpy(coordinateX,lbeacon_uuid+12,8);
+				strcpy(exist_MAC_address_row->uuid_record_table_array[invalid_place].uuid,value->lbeacon_uuid);
+				strcpy(exist_MAC_address_row->uuid_record_table_array[invalid_place].initial_timestamp,value->initial_timestamp_GMT);
+				strcpy(exist_MAC_address_row->uuid_record_table_array[invalid_place].final_timestamp,value->final_timestamp_GMT);
+				exist_MAC_address_row->uuid_record_table_array[invalid_place].rssi_array[0]=atoi(value->rssi);
+				exist_MAC_address_row->uuid_record_table_array[invalid_place].head=0;
+				memcpy(coordinateX,value->lbeacon_uuid+12,8);
 				coordinateX[8]='\0';
-				row_ptr->uuid_record_table_ptr[invalid_place]->coordinateX=atof(coordinateX);				
-				memcpy(coordinateY,lbeacon_uuid+24,8);
+				exist_MAC_address_row->uuid_record_table_array[invalid_place].coordinateX=atof(coordinateX);				
+				memcpy(coordinateY,value->lbeacon_uuid+24,8);
 				coordinateY[8]='\0';
-				row_ptr->uuid_record_table_ptr[invalid_place]->coordinateY=atof(coordinateY);
-				//printf("new uuid finish!!!!\n");
-				//空間!!!
-				row_ptr->uuid_record_table_ptr[invalid_place]->valid=1;
-				curr->value=row_ptr;
-				curr->value_len = sizeof(*row_ptr);
+				exist_MAC_address_row->uuid_record_table_array[invalid_place].coordinateY=atof(coordinateY);
 				
-			}else{//擴增
-				//晚點改
-				return 1;
-				//printf("new uuid without enough space: %s\n",lbeacon_uuid);
-				//i=row_ptr->record_table_size;
-				row_ptr->record_table_size*=2;
-				realloc(row_ptr->uuid_record_table_ptr,row_ptr->record_table_size*sizeof(uuid_record_table_row));
-				row_ptr->uuid_record_table_ptr[i]=mp_alloc(&uuid_record_table_row_mempool);
+				exist_MAC_address_row->uuid_record_table_array[invalid_place].valid=1;
+				curr->value=&exist_MAC_address_row;
+				curr->value_len = sizeof(exist_MAC_address_row);
 				
-				memset(row_ptr->uuid_record_table_ptr[i],0,sizeof(uuid_record_table_row));
-				row_ptr->uuid_record_table_ptr[i]->uuid=lbeacon_uuid;
-				row_ptr->uuid_record_table_ptr[i]->initial_timestamp=initial_timestamp_GMT;
-				row_ptr->uuid_record_table_ptr[i]->final_timestamp=final_timestamp_GMT;
-				row_ptr->uuid_record_table_ptr[i]->rssi_array[0]=atoi(value->rssi);
-				row_ptr->uuid_record_table_ptr[i]->head=0;
-				strncpy(coordinateX,lbeacon_uuid+12,8);
-				row_ptr->uuid_record_table_ptr[invalid_place]->coordinateX=atof(coordinateX);
-				strncpy(coordinateY,lbeacon_uuid+24,8);
-				row_ptr->uuid_record_table_ptr[invalid_place]->coordinateY=atof(coordinateY);
-				//curr->value_len = sizeof(*row_ptr);
-				curr->value=row_ptr;
-				curr->value_len = sizeof(*row_ptr);
+			}else{
+				exist_MAC_address_row->record_table_size*=2;
+				//resize 還要改
+				//exist_MAC_address_row->uuid_record_table_array=( uuid_record_table_row*)realloc(exist_MAC_address_row->uuid_record_table_array,(exist_MAC_address_row->record_table_size*sizeof(uuid_record_table_row)));
+				zlog_error(category_debug,"resize uuid table %d",exist_MAC_address_row->record_table_size);
+				strcpy(exist_MAC_address_row->uuid_record_table_array[i].uuid,value->lbeacon_uuid);
+				strcpy(exist_MAC_address_row->uuid_record_table_array[i].initial_timestamp,value->initial_timestamp_GMT);
+				strcpy(exist_MAC_address_row->uuid_record_table_array[i].final_timestamp,value->final_timestamp_GMT);
+				exist_MAC_address_row->uuid_record_table_array[i].rssi_array[0]=atoi(value->rssi);
+				exist_MAC_address_row->uuid_record_table_array[i].head=0;
+				strncpy(coordinateX,value->lbeacon_uuid+12,8);
+				exist_MAC_address_row->uuid_record_table_array[invalid_place].coordinateX=atof(coordinateX);
+				strncpy(coordinateY,value->lbeacon_uuid+24,8);
+				exist_MAC_address_row->uuid_record_table_array[invalid_place].coordinateY=atof(coordinateY);
+				//curr->value_len = sizeof(*exist_MAC_address_row);
+				curr->value=&exist_MAC_address_row;
+				curr->value_len = sizeof(exist_MAC_address_row);
 			}
 			/*zlog_error(category_debug,"mac %s uuid %s final %s ",
-							(char*)key,lbeacon_uuid,row_ptr->uuid_record_table_ptr[i]->final_timestamp);
+							(char*)key,lbeacon_uuid,exist_MAC_address_row->uuid_record_table_array[i]->final_timestamp);
 			*/					
 			
 			return 1;
@@ -451,38 +388,7 @@ void hashtable_print(HashTable * h_table) {
 	}
 }
 
-//panic
-/*
-void hashtable_go_through_panic(HashTable * h_table) {
-	int size = h_table->size;
-	HNode ** table = h_table->table;
-	PanicMAC* panic_state_ptr;
-	int i = 0;
-	for (i = 0; i < size; i++) {
-		HNode * curr = table[i];
-		while (curr != 0) {
-			// callback(curr->key, curr->key_len, curr->value, curr->value_len);
-			panic_state_ptr = curr->value;
-			//砍到沒更新而且傳過的
-			if(panic_state_ptr->valid==0 && panic_state_ptr->send == 1)
-				hashtable_remove(h_table,curr->key, curr->key_len);
-			//更新且沒傳過的
-			if(panic_state_ptr->valid==1 && panic_state_ptr->send==0){
-				//update sql成功再改
-				panic_state_ptr->valid=0;
-				
-				
-				panic_state_ptr->send=1;
-			}
-			
-			
-			
-			//printf("'%s' => %p,\n", (char *)curr->key, curr->value);
-			curr = curr->next;
-		}
-	}
-}
-*/
+
 /*
 adler32 code taken from Stack Overflow post
 
@@ -523,40 +429,42 @@ void destroy_nop(void * a) {
 	return;
 }
 /*
-初始化area table
+initial area table
 */
 void initial_area_table(void){
+	
 	int i;
+	zlog_error(category_debug,">>initial_area_table");	
 	if(MEMORY_POOL_SUCCESS != mp_init( &hash_table_row_mempool, 
                                        sizeof(hash_table_row), 
                                        SLOTS_IN_MEM_POOL_HASH_TABLE_ROW))
     {
-        return E_MALLOC;
+        zlog_error(category_debug,"initial fail hash_table_row_mempool");
+		return E_MALLOC;
     }
 	
-	if(MEMORY_POOL_SUCCESS != mp_init( &uuid_record_table_row_mempool, 
-                                       sizeof(uuid_record_table_row), 
-                                       SLOTS_IN_MEM_POOL_UUID_RECORD_TABLE_ROW))
+	if(MEMORY_POOL_SUCCESS != mp_init( &mac_address_mempool, 
+                                       LENGTH_OF_MAC_ADDRESS, 
+                                      SLOTS_IN_MEM_POOL_HASH_TABLE_ROW))
     {
-        printf("initial fail uuid_record_table_row_mempool\n");
+        zlog_error(category_debug,"initial fail mac_address_mempool");
 		return E_MALLOC;
     }
 	
 	if(MEMORY_POOL_SUCCESS != mp_init( &DataForHashtable_mempool, 
                                        sizeof(DataForHashtable), 
-                                       SLOTS_IN_MEM_POOL_DataForHashtable_TABLE_ROW))
+                                       SLOTS_IN_MEM_POOL_UUID_RECORD_TABLE_ROW))
     {
-        return E_MALLOC;
+        zlog_error(category_debug,"initial fail DataForHashtable_mempool");
+		return E_MALLOC;
     }
 	
-	area_table_max_size=16;
+	area_table_max_size=INITIAL_AREA_TABLE_MAX_SIZE;
 	area_table_size=0;
-	for(i=0;i<area_table_max_size;i++){
-		pthread_mutex_init(area_table[i].list_lock,0);
-	}
-	
-	//panic_table
-	
+	/*for(i=0;i<area_table_max_size;i++){
+		memset(area_table[i].area_id,'\0',AREA_ID_LENGTH);
+	}*/
+	zlog_error(category_debug,"initial_area_table successful");	
 	return;
 }
 
@@ -565,7 +473,7 @@ HashTable * hash_table_of_specific_area_id(char* area_id){
 	int exist=0;
 	HashTable * h_table;
 	
-	//zlog_error(category_debug,"area id %s",area_id);
+	zlog_error(category_debug,"area id %s",area_id);
 	
 	for(i=0;i<area_table_max_size;i++){
 		if(area_table[i].area_id==NULL) continue;
@@ -584,15 +492,16 @@ HashTable * hash_table_of_specific_area_id(char* area_id){
 	if(area_table_max_size>area_table_size){
 		
 		area_table[area_table_size].area_hash_ptr=h_table;
-		area_table[area_table_size].area_id=area_id;
+		strcpy(area_table[area_table_size].area_id,area_id);
 		
 		area_table_size++;
 	}else{
 		//resize
 		area_table_max_size*=2;
-		realloc(area_table,area_table_max_size*sizeof(AreaTable));
+		//resize還要改
+		//area_table=realloc(area_table,area_table_max_size*sizeof(AreaTable));
 		area_table[area_table_size].area_hash_ptr=h_table;
-		area_table[area_table_size].area_id=area_id;
+		strcpy(area_table[area_table_size].area_id,area_id);
 		
 		area_table_size++;		
 		 
@@ -625,35 +534,17 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
     char *panic_button = NULL;
 	char* battery_voltage;
     int current_time = get_system_time();
-    int lbeacon_timestamp_value;
-	/*
-    char *pqescape_object_mac_address = NULL;
-    char *pqescape_lbeacon_uuid = NULL;
-    char *pqescape_rssi = NULL;
-    char *pqescape_push_button = NULL;
-    char *pqescape_initial_timestamp_GMT = NULL;
-    char *pqescape_final_timestamp_GMT = NULL;
-	*/
+    int lbeacon_timestamp_value;	
 	char area_id[5];
 	HashTable * area_table_ptr;
 	
 	DataForHashtable* data_row;
 	int i;
-	/**/
-	//printf("%s %d\n",buf,buf_len);
 	
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 	
-	//printf("string:%s %d\n",temp_buf,buf_len);
-	/*神秘問題*/
-    //data_row->lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
-	lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
-	//printf("%s\n",saveptr);
-	
-	//area+uuid
-	
-	/**/
+	zlog_error(category_debug,">>hashtable_update_object_tracking_data");
     lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 	//printf("lbeacon_timestamp: %s\n",lbeacon_timestamp);
     if(lbeacon_timestamp == NULL){
@@ -661,28 +552,19 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
     }
     lbeacon_timestamp_value = atoi(lbeacon_timestamp);
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-	//printf("lbeacon_ip:%s\n",lbeacon_ip);
-    /*zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
-               "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);*/
-	/*printf("lbeacon_uuid=[%s], lbeacon_timestamp=[%d], " \
-               "lbeacon_ip=[%s]\n", lbeacon_uuid, lbeacon_timestamp_value, lbeacon_ip);*/
-
-    //SQL_begin_transaction(db);
-
+	
     while(num_types --){
-		/**/
+		
         object_type = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
         object_number = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
         zlog_debug(category_debug, "object_type=[%s], object_number=[%s]", 
                    object_type, object_number);
-        if(object_number == NULL){
-            //SQL_rollback_transaction(db);
+        if(object_number == NULL){            
             return E_API_PROTOCOL_FORMAT;
         }
         numbers = atoi(object_number);
-		//printf("n:%d",numbers);
         while(numbers--){
 			
             object_mac_address = 
@@ -697,17 +579,6 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
             rssi = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 			panic_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
             battery_voltage = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            /* update hash table */
-			/*
-			mac:
-			ini,fin,uuid,rssi,
-			*/
-			/*
-			找area
-			*/
-			//strncpy(area_id, lbeacon_uuid, 4);
-			
 			
 			data_row=mp_alloc(&DataForHashtable_mempool);
 			if(data_row==NULL) {
@@ -733,27 +604,13 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 			zlog_error(category_debug,"key %s 12345:%s %s %s %s %s\n",object_mac_address ,data_row->lbeacon_uuid,data_row->initial_timestamp_GMT,data_row->final_timestamp_GMT,data_row->rssi,data_row->battery_voltage);
 			/**/
 			//pthread_mutex_lock(&data_row->list_lock);
+			printf("area:%s\n",area_id);
 			area_table_ptr=hash_table_of_specific_area_id(area_id);
 			
-			//printf("area:%s\n",area_id);
-			/*if(strlen(object_mac_address)!=17){
-				printf("ERROR PARSING!!!!!!!!!!!!!!!!!!!!!!!!%d\n",strlen(object_mac_address));
-				continue;
-			}*/
-			//strcat(object_mac_address,"\0");
 			hashtable_put_mac_table(area_table_ptr, 
 							object_mac_address,sizeof(*object_mac_address), 
-							data_row, sizeof(*data_row));	/**/
-			//pthread_mutex_unlock(&data_row->list_lock);
-			//printf("end lock:data_row->%s",data_row->lbeacon_uuid);
-			mp_free(&DataForHashtable_mempool,data_row);
-			//unlock
-			//printf("area end:%s\n",area_id);
-			/*
-			push_button判斷
-			
-			放到queue
-			*/
+							data_row, sizeof(*data_row));	
+			mp_free(&DataForHashtable_mempool,data_row);			
 			
         }
     }
@@ -768,15 +625,14 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 int rssi_weight(int * rssi_array,int k,int head){
 	
 	if(rssi_array[k]==0) return 0;
-	//差距的部分還要再補充
-	//比較跟之前1筆的差距,差太多就歸零(當成無用資料
-	if((k+9)%10!=head)		
-		if(rssi_array[(k+9)%10]!=0)
-			if(abs(rssi_array[k]-rssi_array[(k+9)%10])>30)
+	
+	if((k+SIZE_OF_RSSI_ARRAY-1)%SIZE_OF_RSSI_ARRAY!=head)		
+		if(rssi_array[(k+SIZE_OF_RSSI_ARRAY-1)%SIZE_OF_RSSI_ARRAY]!=0)
+			if(abs(rssi_array[k]-rssi_array[(k+SIZE_OF_RSSI_ARRAY-1)%SIZE_OF_RSSI_ARRAY])>UNRESAONABLE_RSSI)
 				return 0;
 	
 	
-	//條件判斷weight
+	
 	if(rssi_array[k]>-50)
 		return 32;
 	else if(rssi_array[k]>-60)
@@ -810,84 +666,44 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 	float weight_y;
 	int weight_count;
 	int weight_count_for_specific_uuid;
-	int valid_rssi_count;
-	uuid_record_table_row* uuid_table;
+	int valid_rssi_count;	
 	int weight;
 	float summary_coordinateX_this_turn;
 	float summary_coordinateY_this_turn;
 	int recently_scanned;
-	hash_table_row* table_row;
-	//printf("hashtable_go_through_for_summarize\n");
-	
-	pthread_mutex_t * ht_mutex = h_table->ht_mutex;
-	/*printf("12345:%s %s %s %s %s\n",value->lbeacon_uuid,value->initial_timestamp_GMT,value->final_timestamp_GMT,
-									value->rssi,value->battery_voltage);*/
-	pthread_mutex_lock(ht_mutex);
-	printf("lock<<\n");
-	
+	hash_table_row* table_row;	
+	pthread_mutex_t * ht_mutex = h_table->ht_mutex;	
+	pthread_mutex_lock(ht_mutex);		
 	for (i = 0; i < size; i++) {
 		HNode * curr = table[i];
-		while (curr != 0) {//every mac
-			//callback(curr->key, curr->key_len, curr->value, curr->value_len);
-			//printf("'%s' => %p,\n", (char *)curr->key, curr->value);			
-			//printf("error key size %s %d\n",curr->key,strlen(curr->key));
-			
-			table_row = (hash_table_row*)curr->value;
-			if(curr->key==NULL){
-				printf("ERROR ROW!!!!!\n");
-				curr = curr->next;
-				continue;
-			}
+		while (curr != 0) {//every mac		
+			table_row = curr->value;			
 			sum_rssi=0;
-			avg_rssi=-100;
-			valid_rssi_count=0;	
+			avg_rssi=INITIAL_AVERAGE_RSSI;
+			valid_rssi_count=0;				
 			
-			
-			//先找到原本那份算avg
+			//original summary uuid
 			for(l=0;l<table_row->record_table_size;l++){
-				if(table_row->uuid_record_table_ptr[l]!=NULL && table_row->uuid_record_table_ptr[l]->valid!=0 &&
-				   strcmp(table_row->uuid_record_table_ptr[l]->uuid,table_row->summary_uuid)==0){
-					   
-					   uuid_table= table_row->uuid_record_table_ptr[l];
-					    if(uuid_table->final_timestamp==NULL){
-							//uuid_table->final_timestamp="0";
-							//j++;
+				if(table_row->uuid_record_table_array[l].valid!=0 &&
+				   strcmp(table_row->uuid_record_table_array[l].uuid,table_row->summary_uuid)==0){
+						if(atoi(table_row->uuid_record_table_array[l].final_timestamp)<(get_clock_time()-10)){							
 							break;
 						}
-						if(atoi(uuid_table->final_timestamp)<(get_clock_time()-10)){
-							
-							//要lock
-							//mp_free(&uuid_record_table_row_mempool,uuid_table);
-							//j++;
-							break;
-						}  		
-					    
-						
-						for(k=0;k<10;k++){//計算avg
-							//uuid_table->rssi_array[k]
-							//check is reasonable
-							if(rssi_weight(uuid_table->rssi_array,k,uuid_table->head)>0){
-								sum_rssi+=uuid_table->rssi_array[k];
+						for(k=0;k < SIZE_OF_RSSI_ARRAY;k++){
+							if(rssi_weight(table_row->uuid_record_table_array[l].rssi_array,k,table_row->uuid_record_table_array[l].head)>0){
+								sum_rssi+=table_row->uuid_record_table_array[l].rssi_array[k];
 								valid_rssi_count++;								
 							}
 						}
-						avg_rssi=sum_rssi/valid_rssi_count;
-						//table_row->final_timestamp= table_row->uuid_record_table_ptr[l]->final_timestamp;
+						avg_rssi=sum_rssi/valid_rssi_count;						
 						table_row->average_rssi=avg_rssi;
-						
-						//printf("%s first average_rssi:%d\n",(char *)curr->key,table_row->average_rssi);
 						break;
 					
 				}
 			}
 			
 			
-			
-			
-			//
-			j=0;
-			
-			
+			j=0;			
 			weight_x=0;
 			weight_y=0;
 			weight_count=0;
@@ -895,45 +711,31 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 			
 			while(j<table_row->record_table_size){//不同uuid
 				sum_rssi=0;
-				valid_rssi_count=0;
-				uuid_table= table_row->uuid_record_table_ptr[j];
-				if(uuid_table==NULL||uuid_table->valid==0) {
+				valid_rssi_count=0;				
+				if(table_row->uuid_record_table_array[j].valid==0) {
 					j++;
 					continue;	
 				}
 				
-				if(uuid_table->final_timestamp==NULL){
-					uuid_table->final_timestamp="0";
-					j++;
-					continue;
-				}
-				if(atoi(uuid_table->final_timestamp)<(get_clock_time()-10)){
-					
-					//要lock
-					//0207改
-					//mp_free(&uuid_record_table_row_mempool,uuid_table);
-					uuid_table->valid=0;
+				//delete old data
+				if(atoi(table_row->uuid_record_table_array[j].final_timestamp)<(get_clock_time()-10)){					
+					table_row->uuid_record_table_array[j].valid=0;
 					j++;
 					continue;
 				}  		
 				
-				//把太久的資料刪掉
-				/*printf("uuid:%s" ,uuid_table->uuid);
-				printf("final_timestamp %s\n",uuid_table->final_timestamp);*/
-				
 				weight_count_for_specific_uuid=0;
-				for(k=0;k<10;k++){//計算avg
-					//uuid_table->rssi_array[k]
+				//average
+				for(k=0;k<SIZE_OF_RSSI_ARRAY;k++){
 					//check is reasonable
-					weight=rssi_weight(uuid_table->rssi_array,k,uuid_table->head);
+					weight=rssi_weight(table_row->uuid_record_table_array[j].rssi_array,k,table_row->uuid_record_table_array[j].head);
 					if(weight>0){
-						sum_rssi+=uuid_table->rssi_array[k];
+						sum_rssi+=table_row->uuid_record_table_array[j].rssi_array[k];
 						weight_count_for_specific_uuid+=weight;
 						valid_rssi_count++;
 						
 						recently_scanned=1;
-					}
-					//printf("%d %d %d\n",k,uuid_table->rssi_array[k],rssi_weight(uuid_table->rssi_array,k,uuid_table->head));
+					}					
 				}
 				
 				if(valid_rssi_count==0) {
@@ -941,14 +743,13 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 					continue;
 				}
 				
-				//printf("sum_rssi=%d valid_rssi_count=%d\n",sum_rssi,valid_rssi_count);
-				weight_x+=uuid_table->coordinateX * weight_count_for_specific_uuid;
-				weight_y+=uuid_table->coordinateY * weight_count_for_specific_uuid;				
+				weight_x+=table_row->uuid_record_table_array[j].coordinateX * weight_count_for_specific_uuid;
+				weight_y+=table_row->uuid_record_table_array[j].coordinateY * weight_count_for_specific_uuid;				
 				weight_count+=weight_count_for_specific_uuid;
-				//偏差容忍度
-				if((sum_rssi/valid_rssi_count)-avg_rssi > 5){
-					table_row->summary_uuid= uuid_table->uuid;
-					table_row->initial_timestamp=uuid_table->initial_timestamp;
+				
+				if((sum_rssi/valid_rssi_count)-avg_rssi > DRIFT_RSSI){
+					strcpy(table_row->summary_uuid, table_row->uuid_record_table_array[j].uuid);
+					strcpy(table_row->initial_timestamp,table_row->uuid_record_table_array[j].initial_timestamp);
 					//table_row->final_timestamp=uuid_table->final_timestamp;
 					table_row->average_rssi=sum_rssi/valid_rssi_count;
 				}
@@ -956,36 +757,26 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 				j++;
 			}
 			
-			
+			table_row->recently_scanned=recently_scanned;
 			if(weight_count!=0){
 				summary_coordinateX_this_turn=weight_x/(float)weight_count;
 				summary_coordinateY_this_turn=weight_y/(float)weight_count;
 				
-				//比較x,y 差不多就不改
-				
-				
-				if(abs(summary_coordinateX_this_turn - table_row->summary_coordinateX)>DRIFT_DISTANCE &&
+								
+				if(abs(summary_coordinateX_this_turn - table_row->summary_coordinateX)>DRIFT_DISTANCE ||
 					abs(summary_coordinateY_this_turn - table_row->summary_coordinateY)>DRIFT_DISTANCE){
 					//coordinateX
 					table_row->summary_coordinateX=summary_coordinateX_this_turn;
 					//coordinateY
 					table_row->summary_coordinateY=summary_coordinateY_this_turn;
-				}
-				table_row->recently_scanned=recently_scanned;
+				}				
 				
-				zlog_debug(category_debug,"mac:%s, recently_scanned:%d, summary_uuid:%s, final_time:%s\n",
-						(char *)curr->key,table_row->recently_scanned,table_row->summary_uuid,table_row->final_timestamp);
-				/**/
+				
 			}			
 			
-			//every mac
-			
-			
-			//printf("next~~~\n");
 			curr = curr->next;
 		}
-	}
-		//printf("unlock<<\n");
+	}		
 		pthread_mutex_unlock(ht_mutex);
 }
 
@@ -994,13 +785,7 @@ void hashtable_go_through_for_get_summary(
 		int ready_for_location_history_table) {
 	int size = h_table->size;
 	HNode ** table = h_table->table;
-	char* uuid;
-    char* initial_timestamp;
-    char* final_timestamp;
-	char* battery;
-	char* panic_button;
-	int average_rssi;
-	int recently_scanned;
+	
 	int i = 0;
 	
 	char filename[MAX_PATH];
@@ -1013,226 +798,98 @@ void hashtable_go_through_for_get_summary(
     char buf_initial_time[80];
     char buf_final_time[80];
 	char buf_record_time[80];
-	char sql[SQL_TEMP_BUFFER_LENGTH];
-	char *sql_summary_update_with_panic=
-			"UPDATE object_summary_table " \
-			 "SET " \
-			 "uuid = %s, " \
-			 "rssi = %d, " \
-			 "first_seen_timestamp = %s, " \
-			 "last_seen_timestamp = %s, " \
-			 "battery_voltage = %s, " \
-			 "panic_violation_timestamp = NOW(), " \
-			 "base_x = %d, " \
-			 "base_y =%d " \
-			 "WHERE " \
-			 "object_summary_table.mac_address = %s; ";
-	char *sql_summary_update_without_panic=
-			"UPDATE object_summary_table " \
-			 "SET " \
-			 "uuid = %s, " \
-			 "rssi = %d, " \
-			 "first_seen_timestamp = %s, " \
-			 "last_seen_timestamp = %s, " \
-			 "battery_voltage = %s, " \
-			 "base_x = %d, " \
-			 "base_y =%d " \
-			 "WHERE " \
-			 "object_summary_table.mac_address = %s; ";
-			 
-	char *sql_template_for_history_table=
-			"INSERT INTO location_history_table " \
-			 "(lbeacon_uuid,record_timestamp,battery_voltage,base_x,base_y,mac_address ) " \
-			 "VALUES " \
-			 "(%s, NOW(),%s, %d , %d , %s); ";
-			 
-	hash_table_row* table_row;
+					 
+	hash_table_row* table_row;		
 	
-	PGconn *db_conn = NULL;
-    int db_serial_id = -1;
-   // ErrorCode ret_val = WORK_SUCCESSFULLY;
- //   char sql[SQL_TEMP_BUFFER_LENGTH];
-	
-	
-	/*
-	if(WORK_SUCCESSFULLY != 
-       SQL_get_database_connection(db_connection_list_head, 
-                                   &db_conn, 
-                                   &db_serial_id)){
-        zlog_error(category_debug,
-                   "cannot open database\n");
-
-        return E_SQL_OPEN_DATABASE;
-    }*/
-	/*
 	sprintf(filename, "%s/temp/track_%d", 
 									server_installation_path, 
 									pthread_self());			
 	file = fopen(filename, "wt");
 	if(file == NULL){
 		zlog_error(category_debug, "cannot open filepath %s", filename);
-		return E_OPEN_FILE;
+		return ;
 	}
 	
 	if(ready_for_location_history_table==1){
 		sprintf(location_filename, "%s/temp/locationtrack_%d", 
 									server_installation_path, 
 									pthread_self());			
-		file = fopen(location_filename, "wt");
+		location_file = fopen(location_filename, "wt");
 		if(file == NULL){
 			zlog_error(category_debug, "cannot open filepath %s", filename);
-			return E_OPEN_FILE;
+			return ;
 		}
 	}
-	*/
-	//pthread_mutex_t * ht_mutex = h_table->ht_mutex;	
-	//pthread_mutex_lock(ht_mutex);
-	//zlog_error(category_debug,">>hashtable_go_through_for_get_summary");
+	
 	for (i = 0; i < size; i++) {
 		HNode * curr = table[i];
-		while (curr != 0) {
-			// callback(curr->key, curr->key_len, curr->value, curr->value_len);
-			
-			
-			//if(strlen((char *)curr->key)!=17) continue;
-			
-			//table_row = (hash_table_row*)curr->value;
-			table_row = curr->value;
-			//取下面四個,update db
-			if(table_row==NULL) {
-				curr = curr->next;
-				continue;
-			}
-			//最近沒更新
-			if(table_row->recently_scanned==NULL) {
-				curr = curr->next;
-				continue;
-			}
-			//printf("recently_scanned NOT NULL\n");
-			if(table_row->recently_scanned>0){			
-				uuid=table_row->summary_uuid;
-				battery=table_row->battery;
-				initial_timestamp=table_row->initial_timestamp;
-				final_timestamp=table_row->final_timestamp;
-				average_rssi=table_row->average_rssi;
-				panic_button=table_row->panic_button;
-				//印出來看看?
-				zlog_error(category_debug,"mac %s table_row size:%d",(char *)curr->key,sizeof(*table_row));
+		while (curr != 0) {			
+			table_row = curr->value;			
+			if(table_row->recently_scanned>0){	
+				zlog_error(category_debug,"mac %s table_row size:%d",curr->key,sizeof(curr->key));
 				zlog_error(category_debug,"summary:%s %s %s %s %d %s\n"
-							,uuid,battery,initial_timestamp,final_timestamp,average_rssi,panic_button);
-				printf("'%s' ", (char *)curr->key);
-				printf("summary:%s %s %s %s %d %s\n"
-							,uuid,battery,initial_timestamp,final_timestamp,average_rssi,panic_button);
-				//寫上傳db的file
-				
+							,table_row->summary_uuid,table_row->battery,
+							table_row->initial_timestamp,table_row->final_timestamp,
+							table_row->average_rssi,table_row->panic_button);
+				printf("'%s' ", curr->key);
+				printf("summary:%s %s %s %s %d %s\n",
+							table_row->summary_uuid,table_row->battery,
+							table_row->initial_timestamp,table_row->final_timestamp,
+							table_row->average_rssi,table_row->panic_button);
 	
-				rawtime = atoi(initial_timestamp);
+				rawtime = atoi(table_row->initial_timestamp);
 				ts = *gmtime(&rawtime);
 				strftime(buf_initial_time, sizeof(buf_initial_time), 
 						 "%Y-%m-%d %H:%M:%S", &ts);
             
-				rawtime = atoi(final_timestamp);
+				rawtime = atoi(table_row->final_timestamp);
 				ts = *gmtime(&rawtime);
 				strftime(buf_final_time, sizeof(buf_final_time), 
 						 "%Y-%m-%d %H:%M:%S", &ts);
-				memset(sql, 0, sizeof(sql));
 				
-                if(atoi(panic_button)==1){
-					sprintf(sql, sql_summary_update_with_panic,
-						uuid,
-						average_rssi,
-						buf_initial_time,
-						buf_final_time,
-						battery,
-						(int)table_row->summary_coordinateX,
-						(int)table_row->summary_coordinateY,
-						(char *)curr->key);
-				} else{
-					sprintf(sql, sql_summary_update_without_panic,
-						uuid,
-						average_rssi,
-						buf_initial_time,
-						buf_final_time,
-						battery,
-						(int)table_row->summary_coordinateX,
-						(int)table_row->summary_coordinateY,
-						(char *)curr->key);
-				}
-				
-				//SQL_upload_hashtable_summarize(db_connection_list_head,sql);
-				 
-				
-				//SQL_execute(db_conn, sql);
-				/**/
-				/*	
 				fprintf(file, "%s,%d,%s,%s,%s,%s,%d,%d %s\n",
-						uuid,
-						average_rssi,
-						panic_button,
-						battery,
+						table_row->summary_uuid,
+						table_row->average_rssi,
+						table_row->panic_button,
+						table_row->battery,
 						buf_initial_time,
 						buf_final_time,
 						(int)table_row->summary_coordinateX,
 						(int)table_row->summary_coordinateY,
 						(char *)curr->key);
-				*/
-				//準備location history的file
+				
+				//location history file
 				if(ready_for_location_history_table==1){
-                    printf("uuid = [%s], battery = [%s]\n", uuid, battery);
-					memset(sql, 0, sizeof(sql));
-					sprintf(sql, sql_template_for_history_table,
-						uuid,
-						battery,
-						(int)table_row->summary_coordinateX,
-						(int)table_row->summary_coordinateY,
-						(char *)curr->key);
-						
-					//SQL_upload_location_history(db_connection_list_head,sql);
-					//SQL_execute(db_conn, sql);
-					/*
+                    
 					rawtime = atoi(get_clock_time());
 					ts = *gmtime(&rawtime);
 					strftime(buf_record_time, sizeof(buf_record_time), 
 							"%Y-%m-%d %H:%M:%S", &ts);
 							
 					fprintf(location_file, "%s,%s,%s,%s,%d,%d\n",
-							(char *)curr->key,
-							uuid,
+							curr->key,
+							table_row->summary_uuid,
 							buf_record_time,
-							battery,
+							table_row->battery,
 							(int)table_row->summary_coordinateX,
-							(int)table_row->summary_coordinateY);*/
+							(int)table_row->summary_coordinateY);
 				}
 				
-			}
-				
-			//}
+			}				
 			
-			//printf("crash?\n");
 			curr = curr->next;
 		}
 	
-	}
-	//關掉file
-	//呼叫SQL_upload_hashtable_summarize
-	
-	/*
+	}	
 	fclose(file);	
-	SQL_upload_hashtable_summarize(db_connection_list_head,
-									filename);
+	/*SQL_upload_hashtable_summarize(db_connection_list_head,
+									filename);*/
 									
 	if(ready_for_location_history_table==1){
-		fclose(location_file);
-		
-		SQL_upload_hashtable_summarize(db_connection_list_head,
-										location_filename);
-	}
-	*/	
-	/*SQL_release_database_connection(
-        db_connection_list_head, 
-        db_serial_id);*/
-	//zlog_error(category_debug,"hashtable_go_through_for_get_summary<<");
-	//pthread_mutex_unlock(ht_mutex);
+		fclose(location_file);		
+		/*SQL_upload_hashtable_summarize(db_connection_list_head,
+										location_filename);*/
+	}	
 }
 /*
 只更改時間,rssi....
@@ -1248,76 +905,20 @@ void hashtable_put_mac_table(
 	uint32_t index;
 	HNode * prev_head;
 	HNode * new_head;
-	hash_table_row* hash_table_row_ptr;
-	uuid_record_table_row uuid_table;
-	char coordinateX[9];
-	char coordinateY[9];
-	char* lbeacon_uuid;
-	char* initial_timestamp_GMT;
-	char* final_timestamp_GMT;
-	char* battery_voltage;
-	char* rssi;
-	char* panic_button;
-	DataForHashtable* data_row;
+	hash_table_row* hash_table_row_for_new_MAC;
+	char coordinateX[LENGTH_OF_COORDINATE];
+	char coordinateY[LENGTH_OF_COORDINATE];
+	char* MAC_address;
+	int i;
 	//try to replace existing key's value if possible
-	pthread_mutex_t * ht_mutex = h_table->ht_mutex;
-	/*printf("12345:%s %s %s %s %s\n",value->lbeacon_uuid,value->initial_timestamp_GMT,value->final_timestamp_GMT,
-									value->rssi,value->battery_voltage);*/
+	pthread_mutex_t * ht_mutex = h_table->ht_mutex;	
 	pthread_mutex_lock(ht_mutex);
 	zlog_error(category_debug,">>hashtable_put_mac_table");
-	//printf("==>hashtable_put_mac_table\n");
-	/*printf("12345:%s %s %s %s %s\n",value->lbeacon_uuid,value->initial_timestamp_GMT,value->final_timestamp_GMT,
-									value->rssi,value->battery_voltage);*/
-	/*避免value本來就錯
-	if(strlen(value->lbeacon_uuid)!=32||value->initial_timestamp_GMT==NULL||value->final_timestamp_GMT==NULL
-		||value->battery_voltage==NULL||value->rssi==NULL||value->panic_button==NULL){
-		printf("error value\n");
-		mp_free(&DataForHashtable_mempool,value);
-		return 0;
-	}else{}*/
-	//printf("2222\n");
-	lbeacon_uuid=value->lbeacon_uuid;
-	initial_timestamp_GMT=value->initial_timestamp_GMT;
-	final_timestamp_GMT=value->final_timestamp_GMT;
-	battery_voltage=value->battery_voltage;
-	rssi=value->rssi;
-	panic_button=value->panic_button;
-	
-	//printf("11111\n");
-	//mp_free(&DataForHashtable_mempool,value);	
-	
-	//printf("hashtable_put_mac_table\n");
-	
-	
-	
-	//replace 改成可以用的
-	/*data_row=mp_alloc(&DataForHashtable_mempool);
-	if(data_row==NULL) {
-		printf("=mp_alloc(&DataForHashtable_mempool) fail\n");
-		pthread_mutex_unlock(ht_mutex);
-		return 0;
-	}
-	memset(data_row,0,sizeof(DataForHashtable));
-	//printf("lbeacon~~~\n");
-	data_row->lbeacon_uuid=lbeacon_uuid;
-	data_row->initial_timestamp_GMT=initial_timestamp_GMT;
-	data_row->final_timestamp_GMT=final_timestamp_GMT;
-	//printf("lbeacon11111~~~\n");
-	data_row->rssi=rssi;
-	data_row->battery_voltage=battery_voltage;
-	//printf("lbeacon22222~~~\n");
-	data_row->panic_button=panic_button;
-	*/
-	//printf("==>hashtable_replace_uuid\n");
-	//printf("ley %s\n",key);
 	res = _hashtable_replace_uuid(h_table, key, key_len, value, sizeof(*value));
-	
-	//printf("replace finish\n");
-	//找不到要新增一個
+	//for a new uuid
 	if (res == 0 ) {
 		
 		//  resize if needed. 
-		//暫時不處理
 		/*
 		double load = ((double) h_table->count) / ((double) h_table->size);
 		//if (load > h_table->max_load) {
@@ -1328,119 +929,63 @@ void hashtable_put_mac_table(
 			
 			_hashtable_resize(h_table);
 		}
-		*/
-		//printf("new %s\n",key);
+		*/		
 		//code to add key and value in O(1) time.
 		hash_val = h_table->hash(key, key_len);
 		index = hash_val % h_table->size;
-		prev_head = h_table->table[index];
+		prev_head = h_table->table[index];	
 		
-		
-		
-		/*
-		new_head = hnode_new(
-			key, key_len,
-			value, value_len,
-			h_table->deleteKey,
-			h_table->deleteValue
-		);
-		*/
 		new_head = malloc(sizeof(HNode));
 		memset(new_head,0,sizeof(HNode));
-		if (new_head != 0 ) {		
+		if (new_head != 0 ) {			
+			MAC_address=mp_alloc(&mac_address_mempool);
+			memset(hash_table_row_for_new_MAC,0,sizeof(hash_table_row));
+			strcpy(MAC_address,key);
 			
-			//生一個DataForHashtable
+			hash_table_row_for_new_MAC=mp_alloc(&hash_table_row_mempool);
+			memset(hash_table_row_for_new_MAC,0,sizeof(hash_table_row));
 			
-			//hn->value = value;			
-			//new_head->value_len = value_len;
-			
-			hash_table_row_ptr=mp_alloc(&hash_table_row_mempool);
-			/*
-			
-			*/
-			memset(hash_table_row_ptr,0,sizeof(hash_table_row));
-			hash_table_row_ptr->summary_uuid=lbeacon_uuid;
-			hash_table_row_ptr->panic_button=panic_button;
-			//printf("value->lbeacon_uuid: %s\n",lbeacon_uuid);			
-			//strncpy(coordinateX,(value->lbeacon_uuid)+12,8);
-			memcpy(coordinateX,(lbeacon_uuid)+12,8);
-			coordinateX[8]='\0';
-			
-			hash_table_row_ptr->summary_coordinateX =atof(coordinateX);
-			//printf("%f\n",hash_table_row_ptr->summary_coordinateX);
-			memcpy(coordinateY,lbeacon_uuid+24,8);
-			coordinateY[8]='\0';	
-			hash_table_row_ptr->summary_coordinateY=atof(coordinateY);
-			//printf("X:%f,Y:%f\n",hash_table_row_ptr->summary_coordinateX,hash_table_row_ptr->summary_coordinateY);
-			/*
-			hash_table_row_ptr->summary_coordinateX=0;
-			hash_table_row_ptr->summary_coordinateY=0;
-			*/
-			hash_table_row_ptr->battery=battery_voltage;
-			hash_table_row_ptr->average_rssi=-100;//這邊在想一下
-			hash_table_row_ptr->initial_timestamp=initial_timestamp_GMT;
-			if(final_timestamp_GMT!=NULL){
-				hash_table_row_ptr->final_timestamp=final_timestamp_GMT;
-			}else{
-				printf("errrrrror finalllllllllllllll!\n");
-			}
-			
-			
-			hash_table_row_ptr->recently_scanned=0;
-			
-			//uuid_table=hash_table_row_ptr->uuid_table[0];
-			
-			hash_table_row_ptr->uuid_record_table_ptr[0]=NULL;
-			//if(hash_table_row_ptr->uuid_record_table_ptr[0]==NULL){
-				//u問題
-				hash_table_row_ptr->uuid_record_table_ptr[0]=mp_alloc(&uuid_record_table_row_mempool);
-				if(hash_table_row_ptr->uuid_record_table_ptr[0]==NULL){
-					printf("mp_alloc(&uuid_record_table_row_mempool) fail\n");					
-				}
-				memset(hash_table_row_ptr->uuid_record_table_ptr[0],0,sizeof(uuid_record_table_row));
-				hash_table_row_ptr->uuid_record_table_ptr[0]->uuid = lbeacon_uuid;				
-				hash_table_row_ptr->uuid_record_table_ptr[0]->initial_timestamp = initial_timestamp_GMT;
-				hash_table_row_ptr->uuid_record_table_ptr[0]->final_timestamp = final_timestamp_GMT;
-				hash_table_row_ptr->uuid_record_table_ptr[0]->head=0;
-				hash_table_row_ptr->uuid_record_table_ptr[0]->valid=1;
-				//printf("%s",value->rssi);
-				hash_table_row_ptr->uuid_record_table_ptr[0]->rssi_array[0]=atoi(rssi);
-				/* Construct UUID as aaaa00zz0000xxxxxxxx0000yyyyyyyy format to represent 
+			strcpy(hash_table_row_for_new_MAC->summary_uuid , value->lbeacon_uuid);
+			strcpy(hash_table_row_for_new_MAC->panic_button,value->panic_button);	
+			/* Construct UUID as aaaa00zz0000xxxxxxxx0000yyyyyyyy format to represent 
 									 1			13-20		25-32
-				   lbeacon location. In the UUID format, aaaa stands for the area id, zz 
-				   stands for the floor level with lowest_basement_level adjustment, 
-				   xxxxxxxx stands for the relative longitude, and yyyyyyyy stands for
-				   the relative latitude.
-				*/
-				//printf("lbeacon_uuid:%s  \n",lbeacon_uuid);
-				//memcpy(coordinateX,lbeacon_uuid+12,8);
-				//coordinateX[8]='\0';
-				//printf("coordinateX:%s\n",coordinateX);
-				hash_table_row_ptr->uuid_record_table_ptr[0]->coordinateX =atof(coordinateX);
-				
-				//memcpy(coordinateY,lbeacon_uuid+24,8);
-				//coordinateY[8]='\0';
-				hash_table_row_ptr->uuid_record_table_ptr[0]->coordinateY=atof(coordinateY);
-			//}
-			/**/
-			
-			//uuid_table_ptr=hash_table_row_ptr->uuid_record_table_ptr0;
-			/*
-			uuid_table.valid=1;
-			uuid_table.uuid = value->lbeacon_uuid;
-			uuid_table.initial_timestamp = value->initial_timestamp_GMT;
-			uuid_table.final_timestamp = value->final_timestamp_GMT;
-			uuid_table.head=0;
-			uuid_table.rssi_array[0]=value->rssi;			
+			   lbeacon location. In the UUID format, aaaa stands for the area id, zz 
+			   stands for the floor level with lowest_basement_level adjustment, 
+			   xxxxxxxx stands for the relative longitude, and yyyyyyyy stands for
+			   the relative latitude.
 			*/
-
-			hash_table_row_ptr->record_table_size=16;
-			//sizeof?????
-			new_head->key = key;
-			new_head->key_len =key_len;
+			memcpy(coordinateX,(value->lbeacon_uuid)+12,8);
+			coordinateX[LENGTH_OF_COORDINATE-1]='\0';
 			
-			new_head->value = hash_table_row_ptr;
-			new_head->value_len=sizeof(*hash_table_row_ptr);
+			hash_table_row_for_new_MAC->summary_coordinateX =atof(coordinateX);
+			memcpy(coordinateY,(value->lbeacon_uuid)+24,8);
+			coordinateY[LENGTH_OF_COORDINATE-1]='\0';	
+			hash_table_row_for_new_MAC->summary_coordinateY=atof(coordinateY);
+			strcpy(hash_table_row_for_new_MAC->battery,value->battery_voltage);
+			hash_table_row_for_new_MAC->average_rssi=INITIAL_AVERAGE_RSSI;
+			strcpy(hash_table_row_for_new_MAC->initial_timestamp,value->initial_timestamp_GMT);			
+			strcpy(hash_table_row_for_new_MAC->final_timestamp,value->final_timestamp_GMT);
+			
+			
+			
+			hash_table_row_for_new_MAC->recently_scanned=0;
+			strcpy(hash_table_row_for_new_MAC->uuid_record_table_array[0].uuid,value->lbeacon_uuid);				
+			strcpy(hash_table_row_for_new_MAC->uuid_record_table_array[0].initial_timestamp,value->initial_timestamp_GMT);
+			strcpy(hash_table_row_for_new_MAC->uuid_record_table_array[0].final_timestamp,value->final_timestamp_GMT);
+			hash_table_row_for_new_MAC->uuid_record_table_array[0].head=0;
+			hash_table_row_for_new_MAC->uuid_record_table_array[0].valid=1;			
+			hash_table_row_for_new_MAC->uuid_record_table_array[0].rssi_array[0]=atoi(value->rssi);			
+			hash_table_row_for_new_MAC->uuid_record_table_array[0].coordinateX =atof(coordinateX);			
+			hash_table_row_for_new_MAC->uuid_record_table_array[0].coordinateY=atof(coordinateY);
+			hash_table_row_for_new_MAC->record_table_size=INITIAL_RECORD_TABLE_SIZE;
+			for(i=1;i<INITIAL_RECORD_TABLE_SIZE;i++){
+				hash_table_row_for_new_MAC->uuid_record_table_array[i].valid=0;
+			}
+			new_head->key = MAC_address;
+			new_head->key_len =LENGTH_OF_MAC_ADDRESS;
+			
+			new_head->value = hash_table_row_for_new_MAC;
+			new_head->value_len=sizeof(*hash_table_row_for_new_MAC);
 			
 			
 			new_head->deleteKey = h_table->deleteKey;
@@ -1449,19 +994,16 @@ void hashtable_put_mac_table(
 			/**/
 
 		}
-		//8 200
-		zlog_error(category_debug,"MAC %s ,size %d",new_head->key,sizeof(*hash_table_row_ptr));
+		zlog_error(category_debug,"MAC %s ,size %d",new_head->key,sizeof(*hash_table_row_for_new_MAC));
 		new_head->next = prev_head;
 		h_table->table[index] = new_head;
 		h_table->count = h_table->count + 1;
-		//printf("inserting, {%s => }\n", new_head->key);
+		
 	}
 	
 	zlog_error(category_debug,"hashtable_put_mac_table<<");
 	pthread_mutex_unlock(ht_mutex);
-	//printf("<==hashtable_put_mac_table\n");
-	//printf("inserting, {%s => %p}\n", key, value);
-	//print_HashTable(h_table);
+	
 }
 /*
 	每秒
@@ -1470,15 +1012,7 @@ void hashtable_put_mac_table(
 void hashtable_summarize_object_location(){
 	
 	int i;
-	while(ready_to_work == true){
-		//??
-		
-			/*for(i=0;i<area_table_max_size;i++){
-				if(area_table[i].area_id==NULL) continue;
-				//printf("1234:%s",);
-				hashtable_go_through_for_summarize(area_table[i].area_hash_ptr);
-				
-			}*/
+	while(ready_to_work == true){		
 			
 		
 			sleep_t(BUSY_WAITING_TIME_IN_MS);
@@ -1490,20 +1024,10 @@ void hashtable_summarize_object_location(){
 void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head,char *server_installation_path,
 									int ready_for_location_history_table){
 	int i;
-	for(i=0;i<area_table_max_size;i++){
-		
-		if(area_table[i].area_id==NULL) continue;	
-
-		//pthread_mutex_lock(area_table[i].list_lock);
-		//zlog_error(category_debug, "<<upload_hashtable_for_all_area %s",area_table[i].area_id);
-		
-		//hashtable_go_through_for_summarize(area_table[i].area_hash_ptr);
-		//printf("hashtable_go_through_for_summarize>>> %s\n",area_table[i].area_id);
-		//pthread_mutex_unlock(area_table[i].list_lock);
-		/**/
+	for(i=0;i<area_table_max_size;i++){		
+		if(area_table[i].area_id==NULL) continue;		
 		zlog_error(category_debug,"area table id %s",area_table[i].area_id);
-		hashtable_go_through_for_summarize(area_table[i].area_hash_ptr);
-		
+		hashtable_go_through_for_summarize(area_table[i].area_hash_ptr);		
 		hashtable_go_through_for_get_summary(
 			area_table[i].area_hash_ptr,db_connection_list_head,server_installation_path,
 			ready_for_location_history_table);

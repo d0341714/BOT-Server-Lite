@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     initialization_failed            = false;
     ready_to_work                    = true;
 
-	initial_area_table();
+	
     /* Initialize zlog */
     if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0)
     {
@@ -107,7 +107,8 @@ int main(int argc, char **argv)
     zlog_info(category_debug,"Start Server");
 
     zlog_info(category_debug,"Mempool Initializing");
-
+	
+	initial_area_table();
     /* Initialize the memory pool for buffer nodes */
     if(MEMORY_POOL_SUCCESS != mp_init( &node_mempool, 
                                        sizeof(BufferNode), 
@@ -1250,13 +1251,7 @@ void *Server_LBeacon_routine(void *_buffer_node)
                                             strlen(current_node -> content));
                                             */
         }else{
-			/*
-            SQL_update_object_tracking_data_with_battery_voltage(
-                &config.db_connection_list_head,
-                current_node -> content,
-                strlen(current_node -> content),
-                config.server_installation_path,
-                config.is_enabled_panic_button_monitor);*/
+			
 			hashtable_update_object_tracking_data(
 					current_node -> content,
 					strlen(current_node -> content)
@@ -1337,13 +1332,6 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
                                             strlen(current_node -> content));
                                             */
         }else{
-			/*
-            SQL_update_object_tracking_data_with_battery_voltage(
-                &config.db_connection_list_head,
-                current_node -> content,
-                strlen(current_node -> content),
-                config.server_installation_path,
-                config.is_enabled_panic_button_monitor);*/
 			hashtable_update_object_tracking_data(
 					current_node -> content,
 					strlen(current_node -> content)
@@ -1778,7 +1766,7 @@ void* upload_all_hashtable(void){
 		if((upload_time-last_upload_time)>=1){
 			
 			i++;
-			if(i==10) {
+			if(i==TIME_TO_UPLOAD_HISTORY_LOCATION) {
 				i=0;
 				ready_for_location_history_table=1;
 			}else{

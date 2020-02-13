@@ -2,7 +2,13 @@
 #ifndef TABLETYPE_H
 #define TABLETYPE_H
 
+#include "BeDIS.h"
 
+#define LENGTH_OF_TIMESTAMP 11
+#define LENGTH_OF_PANIC_BUTTON 2
+#define LENGTH_OF_BATTERY_VOLTAGE 4
+#define SIZE_OF_RSSI_ARRAY 10
+#define INITIAL_RECORD_TABLE_SIZE 16
 typedef struct {
 	
    char* lbeacon_uuid;
@@ -17,46 +23,32 @@ typedef struct {
 //Record array
 
 typedef struct {
-   //int valid;
-   char* uuid;
-   char* initial_timestamp;
-   char* final_timestamp;
+   char uuid[LENGTH_OF_UUID];
+   char initial_timestamp[LENGTH_OF_TIMESTAMP];
+   char final_timestamp[LENGTH_OF_TIMESTAMP];
    int head;
    //10 seconds
-   int rssi_array[10];
-   //int average_rssi;
-   //int weights;
+   int rssi_array[SIZE_OF_RSSI_ARRAY];
    float coordinateX;
    float coordinateY;
    int valid;
 } uuid_record_table_row;
-/*
-typedef struct {
-	
-   uuid_record_table_row row[16];
-   
-} uuid_record_table;
-*/
 
 
 typedef struct {
 	
-   char* summary_uuid;
-   char* battery;
-   char* initial_timestamp;
-   char* final_timestamp;
+   char summary_uuid[LENGTH_OF_UUID];
+   char battery[LENGTH_OF_BATTERY_VOLTAGE];
+   char initial_timestamp[LENGTH_OF_TIMESTAMP];
+   char final_timestamp[LENGTH_OF_TIMESTAMP];
    int average_rssi;
-   //幾何平均
    float summary_coordinateX;
-   float summary_coordinateY;
-   //uuid_record_table uuid_table;
-   //uuid_record_table_row uuid_record_table_ptr0;
-   //uuid_record_table_row uuid_table[16];   
+   float summary_coordinateY;  
    size_t record_table_size;
-   //控制上不上船
+   //upload or not
    int recently_scanned;
-   char* panic_button;
-   uuid_record_table_row* uuid_record_table_ptr[16];
+   char panic_button[LENGTH_OF_PANIC_BUTTON];
+   uuid_record_table_row uuid_record_table_array[INITIAL_RECORD_TABLE_SIZE];
 } hash_table_row;
 
 
