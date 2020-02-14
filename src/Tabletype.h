@@ -11,13 +11,12 @@
 #define INITIAL_RECORD_TABLE_SIZE 32
 typedef struct {
 	
-   char* lbeacon_uuid;
-   char* initial_timestamp_GMT;
-   char* final_timestamp_GMT;
-   char* battery_voltage;   
-   char* rssi;
-   char* panic_button;
-   pthread_mutex_t list_lock;
+   char lbeacon_uuid[LENGTH_OF_UUID];
+   char initial_timestamp_GMT[LENGTH_OF_TIMESTAMP];
+   char final_timestamp_GMT[LENGTH_OF_TIMESTAMP];
+   char battery_voltage[LENGTH_OF_BATTERY_VOLTAGE];   
+   int rssi;
+   char panic_button[LENGTH_OF_PANIC_BUTTON];
 } DataForHashtable;
 
 //Record array
@@ -48,7 +47,7 @@ typedef struct {
    //upload or not
    int recently_scanned;
    char panic_button[LENGTH_OF_PANIC_BUTTON];
-   uuid_record_table_row* uuid_record_table_array;//[INITIAL_RECORD_TABLE_SIZE]
+   uuid_record_table_row uuid_record_table_array[INITIAL_RECORD_TABLE_SIZE];//
 } hash_table_row;
 
 

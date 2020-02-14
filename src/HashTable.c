@@ -220,7 +220,7 @@ static int _hashtable_replace_uuid(
 							}								
 							exist_MAC_address_row->uuid_record_table_array[i].rssi_array[head]=0;	
 						}
-						exist_MAC_address_row->uuid_record_table_array[i].rssi_array[head]=atoi(value->rssi);
+						exist_MAC_address_row->uuid_record_table_array[i].rssi_array[head]=value->rssi;
 						exist_MAC_address_row->uuid_record_table_array[i].head=head;
 					}			
 					
@@ -241,7 +241,7 @@ static int _hashtable_replace_uuid(
 				strcpy(exist_MAC_address_row->uuid_record_table_array[invalid_place].uuid,value->lbeacon_uuid);
 				strcpy(exist_MAC_address_row->uuid_record_table_array[invalid_place].initial_timestamp,value->initial_timestamp_GMT);
 				strcpy(exist_MAC_address_row->uuid_record_table_array[invalid_place].final_timestamp,value->final_timestamp_GMT);
-				exist_MAC_address_row->uuid_record_table_array[invalid_place].rssi_array[0]=atoi(value->rssi);
+				exist_MAC_address_row->uuid_record_table_array[invalid_place].rssi_array[0]=value->rssi;
 				exist_MAC_address_row->uuid_record_table_array[invalid_place].head=0;
 				memcpy(coordinateX,value->lbeacon_uuid+12,8);
 				coordinateX[8]='\0';
@@ -251,11 +251,13 @@ static int _hashtable_replace_uuid(
 				exist_MAC_address_row->uuid_record_table_array[invalid_place].coordinateY=atof(coordinateY);
 				
 				exist_MAC_address_row->uuid_record_table_array[invalid_place].valid=1;
-				curr->value=&exist_MAC_address_row;
+				curr->value=exist_MAC_address_row;
 				curr->value_len = sizeof(exist_MAC_address_row);
 				
 			}else{
-				
+				zlog_error(category_debug,"need more uuid record table");
+				return 1;
+				/*
 				exist_MAC_address_row->record_table_size*=2;
 				uuid_record_table_row_resize_ptr=realloc(exist_MAC_address_row->uuid_record_table_array,(exist_MAC_address_row->record_table_size*sizeof(uuid_record_table_row)));
 				if(uuid_record_table_row_resize_ptr==NULL){
@@ -275,11 +277,12 @@ static int _hashtable_replace_uuid(
 				exist_MAC_address_row->uuid_record_table_array[invalid_place].coordinateX=atof(coordinateX);
 				strncpy(coordinateY,value->lbeacon_uuid+24,8);
 				exist_MAC_address_row->uuid_record_table_array[invalid_place].coordinateY=atof(coordinateY);
-				curr->value_len = sizeof(*exist_MAC_address_row);	
+				curr->value_len = sizeof(exist_MAC_address_row);	
 				i++;
 				for(i;i<exist_MAC_address_row->record_table_size;i++){
 					exist_MAC_address_row->uuid_record_table_array[i].valid=0;
 				}
+				*/
 			}
 			/*zlog_error(category_debug,"mac %s uuid %s final %s ",
 							(char*)key,lbeacon_uuid,exist_MAC_address_row->uuid_record_table_array[i]->final_timestamp);
@@ -477,6 +480,7 @@ void initial_area_table(void){
 		memset(area_table[i].area_id,'\0',AREA_ID_LENGTH);
 		area_table[i].area_hash_ptr=NULL;
 	}/**/
+	pthread_mutex_init( &area_table_lock, 0);
 	zlog_error(category_debug,"initial_area_table successful");	
 	return;
 }
@@ -486,13 +490,14 @@ HashTable * hash_table_of_specific_area_id(char* area_id){
 	int exist=0;
 	HashTable * h_table;
 	AreaTable* area_table_resize_ptr;
-	
+	pthread_mutex_lock(&area_table_lock);
 	zlog_error(category_debug,"area id %s",area_id);
 	
 	for(i=0;i<area_table_max_size;i++){
 		if(area_table[i].area_id[0]=='\0') continue;
 		exist = strcmp(area_table[i].area_id,area_id);
 		if(exist==0){
+			pthread_mutex_unlock(&area_table_lock);
 			return area_table[i].area_hash_ptr;
 		}
 	}
@@ -527,6 +532,7 @@ HashTable * hash_table_of_specific_area_id(char* area_id){
 		}
 		 
 	}
+	pthread_mutex_unlock(&area_table_lock);
 	return h_table;
 }
 
@@ -572,7 +578,6 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 	
 	strncpy(area_id, lbeacon_uuid, AREA_ID_LENGTH);
 	area_id[4]='\0';
-	printf("area:%s\n",area_id);
 	area_table_ptr=hash_table_of_specific_area_id(area_id);
 	
     while(num_types --){
@@ -613,17 +618,17 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 			
 			
 			
-			data_row->lbeacon_uuid=lbeacon_uuid;
-			data_row->initial_timestamp_GMT=initial_timestamp_GMT;
-			data_row->final_timestamp_GMT=final_timestamp_GMT;
-			data_row->rssi=rssi;
-			data_row->battery_voltage=battery_voltage;
-			data_row->panic_button=panic_button;	
+			strcpy(data_row->lbeacon_uuid,lbeacon_uuid);
+			strcpy(data_row->initial_timestamp_GMT,initial_timestamp_GMT);
+			strcpy(data_row->final_timestamp_GMT,final_timestamp_GMT);
+			data_row->rssi=atoi(rssi);
+			strcpy(data_row->battery_voltage,battery_voltage);
+			strcpy(data_row->panic_button,panic_button);	
 			
 			
 			hashtable_put_mac_table(area_table_ptr, 
-							object_mac_address,sizeof(*object_mac_address), 
-							data_row, sizeof(*data_row));	
+							object_mac_address,LENGTH_OF_MAC_ADDRESS, 
+							data_row, sizeof(DataForHashtable));	
 			mp_free(&DataForHashtable_mempool,data_row);			
 			
         }
@@ -765,7 +770,9 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 					strcpy(table_row->summary_uuid, table_row->uuid_record_table_array[j].uuid);
 					strcpy(table_row->initial_timestamp,table_row->uuid_record_table_array[j].initial_timestamp);
 					//table_row->final_timestamp=uuid_table->final_timestamp;
-					table_row->average_rssi=sum_rssi/valid_rssi_count;
+					
+					avg_rssi=sum_rssi/valid_rssi_count;
+					table_row->average_rssi=avg_rssi;
 				}
 				
 				j++;
@@ -777,8 +784,7 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 				summary_coordinateY_this_turn=weight_y/(float)weight_count;
 				
 								
-				if(abs(summary_coordinateX_this_turn - table_row->summary_coordinateX)>DRIFT_DISTANCE ||
-					abs(summary_coordinateY_this_turn - table_row->summary_coordinateY)>DRIFT_DISTANCE){
+				if(abs(summary_coordinateX_this_turn - table_row->summary_coordinateX)>DRIFT_DISTANCE ||abs(summary_coordinateY_this_turn - table_row->summary_coordinateY)>DRIFT_DISTANCE){
 					//coordinateX
 					table_row->summary_coordinateX=summary_coordinateX_this_turn;
 					//coordinateY
@@ -788,6 +794,7 @@ void hashtable_go_through_for_summarize(HashTable * h_table) {
 				
 			}			
 			
+			curr->value=table_row;
 			curr = curr->next;
 		}
 	}		
@@ -934,7 +941,7 @@ void hashtable_put_mac_table(
 	pthread_mutex_t * ht_mutex = h_table->ht_mutex;	
 	pthread_mutex_lock(ht_mutex);
 	//zlog_error(category_debug,">>hashtable_put_mac_table");
-	res = _hashtable_replace_uuid(h_table, key, key_len, value, sizeof(*value));
+	res = _hashtable_replace_uuid(h_table, key, key_len, value, value_len);
 	//for a new uuid
 	if (res == 0 ) {
 		
@@ -959,7 +966,7 @@ void hashtable_put_mac_table(
 		memset(new_head,0,sizeof(HNode));
 		if (new_head != 0 ) {			
 			MAC_address=mp_alloc(&mac_address_mempool);
-			memset(hash_table_row_for_new_MAC,0,LENGTH_OF_MAC_ADDRESS);
+			memset(MAC_address,0,LENGTH_OF_MAC_ADDRESS);
 			strcpy(MAC_address,key);
 			
 			hash_table_row_for_new_MAC=mp_alloc(&hash_table_row_mempool);
@@ -989,13 +996,13 @@ void hashtable_put_mac_table(
 			
 			hash_table_row_for_new_MAC->record_table_size=INITIAL_RECORD_TABLE_SIZE;
 			hash_table_row_for_new_MAC->recently_scanned=0;
-			hash_table_row_for_new_MAC->uuid_record_table_array=malloc(hash_table_row_for_new_MAC->			record_table_size*sizeof(uuid_record_table_row));
+			
 			strcpy(hash_table_row_for_new_MAC->uuid_record_table_array[0].uuid,value->lbeacon_uuid);				
 			strcpy(hash_table_row_for_new_MAC->uuid_record_table_array[0].initial_timestamp,value->initial_timestamp_GMT);
 			strcpy(hash_table_row_for_new_MAC->uuid_record_table_array[0].final_timestamp,value->final_timestamp_GMT);
 			hash_table_row_for_new_MAC->uuid_record_table_array[0].head=0;
 			hash_table_row_for_new_MAC->uuid_record_table_array[0].valid=1;			
-			hash_table_row_for_new_MAC->uuid_record_table_array[0].rssi_array[0]=atoi(value->rssi);			
+			hash_table_row_for_new_MAC->uuid_record_table_array[0].rssi_array[0]=value->rssi;			
 			hash_table_row_for_new_MAC->uuid_record_table_array[0].coordinateX =atof(coordinateX);			
 			hash_table_row_for_new_MAC->uuid_record_table_array[0].coordinateY=atof(coordinateY);
 			hash_table_row_for_new_MAC->record_table_size=INITIAL_RECORD_TABLE_SIZE;
@@ -1006,7 +1013,7 @@ void hashtable_put_mac_table(
 			new_head->key_len =LENGTH_OF_MAC_ADDRESS;
 			
 			new_head->value = hash_table_row_for_new_MAC;
-			new_head->value_len=sizeof(*hash_table_row_for_new_MAC);			
+			new_head->value_len=sizeof(hash_table_row_for_new_MAC);			
 			
 			new_head->deleteKey = h_table->deleteKey;
 			new_head->deleteValue = h_table->deleteValue;
@@ -1032,17 +1039,17 @@ void hashtable_put_mac_table(
 void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head,char *server_installation_path){
 	int i;
 	static int ready_for_location_history_table=0;
-	/*
+	
 	for(i=0;i<area_table_max_size;i++){		
 		if(area_table[i].area_id[0]=='\0') continue;		
 		zlog_error(category_debug,"area table id %s",area_table[i].area_id);
-		//hashtable_go_through_for_summarize(area_table[i].area_hash_ptr);		
+		hashtable_go_through_for_summarize(area_table[i].area_hash_ptr);		
 		hashtable_go_through_for_get_summary(
 			area_table[i].area_hash_ptr,db_connection_list_head,server_installation_path,
 			ready_for_location_history_table);
 		printf("-----------------------------------------\n");
 	}
-	*/
+	/**/
 }
 
 void hashtable_go_through_for_get_location_history(

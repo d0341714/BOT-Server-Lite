@@ -55,6 +55,7 @@ typedef struct AreaTable{
 
 //dynamic
 AreaTable* area_table;
+pthread_mutex_t area_table_lock;
 int area_table_max_size;
 int area_table_size;
 
