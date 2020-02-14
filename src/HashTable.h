@@ -20,6 +20,7 @@
 #define INITIAL_AREA_TABLE_MAX_SIZE 16
 #define AREA_ID_LENGTH 5
 #define UNRESAONABLE_RSSI 30
+#define TIME_TO_UPLOAD_HISTORY_LOCATION 10
 
 Memory_Pool hash_table_row_mempool;
 Memory_Pool mac_address_mempool;
