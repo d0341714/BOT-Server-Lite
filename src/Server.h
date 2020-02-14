@@ -51,6 +51,7 @@
 #include "BeDIS.h"
 #include "SqlWrapper.h"
 #include "GeoFence.h"
+#include "HashTable.h"
 
 /* When debugging is needed */
 //#define debugging

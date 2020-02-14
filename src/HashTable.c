@@ -570,6 +570,11 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
     lbeacon_timestamp_value = atoi(lbeacon_timestamp);
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 	
+	strncpy(area_id, lbeacon_uuid, AREA_ID_LENGTH);
+	area_id[4]='\0';
+	printf("area:%s\n",area_id);
+	area_table_ptr=hash_table_of_specific_area_id(area_id);
+	
     while(num_types --){
 		
         object_type = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
@@ -607,16 +612,14 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 			//pthread_mutex_init( &data_row->list_lock, 0);
 			
 			
-			memcpy(area_id, lbeacon_uuid, AREA_ID_LENGTH);
-			printf("area:%s\n",area_id);
+			
 			data_row->lbeacon_uuid=lbeacon_uuid;
 			data_row->initial_timestamp_GMT=initial_timestamp_GMT;
 			data_row->final_timestamp_GMT=final_timestamp_GMT;
 			data_row->rssi=rssi;
 			data_row->battery_voltage=battery_voltage;
-			data_row->panic_button=panic_button;
+			data_row->panic_button=panic_button;	
 			
-			area_table_ptr=hash_table_of_specific_area_id(area_id);
 			
 			hashtable_put_mac_table(area_table_ptr, 
 							object_mac_address,sizeof(*object_mac_address), 
@@ -1043,7 +1046,7 @@ void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head
 }
 
 void hashtable_go_through_for_get_location_history(
-	HashTable * h_table,DBConnectionListHead *db_connection_list_head,char *server_installation_path){
+	DBConnectionListHead *db_connection_list_head,char *server_installation_path){
 	/*
 	int i;
 	static int ready_for_location_history_table=1;

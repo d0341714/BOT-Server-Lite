@@ -131,6 +131,6 @@ void hashtable_put_mac_table(
 
 void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head,char *server_installation_path);
 
-void hashtable_go_through_for_get_location_history(
-	HashTable * h_table,DBConnectionListHead *db_connection_list_head,char *server_installation_path);
+void hashtable_go_through_for_get_location_history(DBConnectionListHead *db_connection_list_head,
+													char *server_installation_path);
 #endif
