@@ -90,6 +90,7 @@ memory pool. */
 /* The number of slots in the memory pool for notification */
 #define SLOTS_IN_MEM_POOL_NOTIFICATION 512
 
+#define TIME_TO_UPLOAD_HISTORY_LOCATION 10
 typedef struct {
     /* The length of the time window in which the movements of an object is 
        monitored. */
