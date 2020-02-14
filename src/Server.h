@@ -629,4 +629,6 @@ ErrorCode add_notification_to_the_notification_list(
     char *buf);
 
 void* upload_all_hashtable(void);
+
+void* upload_location_history(void);
 #endif

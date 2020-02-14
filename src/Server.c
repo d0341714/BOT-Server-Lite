@@ -82,6 +82,7 @@ int main(int argc, char **argv)
     pthread_t wifi_listener_thread;
 	
 	pthread_t upload_all_hashtable_thread;
+	pthread_t upload_location_history_thread;
 	
     /* Initialize flags */
     NSI_initialization_complete      = false;
@@ -409,6 +410,19 @@ int main(int argc, char **argv)
                    "upload_all_hashtable fail");
         zlog_error(category_debug, 
                    "upload_all_hashtable fail");
+        return return_value;
+    } 
+	
+	return_value = startThread( &upload_location_history_thread, 
+                                upload_location_history, 
+                                NULL);
+
+    if(return_value != WORK_SUCCESSFULLY)
+    {
+        zlog_error(category_health_report, 
+                   "location_history fail");
+        zlog_error(category_debug, 
+                   "location_history fail");
         return return_value;
     } 
 	
@@ -1251,7 +1265,7 @@ void *Server_LBeacon_routine(void *_buffer_node)
                                             strlen(current_node -> content));
                                             */
         }else{
-			
+			zlog_error(category_debug,">>hashtable_update_object_tracking_data");
 			hashtable_update_object_tracking_data(
 					current_node -> content,
 					strlen(current_node -> content)
@@ -1331,8 +1345,9 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
                                             current_node -> content,
                                             strlen(current_node -> content));
                                             */
-        }else{
-			hashtable_update_object_tracking_data(
+        }else{	
+		zlog_error(category_debug,">>hashtable_update_object_tracking_data");
+				hashtable_update_object_tracking_data(
 					current_node -> content,
 					strlen(current_node -> content)
 					);
@@ -1757,29 +1772,37 @@ ErrorCode add_notification_to_the_notification_list(
 void* upload_all_hashtable(void){
 	int last_upload_time=0;
 	int upload_time=0;
-	int i;
-	int ready_for_location_history_table;
-	i=0;
-	while(ready_to_work == true){
-		//??
+	
+	while(ready_to_work == true){		
 		upload_time=get_clock_time();
 		if((upload_time-last_upload_time)>=1){
 			
-			i++;
-			if(i==TIME_TO_UPLOAD_HISTORY_LOCATION) {
-				i=0;
-				ready_for_location_history_table=1;
-			}else{
-				ready_for_location_history_table=0;
-			}
-			upload_hashtable_for_all_area(&config.db_connection_list_head,config.server_installation_path,ready_for_location_history_table);
-			last_upload_time=get_clock_time();
+			upload_hashtable_for_all_area(&config.db_connection_list_head,config.server_installation_path);
+			last_upload_time=get_clock_time();		
 			
-			//zlog_error(category_debug, "<<upload_hashtable_for_all_area");
 			
 		}else{
 			sleep_t(BUSY_WAITING_TIME_IN_MS);
 		}
 	}
 	
+}
+
+void* upload_location_history(void){
+	int last_upload_time=0;
+	int upload_time=0;	
+	int ready_for_location_history_table;
+	while(ready_to_work == true){		
+		upload_time=get_clock_time();
+		if((upload_time-last_upload_time)>=TIME_TO_UPLOAD_HISTORY_LOCATION){			
+			
+			hashtable_go_through_for_get_location_history(&config.db_connection_list_head,
+															config.server_installation_path);
+			last_upload_time=get_clock_time();			
+			
+			
+		}else{
+			sleep_t(BUSY_WAITING_TIME_IN_MS);
+		}
+	}
 }

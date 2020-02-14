@@ -8,7 +8,7 @@
 #define LENGTH_OF_PANIC_BUTTON 2
 #define LENGTH_OF_BATTERY_VOLTAGE 4
 #define SIZE_OF_RSSI_ARRAY 10
-#define INITIAL_RECORD_TABLE_SIZE 16
+#define INITIAL_RECORD_TABLE_SIZE 32
 typedef struct {
 	
    char* lbeacon_uuid;
@@ -48,7 +48,7 @@ typedef struct {
    //upload or not
    int recently_scanned;
    char panic_button[LENGTH_OF_PANIC_BUTTON];
-   uuid_record_table_row uuid_record_table_array[INITIAL_RECORD_TABLE_SIZE];
+   uuid_record_table_row* uuid_record_table_array;//[INITIAL_RECORD_TABLE_SIZE]
 } hash_table_row;
 
 
