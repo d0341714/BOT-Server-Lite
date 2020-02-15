@@ -2419,13 +2419,103 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(
 
 ErrorCode SQL_upload_hashtable_summarize(
     DBConnectionListHead *db_connection_list_head,
-    char* sql){
+    char* filename){
 		
 	PGconn *db_conn = NULL;
     int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
-   	
-
+   	char sql[SQL_TEMP_BUFFER_LENGTH];
+	/*
+	CREATE TEMP TABLE updates_table
+	(
+		uuid varchar,
+		rssi varchar,
+		first_seen_timestamp varchar,
+		last_seen_timestamp varchar,
+		battery_voltage varchar,
+		base_x integer,
+		base_y integer,
+		mac_address varchar not null primary key
+	);
+	*/
+	char *sql_create_temp_table=
+			"CREATE TEMP TABLE updates_table " \
+			 "( " \
+			 "uuid varchar, " \
+			 "rssi varchar, " \
+			 "first_seen_timestamp varchar, " \
+			 "last_seen_timestamp varchar, " \
+			 "battery_voltage varchar, " \
+			 "base_x integer, " \
+			 "base_y integer, " \
+			 "mac_address varchar not null primary key ); ";
+	/*
+	COPY updates_table
+(
+	uuid ,
+	rssi ,
+	first_seen_timestamp,
+	last_seen_timestamp ,
+	battery_voltage ,
+	base_x ,
+	base_y ,
+	mac_address)
+	FROM
+	'C:\Users\openISDM\Desktop\Server\temp\track_103085680'
+	DELIMITER ',' CSV;
+	*/	 
+	char* sql_bulk_insert=
+			"COPY updates_table " \
+			 "( " \
+			 "uuid , " \
+			 "rssi , " \
+			 "first_seen_timestamp , " \
+			 "last_seen_timestamp , " \
+			 "battery_voltage , " \
+			 "base_x , " \
+			 "base_y , " \
+			 "mac_address)" \
+			 "FROM " \
+			 "\'%s\' " \
+			 "DELIMITER \',\' CSV;";
+			 
+	char* sql_update=
+			"UPDATE object_summary_table s" \
+			 "SET( " \
+			 "uuid , " \
+			 "rssi , " \
+			 "first_seen_timestamp , " \
+			 "last_seen_timestamp , " \
+			 "battery_voltage , " \
+			 "base_x , " \
+			 "base_y , " \
+			 "mac_address) = (" \
+			 "t.uuid , " \
+			 "t.rssi , " \
+			 "t.first_seen_timestamp , " \
+			 "t.last_seen_timestamp , " \
+			 "t.battery_voltage , " \
+			 "t.base_x , " \
+			 "t.base_y  " \
+			 "FROM updates_table t " \
+			 "WHERE s.mac_address = t.mac_address; ";
+	/*
+	1.
+	CREATE TEMP TABLE updates_table
+        ( id integer not null primary key
+        , val varchar
+        );
+	2.
+	INSERT into updates_table(id, val) VALUES
+	 ( 1, 'foo' ) ,( 2, 'bar' ) ,( 3, 'baz' )
+			;
+	
+	UPDATE target_table t
+	SET value = u.val
+	FROM updates_table u
+	WHERE t.id = u.id
+	*/
+	
     if(WORK_SUCCESSFULLY != 
        SQL_get_database_connection(db_connection_list_head, 
                                    &db_conn, 
@@ -2435,8 +2525,18 @@ ErrorCode SQL_upload_hashtable_summarize(
 
         return E_SQL_OPEN_DATABASE;
     }
-
-    /* Execute SQL statement */
+	
+	
+	memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_create_temp_table);
+    ret_val = SQL_execute(db_conn, sql);
+	
+	memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_bulk_insert, filename);
+    ret_val = SQL_execute(db_conn, sql);
+	
+	memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_update);
     ret_val = SQL_execute(db_conn, sql);
 
     SQL_release_database_connection(
@@ -2456,13 +2556,16 @@ ErrorCode SQL_upload_hashtable_summarize(
 	
 ErrorCode SQL_upload_location_history(
     DBConnectionListHead *db_connection_list_head,
-    char* sql){
+    char* filename){
 	//char* sql_template_for_history_table;	
 
 	PGconn *db_conn = NULL;
     int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
-    
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+	
+				 
+	
 
     if(WORK_SUCCESSFULLY != 
        SQL_get_database_connection(db_connection_list_head, 
@@ -2475,13 +2578,14 @@ ErrorCode SQL_upload_location_history(
     }
 
     /* Execute SQL statement */
+	
     ret_val = SQL_execute(db_conn, sql);
 
     SQL_release_database_connection(
         db_connection_list_head, 
         db_serial_id);
 
-    //remove(filename);
+    remove(filename);
 
     if(WORK_SUCCESSFULLY != ret_val){
         return E_SQL_EXECUTE;

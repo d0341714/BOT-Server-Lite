@@ -888,16 +888,19 @@ void hashtable_go_through_for_get_summary(
 					strftime(buf_final_time, sizeof(buf_final_time), 
 							 "%Y-%m-%d %H:%M:%S", &ts);
 					
-					fprintf(file, "%s,%d,%s,%s,%s,%s,%d,%d %s\n",
+					fprintf(file, "%s,%d,%s,%s,%s,%d,%d,%s\n",
 							table_row->summary_uuid,
 							table_row->average_rssi,
-							table_row->panic_button,
 							table_row->battery,
 							buf_initial_time,
 							buf_final_time,
 							(int)table_row->summary_coordinateX,
 							(int)table_row->summary_coordinateY,
-							(char *)curr->key);					
+							(char *)curr->key);
+					if(strcmp(table_row->panic_button,"1")==0){
+						//呼叫sql
+					}
+							
 				}
 				
 			}				
@@ -914,8 +917,8 @@ void hashtable_go_through_for_get_summary(
 										location_filename);*/
 	}else{
 		fclose(file);	
-		/*SQL_upload_hashtable_summarize(db_connection_list_head,
-										filename);*/
+		SQL_upload_hashtable_summarize(db_connection_list_head,
+										filename);/**/
 	}	
 }
 /*
@@ -1054,7 +1057,7 @@ void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head
 
 void hashtable_go_through_for_get_location_history(
 	DBConnectionListHead *db_connection_list_head,char *server_installation_path){
-	/*
+	
 	int i;
 	static int ready_for_location_history_table=1;
 	for(i=0;i<area_table_max_size;i++){		
@@ -1064,6 +1067,6 @@ void hashtable_go_through_for_get_location_history(
 			area_table[i].area_hash_ptr,db_connection_list_head,server_installation_path,
 			ready_for_location_history_table);
 		printf("------x-------------x------------x------\n");
-	}*/
+	}/**/
 }
 	
