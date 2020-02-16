@@ -9,17 +9,26 @@
 #include "Tabletype.h"
 #include "BeDIS.h"
 #include "SqlWrapper.h"
+#include <math.h>
 
 #define SLOTS_IN_MEM_POOL_HASH_TABLE_ROW 2048
 //totaltag*16
 #define SLOTS_IN_MEM_POOL_UUID_RECORD_TABLE_ROW 256
-#define DRIFT_DISTANCE 50
-#define DRIFT_RSSI 10
+
 #define INITIAL_AVERAGE_RSSI -100
 #define LENGTH_OF_COORDINATE 9
 #define INITIAL_AREA_TABLE_MAX_SIZE 16
 #define AREA_ID_LENGTH 5
 #define UNRESAONABLE_RSSI 30
+
+/*
+#define DRIFT_DISTANCE 50
+#define DRIFT_RSSI 10
+*/
+
+static int DRIFT_DISTANCE;
+static int DRIFT_RSSI;
+static int RSSI_WEIGHT_PARAMETER;
 
 Memory_Pool hash_table_row_mempool;
 Memory_Pool mac_address_mempool;
@@ -88,7 +97,7 @@ int equal_string(void * a, void * b);
 void destroy_nop(void * a);
 
 // Function for server
-void initial_area_table(void);
+void initial_area_table(int rssi_weight_parameter,int drift_distance,int drift_rssi);
 
 HashTable * hash_table_of_specific_area_id(char* area_id);
 

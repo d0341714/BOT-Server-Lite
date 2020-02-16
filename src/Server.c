@@ -107,9 +107,8 @@ int main(int argc, char **argv)
 
     zlog_info(category_debug,"Start Server");
 
-    zlog_info(category_debug,"Mempool Initializing");
+    zlog_info(category_debug,"Mempool Initializing");	
 	
-	initial_area_table();
     /* Initialize the memory pool for buffer nodes */
     if(MEMORY_POOL_SUCCESS != mp_init( &node_mempool, 
                                        sizeof(BufferNode), 
@@ -172,7 +171,9 @@ int main(int argc, char **argv)
     }
 
     zlog_info(category_debug,"Initialize buffer lists");
-
+	
+	//initial parameter in HashTable.c
+	initial_area_table(config.rssi_weight_parameter ,config.drift_distance ,config.drift_rssi);
     /* Initialize the address map*/
     init_Address_Map( &Gateway_address_map);
 
@@ -836,6 +837,24 @@ ErrorCode get_server_config(ServerConfig *config,
     strcpy(config->SMS_message_template, config_message);
     zlog_info(category_debug, "SMS_message_template = [%s]",
               config->SMS_message_template);
+			  
+	fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->rssi_weight_parameter = atoi(config_message);
+    zlog_info(category_debug,
+              "The rssi_weight_parameter is [%d]", 
+              config->rssi_weight_parameter);
+			  
+	fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->drift_distance = atoi(config_message);
+    zlog_info(category_debug,
+              "The drift_distance is [%d]", 
+              config->drift_distance);
+			  
+	fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->drift_rssi = atoi(config_message);
+    zlog_info(category_debug,
+              "The drift_rssi is [%d]", 
+              config->drift_rssi);
        
     zlog_info(category_debug, "notification list initialized");
 

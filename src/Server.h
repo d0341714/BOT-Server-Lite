@@ -257,6 +257,13 @@ typedef struct {
 
     /* The SMS notification message template */
     char SMS_message_template[WIFI_MESSAGE_LENGTH];
+	
+	int rssi_weight_parameter;
+	
+	int drift_distance;
+	
+	int drift_rssi;	
+	
 
 } ServerConfig;
 

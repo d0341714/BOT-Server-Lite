@@ -198,10 +198,13 @@ void destroy_nop(void * a) {
 /*
 initial area table
 */
-void initial_area_table(void){
+void initial_area_table(int rssi_weight_parameter,int drift_distance,int drift_rssi){
 	
 	int i;
-	zlog_debug(category_debug,">>initial_area_table");	
+	zlog_debug(category_debug,">>initial_area_table");
+	DRIFT_DISTANCE = drift_distance;
+	DRIFT_RSSI = drift_rssi;
+	RSSI_WEIGHT_PARAMETER = rssi_weight_parameter;
 	if(MEMORY_POOL_SUCCESS != mp_init( &hash_table_row_mempool, 
                                        sizeof(hash_table_row), 
                                        SLOTS_IN_MEM_POOL_HASH_TABLE_ROW))
@@ -255,7 +258,7 @@ HashTable * hash_table_of_specific_area_id(char* area_id){
 			return area_table[i].area_hash_ptr;
 		}
 	}
-	//不存在
+	//not exsist
 	h_table = hashtable_new_default(
 		equal_string, 
 		destroy_nop, 
@@ -266,7 +269,7 @@ HashTable * hash_table_of_specific_area_id(char* area_id){
 		
 		area_table[area_table_size].area_hash_ptr=h_table;
 		strcpy(area_table[area_table_size].area_id,area_id);
-		printf("new area hashtable %s",area_table[area_table_size].area_id);
+		
 		area_table_size++;
 	}else{
 		//resize
@@ -290,18 +293,13 @@ HashTable * hash_table_of_specific_area_id(char* area_id){
 	return h_table;
 }
 
-/*
-取代SQL_update_object_tracking_data
-*/
 ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
 	ErrorCode ret_val = WORK_SUCCESSFULLY;
     
     int num_types = 2; // BR_EDR and BLE types
     /**/
 	char temp_buf[WIFI_MESSAGE_LENGTH];
-	char *saveptr = NULL;
-	//int num_types = 2;
-	
+	char *saveptr = NULL;	
     char *lbeacon_uuid = NULL;
     char *lbeacon_ip = NULL;
     char *lbeacon_timestamp = NULL;
@@ -391,31 +389,28 @@ ErrorCode hashtable_update_object_tracking_data(char* buf,size_t buf_len){
     
     return WORK_SUCCESSFULLY;
 }
-/*
-改成計算weight?
 
-*/
 int rssi_weight(int * rssi_array,int k,int head){
 	
 	if(rssi_array[k]==0) return 0;
-	
+	//Ignore unreasonable rssi.
 	if((k+SIZE_OF_RSSI_ARRAY-1)%SIZE_OF_RSSI_ARRAY!=head)		
 		if(rssi_array[(k+SIZE_OF_RSSI_ARRAY-1)%SIZE_OF_RSSI_ARRAY]!=0)
 			if(abs(rssi_array[k]-rssi_array[(k+SIZE_OF_RSSI_ARRAY-1)%SIZE_OF_RSSI_ARRAY])>UNRESAONABLE_RSSI)
 				return 0;
 	
 	
-	
+	//Calculate weight
 	if(rssi_array[k]>-50)
-		return 32;
+		return pow(RSSI_WEIGHT_PARAMETER,5);
 	else if(rssi_array[k]>-60)
-		return 16;
+		return pow(RSSI_WEIGHT_PARAMETER,4);
 	else if(rssi_array[k]>-70)
-		return 8;
+		return pow(RSSI_WEIGHT_PARAMETER,3);
 	else if(rssi_array[k]>-80)
-		return 4;
+		return pow(RSSI_WEIGHT_PARAMETER,2);
 	else if(rssi_array[k]>-90)
-		return 2;
+		return pow(RSSI_WEIGHT_PARAMETER,1);
 	else if(rssi_array[k]>=-100)
 		return 1;
 	return 0;
@@ -609,14 +604,7 @@ void hashtable_go_through_for_get_summary(
 							,table_row->summary_uuid,table_row->battery,
 							table_row->initial_timestamp,table_row->final_timestamp,
 							table_row->average_rssi,table_row->panic_button);
-				printf("'%s' ", curr->key);
-				printf("summary:%s %s %s %s %d %s\n",
-							table_row->summary_uuid,table_row->battery,
-							table_row->initial_timestamp,table_row->final_timestamp,
-							table_row->average_rssi,table_row->panic_button);
-	
-				
-				
+								
 				//location history file
 				if(ready_for_location_history_table==1){
                     
@@ -790,7 +778,6 @@ void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head
 		hashtable_go_through_for_get_summary(
 			area_table[i].area_hash_ptr,db_connection_list_head,server_installation_path,
 			ready_for_location_history_table);
-		printf("-----------------------------------------\n");
 	}
 	
 }
@@ -806,8 +793,7 @@ void hashtable_go_through_for_get_location_history(
 		zlog_debug(category_debug,"hashtable_go_through_for_get_location_history:area table id %s",area_table[i].area_id);				
 		hashtable_go_through_for_get_summary(
 			area_table[i].area_hash_ptr,db_connection_list_head,server_installation_path,
-			ready_for_location_history_table);
-		printf("------x-------------x------------x------\n");
+			ready_for_location_history_table);		
 	}/**/
 }
 	
