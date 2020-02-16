@@ -78,33 +78,10 @@ HashTable * hashtable_new_default(
 	DeleteData deleteValue
 );
 
-// frees memory for all keys, values and table its self. 
-void hashtable_delete(HashTable * h_table);
 
-// Iterates through all keys and values in the hashtable
-void hashtable_iterate(HashTable * h_table, IteratorCallback callback);
-
-//
-void hashtable_go_through_panic(HashTable * h_table);
-
-
-
-
-
-// Adds entry to hashtable. If entry already exists for given key, value is replaced with new value. 
-void hashtable_put(HashTable * h_table, void * key, size_t key_len, void * value, size_t value_len);
-
-// Gets value for key. If no entry exists, returns NULL
-void * hashtable_get(HashTable * h_table, void * key, size_t key_len);
-
-// Removes entry with given key. If no entry exists, does nothing.
-void hashtable_remove(HashTable * h_table, void * key, size_t key_len);
 
 // Checks whether an entry with given key exists in hashtable.
 int hashtable_key_exists(HashTable * h_table, void * key, size_t key_len);
-
-// Prints hashtable in user readable format. Interprets key as string and prints value as pointer. If you are not using string keys, you should create your own print function using the hashtable_iterate() function. 
-void hashtable_print(HashTable * h_table);
 
 int equal_string(void * a, void * b);
 
@@ -121,7 +98,8 @@ int rssi_weight(int * rssi_array,int k,int head);
 
 void hashtable_go_through_for_summarize(HashTable * h_table);
 
-void hashtable_go_through_for_get_summary(HashTable * h_table,DBConnectionListHead *db_connection_list_head,
+void hashtable_go_through_for_get_summary(HashTable * h_table,
+											DBConnectionListHead *db_connection_list_head,
 											char *server_installation_path,int ready_for_location_history_table);
 
 void hashtable_put_mac_table(
@@ -130,8 +108,9 @@ void hashtable_put_mac_table(
 	DataForHashtable * value, size_t value_len);
 	
 
-void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head,char *server_installation_path);
+void upload_hashtable_for_all_area(DBConnectionListHead *db_connection_list_head,
+char *server_installation_path);
 
-void hashtable_go_through_for_get_location_history(DBConnectionListHead *db_connection_list_head,
-													char *server_installation_path);
+void hashtable_go_through_for_get_location_history(
+DBConnectionListHead *db_connection_list_head,char *server_installation_path);
 #endif

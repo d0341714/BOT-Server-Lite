@@ -1265,7 +1265,6 @@ void *Server_LBeacon_routine(void *_buffer_node)
                                             strlen(current_node -> content));
                                             */
         }else{
-			zlog_error(category_debug,">>hashtable_update_object_tracking_data");
 			hashtable_update_object_tracking_data(
 					current_node -> content,
 					strlen(current_node -> content)
@@ -1346,7 +1345,6 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
                                             strlen(current_node -> content));
                                             */
         }else{	
-		zlog_error(category_debug,">>hashtable_update_object_tracking_data");
 				hashtable_update_object_tracking_data(
 					current_node -> content,
 					strlen(current_node -> content)

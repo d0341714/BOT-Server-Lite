@@ -739,4 +739,8 @@ ErrorCode SQL_upload_hashtable_summarize(
 ErrorCode SQL_upload_location_history(
     DBConnectionListHead *db_connection_list_head,
     char* filename);
+	
+ErrorCode SQL_upload_panic(
+    DBConnectionListHead *db_connection_list_head,
+    char* object_mac_address);
 #endif
