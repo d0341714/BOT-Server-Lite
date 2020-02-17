@@ -263,7 +263,7 @@ ErrorCode SQL_vacuum_database(
     PGconn *db_conn = NULL;
     int db_serial_id = -1;
     ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char *table_name[] = {"tracking_table",
+    char *table_name[] = {"location_history_table",
                           "lbeacon_table",
                           "gateway_table",
                           "object_table",
@@ -326,7 +326,7 @@ ErrorCode SQL_delete_old_data(
                          "violation_timestamp < " \
                          "NOW() - INTERVAL \'%d HOURS\';";
     int idx = 0;
-    char *tsdb_table_name[] = {"tracking_table"};
+    char *tsdb_table_name[] = {"location_history_table"};
     char *sql_tsdb_template = "SELECT drop_chunks(interval \'%d HOURS\', " \
                               "\'%s\');";
     PGresult *res;
@@ -1004,483 +1004,6 @@ ErrorCode SQL_update_lbeacon_health_status(
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
-    DBConnectionListHead *db_connection_list_head,
-    char *buf,
-    size_t buf_len,
-    char *server_installation_path,
-    int is_enabled_panic_monitoring){
-
-    PGconn *db_conn = NULL;
-    int db_serial_id = -1;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-    char temp_buf[WIFI_MESSAGE_LENGTH];
-    char *saveptr = NULL;
-    int num_types = 2; // BR_EDR and BLE types
-    char *sql_bulk_insert_template = 
-                         "COPY " \
-                         "tracking_table " \
-                         "(object_mac_address, " \
-                         "lbeacon_uuid, " \
-                         "rssi, " \
-                         "panic_button, " \
-                         "battery_voltage, " \
-                         "initial_timestamp, " \
-                         "final_timestamp, " \
-                         "server_time_offset) " \
-                         "FROM " \
-                         "\'%s\' " \
-                         "DELIMITER \',\' CSV;";
-    
-    char *lbeacon_uuid = NULL;
-    char *lbeacon_ip = NULL;
-    char *lbeacon_timestamp = NULL;
-    char *object_type = NULL;
-    char *object_number = NULL;
-    int numbers = 0;
-    char *object_mac_address = NULL;
-    char *initial_timestamp_GMT = NULL;
-    char *final_timestamp_GMT = NULL;
-    char *rssi = NULL;
-    char *panic_button = NULL;
-    char *battery_voltage = NULL;
-    int current_time = get_system_time();
-    int lbeacon_timestamp_value;
-    char filename[MAX_PATH];
-    FILE *file = NULL;
-    time_t rawtime;
-    struct tm ts;
-    char buf_initial_time[80];
-    char buf_final_time[80];
-
-    char *sql_identify_panic = 
-        "UPDATE object_summary_table " \
-        "SET panic_violation_timestamp = NOW() " \
-        "FROM object_table " \
-        "WHERE object_summary_table.mac_address = %s " \
-        "AND object_summary_table.mac_address = object_table.mac_address " \
-        "AND object_table.monitor_type & %d = %d;";
-
-    char *pqescape_mac_address = NULL;
-
-   
-    /* Open temporary file with thread id as filename to prepare the tracking 
-       data for postgresql bulk-insertion */
-    memset(filename, 0, sizeof(filename));
-    sprintf(filename, "%s/temp/track_%d", 
-            server_installation_path, 
-            pthread_self());
-    
-    file = fopen(filename, "wt");
-    if(file == NULL){
-        zlog_error(category_debug, "cannot open filepath %s", filename);
-        return E_OPEN_FILE;
-    }
-
-    /* Parse the message buffer */
-    memset(temp_buf, 0, sizeof(temp_buf));
-    memcpy(temp_buf, buf, buf_len);
-
-    lbeacon_uuid = strtok_save(temp_buf, DELIMITER_SEMICOLON, &saveptr);
-    lbeacon_timestamp = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-    if(lbeacon_timestamp == NULL){
-        fclose(file);
-        return E_API_PROTOCOL_FORMAT;
-    }
-    lbeacon_timestamp_value = atoi(lbeacon_timestamp);
-    lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-    zlog_debug(category_debug, "lbeacon_uuid=[%s], lbeacon_timestamp=[%s], " \
-               "lbeacon_ip=[%s]", lbeacon_uuid, lbeacon_timestamp, lbeacon_ip);
-
-    while(num_types --){
-
-        object_type = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-        object_number = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-        zlog_debug(category_debug, "object_type=[%s], object_number=[%s]", 
-                   object_type, object_number);
-
-        if(object_number == NULL){
-            fclose(file);
-            return E_API_PROTOCOL_FORMAT;
-        }
-        numbers = atoi(object_number);
-
-        while(numbers--){
-
-            object_mac_address = 
-                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            initial_timestamp_GMT = 
-                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            final_timestamp_GMT = 
-                strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            rssi = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            panic_button = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-
-            if(panic_button != NULL && 1 == atoi(panic_button)){
-                
-                memset(sql, 0, sizeof(sql));
-                if(WORK_SUCCESSFULLY != 
-                   SQL_get_database_connection(db_connection_list_head, 
-                                               &db_conn, 
-                                               &db_serial_id)){
-
-                    zlog_error(category_debug,
-                               "cannot open database\n");
-
-                    continue;
-                }
-
-                pqescape_mac_address = 
-                    PQescapeLiteral(db_conn, object_mac_address, 
-                                    strlen(object_mac_address)); 
-   
-                sprintf(sql, sql_identify_panic, 
-                        pqescape_mac_address, 
-                        MONITOR_PANIC,
-                        MONITOR_PANIC);
-
-                PQfreemem(pqescape_mac_address);
-
-                ret_val = SQL_execute(db_conn, sql);
-
-                SQL_release_database_connection(
-                    db_connection_list_head, 
-                    db_serial_id);
-            }
-
-            battery_voltage = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-           
-            // Convert Unix epoch timestamp (since 1970-1-1) to 
-            // postgre timestamp (since 2000-1-1)
-            rawtime = atoi(initial_timestamp_GMT);
-            ts = *gmtime(&rawtime);
-            strftime(buf_initial_time, sizeof(buf_initial_time), 
-                     "%Y-%m-%d %H:%M:%S", &ts);
-            
-            rawtime = atoi(final_timestamp_GMT);
-            ts = *gmtime(&rawtime);
-            strftime(buf_final_time, sizeof(buf_final_time), 
-                     "%Y-%m-%d %H:%M:%S", &ts);
-                      
-            fprintf(file, "%s,%s,%s,%s,%s,%s,%s,%d\n",
-                    object_mac_address,
-                    lbeacon_uuid,
-                    rssi,
-                    panic_button,
-                    battery_voltage,
-                    buf_initial_time,
-                    buf_final_time,
-                    current_time - lbeacon_timestamp_value);
-        }
-    }
-    fclose(file);
-    
-    memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_bulk_insert_template, filename); 
-
-    if(WORK_SUCCESSFULLY != 
-       SQL_get_database_connection(db_connection_list_head, 
-                                   &db_conn, 
-                                   &db_serial_id)){
-        zlog_error(category_debug,
-                   "cannot open database\n");
-
-        return E_SQL_OPEN_DATABASE;
-    }
-
-    /* Execute SQL statement */
-    ret_val = SQL_execute(db_conn, sql);
-
-    SQL_release_database_connection(
-        db_connection_list_head, 
-        db_serial_id);
-
-    remove(filename);
-
-    if(WORK_SUCCESSFULLY != ret_val){
-        return E_SQL_EXECUTE;
-    }
-
-    return WORK_SUCCESSFULLY;
-}
-
-ErrorCode SQL_summarize_object_location(
-    DBConnectionListHead *db_connection_list_head,
-    int database_pre_filter_time_window_in_sec,
-    int time_interval_in_sec,
-    int rssi_difference_of_location_accuracy_tolerance,
-    int base_location_tolerance_in_millimeter){
-
-    PGconn *db_conn = NULL;
-    int db_serial_id = -1;
-    ErrorCode ret_val = WORK_SUCCESSFULLY;
-    char sql[SQL_TEMP_BUFFER_LENGTH];
-
-    char *sql_reset_state_template = 
-        "UPDATE object_summary_table "\
-        "SET is_location_updated = 0 " \
-        "WHERE id > 0";
-
-    char *sql_update_stable_tag_template = 
-        "UPDATE object_summary_table " \
-        "SET " \
-        "rssi = avg_rssi, last_seen_timestamp = final_timestamp, " \
-        "battery_voltage = stable_table.battery_voltage, " \
-        "is_location_updated = 1 " \
-        "FROM ( " \
-        "SELECT mac_address, uuid, avg_rssi, final_timestamp, " \
-        "recent_table.battery_voltage " \
-        "FROM " \
-        "object_summary_table " \
-        "INNER JOIN " \
-        "(SELECT object_mac_address, " \
-        "lbeacon_uuid, " \
-        "ROUND(AVG(rssi), 0) as avg_rssi, " \
-        "MAX(final_timestamp) as final_timestamp, " \
-        "MIN(battery_voltage) as battery_voltage " \
-        "FROM " \
-        "tracking_table " \
-        "WHERE " \
-        "final_timestamp > NOW() - interval '%d seconds' AND " \
-        "final_timestamp >= NOW() - (server_time_offset|| 'seconds')::INTERVAL - " \
-        "INTERVAL '%d seconds' " \
-        "GROUP BY object_mac_address, lbeacon_uuid " \
-        ") recent_table " \
-        "ON object_summary_table.mac_address = recent_table.object_mac_address AND " \
-        "object_summary_table.uuid = recent_table.lbeacon_uuid " \
-        "INNER JOIN " \
-        "(SELECT * " \
-        "FROM " \
-        "(SELECT " \
-        "ROW_NUMBER() OVER ( " \
-        "PARTITION BY object_mac_address " \
-        "ORDER BY object_mac_address ASC, average_rssi DESC " \
-        ") as rank, " \
-        "object_beacon_rssi_table.* " \
-        "FROM " \
-        "( SELECT " \
-        "t.object_mac_address, t.lbeacon_uuid, ROUND(AVG(rssi), 0) as average_rssi " \
-        "FROM " \
-        "tracking_table t "\
-        "WHERE " \
-        "final_timestamp >= NOW() - INTERVAL '%d seconds' AND " \
-        "final_timestamp >= NOW() - (server_time_offset || 'seconds')::INTERVAL - " \
-        "INTERVAL '%d seconds' " \
-        "GROUP BY " \
-        "object_mac_address, " \
-        "lbeacon_uuid " \
-        "HAVING AVG(rssi) > -100 " \
-        "ORDER BY " \
-        "object_mac_address ASC, " \
-        "average_rssi DESC, " \
-        "lbeacon_uuid ASC " \
-        ") object_beacon_rssi_table " \
-        ") object_location_table " \
-        "WHERE object_location_table.rank <= 1 " \
-	    ") location_information " \
-        "ON recent_table.object_mac_address = location_information.object_mac_address AND " \
-        "ABS(recent_table.avg_rssi - location_information.average_rssi) < %d " \
-        ") stable_table where object_summary_table.mac_address = stable_table.mac_address AND " \
-        "object_summary_table.uuid = stable_table.uuid; ";
-        
-    char *sql_update_moving_tag_template = 
-        "UPDATE object_summary_table " \
-        "SET " \
-        "first_seen_timestamp = CASE " \
-        "WHEN first_seen_timestamp IS NULL OR " \
-        "object_summary_table.uuid != location_information.lbeacon_uuid " \
-        "THEN " \
-        "location_information.initial_timestamp " \
-        "ELSE first_seen_timestamp " \
-        "END, " \
-        "rssi = location_information.avg_rssi, " \
-        "battery_voltage = location_information.battery_voltage, " \
-        "last_seen_timestamp = location_information.final_timestamp, " \
-        "uuid = location_information.lbeacon_uuid, " \
-        "is_location_updated = 1 " \
-        "FROM " \
-        "(SELECT " \
-        "object_mac_address, " \
-        "lbeacon_uuid, " \
-        "avg_rssi, " \
-        "battery_voltage, " \
-        "initial_timestamp, " \
-        "final_timestamp " \
-        "FROM " \
-        "(SELECT " \
-        "ROW_NUMBER() OVER (" \
-        "PARTITION BY object_mac_address " \
-        "ORDER BY object_mac_address ASC, avg_rssi DESC" \
-        ") as rank, " \
-        "object_beacon_rssi_table.* " \
-        "FROM "\
-        "(SELECT " \
-        "t.object_mac_address, " \
-        "t.lbeacon_uuid, " \
-        "ROUND(AVG(rssi), 0) as avg_rssi, " \
-        "MIN(battery_voltage) as battery_voltage, " \
-        "MIN(initial_timestamp) as initial_timestamp, " \
-        "MAX(final_timestamp) as final_timestamp " \
-        "FROM " \
-        "tracking_table t " \
-        "WHERE " \
-        "final_timestamp >= NOW() - INTERVAL '%d seconds' AND " \
-        "final_timestamp >= NOW() - (server_time_offset || 'seconds')::INTERVAL - " \
-        "INTERVAL '%d seconds' " \
-        "GROUP BY " \
-        "object_mac_address, " \
-        "lbeacon_uuid " \
-        "HAVING AVG(rssi) > -100 " \
-        "ORDER BY " \
-        "object_mac_address ASC, " \
-        "avg_rssi DESC, " \
-        "lbeacon_uuid ASC" \
-        ") object_beacon_rssi_table " \
-        ") object_location_table " \
-        "WHERE " \
-        "object_location_table.rank <= 1 " \
-        ") location_information " \
-        "WHERE " \
-        "object_summary_table.mac_address = " \
-        "location_information.object_mac_address AND " \
-		"object_summary_table.is_location_updated = 0;";
-		
-	char *sql_update_tag_base_location_template = 
-	    "UPDATE object_summary_table "\
-        "SET " \
-        "base_x = tag_new_base.base_x, " \
-	    "base_y = tag_new_base.base_y " \
-        "FROM " \
-        "(SELECT " \
-        "object_mac_address, " \
-        "ROUND(SUM(coordinate_x*weight)/SUM(weight),0) as base_x, " \
-        "ROUND(SUM(coordinate_y*weight)/SUM(weight),0) as base_y " \
-        "FROM " \
-        "(SELECT " \
-	    "object_mac_address, " \
-        "lbeacon_uuid, " \
-	    "ROUND(AVG(rssi),0) as average_rssi, " \
-        "(SELECT weight from rssi_weight_table " \
-        "WHERE avg(rssi) >= bottom_rssi AND avg(rssi) < upper_rssi LIMIT 1) " \
-        "AS weight " \
-        "FROM tracking_table " \
-        "WHERE " \
-        "final_timestamp > NOW() - interval '%d seconds' AND " \
-        "final_timestamp >= NOW() - (server_time_offset || 'seconds')::INTERVAL - " \
-        "INTERVAL '%d seconds' " \
-        "GROUP BY object_mac_address, lbeacon_uuid " \
-        "HAVING avg(rssi) >  -100" \
-        "ORDER BY object_mac_address, lbeacon_uuid, average_rssi DESC " \
-        ") beacon_rssi_table " \
-        "INNER JOIN " \
-        "lbeacon_table " \
-        "ON beacon_rssi_table.lbeacon_uuid = lbeacon_table.uuid " \
-        "GROUP BY object_mac_address) tag_new_base " \
-        "WHERE object_summary_table.mac_address = tag_new_base.object_mac_address " \
-        "AND " \
-        "(" \
-        "object_summary_table.base_x IS NULL " \
-        "OR " \
-        "object_summary_table.base_y IS NULL " \
-        "OR " \
-        "(ABS(object_summary_table.base_x - tag_new_base.base_x) >= %d) " \
-        "OR " \
-        "(ABS(object_summary_table.base_y - tag_new_base.base_y) >= %d) " \
-        ")";
-
-    memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_reset_state_template);
-
-    if(WORK_SUCCESSFULLY != 
-       SQL_get_database_connection(db_connection_list_head, 
-                                   &db_conn, 
-                                   &db_serial_id)){
-        zlog_error(category_debug,
-                   "cannot open database\n");
-
-        return E_SQL_OPEN_DATABASE;
-    }
-
-    ret_val = SQL_execute(db_conn, sql);
-
-    /* Update stable tags */
-    memset(sql, 0, sizeof(sql));
-
-    sprintf(sql, sql_update_stable_tag_template,
-            database_pre_filter_time_window_in_sec,
-            time_interval_in_sec,
-            database_pre_filter_time_window_in_sec,
-            time_interval_in_sec,
-            rssi_difference_of_location_accuracy_tolerance);
-  
-    ret_val = SQL_execute(db_conn, sql);
-
-    if(WORK_SUCCESSFULLY != ret_val){
-        zlog_error(category_debug, "SQL_execute failed [%d]: %s",
-                   ret_val, PQerrorMessage(db_conn));
-
-        SQL_release_database_connection(
-            db_connection_list_head,
-            db_serial_id);
-
-        return E_SQL_EXECUTE;
-    }
-
-    /* Update moving tags */
-    memset(sql, 0, sizeof(sql));
-
-    sprintf(sql, sql_update_moving_tag_template, 
-            database_pre_filter_time_window_in_sec, 
-            time_interval_in_sec);
-  
-    ret_val = SQL_execute(db_conn, sql);
-    if(WORK_SUCCESSFULLY != ret_val){
-        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   ret_val, PQerrorMessage(db_conn));
-
-        SQL_release_database_connection(
-            db_connection_list_head,
-            db_serial_id);
-
-        return E_SQL_EXECUTE;
-    }
-	
-	/* Update base location of tags */
-    memset(sql, 0, sizeof(sql));
-
-    sprintf(sql, sql_update_tag_base_location_template, 
-            database_pre_filter_time_window_in_sec, 
-            time_interval_in_sec,
-            base_location_tolerance_in_millimeter,
-            base_location_tolerance_in_millimeter);
-  
-    ret_val = SQL_execute(db_conn, sql);
-    if(WORK_SUCCESSFULLY != ret_val){
-        zlog_error(category_debug, "SQL_execute failed [%d]: %s", 
-                   ret_val, PQerrorMessage(db_conn));
-
-        SQL_release_database_connection(
-            db_connection_list_head,
-            db_serial_id);
-
-        return E_SQL_EXECUTE;
-    }
-
-    SQL_release_database_connection(
-        db_connection_list_head,
-        db_serial_id);
-    
-    return WORK_SUCCESSFULLY;
-}
-
 ErrorCode SQL_identify_geofence_violation(
     DBConnectionListHead *db_connection_list_head,
     char *mac_address){
@@ -1733,12 +1256,12 @@ ErrorCode SQL_identify_last_movement_status(
         "SELECT time_slot, avg_rssi, avg_rssi - LAG(avg_rssi) " \
         "OVER (ORDER BY time_slot) as diff " \
         "FROM ( " \
-        "SELECT TIME_BUCKET('%d minutes', final_timestamp) as time_slot, " \
-        "AVG(rssi) as avg_rssi " \
-        "FROM tracking_table where " \
-        "final_timestamp > NOW() - INTERVAL '%d minutes' " \
-        "AND lbeacon_uuid = %s " \
-        "AND object_mac_address = %s " \
+        "SELECT TIME_BUCKET('%d minutes', record_timestamp) as time_slot, " \
+        "AVG(average_rssi) as avg_rssi " \
+        "FROM location_history_table where " \
+        "record_timestamp > NOW() - INTERVAL '%d minutes' " \
+        "AND uuid = %s " \
+        "AND mac_address = %s " \
         "GROUP BY time_slot" \
         ") " \
         "AS temp_time_slot_table )" \
@@ -2414,4 +1937,252 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(
 
     return WORK_SUCCESSFULLY;
 
+}
+
+ErrorCode SQL_upload_hashtable_summarize(
+    DBConnectionListHead *db_connection_list_head,
+    char* filename){
+		
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];	
+    char *sql_create_temp_table=
+        "CREATE TEMP TABLE updates_table " \
+        "( " \
+        "uuid uuid , " \
+        "rssi integer , " \
+        "first_seen_timestamp timestamp with time zone , " \
+        "last_seen_timestamp timestamp with time zone , " \
+        "battery_voltage smallint , " \
+        "base_x bigint , " \
+        "base_y bigint , " \
+        "mac_address macaddr not null primary key " \
+        "); ";
+	 
+    char* sql_bulk_insert=
+        "COPY updates_table " \
+        "( " \
+        "uuid , " \
+        "rssi , " \
+        "battery_voltage , " \
+        "first_seen_timestamp , " \
+        "last_seen_timestamp , " \
+        "base_x , " \
+        "base_y , " \
+        "mac_address)" \
+        "FROM " \
+        "\'%s\' " \
+        "DELIMITER \',\' CSV; ";
+			 
+    char* sql_update=
+        "UPDATE object_summary_table s " \
+        "SET ( " \
+        "uuid , " \
+        "rssi , " \
+        "battery_voltage , " \
+        "first_seen_timestamp , " \
+        "last_seen_timestamp , " \
+        "base_x , " \
+        "base_y  " \
+        ") = (" \
+        "t.uuid , " \
+        "t.rssi , " \
+        "t.battery_voltage , " \
+        "t.first_seen_timestamp , " \
+        "t.last_seen_timestamp , " \
+        "t.base_x , " \
+        "t.base_y  ) " \
+        "FROM updates_table t " \
+        "WHERE s.mac_address = t.mac_address; ";
+			 
+    char* drop_temp=
+        "DROP TABLE updates_table; ";
+	
+	
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot open database\n");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+	
+    // begin transaction
+    SQL_begin_transaction(db_conn);
+	
+    // create temp table updates_table
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_create_temp_table);
+    ret_val = SQL_execute(db_conn, sql);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        remove(filename);
+        SQL_rollback_transaction(db_conn);
+
+        SQL_release_database_connection(
+            db_connection_list_head, 
+            db_serial_id);
+
+        return E_SQL_EXECUTE;
+    }
+	
+    // bulk-insert location information to temp table
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_bulk_insert, filename);
+    ret_val = SQL_execute(db_conn, sql);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        remove(filename);
+        SQL_rollback_transaction(db_conn);
+
+        SQL_release_database_connection(
+            db_connection_list_head, 
+            db_serial_id);
+        return E_SQL_EXECUTE;
+    }
+
+    // use temp table to update object_summary_table
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_update);
+    ret_val = SQL_execute(db_conn, sql);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        remove(filename);
+        SQL_rollback_transaction(db_conn);
+
+        SQL_release_database_connection(
+            db_connection_list_head, 
+            db_serial_id);
+        return E_SQL_EXECUTE;
+    }
+
+    // drop temp table
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, drop_temp);
+    ret_val = SQL_execute(db_conn, sql);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        remove(filename);
+        SQL_rollback_transaction(db_conn);
+
+        SQL_release_database_connection(
+            db_connection_list_head, 
+            db_serial_id);
+        return E_SQL_EXECUTE;
+    }
+
+    // commit transaction
+    SQL_commit_transaction(db_conn);
+
+    SQL_release_database_connection(
+        db_connection_list_head, 
+        db_serial_id);
+
+    remove(filename);
+
+	return WORK_SUCCESSFULLY;	
+}
+	
+ErrorCode SQL_upload_location_history(
+    DBConnectionListHead *db_connection_list_head,
+    char* filename){
+
+    char* sql_template_for_history_table=
+        "COPY " \
+        "location_history_table " \
+        "(mac_address , " \
+        "uuid , " \
+        "record_timestamp , " \
+        "battery_voltage , " \
+        "average_rssi , " \
+        "base_x , " \
+        "base_y) " \
+        "FROM " \
+        "\'%s\' " \
+        "DELIMITER \',\' CSV; ";
+
+    PGconn *db_conn = NULL;
+    int db_serial_id = -1;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+	
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot open database\n");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+
+    /* Execute SQL statement */
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template_for_history_table, filename);
+    ret_val = SQL_execute(db_conn, sql);
+	
+    SQL_release_database_connection(
+        db_connection_list_head, 
+        db_serial_id);
+
+    remove(filename);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        return E_SQL_EXECUTE;
+    }
+	
+    return WORK_SUCCESSFULLY;
+}
+
+ErrorCode SQL_upload_panic(
+    DBConnectionListHead *db_connection_list_head,
+    char* object_mac_address){
+
+    char* sql_template_for_history_table=
+        "UPDATE object_summary_table " \
+        "SET panic_violation_timestamp = NOW() " \
+        "WHERE object_summary_table.mac_address = %s; ";
+
+    PGconn *db_conn = NULL;
+    char* pqescape_mac_address = NULL;
+    int db_serial_id = -1;
+    ErrorCode ret_val = WORK_SUCCESSFULLY;
+    char sql[SQL_TEMP_BUFFER_LENGTH];
+	
+
+    if(WORK_SUCCESSFULLY != 
+       SQL_get_database_connection(db_connection_list_head, 
+                                   &db_conn, 
+                                   &db_serial_id)){
+        zlog_error(category_debug,
+                   "cannot open database\n");
+
+        return E_SQL_OPEN_DATABASE;
+    }
+	
+    pqescape_mac_address = 
+        PQescapeLiteral(db_conn, object_mac_address, 
+                        strlen(object_mac_address));
+
+    /* Execute SQL statement */
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, sql_template_for_history_table, pqescape_mac_address);
+	
+    PQfreemem(pqescape_mac_address);
+
+    ret_val = SQL_execute(db_conn, sql);
+
+    SQL_release_database_connection(
+        db_connection_list_head, 
+        db_serial_id);
+
+    if(WORK_SUCCESSFULLY != ret_val){
+        return E_SQL_EXECUTE;
+    }
+	
+	return WORK_SUCCESSFULLY;
 }

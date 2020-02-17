@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20191002
+     1.0, 20200217
 
   Abstract:
 
@@ -37,6 +37,7 @@
   Authors:
 
      Chun-Yu Lai   , chunyu1202@gmail.com
+     Helen Huang   , helenhuang5566@gmail.com 
  */
 
 #ifndef SQL_WRAPPER_H
@@ -434,89 +435,6 @@ ErrorCode SQL_update_lbeacon_health_status(
     char *gateway_ip_address);
 
 /*
-  SQL_update_object_tracking_data
-
-     Updates _battery_voltage_in data of tracked objects
-
-  Parameter:
-
-     db_connection_list_head - the list head of database connection pool
-
-     buf - a pointer to an input string with the format below.
-
-           lbeacon_uuid;lbeacon_datetime;lbeacon_ip;object_type; \
-           object_number;object_mac_address_1;initial_timestamp_GMT_1; \
-           final_timestamp_GMT_1;rssi_1;push_button_1;battery_voltage_1; \
-           object_type;object_number;object_mac_address_2; \
-           initial_timestamp_GMT_2;final_timestamp_GMT_2;rssi_2;push_button_2; \
-           battery_voltage_2;
-
-     buf_len - Length in number of bytes of buf input string
-
-     server_installation_path - the absolute file path of server installation path
-
-     is_enabled_panic_monitoring - the flag indicating whether panic monitoring is
-                                   enabled
-
-  Return Value:
-
-     ErrorCode - indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-
-ErrorCode SQL_update_object_tracking_data_with_battery_voltage(
-    DBConnectionListHead *db_connection_list_head,
-    char *buf,
-    size_t buf_len,
-    char *server_installation_path,
-    int is_enabled_panic_monitoring);
-
-/*
-  SQL_summarize_object_location
-
-     This function queries tracking_table (Time-Series database) within time 
-     window to find out the lbeacon_uuid of Lbeacons with the strongest RSSI 
-     value for each object mac_address. It is also responsible for maintaining 
-     the first seen timestamp and last seen timestamp of the object mac_address 
-     and lbeacon_uuid pair. The summary information is updated to the summary 
-     table object_summary_table.
-
-  Parameter:
-
-     db_connection_list_head - the list head of database connection pool
-
-     database_pre_filter_time_window_in_sec - 
-         The length of time window in which tracked data is filtered to limit 
-         database processing time
-                                           
-     time_interval_in_sec - the time window in which we treat this object been
-                            seen and visiable by BOT system
-
-     rssi_difference_of_location_accuracy_tolerance - the RSSI difference in 
-                                                      which the tag is still 
-                                                      treated as scanned by the 
-                                                      strongest and nearest 
-                                                      lbeacon
-
-     base_location_tolerance_in_millimeter - the location tolerance within 
-                                             this distance the tag is treated
-                                             as not moved
-
-  Return Value:
-
-     ErrorCode - Indicate the result of execution, the expected return code
-                 is WORK_SUCCESSFULLY.
-*/
-
-ErrorCode SQL_summarize_object_location(
-    DBConnectionListHead *db_connection_list_head, 
-    int database_pre_filter_time_window_in_sec,
-    int time_interval_in_sec,
-    int rssi_difference_of_location_accuracy_tolerance,
-    int base_location_tolerance_in_millimeter);
-
-
-/*
   SQL_identify_geofence_violation
 
      This function updates geo-fence violation information in 
@@ -582,8 +500,8 @@ ErrorCode SQL_identify_location_long_stay_in_danger(
 
      This function uses each pair of object mac_address and lbeacon_uuid from
      the summary table object_summary_table to check the activity status 
-     records stored in tracking_table (Time-Series database). It uses the 
-     features called TIME_BUCKET and Delta provided by timescaleDB (TSDB) to
+     records stored in location_history_table (Time-Series database). It uses 
+     the features called TIME_BUCKET and Delta provided by timescaleDB (TSDB) to
      identify the activity status. The activity status is updated to the 
      object_summary_table.
 
@@ -732,4 +650,71 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(
     DBConnectionListHead *db_connection_list_head,
     char *filename);
 
+/*
+  SQL_upload_hashtable_summarize
+
+     This function uploads location information of all objects to database
+     object_summary_table. Information in the object_summary_table is used 
+     as the lastest location of objects.
+
+  Parameter:
+
+     db_connection_list_head - the list head of database connection pool
+
+     filename - the specified file name containing location information of 
+                objects
+     
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_upload_hashtable_summarize(
+    DBConnectionListHead *db_connection_list_head,
+    char* filename);
+
+/*
+  SQL_upload_location_history
+
+     This function uploads location informatino of all objects to database
+     location_history_table. Information in the location_history_table is used 
+     by GUI to display tracking path of objects.
+
+  Parameter:
+
+     db_connection_list_head - the list head of database connection pool
+
+     filename - the specified file name containing location information of 
+                objects
+     
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_upload_location_history(
+    DBConnectionListHead *db_connection_list_head,
+    char* filename);
+
+/*
+  SQL_upload_panic
+
+     This function updates the panic_violation_timestamp information of the
+     entity with the mac_address as the input object_mac_address in the 
+     object_summary_table.
+
+  Parameter:
+
+     db_connection_list_head - the list head of database connection pool
+
+     object_mac_address - the specified mac_address of the input object
+     
+  Return Value:
+
+     ErrorCode - indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY
+*/
+ErrorCode SQL_upload_panic(
+    DBConnectionListHead *db_connection_list_head,
+    char* object_mac_address);
 #endif

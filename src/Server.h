@@ -21,7 +21,7 @@
 
   Version:
 
-     1.0, 20191002
+     1.0, 20200217
 
   Abstract:
 
@@ -40,6 +40,7 @@
      Ray Chao     , raychao5566@gmail.com
      Gary Xiao    , garyh0205@hotmail.com
      Chun-Yu Lai  , chunyu1202@gmail.com
+     Helen Huang  , helenhuang5566@gmail.com 
 
  */
 
@@ -51,6 +52,7 @@
 #include "BeDIS.h"
 #include "SqlWrapper.h"
 #include "GeoFence.h"
+#include "HashTable.h"
 
 /* When debugging is needed */
 //#define debugging
@@ -178,16 +180,9 @@ typedef struct {
     /* The list head of the database connection pool */
     DBConnectionListHead db_connection_list_head;
 
-    /* The length of time window which server applies to each SQL query when it 
-       queries tracked data from time-series database. The purpose of this 
-       condition is to guarantee the database response time is predicatble and 
-       make database not to access all records.
-    */
-    int database_pre_filter_time_window_in_sec;
-
-    /* The length of the time window in which each object is shown and 
-       made visiable to BOT system. */
-    int location_time_interval_in_sec;
+    /* The abnormal rssi signal strengh change value. The dramatically rssi 
+    signal strengh change will be ignored.*/
+    int unreasonable_rssi_change;
 
     /* The RSSI difference in which the tag is still treated as scanned by
     the strongest and nearest lbeacon*/
@@ -196,6 +191,13 @@ typedef struct {
     /* The distance tolerance within which the tag is treated as stable
     and its coordinate x and y will not be updated on map. */
     int base_location_tolerance_in_millimeter;
+
+    /* The multiplier used to calcuate the centroid of all scanned lbeacons*/
+    int rssi_weight_multiplier;
+
+    /* The time period in which location information of objects are uploaded 
+    to time-series database base */
+    int time_to_upload_history_location_in_sec;
 
     /* The flag indicating whether panic button monitor is enabled. */
     int is_enabled_panic_button_monitor;
@@ -498,24 +500,6 @@ void *Server_process_wifi_send(void *_buffer_node);
 void *Server_process_wifi_receive();
 
 /*
-  Server_summarize_location_information:
-
-     This function checks if it is time to summarize location information of 
-     objects. If YES, it triggers SQL wrapper functions to summarize the 
-     information.
-
-  Parameters:
-
-     None
-
-  Return value:
-
-     None
- */
-
-void *Server_summarize_location_information(); 
-
-/*
   Server_monitor_object_violations:
 
      This function triggers SQL wrapper functions to check if objects violates
@@ -620,12 +604,51 @@ void send_notification_alarm_to_gateway();
 
   Return value:
 
-     ErrorCode
+     ErrorCode - Indicate the result of execution, the expected return code
+                 is WORK_SUCCESSFULLY.
 
  */
 
 ErrorCode add_notification_to_the_notification_list(
     struct List_Entry * notification_list_head,
     char *buf);
+
+/*
+  upload_all_hashtable:
+
+     This function invokes sub-function periodically to upload location 
+     information to database table object_summary_table. BOT GUI uses 
+     information in this table to display location pin on web page.
+
+  Parameters:
+
+     None
+
+  Return value:
+
+     None
+
+ */
+
+void* upload_all_hashtable(void);
+
+/*
+  upload_location_history:
+
+     This function invokes sub-function periodically to upload location 
+     information to database table location_history_table. BOT GUI uses 
+     information in this table to display tracking path feature.
+
+  Parameters:
+
+     None
+
+  Return value:
+
+     None
+
+ */
+
+void* upload_location_history(void);
 
 #endif

@@ -22,7 +22,7 @@
 
   Version:
 
-     1.0, 20191002
+     1.0, 20200217
 
   Abstract:
 
@@ -42,6 +42,8 @@
      Ray Chao       , raychao5566@gmail.com
      Gary Xiao      , garyh0205@hotmail.com
      Chun-Yu Lai    , chunyu1202@gmail.com
+     Helen Huang    , helenhuang5566@gmail.com 
+
  */
 
 #include <winsock2.h>
@@ -63,9 +65,6 @@ int main(int argc, char **argv)
     /* The thread of database maintenance */
     pthread_t database_maintenance_thread;
 
-    /* The thread for summarizing location information */
-    pthread_t location_information_thread;
-
     /* The thread for monitoring object violations */
     pthread_t monitor_object_violation_thread;
 
@@ -78,15 +77,24 @@ int main(int argc, char **argv)
     /* The thread for sending notification */
     pthread_t send_notification_thread;
 
-    /* The thread to listen for messages from Wi-Fi interface */
+    /* The thread for listening to messages from Wi-Fi interface */
     pthread_t wifi_listener_thread;
+	
+    /* The thread for uploading location information of objects from hashtable 
+    to database object_summary_table. This information is for GUI to display
+    location pin. */
+	pthread_t upload_all_hashtable_thread;
 
+    /* The thread for uploading location information of objects from hashtable
+    to database location_history_table. This information is for GUI to display 
+    tracking path of one selected object. */
+	pthread_t upload_location_history_thread;
+	
     /* Initialize flags */
     NSI_initialization_complete      = false;
     CommUnit_initialization_complete = false;
     initialization_failed            = false;
     ready_to_work                    = true;
-
 
     /* Initialize zlog */
     if(zlog_init(ZLOG_CONFIG_FILE_NAME) == 0)
@@ -168,8 +176,13 @@ int main(int argc, char **argv)
     }
 
     zlog_info(category_debug,"Initialize buffer lists");
+	
+	//initial each hashtable for all covered areas
+    initial_area_table(config.rssi_weight_multiplier,
+                       config.base_location_tolerance_in_millimeter, 
+                       config.rssi_difference_of_location_accuracy_tolerance);
 
-    /* Initialize the address map*/
+    /* Initialize the address map */
     init_Address_Map( &Gateway_address_map);
 
     /* Initialize buffer_list_heads and add to the head in to the priority 
@@ -326,20 +339,6 @@ int main(int argc, char **argv)
         return return_value;
     }
 
-    /* Create thread to summarize location information */
-    return_value = startThread( &location_information_thread, 
-                                Server_summarize_location_information, 
-                                NULL);
-
-    if(return_value != WORK_SUCCESSFULLY)
-    {
-        zlog_error(category_health_report, 
-                   "Server_summarize_location_information fail");
-        zlog_error(category_debug, 
-                   "Server_summarize_location_information fail");
-        return return_value;
-    }
-
     /* Create thread to monitor object violations */
     return_value = startThread( &monitor_object_violation_thread, 
                                 Server_monitor_object_violations, 
@@ -395,7 +394,33 @@ int main(int argc, char **argv)
                    "Server_send_notification fail");
         return return_value;
     }
+	
+	return_value = startThread( &upload_all_hashtable_thread, 
+                                upload_all_hashtable, 
+                                NULL);
 
+    if(return_value != WORK_SUCCESSFULLY)
+    {
+        zlog_error(category_health_report, 
+                   "create thread for upload_all_hashtable fail");
+        zlog_error(category_debug, 
+                   "create thread for upload_all_hashtable fail");
+        return return_value;
+    } 
+	
+	return_value = startThread( &upload_location_history_thread, 
+                                upload_location_history, 
+                                NULL);
+
+    if(return_value != WORK_SUCCESSFULLY)
+    {
+        zlog_error(category_health_report, 
+                   "create thread for upload_location_history fail");
+        zlog_error(category_debug, 
+                   "create thread for upload_location_history fail");
+        return return_value;
+    } 
+	
     zlog_info(category_debug,"Start Communication");
 
     /* The while loop waiting for CommUnit routine to be ready */
@@ -665,17 +690,12 @@ ErrorCode get_server_config(ServerConfig *config,
               "The nice of low priority is [%d]", 
               common_config->low_priority);
 
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->database_pre_filter_time_window_in_sec = atoi(config_message);
+    fetch_next_string(file, config_message, sizeof(config_message));
+    config->unreasonable_rssi_change = 
+        atoi(config_message);
     zlog_info(category_debug,
-              "The database_pre_filter_time_window_in_sec is [%d]", 
-              config->database_pre_filter_time_window_in_sec);
-
-    fetch_next_string(file, config_message, sizeof(config_message)); 
-    config->location_time_interval_in_sec = atoi(config_message);
-    zlog_info(category_debug,
-              "The location_time_interval_in_sec is [%d]", 
-              config->location_time_interval_in_sec);
+              "The unreasonable_rssi_change is [%d]",
+              config->unreasonable_rssi_change);
 
     fetch_next_string(file, config_message, sizeof(config_message));
     config->rssi_difference_of_location_accuracy_tolerance = 
@@ -690,6 +710,18 @@ ErrorCode get_server_config(ServerConfig *config,
     zlog_info(category_debug,
               "The base_location_tolerance_in_millimeter is [%d]",
               config->base_location_tolerance_in_millimeter);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->rssi_weight_multiplier = atoi(config_message);
+    zlog_info(category_debug,
+              "The rssi_weight_multiplier is [%d]", 
+              config->rssi_weight_multiplier);
+
+    fetch_next_string(file, config_message, sizeof(config_message)); 
+    config->time_to_upload_history_location_in_sec = atoi(config_message);
+    zlog_info(category_debug,
+              "The time_to_upload_history_location_in_sec is [%d]", 
+              config->time_to_upload_history_location_in_sec);
 
     fetch_next_string(file, config_message, sizeof(config_message)); 
     config->is_enabled_panic_button_monitor = atoi(config_message);
@@ -806,9 +838,8 @@ ErrorCode get_server_config(ServerConfig *config,
     strcpy(config->SMS_message_template, config_message);
     zlog_info(category_debug, "SMS_message_template = [%s]",
               config->SMS_message_template);
-       
+			 
     zlog_info(category_debug, "notification list initialized");
-
 
     fclose(file);
 
@@ -846,22 +877,6 @@ void *maintain_database()
 
         //Sleep one hour before next check
         sleep_t(MS_EACH_HOUR);
-    }
-
-    return (void *)NULL;
-}
-
-void *Server_summarize_location_information(){
-    
-    while(true == ready_to_work){
-    
-        SQL_summarize_object_location(&config.db_connection_list_head,
-                                      config.database_pre_filter_time_window_in_sec,
-                                      config.location_time_interval_in_sec,
-                                      config.rssi_difference_of_location_accuracy_tolerance,
-                                      config.base_location_tolerance_in_millimeter);
-
-        sleep_t(BUSY_WAITING_TIME_IN_MS);
     }
 
     return (void *)NULL;
@@ -1235,12 +1250,9 @@ void *Server_LBeacon_routine(void *_buffer_node)
                                             strlen(current_node -> content));
                                             */
         }else{
-            SQL_update_object_tracking_data_with_battery_voltage(
-                &config.db_connection_list_head,
+			hashtable_update_object_tracking_data(
                 current_node -> content,
-                strlen(current_node -> content),
-                config.server_installation_path,
-                config.is_enabled_panic_button_monitor);
+				strlen(current_node -> content));
         }
 
     }
@@ -1316,13 +1328,10 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
                                             current_node -> content,
                                             strlen(current_node -> content));
                                             */
-        }else{
-            SQL_update_object_tracking_data_with_battery_voltage(
-                &config.db_connection_list_head,
+        }else{	
+            hashtable_update_object_tracking_data(
                 current_node -> content,
-                strlen(current_node -> content),
-                config.server_installation_path,
-                config.is_enabled_panic_button_monitor);
+				strlen(current_node -> content));
         }
         
     }
@@ -1741,4 +1750,43 @@ ErrorCode add_notification_to_the_notification_list(
     return WORK_SUCCESSFULLY;
 }
 
+void* upload_all_hashtable(void){
+	
+	while(ready_to_work == true){		
 
+		upload_hashtable_for_all_area(
+            &config.db_connection_list_head,
+            config.server_installation_path,
+            config.unreasonable_rssi_change,
+            config.rssi_weight_multiplier,
+            config.rssi_difference_of_location_accuracy_tolerance,
+            config.base_location_tolerance_in_millimeter);
+
+        sleep_t(NORMAL_WAITING_TIME_IN_MS);
+	}
+	
+}
+
+void* upload_location_history(void){
+	int last_upload_time=0;
+	int upload_time=0;	
+	int ready_for_location_history_table;
+
+	while(ready_to_work == true){	
+
+		upload_time = get_clock_time();
+
+		if(upload_time - last_upload_time >= 
+           config.time_to_upload_history_location_in_sec){			
+			
+			hashtable_go_through_for_get_location_history(
+                &config.db_connection_list_head,
+				config.server_installation_path);
+
+			last_upload_time = get_clock_time();			
+			
+		}else{
+			sleep_t(NORMAL_WAITING_TIME_IN_MS);
+		}
+	}
+}
