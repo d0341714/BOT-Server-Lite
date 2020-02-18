@@ -94,7 +94,7 @@ static int _hashtable_replace_uuid(
         int res = h_table->equal(curr->key, key);
         if (res == 1) {         
             exist_MAC_address_row=curr->value;
-            record_table_size = exist_MAC_address_row->record_table_size;
+            record_table_size = exist_MAC_address_row->number_uuid_size;
             strcpy(exist_MAC_address_row->battery,value->battery_voltage);
             strcpy(exist_MAC_address_row->panic_button,value->panic_button);
             strcpy(exist_MAC_address_row->final_timestamp,value->final_timestamp_GMT);
@@ -510,7 +510,7 @@ void hashtable_put_mac_table(HashTable * h_table,
                 hash_table_row_for_new_MAC->uuid_record_table_array[i].is_in_use=false;
             }
 
-            hash_table_row_for_new_MAC -> record_table_size = 
+            hash_table_row_for_new_MAC -> number_uuid_size = 
                 number_of_lbeacons_under_tracked;
 
             new_head->key = MAC_address;
@@ -629,7 +629,7 @@ void hashtable_go_through_for_summarize(
             valid_rssi_count=0;             
             
             //original summary uuid
-            for(m=0; m < table_row->record_table_size; m++){
+            for(m=0; m < table_row->number_uuid_size; m++){
                 if(table_row->uuid_record_table_array[m].is_in_use &&
                    strcmp(table_row->uuid_record_table_array[m].uuid,table_row->summary_uuid)==0){
                         if(atoi(table_row->uuid_record_table_array[m].final_timestamp)<(get_clock_time()-10)){                          
@@ -662,7 +662,7 @@ void hashtable_go_through_for_summarize(
             recently_scanned=0;
             
             // traverse all Lbeacon uuid
-            while(j < table_row->record_table_size){
+            while(j < table_row->number_uuid_size){
                 sum_rssi=0;
                 valid_rssi_count=0;             
                 if(table_row->uuid_record_table_array[j].is_in_use==false) {

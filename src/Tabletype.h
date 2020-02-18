@@ -118,7 +118,7 @@ typedef struct {
    /* A variable indicating the number of elements in uuid_record_table_array 
    will be used. The value of this variable is defined by server configuration
    file. */
-   size_t record_table_size;
+   size_t number_uuid_size;
 
 } hash_table_row;
 
