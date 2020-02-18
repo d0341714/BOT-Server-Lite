@@ -828,6 +828,7 @@ void hashtable_upload_location_to_database(
     if(LOCATION_FOR_HISTORY == location_type){
 
         sprintf(location_filename, "%s%s_%d", 
+                server_installation_path,
                 FILE_PREFIX_DUMP_LOCATION_HISTORY_INFORMATION, 
                 pthread_self());  
 
