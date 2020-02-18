@@ -2138,14 +2138,17 @@ ErrorCode SQL_upload_location_history(
     return WORK_SUCCESSFULLY;
 }
 
-ErrorCode SQL_upload_panic(
+ErrorCode SQL_identify_panic_status(
     DBConnectionListHead *db_connection_list_head,
     char* object_mac_address){
 
-    char* sql_template_for_history_table=
+    char *sql_identify_panic = 
         "UPDATE object_summary_table " \
         "SET panic_violation_timestamp = NOW() " \
-        "WHERE object_summary_table.mac_address = %s; ";
+        "FROM object_table " \
+        "WHERE object_summary_table.mac_address = %s " \
+        "AND object_summary_table.mac_address = object_table.mac_address " \
+        "AND object_table.monitor_type & %d = %d;";
 
     PGconn *db_conn = NULL;
     char* pqescape_mac_address = NULL;
@@ -2170,7 +2173,10 @@ ErrorCode SQL_upload_panic(
 
     /* Execute SQL statement */
     memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_template_for_history_table, pqescape_mac_address);
+    sprintf(sql, sql_identify_panic, 
+            pqescape_mac_address,
+            MONITOR_PANIC,
+            MONITOR_PANIC);
 	
     PQfreemem(pqescape_mac_address);
 

@@ -346,10 +346,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\HNode.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\import\LinkedList.c"
 				>
 			</File>
@@ -401,10 +397,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\HashTable.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\HNode.h"
 				>
 			</File>
 			<File

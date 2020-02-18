@@ -180,6 +180,12 @@ typedef struct {
     /* The list head of the database connection pool */
     DBConnectionListHead db_connection_list_head;
 
+    /* The number of lbeacons to be kept to calculate location of objects */
+    int number_of_lbeacons_under_tracked;
+
+    /* The number of rssi signals to be ketp to calculate lcation of objects */
+    int number_of_rssi_signals_under_tracked;
+
     /* The abnormal rssi signal strengh change value. The dramatically rssi 
     signal strengh change will be ignored.*/
     int unreasonable_rssi_change;

@@ -458,7 +458,7 @@ ErrorCode SQL_identify_geofence_violation(
     char *mac_address);
 
 /*
-  SQL_identify_panic_object
+  SQL_identify_location_not_stay_room
 
      This function checks object_summary_table to determine if patients are
      not staying in his/her dedicated rooms.
@@ -477,7 +477,7 @@ ErrorCode SQL_identify_location_not_stay_room(
     DBConnectionListHead *db_connection_list_head);
 
 /*
-  SQL_identify_location_off_limit
+  SQL_identify_location_long_stay_in_danger
 
      This function checks object_summary_table to identify the object that have
 	 staged at specificed area(s) too long.
@@ -697,7 +697,7 @@ ErrorCode SQL_upload_location_history(
     char* filename);
 
 /*
-  SQL_upload_panic
+  SQL_identify_panic_status
 
      This function updates the panic_violation_timestamp information of the
      entity with the mac_address as the input object_mac_address in the 
@@ -714,7 +714,7 @@ ErrorCode SQL_upload_location_history(
      ErrorCode - indicate the result of execution, the expected return code
                  is WORK_SUCCESSFULLY
 */
-ErrorCode SQL_upload_panic(
+ErrorCode SQL_identify_panic_status(
     DBConnectionListHead *db_connection_list_head,
     char* object_mac_address);
 #endif

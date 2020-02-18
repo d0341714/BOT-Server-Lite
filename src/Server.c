@@ -690,6 +690,20 @@ ErrorCode get_server_config(ServerConfig *config,
               "The nice of low priority is [%d]", 
               common_config->low_priority);
 
+    
+    fetch_next_string(file, config_message, sizeof(config_message));
+    config->number_of_lbeacons_under_tracked = atoi(config_message);
+    zlog_info(category_debug,
+              "The number_of_lbeacons_under_tracked is [%d]",
+              config->number_of_lbeacons_under_tracked);
+
+    fetch_next_string(file, config_message, sizeof(config_message));
+    config->number_of_rssi_signals_under_tracked = atoi(config_message);
+    zlog_info(category_debug,
+              "The number_of_rssi_signals_under_tracked is [%d]",
+              config->number_of_rssi_signals_under_tracked);
+
+
     fetch_next_string(file, config_message, sizeof(config_message));
     config->unreasonable_rssi_change = 
         atoi(config_message);
@@ -1251,8 +1265,11 @@ void *Server_LBeacon_routine(void *_buffer_node)
                                             */
         }else{
 			hashtable_update_object_tracking_data(
+                &config.db_connection_list_head,
                 current_node -> content,
-				strlen(current_node -> content));
+				strlen(current_node -> content),
+                config.number_of_lbeacons_under_tracked,
+                config.number_of_rssi_signals_under_tracked);
         }
 
     }
@@ -1330,8 +1347,11 @@ void *process_tracked_data_from_geofence_gateway(void *_buffer_node)
                                             */
         }else{	
             hashtable_update_object_tracking_data(
+                &config.db_connection_list_head,
                 current_node -> content,
-				strlen(current_node -> content));
+				strlen(current_node -> content),
+                config.number_of_lbeacons_under_tracked,
+                config.number_of_rssi_signals_under_tracked);
         }
         
     }
@@ -1754,9 +1774,10 @@ void* upload_all_hashtable(void){
 	
 	while(ready_to_work == true){		
 
-		upload_hashtable_for_all_area(
+		hashtable_traverse_all_areas_to_upload_latest_location(
             &config.db_connection_list_head,
             config.server_installation_path,
+            config.number_of_rssi_signals_under_tracked,
             config.unreasonable_rssi_change,
             config.rssi_weight_multiplier,
             config.rssi_difference_of_location_accuracy_tolerance,
@@ -1770,8 +1791,7 @@ void* upload_all_hashtable(void){
 void* upload_location_history(void){
 	int last_upload_time=0;
 	int upload_time=0;	
-	int ready_for_location_history_table;
-
+	
 	while(ready_to_work == true){	
 
 		upload_time = get_clock_time();
@@ -1779,7 +1799,7 @@ void* upload_location_history(void){
 		if(upload_time - last_upload_time >= 
            config.time_to_upload_history_location_in_sec){			
 			
-			hashtable_go_through_for_get_location_history(
+			hashtable_traverse_all_areas_to_upload_history_data(
                 &config.db_connection_list_head,
 				config.server_installation_path);
 
