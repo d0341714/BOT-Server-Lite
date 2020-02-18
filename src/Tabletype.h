@@ -86,7 +86,11 @@ typedef struct {
    int rssi_array[MAX_NUMBER_OF_RSSI_SIGNAL_UNDER_TRACKING];
    float coordinateX;
    float coordinateY;
-   int valid;
+
+   /* A flag indicating whether this struct is occupied and used to record
+   recently scanned data currently. If not, the system will reuse this 
+   structure to record data from another lbeacon uuid. */
+   bool is_in_use;
 
 } uuid_record_table_row;
 

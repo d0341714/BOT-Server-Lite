@@ -101,7 +101,7 @@ static int _hashtable_replace_uuid(
             
             //match uuid
             for(i=0;i<record_table_size;i++){
-                if(exist_MAC_address_row->uuid_record_table_array[i].valid==1){
+                if(exist_MAC_address_row->uuid_record_table_array[i].is_in_use){
                     if(0 == strcmp(value->lbeacon_uuid,
                                    exist_MAC_address_row -> 
                                    uuid_record_table_array[i].uuid)){
@@ -182,7 +182,7 @@ static int _hashtable_replace_uuid(
                 atof(coordinateY);
                 
                 exist_MAC_address_row -> 
-                uuid_record_table_array[invalid_place].valid = 1;
+                uuid_record_table_array[invalid_place].is_in_use = true;
 
                 curr -> value = exist_MAC_address_row;
                 curr -> value_len = sizeof(exist_MAC_address_row);
@@ -501,13 +501,13 @@ void hashtable_put_mac_table(HashTable * h_table,
             strcpy(hash_table_row_for_new_MAC->uuid_record_table_array[0].initial_timestamp,value->initial_timestamp_GMT);
             strcpy(hash_table_row_for_new_MAC->uuid_record_table_array[0].final_timestamp,value->final_timestamp_GMT);
             hash_table_row_for_new_MAC->uuid_record_table_array[0].head=0;
-            hash_table_row_for_new_MAC->uuid_record_table_array[0].valid=1;         
+            hash_table_row_for_new_MAC->uuid_record_table_array[0].is_in_use = true;         
             hash_table_row_for_new_MAC->uuid_record_table_array[0].rssi_array[0]=value->rssi;           
             hash_table_row_for_new_MAC->uuid_record_table_array[0].coordinateX =atof(coordinateX);          
             hash_table_row_for_new_MAC->uuid_record_table_array[0].coordinateY=atof(coordinateY);
 
             for(i=1;i<MAX_NUMBER_OF_LBEACON_UNDER_TRACKING;i++){
-                hash_table_row_for_new_MAC->uuid_record_table_array[i].valid=0;
+                hash_table_row_for_new_MAC->uuid_record_table_array[i].is_in_use=false;
             }
 
             hash_table_row_for_new_MAC -> record_table_size = 
@@ -630,7 +630,7 @@ void hashtable_go_through_for_summarize(
             
             //original summary uuid
             for(m=0; m < table_row->record_table_size; m++){
-                if(table_row->uuid_record_table_array[m].valid!=0 &&
+                if(table_row->uuid_record_table_array[m].is_in_use &&
                    strcmp(table_row->uuid_record_table_array[m].uuid,table_row->summary_uuid)==0){
                         if(atoi(table_row->uuid_record_table_array[m].final_timestamp)<(get_clock_time()-10)){                          
                             break;
@@ -665,14 +665,14 @@ void hashtable_go_through_for_summarize(
             while(j < table_row->record_table_size){
                 sum_rssi=0;
                 valid_rssi_count=0;             
-                if(table_row->uuid_record_table_array[j].valid==0) {
+                if(table_row->uuid_record_table_array[j].is_in_use==false) {
                     j++;
                     continue;   
                 }
                 
                 //delete old data
                 if(atoi(table_row->uuid_record_table_array[j].final_timestamp)<(get_clock_time()-10)){                  
-                    table_row->uuid_record_table_array[j].valid=0;
+                    table_row->uuid_record_table_array[j].is_in_use=false;
                     j++;
                     continue;
                 }       
