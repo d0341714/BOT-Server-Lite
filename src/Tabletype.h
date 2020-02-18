@@ -19,7 +19,7 @@ object */
 #define NUMBER_OF_LBEACON_UNDER_TRACKING 32
 
 typedef struct {
-	
+    
    char lbeacon_uuid[LENGTH_OF_UUID];
    char initial_timestamp_GMT[LENGTH_OF_EPOCH_TIME];
    char final_timestamp_GMT[LENGTH_OF_EPOCH_TIME];
@@ -45,7 +45,7 @@ typedef struct {
 
 
 typedef struct {
-	
+    
    char summary_uuid[LENGTH_OF_UUID];
    char battery[LENGTH_OF_BATTERY_VOLTAGE];
    char initial_timestamp[LENGTH_OF_EPOCH_TIME];

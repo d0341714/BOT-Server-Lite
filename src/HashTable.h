@@ -33,22 +33,22 @@ typedef void (* IteratorCallback)(void *, size_t, void *, size_t);
 
 
 typedef struct HashTable {
-	HNode ** table;
-	int size;
-	int count;
-	double max_load;
-	double resize_factor;
-	EqualityFunc equal;
-	HashFunc hash;
-	DeleteData deleteKey;
-	DeleteData deleteValue;
-	pthread_mutex_t * ht_mutex;
+    HNode ** table;
+    int size;
+    int count;
+    double max_load;
+    double resize_factor;
+    EqualityFunc equal;
+    HashFunc hash;
+    DeleteData deleteKey;
+    DeleteData deleteValue;
+    pthread_mutex_t * ht_mutex;
 } HashTable;
 
 
 HashTable * area_hash_table;
 
-typedef struct AreaTable{	
+typedef struct AreaTable{   
    char area_id[AREA_ID_LENGTH];
    HashTable * area_hash_ptr;
 } AreaTable;
@@ -62,21 +62,21 @@ int area_table_size;
 /* Designated initializer. Allows for control over max_load percentage, 
 resize_factor, and init_size. */
 HashTable * hashtable_new(
-	int init_size,
-	double max_load,
-	double resize_factor,
-	EqualityFunc equal,
-	HashFunc hash,
-	DeleteData deleteKey,
-	DeleteData deleteValue
+    int init_size,
+    double max_load,
+    double resize_factor,
+    EqualityFunc equal,
+    HashFunc hash,
+    DeleteData deleteKey,
+    DeleteData deleteValue
 );
 
 /* Convenience initializer. Uses default values for initial size, max load 
 percentage, and resize factor. */
 HashTable * hashtable_new_default(
-	EqualityFunc equal,
-	DeleteData deleteKey,
-	DeleteData deleteValue
+    EqualityFunc equal,
+    DeleteData deleteKey,
+    DeleteData deleteValue
 );
 
 /* Checks whether an entry with given key exists in hashtable. */
