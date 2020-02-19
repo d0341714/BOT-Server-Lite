@@ -757,6 +757,9 @@ void hashtable_summarize_location_information(
                     if(valid_rssi_count > 0){
                         avg_rssi = sum_rssi / valid_rssi_count;                     
                         table_row -> average_rssi = (int)avg_rssi;
+                        strcpy(table_row -> final_timestamp,
+                               table_row -> 
+                               uuid_record_table_array[m].final_timestamp);
                         
                     }
 
