@@ -1801,7 +1801,8 @@ void* upload_location_history(void){
 			
 			hashtable_traverse_all_areas_to_upload_history_data(
                 &config.db_connection_list_head,
-				config.server_installation_path);
+				config.server_installation_path,
+                config.number_of_rssi_signals_under_tracked);
 
 			last_upload_time = get_clock_time();			
 			

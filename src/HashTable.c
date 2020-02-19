@@ -115,6 +115,10 @@ static int _hashtable_replace_uuid(
                         strcpy(exist_MAC_address_row -> 
                                uuid_record_table_array[i].final_timestamp, 
                                value->final_timestamp_GMT);
+
+                        exist_MAC_address_row -> 
+                            uuid_record_table_array[i].last_reported_timestamp = 
+                            get_system_time();
                         
                         head = exist_MAC_address_row -> uuid_record_table_array[i].head;
 
@@ -159,6 +163,10 @@ static int _hashtable_replace_uuid(
                 strcpy(exist_MAC_address_row -> 
                        uuid_record_table_array[invalid_place].final_timestamp, 
                        value->final_timestamp_GMT);
+
+                exist_MAC_address_row ->
+                    uuid_record_table_array[invalid_place].
+                    last_reported_timestamp  = get_system_time();
 
                 exist_MAC_address_row -> 
                 uuid_record_table_array[invalid_place].rssi_array[0] = 
@@ -495,13 +503,14 @@ void hashtable_put_mac_table(HashTable * h_table,
             strcpy(hash_table_row_for_new_MAC->initial_timestamp,value->initial_timestamp_GMT);         
             strcpy(hash_table_row_for_new_MAC->final_timestamp,value->final_timestamp_GMT);
             
-            hash_table_row_for_new_MAC->recently_scanned=0;
+            hash_table_row_for_new_MAC->last_reported_timestamp=get_system_time();
             
             strcpy(hash_table_row_for_new_MAC->uuid_record_table_array[0].uuid,value->lbeacon_uuid);                
             strcpy(hash_table_row_for_new_MAC->uuid_record_table_array[0].initial_timestamp,value->initial_timestamp_GMT);
             strcpy(hash_table_row_for_new_MAC->uuid_record_table_array[0].final_timestamp,value->final_timestamp_GMT);
             hash_table_row_for_new_MAC->uuid_record_table_array[0].head=0;
-            hash_table_row_for_new_MAC->uuid_record_table_array[0].is_in_use = true;         
+            hash_table_row_for_new_MAC->uuid_record_table_array[0].is_in_use = true;    
+            hash_table_row_for_new_MAC->uuid_record_table_array[0].last_reported_timestamp = get_system_time();
             hash_table_row_for_new_MAC->uuid_record_table_array[0].rssi_array[0]=value->rssi;           
             hash_table_row_for_new_MAC->uuid_record_table_array[0].coordinateX =atof(coordinateX);          
             hash_table_row_for_new_MAC->uuid_record_table_array[0].coordinateY=atof(coordinateY);
@@ -588,12 +597,12 @@ int get_rssi_weight(int * rssi_array,
 }
 
 //go through
-void hashtable_go_through_for_summarize(
+void hashtable_summarize_location_information(
     HashTable * h_table,
     int number_of_rssi_signals_under_tracked,
     int unreasonable_rssi_change,
     int rssi_weight_multiplier,
-    int hashtable_go_through_for_summarize,
+    int rssi_difference_of_location_accuracy_tolerance,
     int drift_distance) {
 
     int size = h_table->size;
@@ -616,25 +625,38 @@ void hashtable_go_through_for_summarize(
     int weight;
     float summary_coordinateX_this_turn;
     float summary_coordinateY_this_turn;
-    int recently_scanned;
+    int last_reported_timestamp;
     hash_table_row* table_row;  
     pthread_mutex_t * ht_mutex = h_table->ht_mutex; 
+    int current_time = get_system_time();
+
     pthread_mutex_lock(ht_mutex);       
+
     for (i = 0; i < size; i++) {
+
         HNode * curr = table[i];
-        while (curr != 0) {//every mac      
+
+        while (curr != 0) {   
+
             table_row = curr->value;            
             sum_rssi=0;
             avg_rssi=INITIAL_AVERAGE_RSSI;
             valid_rssi_count=0;             
             
-            //original summary uuid
+            //calculate the average rssi signal of current summary lbeacon uuid
             for(m=0; m < table_row->number_uuid_size; m++){
                 if(table_row->uuid_record_table_array[m].is_in_use &&
-                   strcmp(table_row->uuid_record_table_array[m].uuid,table_row->summary_uuid)==0){
-                        if(atoi(table_row->uuid_record_table_array[m].final_timestamp)<(get_clock_time()-10)){                          
+                   strcmp(table_row->uuid_record_table_array[m].uuid,
+                          table_row->summary_uuid)==0){
+
+                        if(table_row -> uuid_record_table_array[m].
+                           last_reported_timestamp < 
+                           current_time - number_of_rssi_signals_under_tracked){
+
                             break;
+
                         }
+
                         for(k=0;k < number_of_rssi_signals_under_tracked;k++){
                             if(get_rssi_weight(table_row->uuid_record_table_array[m].rssi_array,
                                                k,
@@ -659,7 +681,7 @@ void hashtable_go_through_for_summarize(
             weight_x=0;
             weight_y=0;
             weight_count=0;
-            recently_scanned=0;
+            last_reported_timestamp=0;
             
             // traverse all Lbeacon uuid
             while(j < table_row->number_uuid_size){
@@ -671,11 +693,16 @@ void hashtable_go_through_for_summarize(
                 }
                 
                 //delete old data
-                if(atoi(table_row->uuid_record_table_array[j].final_timestamp)<(get_clock_time()-10)){                  
+                if(table_row -> uuid_record_table_array[j].
+                   last_reported_timestamp < 
+                   current_time - number_of_rssi_signals_under_tracked){
+
                     table_row->uuid_record_table_array[j].is_in_use=false;
                     j++;
+
                     continue;
-                }       
+
+                }
                 
                 weight_count_for_specific_uuid=0;
                 //average
@@ -692,7 +719,7 @@ void hashtable_go_through_for_summarize(
                         weight_count_for_specific_uuid+=weight;
                         valid_rssi_count++;
                         
-                        recently_scanned=1;
+                        last_reported_timestamp= get_system_time();
                     }                   
                 }
                 
@@ -705,7 +732,7 @@ void hashtable_go_through_for_summarize(
                 weight_y+=table_row->uuid_record_table_array[j].coordinateY * weight_count_for_specific_uuid;               
                 weight_count+=weight_count_for_specific_uuid;
                 
-                if((sum_rssi/valid_rssi_count)-avg_rssi > hashtable_go_through_for_summarize){
+                if((sum_rssi/valid_rssi_count)-avg_rssi > rssi_difference_of_location_accuracy_tolerance){
                     strcpy(table_row->summary_uuid, table_row->uuid_record_table_array[j].uuid);
                     strcpy(table_row->initial_timestamp,table_row->uuid_record_table_array[j].initial_timestamp);
                     //table_row->final_timestamp=uuid_table->final_timestamp;
@@ -717,7 +744,7 @@ void hashtable_go_through_for_summarize(
                 j++;
             }
             
-            table_row->recently_scanned=recently_scanned;
+            table_row->last_reported_timestamp = last_reported_timestamp;
             if(weight_count!=0){
                 summary_coordinateX_this_turn=weight_x/(float)weight_count;
                 summary_coordinateY_this_turn=weight_y/(float)weight_count;
@@ -763,24 +790,27 @@ void hashtable_traverse_all_areas_to_upload_latest_location(
         zlog_debug(category_debug,"area table id %d",
                    area_table[i].area_id);
 
-        hashtable_go_through_for_summarize(area_table[i].area_hash_ptr, 
-                                           number_of_rssi_signals_under_tracked,
-                                           unreasonable_rssi_change,
-                                           rssi_weight_multiplier,
-                                           rssi_difference_of_location_accuracy_tolerance,
-                                           drift_distance);
+        hashtable_summarize_location_information(
+            area_table[i].area_hash_ptr, 
+            number_of_rssi_signals_under_tracked,
+            unreasonable_rssi_change,
+            rssi_weight_multiplier,
+            rssi_difference_of_location_accuracy_tolerance,
+            drift_distance);
 
         hashtable_upload_location_to_database(area_table[i].area_hash_ptr,
                                               db_connection_list_head,
                                               server_installation_path,
-                                              LATEST_LOCATION_INFO);
+                                              LATEST_LOCATION_INFO,
+                                              number_of_rssi_signals_under_tracked);
     }
     
 }
 
 void hashtable_traverse_all_areas_to_upload_history_data(
     DBConnectionListHead *db_connection_list_head,
-    char *server_installation_path){
+    char *server_installation_path,
+    int number_of_rssi_signals_under_tracked){
     
     int i;
     
@@ -797,7 +827,8 @@ void hashtable_traverse_all_areas_to_upload_history_data(
         hashtable_upload_location_to_database(area_table[i].area_hash_ptr,
                                               db_connection_list_head,
                                               server_installation_path,
-                                              LOCATION_FOR_HISTORY);      
+                                              LOCATION_FOR_HISTORY,
+                                              number_of_rssi_signals_under_tracked);      
     }
 }
     
@@ -805,7 +836,8 @@ void hashtable_upload_location_to_database(
     HashTable * h_table,
     DBConnectionListHead *db_connection_list_head,
     char *server_installation_path,
-    LocationInfoType location_type) {
+    LocationInfoType location_type,
+    int number_of_rssi_signals_under_tracked) {
 
     int record_size = h_table->size;
     HNode ** table = h_table->table;
@@ -822,7 +854,9 @@ void hashtable_upload_location_to_database(
     char buf_final_time[LENGTH_OF_TIME_FORMAT];
     char buf_record_time[LENGTH_OF_TIME_FORMAT];
     int clock_time_now;          
-    hash_table_row* table_row;      
+    hash_table_row* table_row;   
+
+    int current_time = get_system_time();
     
 
     if(LOCATION_FOR_HISTORY == location_type){
@@ -865,7 +899,8 @@ void hashtable_upload_location_to_database(
 
             table_row = curr->value;  
 
-            if(table_row->recently_scanned > 0){  
+            if(current_time - table_row->last_reported_timestamp < 
+               number_of_rssi_signals_under_tracked){  
             
                 zlog_debug(category_debug,
                            "mac %s table_row size:%d",

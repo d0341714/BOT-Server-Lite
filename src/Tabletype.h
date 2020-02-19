@@ -92,12 +92,18 @@ typedef struct {
    structure to record data from another lbeacon uuid. */
    bool is_in_use;
 
+   /* The last reported timestamp from this lbeacon uuid */
+   int last_reported_timestamp;
+
 } uuid_record_table_row;
 
 /* Structure used as node in hashtable to store all recently tracking 
 information from all lbeacons against the specific mac_address */
 typedef struct {
     
+   /* The last reported timestamp to this mac_address */
+   int last_reported_timestamp;
+
    char summary_uuid[LENGTH_OF_UUID];
 
    char initial_timestamp[LENGTH_OF_EPOCH_TIME];
@@ -107,8 +113,6 @@ typedef struct {
    char panic_button[LENGTH_OF_PANIC_BUTTON];  
    float summary_coordinateX;
    float summary_coordinateY;  
-
-   int recently_scanned;
 
    /* Array of uuid_record_table_row to store the lbeacons recently scanning
    this mac_address */

@@ -219,8 +219,41 @@ int get_rssi_weight(int * rssi_array,
                     int unreasonable_rssi_change, 
                     int number_of_rssi_signals_under_tracked);
 
+/*
+  hashtable_summarize_location_information:
 
-void hashtable_go_through_for_summarize(
+     This function determines the lbeacon uuid closest to objects and 
+     calculates the estimated coordinate_x and coordinate_y of 
+     objects.
+
+  Parameters:
+
+     h_table - the pointer to specific hashtable of one covered area
+
+     number_of_rssi_signals_under_tracked - 
+         the number of rssi signals which are kept in hashtable to calculate
+         location of objects. This setting is configurable in server.conf
+
+     unreasonable_rssi_change - the abnormal rssi signal strength change in 
+                                adjacent seconds. When this happens, the rssi
+                                singal will be ingored in the calculation.
+
+     rssi_weight_multiplier - the multiplier used to applied on different range 
+                              of rssi singal strength
+
+     rssi_difference_of_location_accuracy_tolerance - 
+         the tolerance of rssi signal to avoid jumping lbecaons
+
+     drift_distance - the tolerance of distance in the calculated results of 
+                      base_x and base_y to avoid moving tags when the tags are 
+                      not moved.
+
+  Return value:
+
+     None
+ */
+
+void hashtable_summarize_location_information(
     HashTable * h_table,
     int number_of_rssi_signals_under_tracked,
     int unreasonable_rssi_change,
@@ -286,6 +319,11 @@ void hashtable_traverse_all_areas_to_upload_latest_location(
 
      server_installation_path - the installation of server
 
+     number_of_rssi_signals_under_tracked -
+         the time length in seconds used to determine whether the last reported
+         timestamp of objects are valid and should be treated as existing in 
+         the covered area
+
   Return value:
 
      None
@@ -294,7 +332,8 @@ void hashtable_traverse_all_areas_to_upload_latest_location(
 
 void hashtable_traverse_all_areas_to_upload_history_data(
     DBConnectionListHead *db_connection_list_head,
-    char *server_installation_path);
+    char *server_installation_path,
+    int number_of_rssi_signals_under_tracked);
 
 /*
   hashtable_upload_location_to_database:
@@ -314,6 +353,11 @@ void hashtable_traverse_all_areas_to_upload_history_data(
      location_type - the destination of database tables is determined by this
                      parameter. 
 
+     number_of_rssi_signals_under_tracked - 
+         the time length in seconds used to determine whether the last reported
+         timestamp of objects are valid and should be treated as existing in 
+         the covered area
+
   Return value:
 
      None
@@ -323,6 +367,7 @@ void hashtable_upload_location_to_database(
     HashTable * h_table,
     DBConnectionListHead *db_connection_list_head,
     char *server_installation_path,
-    LocationInfoType location_type);
+    LocationInfoType location_type,
+    int number_of_rssi_signals_under_tracked);
 
 #endif
