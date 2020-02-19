@@ -513,6 +513,8 @@ void hashtable_put_mac_table(HashTable * h_table,
         new_head = malloc(sizeof(HNode));
         if(new_head == NULL){
             zlog_error(category_debug,"malloc failed");
+
+            pthread_mutex_unlock(ht_mutex);   
             return;
         }
 
@@ -522,6 +524,8 @@ void hashtable_put_mac_table(HashTable * h_table,
         if(MAC_address == NULL){
             free(new_head);
             zlog_error(category_debug,"malloc failed");
+
+            pthread_mutex_unlock(ht_mutex);   
             return;
         }
         memset(MAC_address, 0, LENGTH_OF_MAC_ADDRESS);
@@ -531,6 +535,9 @@ void hashtable_put_mac_table(HashTable * h_table,
         if(hash_table_row_for_new_MAC == NULL){
             free(new_head);
             mp_free(&hash_table_row_mempool, MAC_address);
+
+            pthread_mutex_unlock(ht_mutex);   
+            return;
         }
 
         memset(hash_table_row_for_new_MAC, 0, sizeof(hash_table_row));
