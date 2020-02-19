@@ -188,36 +188,18 @@ void hashtable_put_mac_table(HashTable * h_table,
 
   Parameters:
 
-     rssi_array - the array of integer used to store all recently scanned rssi 
-                  signals
-
-     k - the index of element in rssi_array to query the weight
-
-     head - the head of rssi_array
+     average_rssi - the average rssi signal strength
          
      rssi_weight_multiplier - the multiplier used to applied on different range 
                               of rssi singal strength
 
-     unreasonable_rssi_change - 
-         the abnormal changes of rssi signal. If rssi signal is dramatically 
-         compared to its previous one rssi signal, the rssi signal is ignored 
-         and not calculated.
-
-     number_of_rssi_signals_under_tracked - 
-        the number of valid elements in rssi_array will be used to store 
-        recently scanned rssi.
-
   Return value:
 
-     None
+     Corresponding weight of the input averaga rssi
  */
 
-int get_rssi_weight(int * rssi_array,
-                    int k, 
-                    int head, 
-                    int rssi_weight_multiplier,
-                    int unreasonable_rssi_change, 
-                    int number_of_rssi_signals_under_tracked);
+int get_rssi_weight(int average_rssi,
+                    int rssi_weight_multiplier);
 
 /*
   hashtable_summarize_location_information:
@@ -228,11 +210,7 @@ int get_rssi_weight(int * rssi_array,
 
   Parameters:
 
-     h_table - the pointer to specific hashtable of one covered area
-
-     number_of_rssi_signals_under_tracked - 
-         the number of rssi signals which are kept in hashtable to calculate
-         location of objects. This setting is configurable in server.conf
+     rssi - the 
 
      unreasonable_rssi_change - the abnormal rssi signal strength change in 
                                 adjacent seconds. When this happens, the rssi
