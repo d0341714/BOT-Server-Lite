@@ -695,6 +695,7 @@ void hashtable_summarize_location_information(
 
         HNode * curr = table[i];
 
+        while(curr != NULL){
         if(curr != NULL){
 
             table_row = curr -> value;            
@@ -863,6 +864,9 @@ void hashtable_summarize_location_information(
                         summary_coordinateY_this_turn;
                 }                
             }           
+        }
+        curr->value = table_row;
+        curr = curr->next;
         }
     }
 
