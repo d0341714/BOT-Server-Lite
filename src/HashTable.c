@@ -107,21 +107,17 @@ int equal_string(void * a, void * b) {
 void destroy_nop(void * a) {
     return;
 }
+
 /*
 initial area table
 */
-void initial_area_table(int rssi_weight_parameter,int drift_distance,int drift_rssi){
+ErrorCode initialize_area_table(){
     
     int i;
+    
+
     zlog_debug(category_debug,">>initial_area_table");
 
-    if(MEMORY_POOL_SUCCESS != mp_init( &hash_table_row_mempool, 
-                                       sizeof(hash_table_row), 
-                                       SLOTS_IN_MEM_POOL_HASH_TABLE_NODE))
-    {
-        zlog_error(category_debug,"initial fail hash_table_row_mempool");
-        return E_MALLOC;
-    }
     
     if(MEMORY_POOL_SUCCESS != mp_init( &mac_address_mempool, 
                                        LENGTH_OF_MAC_ADDRESS, 
@@ -131,19 +127,35 @@ void initial_area_table(int rssi_weight_parameter,int drift_distance,int drift_r
         return E_MALLOC;
     }
 
+
+    if(MEMORY_POOL_SUCCESS != mp_init( &hash_table_row_mempool, 
+                                       sizeof(hash_table_row), 
+                                       SLOTS_IN_MEM_POOL_HASH_TABLE_NODE))
+    {
+        zlog_error(category_debug,"initial fail hash_table_row_mempool");
+        return E_MALLOC;
+    }
+   
     area_table_max_size = INITIAL_AREA_TABLE_MAX_SIZE;
-    area_table_size = 0;
-    //area_table= NULL;
+    used_index_of_area_table = -1;
+    
     area_table = malloc((area_table_max_size * sizeof(AreaTable)));
+    if(area_table == NULL)
+    {
+        zlog_error(category_debug,"cannot malloc area_table");
+        return E_MALLOC;
+    }
 
     for(i = 0; i < area_table_max_size; i++){
         area_table[i].area_id = 0;
         area_table[i].area_hash_ptr = NULL;
     }
 
-    pthread_mutex_init( &area_table_lock, 0);
+    pthread_mutex_init( &area_table_lock, NULL);
+
     zlog_debug(category_debug,"initial_area_table successful"); 
-    return;
+
+    return WORK_SUCCESSFULLY;
 }
 
 HashTable * hash_table_of_specific_area_id(int area_id){
@@ -156,47 +168,51 @@ HashTable * hash_table_of_specific_area_id(int area_id){
 
     zlog_debug(category_debug,"area id %d",area_id);
     
+    // searching for existing hashtable for input area_id
     for(i = 0; i < area_table_max_size; i++){
         if(area_table[i].area_id == 0)
             continue;
 
         if(area_table[i].area_id == area_id){
             pthread_mutex_unlock(&area_table_lock);
-            return area_table[i].area_hash_ptr;
+            h_table = area_table[i].area_hash_ptr;
+            return h_table;
         }
     }
 
-    h_table = hashtable_new_default(
-        equal_string, 
-        destroy_nop, 
-        destroy_nop
-        );
-    
-    if(area_table_max_size>area_table_size){
+    // create new hashtable for input area_id    
+    used_index_of_area_table ++;
 
-        area_table[area_table_size].area_id = area_id;
-        area_table[area_table_size].area_hash_ptr=h_table;
-        
-        area_table_size++;
+    if(used_index_of_area_table >= area_table_max_size){
 
-    }else{
-        //resize
-        area_table_max_size*=2;
-        area_table_resize_ptr=realloc(area_table,area_table_max_size*sizeof(AreaTable));
-        if(area_table_resize_ptr==NULL){
-            zlog_error(category_debug,"area_table_resize_ptr==null");           
+        //resize the allocated area_table
+
+        area_table_max_size *= 2;
+        area_table_resize_ptr = 
+            realloc(area_table, area_table_max_size * sizeof(AreaTable));
+
+        if(area_table_resize_ptr == NULL){
+            zlog_error(category_debug,"area_table_resize_ptr == null");
+
+            pthread_mutex_unlock(&area_table_lock);
+            return NULL;
         }
+
         area_table = area_table_resize_ptr;
-        area_table[area_table_size].area_id = area_id;
-        area_table[area_table_size].area_hash_ptr=h_table;
-        
-        area_table_size++;  
-        //initial
-        for(i=area_table_size;i<area_table_max_size;i++){
+
+        for(i = used_index_of_area_table ; i < area_table_max_size; i++){
             area_table[i].area_id = 0;
-        }
-         
+            area_table[i].area_hash_ptr = NULL;
+        }        
     }
+
+    h_table = hashtable_new_default(equal_string, 
+                                    destroy_nop, 
+                                    destroy_nop);
+
+    area_table[used_index_of_area_table].area_id = area_id;
+    area_table[used_index_of_area_table].area_hash_ptr = h_table;
+
 
     pthread_mutex_unlock(&area_table_lock);
     return h_table;
@@ -206,8 +222,8 @@ ErrorCode hashtable_update_object_tracking_data(
     DBConnectionListHead *db_connection_list_head,
     char* buf,
     size_t buf_len,
-    int number_of_lbeacons_under_tracked,
-    int number_of_rssi_signals_under_tracked){
+    const int number_of_lbeacons_under_tracked,
+    const int number_of_rssi_signals_under_tracked){
 
     ErrorCode ret_val = WORK_SUCCESSFULLY;
     
@@ -246,7 +262,14 @@ ErrorCode hashtable_update_object_tracking_data(
     
     strncpy(str_area_id, lbeacon_uuid, LENGTH_OF_AREA_ID - 1);
     area_id = atoi(str_area_id);
-    area_table_ptr=hash_table_of_specific_area_id(area_id);
+    area_table_ptr = hash_table_of_specific_area_id(area_id);
+
+    if(area_table_ptr == NULL){
+
+        zlog_error(category_debug, "cannot locate hashtable for area_id %d",
+                   area_id);
+        return E_MALLOC;
+    }
     
     while(num_types --){
         
@@ -473,11 +496,11 @@ static int _hashtable_update_and_insert_uuid(
 }
 
 void hashtable_put_mac_table(HashTable * h_table, 
-                             void * key, 
-                             size_t key_len, 
+                             const void * key, 
+                             const size_t key_len, 
                              DataForHashtable * value, 
-                             int number_of_lbeacons_under_tracked,
-                             int number_of_rssi_signals_under_tracked){
+                             const int number_of_lbeacons_under_tracked,
+                             const int number_of_rssi_signals_under_tracked){
 
     int res;
     uint32_t hash_val;
@@ -637,7 +660,7 @@ void hashtable_put_mac_table(HashTable * h_table,
 }
 
 int get_rssi_weight(float average_rssi,
-                    int rssi_weight_multiplier){
+                    const int rssi_weight_multiplier){
     
     //return the corresponding weight according to the rssi singal 
     if(average_rssi > -40)
@@ -665,11 +688,11 @@ int get_rssi_weight(float average_rssi,
 
 void hashtable_summarize_location_information(
     HashTable * h_table,
-    int number_of_rssi_signals_under_tracked,
-    int unreasonable_rssi_change,
-    int rssi_weight_multiplier,
-    int rssi_difference_of_location_accuracy_tolerance,
-    int drift_distance) {
+    const int number_of_rssi_signals_under_tracked,
+    const int unreasonable_rssi_change,
+    const int rssi_weight_multiplier,
+    const int rssi_difference_of_location_accuracy_tolerance,
+    const int drift_distance) {
 
     int size = h_table->size;
     HNode ** table = h_table->table;
@@ -885,12 +908,12 @@ void hashtable_summarize_location_information(
 
 void hashtable_traverse_all_areas_to_upload_latest_location(
     DBConnectionListHead *db_connection_list_head,
-    char *server_installation_path,
-    int number_of_rssi_signals_under_tracked,
-    int unreasonable_rssi_change,
-    int rssi_weight_multiplier,
-    int rssi_difference_of_location_accuracy_tolerance,
-    int drift_distance){
+    const char *server_installation_path,
+    const int number_of_rssi_signals_under_tracked,
+    const int unreasonable_rssi_change,
+    const int rssi_weight_multiplier,
+    const int rssi_difference_of_location_accuracy_tolerance,
+    const int drift_distance){
 
     int i;
     
@@ -921,8 +944,8 @@ void hashtable_traverse_all_areas_to_upload_latest_location(
 
 void hashtable_traverse_all_areas_to_upload_history_data(
     DBConnectionListHead *db_connection_list_head,
-    char *server_installation_path,
-    int number_of_rssi_signals_under_tracked){
+    const char *server_installation_path,
+    const int number_of_rssi_signals_under_tracked){
     
     int i;
     
@@ -947,9 +970,9 @@ void hashtable_traverse_all_areas_to_upload_history_data(
 void hashtable_upload_location_to_database(
     HashTable * h_table,
     DBConnectionListHead *db_connection_list_head,
-    char *server_installation_path,
-    LocationInfoType location_type,
-    int number_of_rssi_signals_under_tracked) {
+    const char *server_installation_path,
+    const LocationInfoType location_type,
+    const int number_of_rssi_signals_under_tracked) {
 
     int record_size = h_table->size;
     HNode ** table = h_table->table;

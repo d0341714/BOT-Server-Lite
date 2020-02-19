@@ -128,7 +128,7 @@ typedef struct AreaTable{
 AreaTable* area_table;
 pthread_mutex_t area_table_lock;
 int area_table_max_size;
-int area_table_size;
+int used_index_of_area_table;
 
 /* Designated initializer. Allows for control over max_load percentage, 
 resize_factor, and init_size. */
@@ -155,29 +155,134 @@ HashTable * hashtable_new_default(
 );
 
 /* Checks whether an entry with given key exists in hashtable. */
-int hashtable_key_exists(HashTable * h_table, void * key, size_t key_len);
+//int hashtable_key_exists(HashTable * h_table, void * key, size_t key_len);
 
 int equal_string(void * a, void * b);
 
 void destroy_nop(void * a);
 
 // Function for server
-void initial_area_table(int rssi_weight_parameter, int drift_distance, int drift_rssi);
 
+/*
+  initialize_area_table:
+
+     This function initializes the memory pools and all hashtables for all 
+     covered areas.
+
+  Parameters:
+
+      None
+
+  Return value:
+
+
+      ErrorCode - Indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY.
+
+ */
+ErrorCode initialize_area_table();
+
+/*
+  hash_table_of_specific_area_id:
+
+     This function searches the area_table to find out and return the 
+     corresponding hashtable for input area_id. It also creates new
+     hashtable for the input area_id, if the hashtable does not exist.
+
+  Parameters:
+
+      area_id - the area_id embedded in the lbeacon uuid information
+
+  Return value:
+
+
+      ErrorCode - Indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY.
+
+ */
 HashTable * hash_table_of_specific_area_id(int area_id);
+
+/*
+  hashtable_update_object_tracking_data:
+
+     This function parses the input tracking data and uses the extracted
+     information from the tracking data to update nodes in hashtable. If
+     this functions detects panic status of objects, it immediately updates
+     database for this emergency situation.
+
+  Parameters:
+
+     db_connection_list_head - the list head of database connection pool
+
+     buf - the pointer to the input tracking data
+
+     buf_len - the length of input buf
+
+     value - the extracted scanned information of the pair of lbeacon uuid and 
+             mac_address
+
+     number_of_lbeacons_under_tracked - 
+         the number of lbeacons to be kept in the arrary of recently scanned 
+         lbeacon uuids to calculate location of objects 
+
+     number_of_rssi_signals_under_tracked - 
+         the time length in seconds used to determine whether the last reported
+         timestamp of objects are valid and should be treated as existing in 
+         the covered area
+
+  Return value:
+
+      ErrorCode - Indicate the result of execution, the expected return code
+                  is WORK_SUCCESSFULLY.
+ */
 
 ErrorCode hashtable_update_object_tracking_data(DBConnectionListHead *db_connection_list_head,
                                                 char* buf, 
                                                 size_t buf_len, 
-                                                int number_of_lbeacons_under_tracked,
-                                                int number_of_rssi_signals_under_tracked);
+                                                const int number_of_lbeacons_under_tracked,
+                                                const int number_of_rssi_signals_under_tracked);
+
+/*
+  hashtable_put_mac_table:
+
+     This function adds the tracking data with pair of lbeacon uuid and 
+     mac_address information to nodes of hashtable. If the node of mac_address 
+     exists, it updates the input lbeacon uuid to recently scanned lbeacon
+     uuid array. Otherwise, it creates a new node in hashtable for the input
+     mac_address first and then inserts the input lbeacon uuid as the first 
+     lbeacon uuid in the array of recently scanned lbeacon uuids.
+
+  Parameters:
+
+     h_table - the pointer to specific hashtable of one covered area
+
+     key - the pointer to the input mac_address extracted from tracking data
+
+     key_len - the length of input key
+
+     value - the extracted scanned information of the pair of lbeacon uuid and 
+             mac_address
+
+     number_of_lbeacons_under_tracked - 
+         the number of lbeacons to be kept in the arrary of recently scanned 
+         lbeacon uuids to calculate location of objects 
+
+     number_of_rssi_signals_under_tracked - 
+         the time length in seconds used to determine whether the last reported
+         timestamp of objects are valid and should be treated as existing in 
+         the covered area
+
+  Return value:
+
+     None
+ */
 
 void hashtable_put_mac_table(HashTable * h_table, 
-                             void * key, 
-                             size_t key_len, 
+                             const void * key, 
+                             const size_t key_len, 
                              DataForHashtable * value, 
-                             int number_of_lbeacons_under_tracked,
-                             int number_of_rssi_signals_under_tracked);
+                             const int number_of_lbeacons_under_tracked,
+                             const int number_of_rssi_signals_under_tracked);
 
 /*
   get_rssi_weight:
@@ -197,7 +302,7 @@ void hashtable_put_mac_table(HashTable * h_table,
  */
 
 int get_rssi_weight(float average_rssi,
-                    int rssi_weight_multiplier);
+                    const int rssi_weight_multiplier);
 
 /*
   hashtable_summarize_location_information:
@@ -208,7 +313,11 @@ int get_rssi_weight(float average_rssi,
 
   Parameters:
 
-     rssi - the 
+     h_table - the pointer to specific hashtable of one covered area
+
+     number_of_rssi_signals_under_tracked - 
+         the number of rssi signals which are kept in hashtable to calculate
+         location of objects. This setting is configurable in server.conf
 
      unreasonable_rssi_change - the abnormal rssi signal strength change in 
                                 adjacent seconds. When this happens, the rssi
@@ -231,11 +340,11 @@ int get_rssi_weight(float average_rssi,
 
 void hashtable_summarize_location_information(
     HashTable * h_table,
-    int number_of_rssi_signals_under_tracked,
-    int unreasonable_rssi_change,
-    int rssi_weight_multiplier,
-    int rssi_difference_of_location_accuracy_tolerance,
-    int drift_distance);
+    const int number_of_rssi_signals_under_tracked,
+    const int unreasonable_rssi_change,
+    const int rssi_weight_multiplier,
+    const int rssi_difference_of_location_accuracy_tolerance,
+    const int drift_distance);
 
 /*
   hashtable_traverse_all_areas_to_upload_latest_location:
@@ -275,12 +384,12 @@ void hashtable_summarize_location_information(
 
 void hashtable_traverse_all_areas_to_upload_latest_location(
     DBConnectionListHead *db_connection_list_head,
-    char *server_installation_path,
-    int number_of_rssi_signals_under_tracked,
-    int unreasonable_rssi_change,
-    int rssi_weight_multiplier,
-    int rssi_difference_of_location_accuracy_tolerance,
-    int drift_distance);
+    const char *server_installation_path,
+    const int number_of_rssi_signals_under_tracked,
+    const int unreasonable_rssi_change,
+    const int rssi_weight_multiplier,
+    const int rssi_difference_of_location_accuracy_tolerance,
+    const int drift_distance);
 
 /*
   hashtable_traverse_all_areas_to_upload_history_data:
@@ -308,8 +417,8 @@ void hashtable_traverse_all_areas_to_upload_latest_location(
 
 void hashtable_traverse_all_areas_to_upload_history_data(
     DBConnectionListHead *db_connection_list_head,
-    char *server_installation_path,
-    int number_of_rssi_signals_under_tracked);
+    const char *server_installation_path,
+    const int number_of_rssi_signals_under_tracked);
 
 /*
   hashtable_upload_location_to_database:
@@ -342,8 +451,8 @@ void hashtable_traverse_all_areas_to_upload_history_data(
 void hashtable_upload_location_to_database(
     HashTable * h_table,
     DBConnectionListHead *db_connection_list_head,
-    char *server_installation_path,
-    LocationInfoType location_type,
-    int number_of_rssi_signals_under_tracked);
+    const char *server_installation_path,
+    const LocationInfoType location_type,
+    const int number_of_rssi_signals_under_tracked);
 
 #endif

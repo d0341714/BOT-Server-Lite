@@ -178,9 +178,11 @@ int main(int argc, char **argv)
     zlog_info(category_debug,"Initialize buffer lists");
 	
 	//initial each hashtable for all covered areas
-    initial_area_table(config.rssi_weight_multiplier,
-                       config.base_location_tolerance_in_millimeter, 
-                       config.rssi_difference_of_location_accuracy_tolerance);
+    if(WORK_SUCCESSFULLY != initialize_area_table()){
+
+        zlog_error(category_debug, "Cannot initialize area table");
+        return E_MALLOC;
+    }
 
     /* Initialize the address map */
     init_Address_Map( &Gateway_address_map);
