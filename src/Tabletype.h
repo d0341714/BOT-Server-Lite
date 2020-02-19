@@ -81,8 +81,10 @@ typedef struct {
 
    char uuid[LENGTH_OF_UUID];
    char initial_timestamp[LENGTH_OF_EPOCH_TIME];
+   /* The index indicating the index of rssi_array array which the new rssi 
+   signal should be inserted. */
+   int write_index; 
    char final_timestamp[LENGTH_OF_EPOCH_TIME];
-   int head;
    int rssi_array[MAX_NUMBER_OF_RSSI_SIGNAL_UNDER_TRACKING];
    float coordinateX;
    float coordinateY;
@@ -100,17 +102,17 @@ typedef struct {
 /* Structure used as node in hashtable to store all recently tracking 
 information from all lbeacons against the specific mac_address */
 typedef struct {
-    
-   /* The last reported timestamp to this mac_address */
-   int last_reported_timestamp;
 
    char summary_uuid[LENGTH_OF_UUID];
-
    char initial_timestamp[LENGTH_OF_EPOCH_TIME];
    char final_timestamp[LENGTH_OF_EPOCH_TIME];
    int average_rssi;
+
+    /* The last reported timestamp to this mac_address */
+   int last_reported_timestamp;
    char battery[LENGTH_OF_BATTERY_VOLTAGE];
    char panic_button[LENGTH_OF_PANIC_BUTTON];  
+    
    float summary_coordinateX;
    float summary_coordinateY;  
 

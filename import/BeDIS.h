@@ -172,6 +172,12 @@
 /* The number of milliseconds of each hour */
 #define MS_EACH_HOUR 3600000
 
+#define INDEX_OF_COORDINATE_X_IN_UUID  12
+#define INDEX_OF_COORDINATE_Y_IN_UUID  24
+#define LENGTH_OF_COORDINATE_IN_UUID 8
+
+#define LENGTH_OF_COORDINATE 9
+
 typedef enum _ErrorCode{
 
     WORK_SUCCESSFULLY = 0,

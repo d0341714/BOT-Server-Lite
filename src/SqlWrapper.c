@@ -567,9 +567,6 @@ ErrorCode SQL_update_lbeacon_registration_status_less_ver22(
     char coordinate_y[LENGTH_OF_UUID];
     int int_coordinate_x = 0;
     int int_coordinate_y = 0;
-	const int INDEX_OF_COORDINATE_X_IN_UUID = 12;
-    const int INDEX_OF_COORDINATE_Y_IN_UUID = 24;
-    const int LENGTH_OF_COORDINATE_IN_UUID = 8;
     int current_time = get_system_time();
     
 	
@@ -734,11 +731,8 @@ ErrorCode SQL_update_lbeacon_registration_status(
     char coordinate_y[LENGTH_OF_UUID];
     int int_coordinate_x = 0;
     int int_coordinate_y = 0;
-	const int INDEX_OF_COORDINATE_X_IN_UUID = 12;
-    const int INDEX_OF_COORDINATE_Y_IN_UUID = 24;
-    const int LENGTH_OF_COORDINATE_IN_UUID = 8;
+
     
-	
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
 

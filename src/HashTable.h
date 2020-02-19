@@ -66,8 +66,6 @@
 
 #define INITIAL_AVERAGE_RSSI -100
 
-#define LENGTH_OF_COORDINATE 9
-
 #define INITIAL_AREA_TABLE_MAX_SIZE 256
 
 #define LENGTH_OF_AREA_ID 5
@@ -198,7 +196,7 @@ void hashtable_put_mac_table(HashTable * h_table,
      Corresponding weight of the input averaga rssi
  */
 
-int get_rssi_weight(int average_rssi,
+int get_rssi_weight(float average_rssi,
                     int rssi_weight_multiplier);
 
 /*
