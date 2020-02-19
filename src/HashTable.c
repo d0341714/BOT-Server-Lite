@@ -5,7 +5,7 @@
 
 #include "HashTable.h"
 
-// private interface
+// Static function to be used in this file
 
 static uint32_t _hashtable_hash_adler32(const void *buf, size_t buflength);
 
@@ -15,14 +15,7 @@ static int _hashtable_replace(HashTable * h_table,
                               void * value, 
                               size_t value_len);
 
-static int _hashtable_update_and_insert_uuid(
-    HashTable * h_table, 
-    void * key, 
-    size_t key_len, 
-    void * value, 
-    int number_of_rssi_signals_under_tracked);
-
-// implementation
+// Helper function implementation
 
 HashTable * hashtable_new(
     int init_size,
@@ -59,10 +52,13 @@ HashTable * hashtable_new_default(
     DeleteData deleteValue
 ) {
 
-    return hashtable_new(
-        8000, 1, 1, 
-        equal, _hashtable_hash_adler32, 
-        deleteKey, deleteValue
+    return hashtable_new(NUMBER_OBJECTS_UNDER_TRACKED_IN_ONE_AREA, 
+                         1, 
+                         1, 
+                         equal, 
+                         _hashtable_hash_adler32, 
+                         deleteKey, 
+                         deleteValue
     );
 
 }
@@ -326,7 +322,7 @@ ErrorCode hashtable_update_object_tracking_data(
     return WORK_SUCCESSFULLY;
 }
 
-static int _hashtable_update_and_insert_uuid(
+int hashtable_update_and_insert_uuid(
     HashTable * h_table, 
     void * key, 
     size_t key_len, 
@@ -518,7 +514,7 @@ void hashtable_put_mac_table(HashTable * h_table,
 
     pthread_mutex_lock(ht_mutex);
 
-    res = _hashtable_update_and_insert_uuid(
+    res = hashtable_update_and_insert_uuid(
         h_table, 
         key, 
         key_len, 

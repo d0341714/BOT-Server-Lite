@@ -70,13 +70,15 @@ hashtables. Value of this constant must be bigger than the total number
 of objects to be tracked in the system. */
 #define SLOTS_IN_MEM_POOL_MAC_ADDRESS 65536
 
+/* The number of objects to be tracked in each covered area in the system. */
+#define NUMBER_OBJECTS_UNDER_TRACKED_IN_ONE_AREA 2048 
+
 /* The default average rssi vlaue for the newly created node in hashtable */
 #define INITIAL_AVERAGE_RSSI -100
 
 /* The default number of hashtables to be created to support covered areas 
 in the system. */
 #define INITIAL_AREA_TABLE_MAX_SIZE 256
-
 
 /* Type of location information. */
 typedef enum _LocationInfoType {
@@ -86,17 +88,17 @@ typedef enum _LocationInfoType {
 
 } LocationInfoType;
 
-Memory_Pool hash_table_row_mempool;
-Memory_Pool mac_address_mempool;
+/* Generic helper function declarations used in member of HNode structure */
 
 typedef uint32_t (* HashFunc)(const void *, size_t);
+
 typedef int (* EqualityFunc)(void *, void *);
+
 typedef void (* IteratorCallback)(void *, size_t, void *, size_t);
 
-/* Generic helper function used in member of HNode structure */
 typedef void (* DeleteData)(void *);
 
-/* Generic node in the hash table */
+/* Structure for each node in hashtable */
 typedef struct HNode_{
     void * key;
     size_t key_len;
@@ -107,6 +109,7 @@ typedef struct HNode_{
     struct HNode_ * next;
 } HNode;
 
+/* Structure for hashtable */ 
 typedef struct HashTable {
 
     HNode ** table;
@@ -118,10 +121,14 @@ typedef struct HashTable {
     HashFunc hash;
     DeleteData deleteKey;
     DeleteData deleteValue;
+
+    /* The lock to protect all information within this specific covered 
+    area_id */
     pthread_mutex_t * ht_mutex;
 
 } HashTable;
 
+/* Structure to store hashtable for each covered area separately */
 typedef struct AreaTable{   
 
    int area_id;
@@ -129,11 +136,27 @@ typedef struct AreaTable{
 
 } AreaTable;
 
-//dynamic
+/* Global variables */
+
+/* The memory pool for the value part of all the hashtables. */
+Memory_Pool hash_table_row_mempool;
+
+/* The memory pool for the key part of all the hashtables. */
+Memory_Pool mac_address_mempool;
+
+/* The pointer to the head of the array of hashtables for all covered areas */
 AreaTable* area_table;
+
+/* The lock used to protect the array of hashtables for all covered areas */
 pthread_mutex_t area_table_lock;
+
+/* The maximum number of hashtables to be created in the system */
 int area_table_max_size;
+
+/* The index of the array of area_table which has been used. */
 int used_index_of_area_table;
+
+/* Helper functions */
 
 /* Designated initializer. Allows for control over max_load percentage, 
 resize_factor, and init_size. */
@@ -158,9 +181,6 @@ HashTable * hashtable_new_default(
     DeleteData deleteValue
 
 );
-
-/* Checks whether an entry with given key exists in hashtable. */
-//int hashtable_key_exists(HashTable * h_table, void * key, size_t key_len);
 
 int equal_string(void * a, void * b);
 
@@ -248,6 +268,39 @@ ErrorCode hashtable_update_object_tracking_data(DBConnectionListHead *db_connect
                                                 const int number_of_rssi_signals_under_tracked);
 
 /*
+  hashtable_update_and_insert_uuid:
+
+     This function searches the input hashtable to find the input mac_address.
+     If the mac_address exists in the hashtable, this functions updates the 
+     input lbeacon uuid information to existing data or inserts the input 
+     lbeacon uuid information to the array of recently scanned lbeacon uuid.
+
+  Parameters:
+
+     h_table - the pointer to specific hashtable of one covered area
+
+     key - the pointer to the input mac_address extracted from tracking data
+
+     key_len - the length of input key
+
+     number_of_rssi_signals_under_tracked - 
+         the time length in seconds used to determine whether the last reported
+         timestamp of objects are valid and should be treated as existing in 
+         the covered area
+
+  Return value:
+
+     1 - the input mac_address already exists in the hashtable
+     0 - the input mac_address does not exist in the hashtable
+ */
+
+int hashtable_update_and_insert_uuid(HashTable * h_table, 
+                                     void * key, 
+                                     size_t key_len, 
+                                     void * value, 
+                                     int number_of_rssi_signals_under_tracked);
+
+/*
   hashtable_put_mac_table:
 
      This function adds the tracking data with pair of lbeacon uuid and 
@@ -305,7 +358,6 @@ void hashtable_put_mac_table(HashTable * h_table,
 
      Corresponding weight of the input averaga rssi
  */
-
 int get_rssi_weight(float average_rssi,
                     const int rssi_weight_multiplier);
 
