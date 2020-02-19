@@ -1948,6 +1948,7 @@ ErrorCode SQL_upload_hashtable_summarize(
         "rssi integer , " \
         "first_seen_timestamp timestamp with time zone , " \
         "last_seen_timestamp timestamp with time zone , " \
+        "last_reported_timestamp timestamp with time zone , " \
         "battery_voltage smallint , " \
         "base_x bigint , " \
         "base_y bigint , " \
@@ -1962,6 +1963,7 @@ ErrorCode SQL_upload_hashtable_summarize(
         "battery_voltage , " \
         "first_seen_timestamp , " \
         "last_seen_timestamp , " \
+        "last_reported_timestamp , " \
         "base_x , " \
         "base_y , " \
         "mac_address)" \
@@ -1977,6 +1979,7 @@ ErrorCode SQL_upload_hashtable_summarize(
         "battery_voltage , " \
         "first_seen_timestamp , " \
         "last_seen_timestamp , " \
+        "last_reported_timestamp , " \
         "base_x , " \
         "base_y  " \
         ") = (" \
@@ -1985,6 +1988,7 @@ ErrorCode SQL_upload_hashtable_summarize(
         "t.battery_voltage , " \
         "t.first_seen_timestamp , " \
         "t.last_seen_timestamp , " \
+        "t.last_reported_timestamp , " \
         "t.base_x , " \
         "t.base_y  ) " \
         "FROM updates_table t " \

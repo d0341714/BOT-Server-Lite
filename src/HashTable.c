@@ -965,6 +965,7 @@ void hashtable_upload_location_to_database(
     char buf_initial_time[LENGTH_OF_TIME_FORMAT];
     char buf_final_time[LENGTH_OF_TIME_FORMAT];
     char buf_record_time[LENGTH_OF_TIME_FORMAT];
+    char buf_last_reported_time[LENGTH_OF_TIME_FORMAT];
     int clock_time_now;          
     hash_table_row* table_row;   
 
@@ -1018,11 +1019,12 @@ void hashtable_upload_location_to_database(
                            "mac %s table_row size:%d",
                            curr->key, sizeof(curr -> key));
 
-                zlog_debug(category_debug,"summary:%s %s %s %s %d %s\n",
+                zlog_debug(category_debug,"summary:%s %s %s %s %s %d %s\n",
                            table_row->summary_uuid,
                            table_row->battery,
                            table_row->initial_timestamp,
                            table_row->final_timestamp,
+                           table_row->last_reported_timestamp, 
                            table_row->average_rssi,
                            table_row->panic_button);
                                 
@@ -1053,13 +1055,19 @@ void hashtable_upload_location_to_database(
                     ts = *gmtime(&rawtime);
                     strftime(buf_final_time, sizeof(buf_final_time), 
                              "%Y-%m-%d %H:%M:%S", &ts);
+
+                    rawtime = table_row ->last_reported_timestamp;
+                    ts = *gmtime(&rawtime);
+                    strftime(buf_last_reported_time, sizeof(buf_last_reported_time), 
+                             "%Y-%m-%d %H:%M:%S", &ts);
                     
-                    fprintf(file, "%s,%d,%s,%s,%s,%d,%d,%s\n",
+                    fprintf(file, "%s,%d,%s,%s,%s,%s,%d,%d,%s\n",
                             table_row->summary_uuid,
                             table_row->average_rssi,
                             table_row->battery,
                             buf_initial_time,
                             buf_final_time,
+                            buf_last_reported_time,
                             (int)table_row->summary_coordinateX,
                             (int)table_row->summary_coordinateY,
                             curr->key);
