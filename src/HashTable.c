@@ -260,7 +260,7 @@ ErrorCode hashtable_update_object_tracking_data(
     lbeacon_timestamp_value = atoi(lbeacon_timestamp);
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
     
-    strncpy(str_area_id, lbeacon_uuid, LENGTH_OF_AREA_ID - 1);
+    strncpy(str_area_id, lbeacon_uuid, LENGTH_OF_AREA_ID_IN_UUID);
     area_id = atoi(str_area_id);
     area_table_ptr = hash_table_of_specific_area_id(area_id);
 

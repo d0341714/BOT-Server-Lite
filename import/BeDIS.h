@@ -172,11 +172,23 @@
 /* The number of milliseconds of each hour */
 #define MS_EACH_HOUR 3600000
 
+/* The index of starting coordinate_x information in lbeacon uuid */
 #define INDEX_OF_COORDINATE_X_IN_UUID  12
+
+/* The index of starting coordinate_y information in lbeacon uuid */
 #define INDEX_OF_COORDINATE_Y_IN_UUID  24
+
+/* Number of characters for coordinate informatoin within lbeacon uuid */
 #define LENGTH_OF_COORDINATE_IN_UUID 8
 
+/* Number of characters for area id informatoin within lbeacon uuid */
+#define LENGTH_OF_AREA_ID_IN_UUID 4
+
+/* Number of bytes in the string format of coordinate */
 #define LENGTH_OF_COORDINATE 9
+
+/* Number of charactures in the time format of %Y-%m-%d %H:%M:%S */
+#define LENGTH_OF_TIME_FORMAT 80
 
 typedef enum _ErrorCode{
 

@@ -60,18 +60,23 @@
 /* The prefix of file path of the dumped location history information */
 #define FILE_PREFIX_DUMP_LOCATION_HISTORY_INFORMATION "./temp/locationtrack"
 
+/* The number of slots in the memory pool for the value part of all the 
+hashtables. Value of this constant must be bigger than the total number 
+of objects to be tracked in the system. */
 #define SLOTS_IN_MEM_POOL_HASH_TABLE_NODE 65536
 
+/* The number of slots in the memory pool for the key part of all the 
+hashtables. Value of this constant must be bigger than the total number 
+of objects to be tracked in the system. */
 #define SLOTS_IN_MEM_POOL_MAC_ADDRESS 65536
 
+/* The default average rssi vlaue for the newly created node in hashtable */
 #define INITIAL_AVERAGE_RSSI -100
 
+/* The default number of hashtables to be created to support covered areas 
+in the system. */
 #define INITIAL_AREA_TABLE_MAX_SIZE 256
 
-#define LENGTH_OF_AREA_ID 5
-
-/* Number of charactures in the time format of %Y-%m-%d %H:%M:%S */
-#define LENGTH_OF_TIME_FORMAT 80
 
 /* Type of location information. */
 typedef enum _LocationInfoType {
