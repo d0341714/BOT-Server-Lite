@@ -1089,7 +1089,8 @@ ErrorCode SQL_identify_location_not_stay_room(
                                 "WHERE " \
                                 "location_not_stay_room_config.is_active = 1 " \
                                 "AND monitor_type & %d = %d " \
-                                "AND lbeacon_table.room <> object_table.room " \
+                                "AND object_table.room IS NOT NULL " \
+                                "AND (lbeacon_table.room IS NULL OR lbeacon_table.room <> object_table.room) " \
                                 ") location_information " \
                                 "WHERE object_summary_table.mac_address = " \
                                 "location_information.mac_address;";

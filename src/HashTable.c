@@ -337,9 +337,11 @@ int hashtable_update_and_insert_uuid(
     int index_not_used = 0;
     int record_table_size;
     hash_table_row * exist_MAC_address_row;
+
     uint32_t hash_val = h_table->hash(key, key_len);
     uint32_t index = hash_val % h_table->size;
     HNode * curr = h_table->table[index];
+
     char coordinateX[LENGTH_OF_COORDINATE];
     char coordinateY[LENGTH_OF_COORDINATE];
     uuid_record_table_row* uuid_record_table_row_resize_ptr;
@@ -511,6 +513,7 @@ void hashtable_put_mac_table(HashTable * h_table,
     int write_index = 0;
     //try to replace existing key's value if possible
     pthread_mutex_t * ht_mutex = h_table->ht_mutex; 
+
 
     pthread_mutex_lock(ht_mutex);
 
