@@ -715,7 +715,7 @@ void hashtable_summarize_location_information(
     pthread_mutex_t * ht_mutex = h_table->ht_mutex; 
     int current_time = get_system_time();
 
-    pthread_mutex_lock(ht_mutex);       
+    //pthread_mutex_lock(ht_mutex);       
 
     for (i = 0; i < size; i++) {
 
@@ -899,7 +899,7 @@ void hashtable_summarize_location_information(
         }
     }
 
-    pthread_mutex_unlock(ht_mutex);
+   // pthread_mutex_unlock(ht_mutex);
 }
 
 void hashtable_traverse_all_areas_to_upload_latest_location(
