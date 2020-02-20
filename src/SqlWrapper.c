@@ -1508,6 +1508,7 @@ ErrorCode SQL_collect_violation_events(
 
 ErrorCode SQL_get_and_update_violation_events(
     DBConnectionListHead *db_connection_list_head,
+    int server_localtime_against_UTC_in_hour,
     char *buf,
     size_t buf_len){
 
@@ -1522,7 +1523,7 @@ ErrorCode SQL_get_and_update_violation_events(
         "notification_table.monitor_type, " \
         "notification_table.mac_address, " \
         "notification_table.uuid, " \
-        "notification_table.violation_timestamp, " \
+        "notification_table.violation_timestamp + interval '%d hours' , " \
         "area_table.name, " \
         "object_table.object_type, " \
         "object_table.name, " \
@@ -1568,7 +1569,7 @@ ErrorCode SQL_get_and_update_violation_events(
 
 
     memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_select_template);
+    sprintf(sql, sql_select_template, server_localtime_against_UTC_in_hour);
 
     if(WORK_SUCCESSFULLY != 
        SQL_get_database_connection(db_connection_list_head, 

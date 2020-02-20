@@ -1106,6 +1106,7 @@ void *Server_send_notification(){
 
         SQL_get_and_update_violation_events(
             &config.db_connection_list_head, 
+            config.server_localtime_against_UTC_in_hour,
             violation_info, 
             sizeof(violation_info));
 
