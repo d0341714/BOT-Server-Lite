@@ -2119,16 +2119,23 @@ ErrorCode SQL_upload_location_history(
     sprintf(sql, sql_template_for_history_table, filename);
     ret_val = SQL_execute(db_conn, sql);
 	
+    if(WORK_SUCCESSFULLY != ret_val){
+        remove(filename);
+
+
+        SQL_release_database_connection(
+        db_connection_list_head, 
+        db_serial_id);
+
+        return E_SQL_EXECUTE;
+    }
+	
+    remove(filename);
+
     SQL_release_database_connection(
         db_connection_list_head, 
         db_serial_id);
 
-    remove(filename);
-
-    if(WORK_SUCCESSFULLY != ret_val){
-        return E_SQL_EXECUTE;
-    }
-	
     return WORK_SUCCESSFULLY;
 }
 
@@ -2176,13 +2183,18 @@ ErrorCode SQL_identify_panic_status(
 
     ret_val = SQL_execute(db_conn, sql);
 
-    SQL_release_database_connection(
+    if(WORK_SUCCESSFULLY != ret_val){
+
+        SQL_release_database_connection(
         db_connection_list_head, 
         db_serial_id);
 
-    if(WORK_SUCCESSFULLY != ret_val){
         return E_SQL_EXECUTE;
     }
 	
-	return WORK_SUCCESSFULLY;
+    SQL_release_database_connection(
+        db_connection_list_head, 
+        db_serial_id);
+	
+    return WORK_SUCCESSFULLY;
 }
