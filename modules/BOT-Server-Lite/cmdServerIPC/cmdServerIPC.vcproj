@@ -161,7 +161,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="COPY /y $(SolutionDir)$(PlatformName)\$(ConfigurationName)\$(TargetFileName)  $(SolutionDir)\..\..\output\export\bin\$(TargetFileName)&#x0D;&#x0A;COPY /y $(SolutionDir)$(PlatformName)\$(ConfigurationName)\$(TargetName).pdb  $(SolutionDir)\..\..\debug_symbols\$(TargetName).pdb"
+				CommandLine="COPY /y $(SolutionDir)$(PlatformName)\$(ConfigurationName)\$(TargetFileName)  $(SolutionDir)\..\..\output\export\bin\$(TargetFileName)&#x0D;&#x0A;COPY /y $(SolutionDir)$(PlatformName)\$(ConfigurationName)\$(TargetFileName)  $(SolutionDir)\..\..\installation\$(TargetFileName)&#x0D;&#x0A;COPY /y $(SolutionDir)$(PlatformName)\$(ConfigurationName)\$(TargetName).pdb  $(SolutionDir)\..\..\debug_symbols\$(TargetName).pdb"
 			/>
 		</Configuration>
 	</Configurations>
