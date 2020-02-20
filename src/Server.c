@@ -1035,31 +1035,13 @@ void *Server_collect_violation_event(){
 
         if(config.is_enabled_collect_violation_event){
           
-            if(config.is_enabled_geofence_monitor){
+            if(config.is_enabled_geofence_monitor ||
+               config.is_enabled_panic_button_monitor ||
+               config.is_enabled_movement_monitor ||
+               config.is_enabled_location_monitor){
+
                 SQL_collect_violation_events(
                     &config.db_connection_list_head,
-                    MONITOR_GEO_FENCE,
-                    config.collect_violation_event_time_interval_in_sec,
-                    config.granularity_for_continuous_violations_in_sec);
-            }
-            if(config.is_enabled_panic_button_monitor){
-                SQL_collect_violation_events(
-                    &config.db_connection_list_head,
-                    MONITOR_PANIC,
-                    config.collect_violation_event_time_interval_in_sec,
-                    config.granularity_for_continuous_violations_in_sec);
-            }
-            if(config.is_enabled_movement_monitor){
-                SQL_collect_violation_events(
-                    &config.db_connection_list_head,
-                    MONITOR_MOVEMENT,
-                    config.collect_violation_event_time_interval_in_sec,
-                    config.granularity_for_continuous_violations_in_sec);
-            }
-            if(config.is_enabled_location_monitor){
-                SQL_collect_violation_events(
-                    &config.db_connection_list_head,
-                    MONITOR_LOCATION,
                     config.collect_violation_event_time_interval_in_sec,
                     config.granularity_for_continuous_violations_in_sec);
             }

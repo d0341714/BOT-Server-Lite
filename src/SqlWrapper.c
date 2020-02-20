@@ -1406,7 +1406,6 @@ ErrorCode SQL_identify_last_movement_status(
 
 ErrorCode SQL_collect_violation_events(
     DBConnectionListHead *db_connection_list_head,
-    ObjectMonitorType monitor_type,
     int time_interval_in_sec,
     int granularity_for_continuous_violations_in_sec){
 
@@ -1423,7 +1422,8 @@ ErrorCode SQL_collect_violation_events(
         "uuid, " \
         "violation_timestamp, " \
         "processed) " \
-        "SELECT %d, " \
+        "SELECT " \
+        "%d, " \
         "mac_address, " \
         "uuid, " \
         "%s, " \
@@ -1440,41 +1440,18 @@ ErrorCode SQL_collect_violation_events(
         "AND EXTRACT(EPOCH FROM(%s - " \
         "violation_timestamp)) < %d);";
 
-    char *geofence_violation_timestamp = "geofence_violation_timestamp";
-    char *panic_violation_timestamp = "panic_violation_timestamp";
-    char *movement_violation_timestamp = "movement_violation_timestamp";
-    char *location_violation_timestamp = "location_violation_timestamp";
-    char *violation_timestamp_name = NULL;
+    ObjectMonitorType monitor_types[4] = { MONITOR_GEO_FENCE, 
+                                           MONITOR_PANIC, 
+                                           MONITOR_MOVEMENT, 
+                                           MONITOR_LOCATION };
 
-    switch (monitor_type){
-        case MONITOR_GEO_FENCE:
-            violation_timestamp_name = geofence_violation_timestamp;
-            break;
-        case MONITOR_PANIC:
-            violation_timestamp_name = panic_violation_timestamp;
-            break;
-        case MONITOR_MOVEMENT:
-            violation_timestamp_name = movement_violation_timestamp;
-            break;
-        case MONITOR_LOCATION:
-            violation_timestamp_name = location_violation_timestamp;
-            break;
-        default:
-            zlog_error(category_debug, "Unknown monitor_type=[%d]", 
-                       monitor_type);
-            return E_INPUT_PARAMETER;
-    }
+    char *violation_timestamp_name[4] = {"geofence_violation_timestamp",
+                                         "panic_violation_timestamp", 
+                                         "movement_violation_timestamp",
+                                         "location_violation_timestamp" };
 
-    memset(sql, 0, sizeof(sql));
-    sprintf(sql, 
-            sql_insert_template, 
-            monitor_type, 
-            violation_timestamp_name,
-            violation_timestamp_name,
-            time_interval_in_sec,
-            monitor_type,
-            violation_timestamp_name,
-            granularity_for_continuous_violations_in_sec);
+    int i = 0;
+
 
     if(WORK_SUCCESSFULLY != 
        SQL_get_database_connection(db_connection_list_head, 
@@ -1486,20 +1463,35 @@ ErrorCode SQL_collect_violation_events(
         return E_SQL_OPEN_DATABASE;
     }
 
-    ret_val = SQL_execute(db_conn, sql);
-    if(WORK_SUCCESSFULLY != ret_val){
+    for(i = 0; i < 4 ; i++){
+
+        memset(sql, 0, sizeof(sql));
+        sprintf(sql, 
+               sql_insert_template, 
+               monitor_types[i], 
+               violation_timestamp_name[i],
+               violation_timestamp_name[i],
+               time_interval_in_sec,
+               monitor_types[i],
+               violation_timestamp_name[i],
+               granularity_for_continuous_violations_in_sec);
+
+        ret_val = SQL_execute(db_conn, sql);
+        if(WORK_SUCCESSFULLY != ret_val){
         
-        zlog_error(category_debug, 
-                   "SQL_execute failed [%d]: %s", 
-                   ret_val, 
-                   PQerrorMessage(db_conn));
+            zlog_error(category_debug, 
+                       "SQL_execute failed [%d]: %s", 
+                       ret_val, 
+                       PQerrorMessage(db_conn));
 
-        SQL_release_database_connection(
-            db_connection_list_head,
-            db_serial_id);
+            SQL_release_database_connection(
+                db_connection_list_head,
+                db_serial_id);
 
-        return E_SQL_EXECUTE;
-    }    
+            return E_SQL_EXECUTE;
+        }
+    }
+
     SQL_release_database_connection(
         db_connection_list_head,
         db_serial_id);

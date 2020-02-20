@@ -559,7 +559,6 @@ ErrorCode SQL_identify_last_movement_status(
 
 ErrorCode SQL_collect_violation_events(
     DBConnectionListHead *db_connection_list_head, 
-    ObjectMonitorType monitor_type,
     int time_interval_in_sec,
     int granularity_for_continuous_violations_in_sec);
 

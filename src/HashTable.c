@@ -1051,7 +1051,7 @@ void hashtable_upload_location_to_database(
 
             if(current_time - table_row->last_reported_timestamp < 
                number_of_rssi_signals_under_tracked){  
-            
+            /*
                 zlog_debug(category_debug,"summary:%s %s %s %s %d %d %s\n",
                            table_row->summary_uuid,
                            table_row->battery,
@@ -1060,7 +1060,7 @@ void hashtable_upload_location_to_database(
                            table_row->last_reported_timestamp, 
                            table_row->average_rssi,
                            table_row->panic_button);
-                                
+              */                  
                 //location history file
                 if(LOCATION_FOR_HISTORY == location_type){
                     
