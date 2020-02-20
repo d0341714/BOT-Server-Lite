@@ -153,8 +153,8 @@ pthread_mutex_t area_table_lock;
 /* The maximum number of hashtables to be created in the system */
 int area_table_max_size;
 
-/* The index of the array of area_table which has been used. */
-int used_index_of_area_table;
+/* The first index of the area_table array which has not be used  */
+int next_index_area_table;
 
 /* Helper functions */
 

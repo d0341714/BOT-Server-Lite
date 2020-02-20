@@ -133,7 +133,7 @@ ErrorCode initialize_area_table(){
     }
    
     area_table_max_size = INITIAL_AREA_TABLE_MAX_SIZE;
-    used_index_of_area_table = -1;
+    next_index_area_table = 0;
     
     area_table = malloc((area_table_max_size * sizeof(AreaTable)));
     if(area_table == NULL)
@@ -160,14 +160,29 @@ HashTable * hash_table_of_specific_area_id(int area_id){
     HashTable * h_table;
     AreaTable* area_table_resize_ptr;
     
-    pthread_mutex_lock(&area_table_lock);
 
     zlog_debug(category_debug,"area id %d",area_id);
     
-    // searching for existing hashtable for input area_id
+    // search for existing hashtable for input area_id
     for(i = 0; i < area_table_max_size; i++){
         if(area_table[i].area_id == 0)
-            continue;
+            break;
+
+        if(area_table[i].area_id == area_id){
+            h_table = area_table[i].area_hash_ptr;
+
+            return h_table;
+        }
+    }
+
+    // input area_id is not in area_table, so create one new element.
+    pthread_mutex_lock(&area_table_lock);
+
+    // search for existing hashtable again to avoid 
+    // duplicated creation for the same area_id
+    for(i = 0; i < area_table_max_size; i++){
+        if(area_table[i].area_id == 0)
+            break;
 
         if(area_table[i].area_id == area_id){
             h_table = area_table[i].area_hash_ptr;
@@ -178,15 +193,11 @@ HashTable * hash_table_of_specific_area_id(int area_id){
     }
 
     // create new hashtable for input area_id    
-    used_index_of_area_table ++;
-
-    if(used_index_of_area_table >= area_table_max_size){
+    if(next_index_area_table >= area_table_max_size){
 
         //resize the allocated area_table
-
-        area_table_max_size *= 2;
         area_table_resize_ptr = 
-            realloc(area_table, area_table_max_size * sizeof(AreaTable));
+            realloc(area_table, area_table_max_size * 2 * sizeof(AreaTable));
 
         if(area_table_resize_ptr == NULL){
             zlog_error(category_debug,"area_table_resize_ptr == null");
@@ -195,9 +206,10 @@ HashTable * hash_table_of_specific_area_id(int area_id){
             return NULL;
         }
 
+        area_table_max_size *= 2;
         area_table = area_table_resize_ptr;
 
-        for(i = used_index_of_area_table ; i < area_table_max_size; i++){
+        for(i = next_index_area_table ; i < area_table_max_size; i++){
             area_table[i].area_id = 0;
             area_table[i].area_hash_ptr = NULL;
         }        
@@ -207,8 +219,8 @@ HashTable * hash_table_of_specific_area_id(int area_id){
                                     destroy_nop, 
                                     destroy_nop);
 
-    area_table[used_index_of_area_table].area_id = area_id;
-    area_table[used_index_of_area_table].area_hash_ptr = h_table;
+    area_table[next_index_area_table].area_id = area_id;
+    area_table[next_index_area_table].area_hash_ptr = h_table;
 
     pthread_mutex_unlock(&area_table_lock);
     return h_table;
