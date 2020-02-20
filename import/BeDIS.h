@@ -398,6 +398,13 @@ typedef struct {
 
 } CommonConfig;
 
+typedef struct {
+
+    int start_area_index;
+    int number_areas;
+
+} AreaSet;
+
 
 /* Global variables */
 
