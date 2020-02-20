@@ -1052,11 +1052,7 @@ void hashtable_upload_location_to_database(
             if(current_time - table_row->last_reported_timestamp < 
                number_of_rssi_signals_under_tracked){  
             
-                zlog_debug(category_debug,
-                           "mac %s table_row size:%d",
-                           curr->key, sizeof(curr -> key));
-
-                zlog_debug(category_debug,"summary:%s %s %s %s %s %d %s\n",
+                zlog_debug(category_debug,"summary:%s %s %s %s %d %d %s\n",
                            table_row->summary_uuid,
                            table_row->battery,
                            table_row->initial_timestamp,
