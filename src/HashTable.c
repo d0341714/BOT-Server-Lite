@@ -170,8 +170,9 @@ HashTable * hash_table_of_specific_area_id(int area_id){
             continue;
 
         if(area_table[i].area_id == area_id){
-            pthread_mutex_unlock(&area_table_lock);
             h_table = area_table[i].area_hash_ptr;
+
+            pthread_mutex_unlock(&area_table_lock);
             return h_table;
         }
     }
@@ -208,7 +209,6 @@ HashTable * hash_table_of_specific_area_id(int area_id){
 
     area_table[used_index_of_area_table].area_id = area_id;
     area_table[used_index_of_area_table].area_hash_ptr = h_table;
-
 
     pthread_mutex_unlock(&area_table_lock);
     return h_table;
