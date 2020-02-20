@@ -902,64 +902,79 @@ void hashtable_summarize_location_information(
    // pthread_mutex_unlock(ht_mutex);
 }
 
-void hashtable_traverse_all_areas_to_upload_latest_location(
+void hashtable_traverse_areas_to_upload_latest_location(
     DBConnectionListHead *db_connection_list_head,
     const char *server_installation_path,
+    AreaSet *area_set,
     const int number_of_rssi_signals_under_tracked,
     const int unreasonable_rssi_change,
     const int rssi_weight_multiplier,
     const int rssi_difference_of_location_accuracy_tolerance,
     const int drift_distance){
 
-    int i;
+    int start_index = area_set -> start_area_index;
+    int number_areas = area_set -> number_areas;
     
-    for(i=0; i< area_table_max_size; i++){  
+    while(number_areas--){
 
-        if(area_table[i].area_id == 0)
+        if(start_index >= area_table_max_size)
+            continue;
+
+        if(area_table[start_index].area_id == 0)
             continue;
 
         zlog_debug(category_debug,"area table id %d",
-                   area_table[i].area_id);
+                   area_table[start_index].area_id);
 
         hashtable_summarize_location_information(
-            area_table[i].area_hash_ptr, 
+            area_table[start_index].area_hash_ptr, 
             number_of_rssi_signals_under_tracked,
             unreasonable_rssi_change,
             rssi_weight_multiplier,
             rssi_difference_of_location_accuracy_tolerance,
             drift_distance);
 
-        hashtable_upload_location_to_database(area_table[i].area_hash_ptr,
-                                              db_connection_list_head,
-                                              server_installation_path,
-                                              LATEST_LOCATION_INFO,
-                                              number_of_rssi_signals_under_tracked);
+        hashtable_upload_location_to_database(
+            area_table[start_index].area_hash_ptr,
+            db_connection_list_head,
+            server_installation_path,
+            LATEST_LOCATION_INFO,
+            number_of_rssi_signals_under_tracked);  
+
+        start_index++;
     }
-    
 }
 
-void hashtable_traverse_all_areas_to_upload_history_data(
+void hashtable_traverse_areas_to_upload_history_data(
     DBConnectionListHead *db_connection_list_head,
     const char *server_installation_path,
+    AreaSet *area_set,
     const int number_of_rssi_signals_under_tracked){
     
-    int i;
-    
-    for(i=0; i < area_table_max_size; i++){ 
+    int start_index = area_set -> start_area_index;
+    int number_areas = area_set -> number_areas;
 
-        if(area_table[i].area_id == 0) 
+    while(number_areas--){
+
+        if(start_index >= area_table_max_size)
+            continue;
+
+        if(area_table[start_index].area_id == 0) 
             continue;
 
         zlog_debug(category_debug,
                    "hashtable_traverse_all_areas_to_upload_history_data: " \
                    "area table id %d",
-                   area_table[i].area_id);    
+                   area_table[start_index].area_id);    
 
-        hashtable_upload_location_to_database(area_table[i].area_hash_ptr,
-                                              db_connection_list_head,
-                                              server_installation_path,
-                                              LOCATION_FOR_HISTORY,
-                                              number_of_rssi_signals_under_tracked);      
+        hashtable_upload_location_to_database(
+            area_table[start_index].area_hash_ptr,
+            db_connection_list_head,
+            server_installation_path,
+            LOCATION_FOR_HISTORY,
+            number_of_rssi_signals_under_tracked);      
+
+        start_index++;
     }
 }
     

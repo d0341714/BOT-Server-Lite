@@ -92,6 +92,13 @@ memory pool. */
 /* The number of slots in the memory pool for notification */
 #define SLOTS_IN_MEM_POOL_NOTIFICATION 512
 
+/* The maximum number of threads for summarizing object locations */
+#define MAX_SUMMARY_TASK_THREADS 256
+
+/* The maximum number of threads for uploading history information */
+#define MAX_UPLOAD_HISTORY_TASK_THREADS 256
+
+
 typedef struct {
     /* The length of the time window in which the movements of an object is 
        monitored. */
@@ -179,6 +186,18 @@ typedef struct {
 
     /* The list head of the database connection pool */
     DBConnectionListHead db_connection_list_head;
+
+    /* The number of threads to do summarizing location information tasks */
+    int number_summary_threads;
+
+    /* The number of areas for which each summary thread is responsible */
+    int number_areas_per_summary_thread;
+
+    /* The number of threads to do uploading history information tasks */
+    int number_upload_history_threads;
+
+    /* The number of areas for which each upload history thread is responsible*/
+    int number_areas_per_upload_history_thread;
 
     /* The number of lbeacons to be kept to calculate location of objects */
     int number_of_lbeacons_under_tracked;
@@ -619,8 +638,9 @@ ErrorCode add_notification_to_the_notification_list(
     struct List_Entry * notification_list_head,
     char *buf);
 
+
 /*
-  upload_all_hashtable:
+  summarize_and_upload_location_information_in_areas:
 
      This function invokes sub-function periodically to upload location 
      information to database table object_summary_table. BOT GUI uses 
@@ -628,7 +648,8 @@ ErrorCode add_notification_to_the_notification_list(
 
   Parameters:
 
-     None
+     area_set - the list of areas in which the location information of objects 
+                should be summarized and uploaded
 
   Return value:
 
@@ -636,18 +657,20 @@ ErrorCode add_notification_to_the_notification_list(
 
  */
 
-void* upload_all_hashtable(void);
+void* summarize_and_upload_location_information_in_areas(void *area_set);
+
 
 /*
-  upload_location_history:
+  upload_location_history_information_in_areas:
 
      This function invokes sub-function periodically to upload location 
-     information to database table location_history_table. BOT GUI uses 
-     information in this table to display tracking path feature.
+     history information to database table location_history_table. BOT GUI 
+     uses information in this table to display tracking path.
 
   Parameters:
 
-     None
+     area_set - the list of areas in which the location information of objects 
+                should be uploaded
 
   Return value:
 
@@ -655,6 +678,6 @@ void* upload_all_hashtable(void);
 
  */
 
-void* upload_location_history(void);
+void* upload_location_history_information_in_areas(void *area_set);
 
 #endif

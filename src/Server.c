@@ -54,6 +54,8 @@ int main(int argc, char **argv)
 {
     int return_value;
 
+    int i;
+
     /* The command message to be sent */
     char command_msg[WIFI_MESSAGE_LENGTH];
 
@@ -80,16 +82,20 @@ int main(int argc, char **argv)
     /* The thread for listening to messages from Wi-Fi interface */
     pthread_t wifi_listener_thread;
 	
-    /* The thread for uploading location information of objects from hashtable 
-    to database object_summary_table. This information is for GUI to display
-    location pin. */
-	pthread_t upload_all_hashtable_thread;
+    /* The array of threads for summarizing and uploading location information 
+    of objects within specific areas from hashtable to database 
+    object_summary_table table. This information is for GUI to display location 
+    pin. */
+    pthread_t summary_task_threads[MAX_SUMMARY_TASK_THREADS];
 
-    /* The thread for uploading location information of objects from hashtable
-    to database location_history_table. This information is for GUI to display 
-    tracking path of one selected object. */
-	pthread_t upload_location_history_thread;
-	
+    /* The array of thread for uploading location information of objects within
+    specific areas from hashtable to database location_history_table. This 
+    information is for GUI to display tracking path of objects. */
+    pthread_t upload_history_threads[MAX_UPLOAD_HISTORY_TASK_THREADS];
+
+    AreaSet *area_set = NULL;
+
+
     /* Initialize flags */
     NSI_initialization_complete      = false;
     CommUnit_initialization_complete = false;
@@ -397,31 +403,77 @@ int main(int argc, char **argv)
         return return_value;
     }
 	
-	return_value = startThread( &upload_all_hashtable_thread, 
-                                upload_all_hashtable, 
-                                NULL);
+    // create threads to summarize and upload location information under 
+    // covered areas
+    for(i = 0 ; i < config.number_summary_threads ; i++){
 
-    if(return_value != WORK_SUCCESSFULLY)
-    {
-        zlog_error(category_health_report, 
-                   "create thread for upload_all_hashtable fail");
-        zlog_error(category_debug, 
-                   "create thread for upload_all_hashtable fail");
-        return return_value;
-    } 
-	
-	return_value = startThread( &upload_location_history_thread, 
-                                upload_location_history, 
-                                NULL);
+        area_set = malloc(sizeof(AreaSet));
 
-    if(return_value != WORK_SUCCESSFULLY)
-    {
-        zlog_error(category_health_report, 
-                   "create thread for upload_location_history fail");
-        zlog_error(category_debug, 
-                   "create thread for upload_location_history fail");
-        return return_value;
-    } 
+        if(area_set == NULL){
+
+            zlog_error(category_health_report, 
+                       "cannot malloc AreaSet");
+            zlog_error(category_debug, 
+                       "cannot malloc AreaSet");
+            return E_MALLOC;
+        }
+        memset(area_set, 0, sizeof(AreaSet));
+
+        area_set -> start_area_index = i;
+        area_set -> number_areas = 
+            config.number_areas_per_summary_thread;
+
+        return_value = startThread(&summary_task_threads[i],
+                                   summarize_and_upload_location_information_in_areas,
+                                   (void*)area_set);
+
+        if(return_value != WORK_SUCCESSFULLY)
+        {
+            zlog_error(category_health_report, 
+                       "create thread for " \
+                       "summarize_location_information_in_areas fail");
+            zlog_error(category_debug, 
+                       "create thread for " \
+                       "summarize_location_information_in_areas fail");
+            return return_value;
+        }     
+    }
+
+    // create threads to upload location history information under covered 
+    // areas
+    for(i = 0 ; i < config.number_upload_history_threads ; i++){
+
+        area_set = malloc(sizeof(AreaSet));
+
+        if(area_set == NULL){
+
+            zlog_error(category_health_report, 
+                       "cannot malloc AreaSet");
+            zlog_error(category_debug, 
+                       "cannot malloc AreaSet");
+            return E_MALLOC;
+        }
+        memset(area_set, 0, sizeof(AreaSet));
+
+        area_set -> start_area_index = i;
+        area_set -> number_areas = 
+            config.number_areas_per_upload_history_thread;
+
+        return_value = startThread(&upload_history_threads[i],
+                                   upload_location_history_information_in_areas,
+                                   (void*)area_set);
+
+        if(return_value != WORK_SUCCESSFULLY)
+        {
+            zlog_error(category_health_report, 
+                       "create thread for " \
+                       "upload_location_history_information_in_areas fail");
+            zlog_error(category_debug, 
+                       "create thread for " \
+                       "upload_location_history_information_in_areas fail");
+            return return_value;
+        }     
+    }
 	
     zlog_info(category_debug,"Start Communication");
 
@@ -692,7 +744,31 @@ ErrorCode get_server_config(ServerConfig *config,
               "The nice of low priority is [%d]", 
               common_config->low_priority);
 
-    
+    fetch_next_string(file, config_message, sizeof(config_message));
+    config->number_summary_threads = atoi(config_message);
+    zlog_info(category_debug,
+              "The number_summary_threads is [%d]",
+              config->number_summary_threads);
+
+    fetch_next_string(file, config_message, sizeof(config_message));
+    config->number_areas_per_summary_thread = atoi(config_message);
+    zlog_info(category_debug,
+              "The number_areas_per_summary_thread is [%d]",
+              config->number_areas_per_summary_thread);
+
+    fetch_next_string(file, config_message, sizeof(config_message));
+    config->number_upload_history_threads = atoi(config_message);
+    zlog_info(category_debug,
+              "The number_upload_history_threads is [%d]",
+              config->number_upload_history_threads);
+
+    fetch_next_string(file, config_message, sizeof(config_message));
+    config->number_areas_per_upload_history_thread = atoi(config_message);
+    zlog_info(category_debug,
+              "The number_areas_per_upload_history_thread is [%d]",
+              config->number_areas_per_upload_history_thread);
+
+
     fetch_next_string(file, config_message, sizeof(config_message));
     config->number_of_lbeacons_under_tracked = atoi(config_message);
     zlog_info(category_debug,
@@ -1772,13 +1848,16 @@ ErrorCode add_notification_to_the_notification_list(
     return WORK_SUCCESSFULLY;
 }
 
-void* upload_all_hashtable(void){
-	
-	while(ready_to_work == true){		
+void* summarize_and_upload_location_information_in_areas(void *area_set){
 
-		hashtable_traverse_all_areas_to_upload_latest_location(
+    AreaSet *area_list = (AreaSet*) area_set;
+
+    while(ready_to_work == true){		
+
+		hashtable_traverse_areas_to_upload_latest_location(
             &config.db_connection_list_head,
             config.server_installation_path,
+            area_list,
             config.number_of_rssi_signals_under_tracked,
             config.unreasonable_rssi_change,
             config.rssi_weight_multiplier,
@@ -1787,12 +1866,15 @@ void* upload_all_hashtable(void){
 
         sleep_t(NORMAL_WAITING_TIME_IN_MS);
 	}
+
+    free(area_list);
 	
 }
 
-void* upload_location_history(void){
+void* upload_location_history_information_in_areas(void *area_set){
 	int last_upload_time=0;
 	int upload_time=0;	
+    AreaSet *area_list = (AreaSet*) area_set;
 	
 	while(ready_to_work == true){	
 
@@ -1801,9 +1883,10 @@ void* upload_location_history(void){
 		if(upload_time - last_upload_time >= 
            config.time_to_upload_history_location_in_sec){			
 			
-			hashtable_traverse_all_areas_to_upload_history_data(
+			hashtable_traverse_areas_to_upload_history_data(
                 &config.db_connection_list_head,
 				config.server_installation_path,
+                area_list,
                 config.number_of_rssi_signals_under_tracked);
 
 			last_upload_time = get_clock_time();			

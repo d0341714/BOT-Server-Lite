@@ -404,7 +404,7 @@ void hashtable_summarize_location_information(
     const int drift_distance);
 
 /*
-  hashtable_traverse_all_areas_to_upload_latest_location:
+  hashtable_traverse_areas_to_upload_latest_location:
 
      This function traverses hashtable of all covered areas to
      upload current location information of objects to current summary 
@@ -415,6 +415,9 @@ void hashtable_summarize_location_information(
      db_connection_list_head - the list head of database connection pool
 
      server_installation_path - the installation of server
+
+     area_set - the list of areas under with the location information of 
+                objects should be summarized and uploaded
 
      number_of_rssi_signals_under_tracked - 
          the number of rssi signals which are kept in hashtable to calculate
@@ -439,9 +442,10 @@ void hashtable_summarize_location_information(
      None
  */
 
-void hashtable_traverse_all_areas_to_upload_latest_location(
+void hashtable_traverse_areas_to_upload_latest_location(
     DBConnectionListHead *db_connection_list_head,
     const char *server_installation_path,
+    AreaSet *area_set,
     const int number_of_rssi_signals_under_tracked,
     const int unreasonable_rssi_change,
     const int rssi_weight_multiplier,
@@ -449,7 +453,7 @@ void hashtable_traverse_all_areas_to_upload_latest_location(
     const int drift_distance);
 
 /*
-  hashtable_traverse_all_areas_to_upload_history_data:
+  hashtable_traverse_areas_to_upload_history_data:
 
      This function traverses hashtable of all covered areas to
      upload current location information of objects to history table
@@ -460,6 +464,9 @@ void hashtable_traverse_all_areas_to_upload_latest_location(
      db_connection_list_head - the list head of database connection pool
 
      server_installation_path - the installation of server
+
+     area_set - the list of areas under with the location information of 
+                objects should be uploaded
 
      number_of_rssi_signals_under_tracked -
          the time length in seconds used to determine whether the last reported
@@ -472,9 +479,10 @@ void hashtable_traverse_all_areas_to_upload_latest_location(
 
  */
 
-void hashtable_traverse_all_areas_to_upload_history_data(
+void hashtable_traverse_areas_to_upload_history_data(
     DBConnectionListHead *db_connection_list_head,
     const char *server_installation_path,
+    AreaSet *area_set,
     const int number_of_rssi_signals_under_tracked);
 
 /*
