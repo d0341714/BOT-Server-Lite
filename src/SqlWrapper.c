@@ -1520,11 +1520,11 @@ ErrorCode SQL_get_and_update_violation_events(
     char *sql_select_template = 
         "SELECT " \
         "notification_table.id, " \
-        "notification_table.monitor_type, " \
+        "monitor_type_table.readable_name , " \
         "notification_table.mac_address, " \
         "notification_table.uuid, " \
         "notification_table.violation_timestamp + interval '%d hours' , " \
-        "area_table.name, " \
+        "area_table.readable_name , " \
         "object_table.object_type, " \
         "object_table.name, " \
         "object_table.asset_control_number, " \
@@ -1537,6 +1537,8 @@ ErrorCode SQL_get_and_update_violation_events(
         "ON area_table.id = object_table.area_id " \
         "INNER JOIN lbeacon_table " \
         "ON notification_table.uuid = lbeacon_table.uuid " \
+        "INNER JOIN monitor_type_table " \
+        "ON notification_table.monitor_type = monitor_type_table.type_id " \
         "WHERE "\
         "processed != 1 " \
         "ORDER BY id ASC;";
