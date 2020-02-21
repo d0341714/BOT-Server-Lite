@@ -268,6 +268,7 @@ ErrorCode hashtable_update_object_tracking_data(
     lbeacon_timestamp_value = atoi(lbeacon_timestamp);
     lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
     
+    memset(str_area_id, 0, sizeof(str_area_id));
     strncpy(str_area_id, lbeacon_uuid, LENGTH_OF_AREA_ID_IN_UUID);
     area_id = atoi(str_area_id);
     area_table_ptr = hash_table_of_specific_area_id(area_id);
@@ -398,13 +399,13 @@ int hashtable_update_and_insert_uuid(
                     uuid_record_table_array[i].last_reported_timestamp = 
                         get_system_time();
 
-                    if(time_gap > 0){
+                    write_index = exist_MAC_address_row -> 
+                        uuid_record_table_array[i].write_index;
 
-                        write_index = 
-                            exist_MAC_address_row -> 
-                            uuid_record_table_array[i].write_index;
+                    // fill zero to rssi_array[] for the missing seconds.
+                    if(time_gap > 1){
 
-                        while(time_gap --){
+                        for(j = 2 ; j <= time_gap ; j++){
                         
                             write_index++;
                             if(write_index == 
@@ -418,7 +419,7 @@ int hashtable_update_and_insert_uuid(
                             rssi_array[write_index] = 0;
                         }
                     }
-
+                    
                     write_index++;
                     if(write_index == 
                         number_of_rssi_signals_under_tracked){
@@ -426,7 +427,6 @@ int hashtable_update_and_insert_uuid(
                         write_index = 0;
                     }
                    
-
                     exist_MAC_address_row ->
                     uuid_record_table_array[i].
                     rssi_array[write_index] = value->rssi;
@@ -488,13 +488,9 @@ int hashtable_update_and_insert_uuid(
                 
                 exist_MAC_address_row -> 
                 uuid_record_table_array[index_not_used].is_in_use = true;
-
-                curr -> value = exist_MAC_address_row;
-                curr -> value_len = sizeof(exist_MAC_address_row);
                 
             }else{
                 zlog_error(category_debug,"need more uuid record table");
-                return 1;               
             }                   
             
             return 1;
@@ -539,11 +535,12 @@ void hashtable_put_mac_table(HashTable * h_table,
     // for a new mac_address
     if (res == 0 ) {
 
+       
         //code to add key and value in O(1) time.
         hash_val = h_table -> hash(key, key_len);
         index = hash_val % h_table->size;       
         prev_head = h_table -> table[index];  
-        
+
         new_head = malloc(sizeof(HNode));
         if(new_head == NULL){
             zlog_error(category_debug,"malloc failed");
@@ -627,9 +624,6 @@ void hashtable_put_mac_table(HashTable * h_table,
             number_of_lbeacons_under_tracked;
 
         hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].is_in_use = true;    
-
-        hash_table_row_for_new_MAC -> 
             uuid_record_table_array[0].
             last_reported_timestamp = get_system_time();
 
@@ -649,6 +643,9 @@ void hashtable_put_mac_table(HashTable * h_table,
         hash_table_row_for_new_MAC -> 
             uuid_record_table_array[0].
             coordinateY = atof(coordinateY);
+
+        hash_table_row_for_new_MAC -> 
+            uuid_record_table_array[0].is_in_use = true;    
 
         // for node of hashtable structure
         new_head->key = MAC_address;
@@ -714,10 +711,6 @@ void hashtable_summarize_location_information(
     int k = 0;
     int prev_index = 0;
     int m = 0;
-    int sum;
-    char* uuid;
-    char* initial_timestamp;
-    char* final_timestamp;
     int sum_rssi;
     float avg_rssi;
     float weight_x;
@@ -725,25 +718,49 @@ void hashtable_summarize_location_information(
     int weight_count;
     int weight_count_for_specific_uuid;
     int valid_rssi_count;   
-    int weight;
     float summary_coordinateX_this_turn;
     float summary_coordinateY_this_turn;
     hash_table_row* table_row;  
     pthread_mutex_t * ht_mutex = h_table->ht_mutex; 
     int current_time = get_system_time();
 
-    //pthread_mutex_lock(ht_mutex);       
+    int summary_index = -1;
+    int summary_avg_rssi = INITIAL_AVERAGE_RSSI;
+    char summary_uuid[LENGTH_OF_UUID];
+    char summary_final_timestamp[LENGTH_OF_EPOCH_TIME];
+
+    int strongest_avg_rssi = INITIAL_AVERAGE_RSSI;
+    char strongest_uuid[LENGTH_OF_UUID];
+    char strongest_initial_timestamp[LENGTH_OF_EPOCH_TIME];
+    char strongest_final_timestamp[LENGTH_OF_EPOCH_TIME];
+
+//    pthread_mutex_lock(ht_mutex);       
 
     for (i = 0; i < size; i++) {
 
         HNode * curr = table[i];
 
         while(curr != NULL){
+
         if(curr != NULL){
+
             summarized_count++;
-            table_row = curr -> value;            
-            avg_rssi = INITIAL_AVERAGE_RSSI;            
-            
+
+        
+            //reset the summary data
+            summary_index = -1;
+            summary_avg_rssi = INITIAL_AVERAGE_RSSI;
+            memset(summary_uuid, 0, sizeof(summary_uuid));
+            memset(summary_final_timestamp, 0, sizeof(summary_final_timestamp));
+            strongest_avg_rssi = INITIAL_AVERAGE_RSSI;
+            memset(strongest_uuid, 0, sizeof(strongest_uuid));
+            memset(strongest_initial_timestamp, 0, sizeof(strongest_initial_timestamp));
+            memset(strongest_final_timestamp, 0, sizeof(strongest_final_timestamp));
+          
+          
+            table_row = curr -> value; 
+
+           
             //calculate the average rssi signal of current summary lbeacon uuid
             for(m = 0; m < table_row -> number_uuid_size; m++){
 
@@ -757,12 +774,16 @@ void hashtable_summarize_location_information(
                        last_reported_timestamp < 
                        current_time - number_of_rssi_signals_under_tracked){
 
+                        table_row -> uuid_record_table_array[m].is_in_use = 
+                            false;
+                       
                         break;
                     }
 
                     // calculate the average rssi
                     sum_rssi = 0;
                     valid_rssi_count = 0;
+                    
                     for(k = 0; k < number_of_rssi_signals_under_tracked; k++){
 
                         if(table_row->uuid_record_table_array[m].
@@ -774,7 +795,7 @@ void hashtable_summarize_location_information(
                             number_of_rssi_signals_under_tracked;
 
                         // ignore abnormal signal
-                        if(table_row->uuid_record_table_array[m].
+                        if(table_row -> uuid_record_table_array[m].
                            rssi_array[prev_index] != 0 && 
                            abs(table_row->uuid_record_table_array[m].
                                rssi_array[k] - 
@@ -791,12 +812,16 @@ void hashtable_summarize_location_information(
                     }
                     
                     if(valid_rssi_count > 0){
-                        avg_rssi = sum_rssi / valid_rssi_count;                     
-                        table_row -> average_rssi = (int)avg_rssi;
-                        strcpy(table_row -> final_timestamp,
-                               table_row -> 
-                               uuid_record_table_array[m].final_timestamp);
-                        
+                        avg_rssi = sum_rssi / valid_rssi_count;
+
+                        summary_index = m;
+                        summary_avg_rssi = (int)avg_rssi;
+                        strcpy(summary_uuid, 
+                               table_row->uuid_record_table_array[m].uuid);
+                        strcpy(summary_final_timestamp,
+                               table_row->uuid_record_table_array[m].final_timestamp);
+
+                      
                     }
 
                     break;
@@ -809,11 +834,12 @@ void hashtable_summarize_location_information(
             weight_y = 0;
             weight_count = 0;
            
-            for(j = 0 ; j < table_row->number_uuid_size ; j++){
+            for(j = 0 ; j < table_row -> number_uuid_size ; j++){
                 // ignore not used element 
                 if(!table_row->uuid_record_table_array[j].is_in_use) {
                     continue;   
                 }
+
                 
                 // ignore and delete old lbeacon uuid which has not scanned
                 // this object for long time.
@@ -822,7 +848,6 @@ void hashtable_summarize_location_information(
                    current_time - number_of_rssi_signals_under_tracked){
 
                     table_row -> uuid_record_table_array[j].is_in_use = false;
-
                     continue;
                 }
                 
@@ -833,17 +858,18 @@ void hashtable_summarize_location_information(
 
                 for(k = 0; k < number_of_rssi_signals_under_tracked; k++){
 
-                    if(table_row->uuid_record_table_array[j].
-                       rssi_array[k] == 0)
+                    if(table_row -> uuid_record_table_array[j].
+                        rssi_array[k] == 0){
                         continue;
+                    }
 
                     prev_index = 
                         (k - 1 + number_of_rssi_signals_under_tracked) % 
                         number_of_rssi_signals_under_tracked;
 
-                    if(table_row->uuid_record_table_array[j].
+                    if(table_row -> uuid_record_table_array[j].
                        rssi_array[prev_index] != 0 &&
-                       abs(table_row->uuid_record_table_array[j].
+                       abs(table_row -> uuid_record_table_array[j].
                            rssi_array[k] - 
                            table_row->uuid_record_table_array[j].
                            rssi_array[prev_index]) > unreasonable_rssi_change){
@@ -862,8 +888,20 @@ void hashtable_summarize_location_information(
                     continue;
                 }
  
-                avg_rssi = sum_rssi / valid_rssi_count;                     
-                
+                avg_rssi = sum_rssi / valid_rssi_count; 
+
+                if(j != summary_index && avg_rssi > strongest_avg_rssi){
+
+                    strongest_avg_rssi = (int) avg_rssi;
+
+                    strcpy(strongest_uuid, 
+                           table_row->uuid_record_table_array[j].uuid);
+                    strcpy(strongest_initial_timestamp,
+                           table_row->uuid_record_table_array[j].initial_timestamp);
+                    strcpy(strongest_final_timestamp,
+                           table_row->uuid_record_table_array[j].final_timestamp);          
+                }
+
                 weight_count_for_specific_uuid = 
                     get_rssi_weight(avg_rssi, rssi_weight_multiplier);
 
@@ -874,24 +912,9 @@ void hashtable_summarize_location_information(
                     weight_count_for_specific_uuid;
                 weight_y += table_row->uuid_record_table_array[j].coordinateY * 
                     weight_count_for_specific_uuid;               
-                
-                // compare average rssi against current summary uuid
-                if(avg_rssi - table_row -> average_rssi  > 
-                   rssi_difference_of_location_accuracy_tolerance){
-
-                    strcpy(table_row->summary_uuid, 
-                           table_row->uuid_record_table_array[j].uuid);
-
-                    strcpy(table_row->initial_timestamp, 
-                           table_row->uuid_record_table_array[j].initial_timestamp);
-
-                    strcpy(table_row->final_timestamp, 
-                           table_row->uuid_record_table_array[j].final_timestamp);
-
-                    table_row -> average_rssi = (int)avg_rssi;
-                }
             }
             
+            // update the position of location pin
             if(weight_count > 0){
 
                 summary_coordinateX_this_turn = weight_x/(float)weight_count;
@@ -909,16 +932,40 @@ void hashtable_summarize_location_information(
                     table_row->summary_coordinateY = 
                         summary_coordinateY_this_turn;
                 }                
-            }           
+            }  
+
+            // update the closest lbeacon
+            if(summary_index == -1 || 
+               (strongest_avg_rssi - summary_avg_rssi > 
+                rssi_difference_of_location_accuracy_tolerance) ){
+
+                table_row->average_rssi = strongest_avg_rssi;
+                strcpy(table_row->summary_uuid,
+                       strongest_uuid);
+                strcpy(table_row->initial_timestamp,
+                       strongest_initial_timestamp);  
+                strcpy(table_row->final_timestamp,
+                       strongest_final_timestamp);
+            }else{
+            
+                table_row->average_rssi = summary_avg_rssi;
+                strcpy(table_row->summary_uuid,
+                       summary_uuid);
+                strcpy(table_row->final_timestamp,
+                       summary_final_timestamp); 
+            }
         }
         curr->value = table_row;
         curr = curr->next;
         }
-        if(summarized_count == table_count)
+        if(summarized_count == table_count){
+
+ //         pthread_mutex_unlock(ht_mutex);
             return;
+        }
     }
 
-   // pthread_mutex_unlock(ht_mutex);
+//    pthread_mutex_unlock(ht_mutex);
 }
 
 void hashtable_traverse_areas_to_upload_latest_location(
