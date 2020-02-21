@@ -706,6 +706,8 @@ void hashtable_summarize_location_information(
     const int drift_distance) {
 
     int size = h_table->size;
+    int table_count = h_table->count;
+    int summarized_count = 0;
     HNode ** table = h_table->table;
     int i = 0;
     int j = 0;
@@ -738,7 +740,7 @@ void hashtable_summarize_location_information(
 
         while(curr != NULL){
         if(curr != NULL){
-
+            summarized_count++;
             table_row = curr -> value;            
             avg_rssi = INITIAL_AVERAGE_RSSI;            
             
@@ -912,6 +914,8 @@ void hashtable_summarize_location_information(
         curr->value = table_row;
         curr = curr->next;
         }
+        if(summarized_count == table_count)
+            return;
     }
 
    // pthread_mutex_unlock(ht_mutex);
