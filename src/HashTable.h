@@ -279,6 +279,8 @@ ErrorCode hashtable_update_object_tracking_data(DBConnectionListHead *db_connect
 
      h_table - the pointer to specific hashtable of one covered area
 
+     curr - the pointer to node of hashtable contains the input mac_address key
+
      key - the pointer to the input mac_address extracted from tracking data
 
      key_len - the length of input key
@@ -294,7 +296,8 @@ ErrorCode hashtable_update_object_tracking_data(DBConnectionListHead *db_connect
      0 - the input mac_address does not exist in the hashtable
  */
 
-int hashtable_update_and_insert_uuid(HashTable * h_table, 
+int hashtable_update_and_insert_uuid(HashTable * h_table,
+                                     HNode *curr, 
                                      void * key, 
                                      size_t key_len, 
                                      void * value, 

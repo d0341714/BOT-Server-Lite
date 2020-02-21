@@ -336,6 +336,7 @@ ErrorCode hashtable_update_object_tracking_data(
 
 int hashtable_update_and_insert_uuid(
     HashTable * h_table, 
+    HNode *curr, 
     void * key, 
     size_t key_len, 
     DataForHashtable * value, 
@@ -349,11 +350,6 @@ int hashtable_update_and_insert_uuid(
     int index_not_used = 0;
     int record_table_size;
     hash_table_row * exist_MAC_address_row;
-
-    uint32_t hash_val = h_table->hash(key, key_len);
-    uint32_t index = hash_val % h_table->size;
-    HNode * curr = h_table->table[index];
-
     char coordinateX[LENGTH_OF_COORDINATE];
     char coordinateY[LENGTH_OF_COORDINATE];
     uuid_record_table_row* uuid_record_table_row_resize_ptr;
@@ -361,9 +357,12 @@ int hashtable_update_and_insert_uuid(
 
     while (curr) {      
         // found existing node of mac_address
-        if(1 == h_table->equal(curr->key, key)){
+        if(1 == h_table->equal(curr -> key, key)){
+           
+            exist_MAC_address_row = curr -> value;
 
-            exist_MAC_address_row=curr->value;
+            pthread_mutex_lock(exist_MAC_address_row -> ht_mutex);
+
             record_table_size = exist_MAC_address_row->number_uuid_size;
             strcpy(exist_MAC_address_row->battery,value->battery_voltage);
             strcpy(exist_MAC_address_row->panic_button,value->panic_button);
@@ -381,9 +380,9 @@ int hashtable_update_and_insert_uuid(
                        index_not_used = i;
 
                 }else if(exist_MAC_address_row -> uuid_record_table_array[i].is_in_use && 
-                   0 == strcmp(value -> lbeacon_uuid,
-                               exist_MAC_address_row -> 
-                               uuid_record_table_array[i].uuid)){
+                         0 == strcmp(value -> lbeacon_uuid,
+                                     exist_MAC_address_row -> 
+                                     uuid_record_table_array[i].uuid)){
 
                     // fill the missing rssi signal as zero.
                     time_gap = atoi(value -> final_timestamp_GMT) - 
@@ -425,7 +424,6 @@ int hashtable_update_and_insert_uuid(
 
                         write_index = 0;
                     }
-                   
 
                     exist_MAC_address_row ->
                     uuid_record_table_array[i].
@@ -434,6 +432,7 @@ int hashtable_update_and_insert_uuid(
                     exist_MAC_address_row ->
                     uuid_record_table_array[i].write_index = write_index;
  
+                    pthread_mutex_unlock(exist_MAC_address_row -> ht_mutex);
                     return 1;
                 }
             }
@@ -493,10 +492,11 @@ int hashtable_update_and_insert_uuid(
                 curr -> value_len = sizeof(exist_MAC_address_row);
                 
             }else{
-                zlog_error(category_debug,"need more uuid record table");
-                return 1;               
-            }                   
-            
+                zlog_error(category_debug,"need more uuid record table");             
+            }    
+
+            pthread_mutex_unlock(exist_MAC_address_row -> ht_mutex);
+
             return 1;
         }
         curr = curr->next;
@@ -515,8 +515,9 @@ void hashtable_put_mac_table(HashTable * h_table,
     int res;
     uint32_t hash_val;
     uint32_t index;
-    HNode * prev_head;
-    HNode * new_head;
+    HNode * curr = NULL;
+    HNode * prev_head = NULL;
+    HNode * new_head = NULL;
     hash_table_row* hash_table_row_for_new_MAC;
     char coordinateX[LENGTH_OF_COORDINATE];
     char coordinateY[LENGTH_OF_COORDINATE];
@@ -525,33 +526,40 @@ void hashtable_put_mac_table(HashTable * h_table,
     int write_index = 0;
     //try to replace existing key's value if possible
     pthread_mutex_t * ht_mutex = h_table->ht_mutex; 
+    bool is_found = false;
 
 
+    // search for existing node with mac_address key
     pthread_mutex_lock(ht_mutex);
 
-    res = hashtable_update_and_insert_uuid(
-        h_table, 
-        key, 
-        key_len, 
-        value, 
-        number_of_rssi_signals_under_tracked);
-    
-    // for a new mac_address
-    if (res == 0 ) {
+    hash_val = h_table -> hash(key, key_len);
+    index = hash_val % h_table -> size;
+    curr = h_table -> table[index];
 
-        //code to add key and value in O(1) time.
-        hash_val = h_table -> hash(key, key_len);
-        index = hash_val % h_table->size;       
-        prev_head = h_table -> table[index];  
-        
+    while (curr) {      
+        // found existing node of mac_address
+        if(1 == h_table->equal(curr->key, key)){
+
+            is_found = true;
+            break;
+        }
+        curr = curr->next;
+    }
+
+    pthread_mutex_unlock(ht_mutex);
+
+
+    // create new node if mac_addree node is not found in the hashtable
+    // for a new mac_address
+    if (!is_found) {
+
+        // malloc all resource for this new node
         new_head = malloc(sizeof(HNode));
         if(new_head == NULL){
             zlog_error(category_debug,"malloc failed");
 
-            pthread_mutex_unlock(ht_mutex);   
             return;
         }
-
         memset(new_head,0,sizeof(HNode));
                
         MAC_address = mp_alloc(&mac_address_mempool);
@@ -559,7 +567,6 @@ void hashtable_put_mac_table(HashTable * h_table,
             free(new_head);
             zlog_error(category_debug,"malloc failed");
 
-            pthread_mutex_unlock(ht_mutex);   
             return;
         }
         memset(MAC_address, 0, LENGTH_OF_MAC_ADDRESS);
@@ -570,13 +577,13 @@ void hashtable_put_mac_table(HashTable * h_table,
             free(new_head);
             mp_free(&hash_table_row_mempool, MAC_address);
 
-            pthread_mutex_unlock(ht_mutex);   
             return;
         }
-
         memset(hash_table_row_for_new_MAC, 0, sizeof(hash_table_row));
-            
+       
+        /*
         // for summary information
+        */
         strcpy(hash_table_row_for_new_MAC -> summary_uuid, 
                value -> lbeacon_uuid);
         strcpy(hash_table_row_for_new_MAC -> panic_button,
@@ -605,18 +612,11 @@ void hashtable_put_mac_table(HashTable * h_table,
             
         hash_table_row_for_new_MAC -> last_reported_timestamp = 
             get_system_time();
-            
-        // for first lbeacon uuid information
-        strcpy(hash_table_row_for_new_MAC -> uuid_record_table_array[0].uuid,
-               value->lbeacon_uuid);                
+   
+        hash_table_row_for_new_MAC -> ht_mutex = 
+            malloc(sizeof(pthread_mutex_t));
 
-        strcpy(hash_table_row_for_new_MAC -> 
-               uuid_record_table_array[0].initial_timestamp,
-               value -> initial_timestamp_GMT);
-
-        strcpy(hash_table_row_for_new_MAC -> 
-               uuid_record_table_array[0].final_timestamp,
-               value -> final_timestamp_GMT);
+        pthread_mutex_init(hash_table_row_for_new_MAC -> ht_mutex,  NULL);
 
         for(i = 0; i < MAX_NUMBER_OF_LBEACON_UNDER_TRACKING; i++){
             hash_table_row_for_new_MAC->uuid_record_table_array[i].is_in_use = 
@@ -626,29 +626,6 @@ void hashtable_put_mac_table(HashTable * h_table,
         hash_table_row_for_new_MAC -> number_uuid_size = 
             number_of_lbeacons_under_tracked;
 
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].is_in_use = true;    
-
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].
-            last_reported_timestamp = get_system_time();
-
-        write_index = 0;
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].
-            rssi_array[write_index] = value->rssi;           
-
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].
-            write_index = write_index;
-
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].
-            coordinateX = atof(coordinateX);          
-
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].
-            coordinateY = atof(coordinateY);
 
         // for node of hashtable structure
         new_head->key = MAC_address;
@@ -661,13 +638,28 @@ void hashtable_put_mac_table(HashTable * h_table,
         new_head->deleteValue = h_table->deleteValue;
         new_head->next = NULL;
         
+        pthread_mutex_lock(ht_mutex);
+
+        prev_head = h_table -> table[index];
+
         new_head->next = prev_head;
             
         h_table->count = h_table->count + 1;
-        h_table->table[index] = new_head;                                   
+        h_table->table[index] = new_head;  
+
+        pthread_mutex_unlock(ht_mutex);
     }
+
+    curr = h_table -> table[index];
     
-    pthread_mutex_unlock(ht_mutex);   
+    hashtable_update_and_insert_uuid(
+        h_table, 
+        curr, 
+        key, 
+        key_len, 
+        value, 
+        number_of_rssi_signals_under_tracked);
+
 }
 
 int get_rssi_weight(float average_rssi,
@@ -737,6 +729,7 @@ void hashtable_summarize_location_information(
         HNode * curr = table[i];
 
         while(curr != NULL){
+
         if(curr != NULL){
 
             table_row = curr -> value;            
@@ -819,7 +812,9 @@ void hashtable_summarize_location_information(
                    last_reported_timestamp < 
                    current_time - number_of_rssi_signals_under_tracked){
 
+                    pthread_mutex_lock(table_row->ht_mutex);
                     table_row -> uuid_record_table_array[j].is_in_use = false;
+                    pthread_mutex_unlock(table_row->ht_mutex);
 
                     continue;
                 }
@@ -859,7 +854,7 @@ void hashtable_summarize_location_information(
                 if(valid_rssi_count == 0){
                     continue;
                 }
- 
+     
                 avg_rssi = sum_rssi / valid_rssi_count;                     
                 
                 weight_count_for_specific_uuid = 
