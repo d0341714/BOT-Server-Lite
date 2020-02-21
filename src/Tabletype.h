@@ -126,8 +126,6 @@ typedef struct {
    file. */
    size_t number_uuid_size;
 
-   pthread_mutex_t *ht_mutex;
-
 } hash_table_row;
 
 #endif
