@@ -698,8 +698,6 @@ void hashtable_summarize_location_information(
     const int drift_distance) {
 
     int size = h_table->size;
-    int table_count = h_table->count;
-    int summarized_count = 0;
     HNode ** table = h_table->table;
     int i = 0;
     int j = 0;
@@ -727,112 +725,38 @@ void hashtable_summarize_location_information(
     //pthread_mutex_lock(ht_mutex);       
 
     for (i = 0; i < size; i++) {
-        
+
         HNode * curr = table[i];
 
-        // one node in hashtable may have one or more mac_address
         while(curr != NULL){
 
-            if(curr != NULL){
+        if(curr != NULL){
 
-                summarized_count ++;
- 
-                table_row = curr -> value;            
-                avg_rssi = INITIAL_AVERAGE_RSSI;            
+            table_row = curr -> value;            
+            avg_rssi = INITIAL_AVERAGE_RSSI;            
             
-                //calculate the average rssi signal of current summary 
-                //lbeacon uuid
-                for(m = 0; m < table_row -> number_uuid_size; m++){
+            //calculate the average rssi signal of current summary lbeacon uuid
+            for(m = 0; m < table_row -> number_uuid_size; m++){
 
-                    if(table_row -> uuid_record_table_array[m].is_in_use &&
-                       strcmp(table_row -> uuid_record_table_array[m].uuid,
-                              table_row -> summary_uuid) == 0){
+                if(table_row -> uuid_record_table_array[m].is_in_use &&
+                   strcmp(table_row -> uuid_record_table_array[m].uuid,
+                          table_row -> summary_uuid) == 0){
 
-                        // ensure current summary lbeacon uuid is still
-                        // scanning this object.
-                        if(table_row -> uuid_record_table_array[m].
-                           last_reported_timestamp < 
-                           current_time - number_of_rssi_signals_under_tracked){
-
-                            break;
-                        }
-
-                        // calculate the average rssi
-                        sum_rssi = 0;
-                        valid_rssi_count = 0;
-                        for(k = 0; k < number_of_rssi_signals_under_tracked; k++){
-
-                            if(table_row->uuid_record_table_array[m].
-                               rssi_array[k] == 0)
-                                continue;
-
-                            prev_index = 
-                                (k - 1 + number_of_rssi_signals_under_tracked) % 
-                                number_of_rssi_signals_under_tracked;
-
-                            // ignore abnormal signal
-                            if(table_row->uuid_record_table_array[m].
-                               rssi_array[prev_index] != 0 && 
-                               abs(table_row->uuid_record_table_array[m].
-                                   rssi_array[k] - 
-                                   table_row->uuid_record_table_array[m].
-                                   rssi_array[prev_index]) > 
-                               unreasonable_rssi_change){
-                        
-                                continue;
-                            }
-                            
-                            sum_rssi += 
-                                table_row ->
-                                uuid_record_table_array[m].rssi_array[k];
-                            valid_rssi_count++; 
-                        }
-                    
-                        if(valid_rssi_count > 0){
-                            avg_rssi = sum_rssi / valid_rssi_count;                     
-                            table_row -> average_rssi = (int)avg_rssi;
-                            strcpy(table_row -> final_timestamp,
-                                   table_row -> 
-                                   uuid_record_table_array[m].final_timestamp);
-                        
-                        }
-                        break;
-                    } //if
-                } //for
-
-                // calculate average rssi of all lbeacons and choose the 
-                // strongest lbeacon uuid
-                weight_x = 0;
-                weight_y = 0;
-                weight_count = 0;
-           
-                for(j = 0 ; j < table_row->number_uuid_size ; j++){
-                    // ignore not used element 
-                    if(!table_row->uuid_record_table_array[j].is_in_use) {
-                        continue;   
-                    }
-                
-                    // ignore and delete old lbeacon uuid which has not scanned
-                    // this object for long time.
-                    if(table_row -> uuid_record_table_array[j].
+                    // ensure current summary lbeacon uuid is still scanning this
+                    // object.
+                    if(table_row -> uuid_record_table_array[m].
                        last_reported_timestamp < 
                        current_time - number_of_rssi_signals_under_tracked){
 
-                        pthread_mutex_lock(table_row->ht_mutex);
-                        table_row -> uuid_record_table_array[j].is_in_use = false;
-                        pthread_mutex_unlock(table_row->ht_mutex);
-
-                        continue;
+                        break;
                     }
-                
+
                     // calculate the average rssi
                     sum_rssi = 0;
-                    valid_rssi_count = 0; 
-                    weight_count_for_specific_uuid = 0;
-
+                    valid_rssi_count = 0;
                     for(k = 0; k < number_of_rssi_signals_under_tracked; k++){
 
-                        if(table_row->uuid_record_table_array[j].
+                        if(table_row->uuid_record_table_array[m].
                            rssi_array[k] == 0)
                             continue;
 
@@ -840,88 +764,148 @@ void hashtable_summarize_location_information(
                             (k - 1 + number_of_rssi_signals_under_tracked) % 
                             number_of_rssi_signals_under_tracked;
 
-                        if(table_row->uuid_record_table_array[j].
-                           rssi_array[prev_index] != 0 &&
-                           abs(table_row->uuid_record_table_array[j].
+                        // ignore abnormal signal
+                        if(table_row->uuid_record_table_array[m].
+                           rssi_array[prev_index] != 0 && 
+                           abs(table_row->uuid_record_table_array[m].
                                rssi_array[k] - 
-                               table_row->uuid_record_table_array[j].
-                               rssi_array[prev_index]) > 
-                           unreasonable_rssi_change){
+                               table_row->uuid_record_table_array[m].
+                               rssi_array[prev_index]) > unreasonable_rssi_change){
                         
                             continue;
                         }
-
+                            
                         sum_rssi += 
-                            table_row -> uuid_record_table_array[j].rssi_array[k];
-                        valid_rssi_count++;   
+                            table_row -> uuid_record_table_array[m].rssi_array[k];
+                        valid_rssi_count++; 
 
-                    }//for
+                    }
+                    
+                    if(valid_rssi_count > 0){
+                        avg_rssi = sum_rssi / valid_rssi_count;                     
+                        table_row -> average_rssi = (int)avg_rssi;
+                        strcpy(table_row -> final_timestamp,
+                               table_row -> 
+                               uuid_record_table_array[m].final_timestamp);
+                        
+                    }
 
-                    // ignore this lbeacon uuid if no signal data is used.
-                    if(valid_rssi_count == 0){
+                    break;
+                }
+            }
+
+            // calculate average rssi of all lbeacons and choose the strongest 
+            // lbeacon uuid
+            weight_x = 0;
+            weight_y = 0;
+            weight_count = 0;
+           
+            for(j = 0 ; j < table_row->number_uuid_size ; j++){
+                // ignore not used element 
+                if(!table_row->uuid_record_table_array[j].is_in_use) {
+                    continue;   
+                }
+                
+                // ignore and delete old lbeacon uuid which has not scanned
+                // this object for long time.
+                if(table_row -> uuid_record_table_array[j].
+                   last_reported_timestamp < 
+                   current_time - number_of_rssi_signals_under_tracked){
+
+                    pthread_mutex_lock(table_row->ht_mutex);
+                    table_row -> uuid_record_table_array[j].is_in_use = false;
+                    pthread_mutex_unlock(table_row->ht_mutex);
+
+                    continue;
+                }
+                
+                // calculate the average rssi
+                sum_rssi = 0;
+                valid_rssi_count = 0; 
+                weight_count_for_specific_uuid = 0;
+
+                for(k = 0; k < number_of_rssi_signals_under_tracked; k++){
+
+                    if(table_row->uuid_record_table_array[j].
+                       rssi_array[k] == 0)
+                        continue;
+
+                    prev_index = 
+                        (k - 1 + number_of_rssi_signals_under_tracked) % 
+                        number_of_rssi_signals_under_tracked;
+
+                    if(table_row->uuid_record_table_array[j].
+                       rssi_array[prev_index] != 0 &&
+                       abs(table_row->uuid_record_table_array[j].
+                           rssi_array[k] - 
+                           table_row->uuid_record_table_array[j].
+                           rssi_array[prev_index]) > unreasonable_rssi_change){
+                        
                         continue;
                     }
+
+                    sum_rssi += 
+                        table_row -> uuid_record_table_array[j].rssi_array[k];
+                    valid_rssi_count++;   
+
+                }
+
+                // ignore this lbeacon uuid if no signal data is used.
+                if(valid_rssi_count == 0){
+                    continue;
+                }
      
-                    avg_rssi = sum_rssi / valid_rssi_count;                     
+                avg_rssi = sum_rssi / valid_rssi_count;                     
                 
-                    weight_count_for_specific_uuid = 
-                        get_rssi_weight(avg_rssi, rssi_weight_multiplier);
+                weight_count_for_specific_uuid = 
+                    get_rssi_weight(avg_rssi, rssi_weight_multiplier);
 
-                    weight_count += weight_count_for_specific_uuid;
+                weight_count += weight_count_for_specific_uuid;
 
-                    weight_x += 
-                        table_row -> uuid_record_table_array[j].coordinateX * 
-                        weight_count_for_specific_uuid;
-                    weight_y += table_row->uuid_record_table_array[j].coordinateY * 
-                        weight_count_for_specific_uuid;               
+                weight_x += 
+                    table_row -> uuid_record_table_array[j].coordinateX * 
+                    weight_count_for_specific_uuid;
+                weight_y += table_row->uuid_record_table_array[j].coordinateY * 
+                    weight_count_for_specific_uuid;               
                 
-                    // compare average rssi against current summary uuid
-                    if(avg_rssi - table_row -> average_rssi  > 
-                       rssi_difference_of_location_accuracy_tolerance){
+                // compare average rssi against current summary uuid
+                if(avg_rssi - table_row -> average_rssi  > 
+                   rssi_difference_of_location_accuracy_tolerance){
 
-                        strcpy(table_row->summary_uuid, 
-                               table_row->uuid_record_table_array[j].uuid);
+                    strcpy(table_row->summary_uuid, 
+                           table_row->uuid_record_table_array[j].uuid);
 
-                        strcpy(table_row->initial_timestamp, 
-                               table_row->uuid_record_table_array[j].
-                               initial_timestamp);
+                    strcpy(table_row->initial_timestamp, 
+                           table_row->uuid_record_table_array[j].initial_timestamp);
 
-                        strcpy(table_row->final_timestamp, 
-                               table_row->uuid_record_table_array[j].
-                               final_timestamp);
+                    strcpy(table_row->final_timestamp, 
+                           table_row->uuid_record_table_array[j].final_timestamp);
 
-                        table_row -> average_rssi = (int)avg_rssi;
-                    }
-                } // for
-            
-                if(weight_count > 0){
-
-                    summary_coordinateX_this_turn = 
-                        weight_x/(float)weight_count;
-                    summary_coordinateY_this_turn = 
-                        weight_y/(float)weight_count;
-
-                    // avoid moving location pins when the objects are not 
-                    // really moved.
-                    if(abs(summary_coordinateX_this_turn - 
-                           table_row->summary_coordinateX) > drift_distance || 
-                       abs(summary_coordinateY_this_turn - 
-                           table_row->summary_coordinateY) > drift_distance  ){
-                        //coordinateX
-                        table_row->summary_coordinateX = 
-                            summary_coordinateX_this_turn;
-                        //coordinateY
-                        table_row->summary_coordinateY = 
-                            summary_coordinateY_this_turn;
-                     }                
-                }           
+                    table_row -> average_rssi = (int)avg_rssi;
+                }
             }
-            curr->value = table_row;
-            curr = curr->next;
-        } // while
-        /* return if all mac_address has been updated*/
-        if(summarized_count == table_count){
-            return;
+            
+            if(weight_count > 0){
+
+                summary_coordinateX_this_turn = weight_x/(float)weight_count;
+                summary_coordinateY_this_turn = weight_y/(float)weight_count;
+
+                // avoid moving location pins when the objects are not really moved.
+                if(abs(summary_coordinateX_this_turn - 
+                       table_row->summary_coordinateX) > drift_distance || 
+                   abs(summary_coordinateY_this_turn - 
+                       table_row->summary_coordinateY) > drift_distance){
+                    //coordinateX
+                    table_row->summary_coordinateX = 
+                        summary_coordinateX_this_turn;
+                    //coordinateY
+                    table_row->summary_coordinateY = 
+                        summary_coordinateY_this_turn;
+                }                
+            }           
+        }
+        curr->value = table_row;
+        curr = curr->next;
         }
     }
 
