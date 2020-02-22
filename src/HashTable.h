@@ -261,19 +261,19 @@ HashTable * hash_table_of_specific_area_id(int area_id);
                   is WORK_SUCCESSFULLY.
  */
 
-ErrorCode hashtable_update_object_tracking_data(DBConnectionListHead *db_connection_list_head,
-                                                char* buf, 
-                                                size_t buf_len, 
-                                                const int number_of_lbeacons_under_tracked,
-                                                const int number_of_rssi_signals_under_tracked);
+ErrorCode hashtable_update_object_tracking_data(
+    DBConnectionListHead *db_connection_list_head,
+    char* buf, 
+    size_t buf_len, 
+    const int number_of_lbeacons_under_tracked,
+    const int number_of_rssi_signals_under_tracked);
 
 /*
-  hashtable_update_and_insert_uuid:
+  hashtable_maintain_key_part:
 
-     This function searches the input hashtable to find the input mac_address.
-     If the mac_address exists in the hashtable, this functions updates the 
-     input lbeacon uuid information to existing data or inserts the input 
-     lbeacon uuid information to the array of recently scanned lbeacon uuid.
+     This function searches and maintains the input hashtable to find the input
+     mac_address. It returns the index of the input mac_address in the input 
+     hashtable.
 
   Parameters:
 
@@ -283,6 +283,10 @@ ErrorCode hashtable_update_object_tracking_data(DBConnectionListHead *db_connect
 
      key_len - the length of input key
 
+     number_of_lbeacons_under_tracked - 
+         the number of lbeacons to be kept in the arrary of recently scanned 
+         lbeacon uuids to calculate location of objects 
+
      number_of_rssi_signals_under_tracked - 
          the time length in seconds used to determine whether the last reported
          timestamp of objects are valid and should be treated as existing in 
@@ -290,15 +294,14 @@ ErrorCode hashtable_update_object_tracking_data(DBConnectionListHead *db_connect
 
   Return value:
 
-     1 - the input mac_address already exists in the hashtable
-     0 - the input mac_address does not exist in the hashtable
+     index of the input mac_address key in the input hashtable 
  */
 
-int hashtable_update_and_insert_uuid(HashTable * h_table, 
-                                     void * key, 
-                                     size_t key_len, 
-                                     void * value, 
-                                     int number_of_rssi_signals_under_tracked);
+int hashtable_maintain_key_part(HashTable * h_table, 
+                                void * key, 
+                                size_t key_len, 
+                                const int number_of_lbeacons_under_tracked,
+                                const int number_of_rssi_signals_under_tracked);
 
 /*
   hashtable_put_mac_table:

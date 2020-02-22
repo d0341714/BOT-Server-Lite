@@ -126,6 +126,8 @@ typedef struct {
    file. */
    size_t number_uuid_size;
 
+   pthread_mutex_t node_lock;
+
 } hash_table_row;
 
 #endif

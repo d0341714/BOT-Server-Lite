@@ -335,170 +335,103 @@ ErrorCode hashtable_update_object_tracking_data(
     return WORK_SUCCESSFULLY;
 }
 
-int hashtable_update_and_insert_uuid(
+uint32_t hashtable_maintain_key_part(
     HashTable * h_table, 
     void * key, 
     size_t key_len, 
-    DataForHashtable * value, 
+    const int number_of_lbeacons_under_tracked,
     int number_of_rssi_signals_under_tracked){ 
-
+ 
+    uint32_t ret_index = -1;
     int i = 0;
     int j = 0;
-    int time_gap = 0;
-    int write_index = 0;
+    hash_table_row* hash_table_row_for_new_MAC;
     
-    int index_not_used = 0;
-    int record_table_size;
-    hash_table_row * exist_MAC_address_row;
-
     uint32_t hash_val = h_table->hash(key, key_len);
     uint32_t index = hash_val % h_table->size;
     HNode * curr = h_table->table[index];
+    HNode * prev_head = NULL;
+    HNode * new_head = NULL;
 
-    char coordinateX[LENGTH_OF_COORDINATE];
-    char coordinateY[LENGTH_OF_COORDINATE];
-    uuid_record_table_row* uuid_record_table_row_resize_ptr;
-        
+    char *MAC_address;
+
 
     while (curr) {      
         // found existing node of mac_address
         if(1 == h_table->equal(curr->key, key)){
-
-            exist_MAC_address_row=curr->value;
-            record_table_size = exist_MAC_address_row->number_uuid_size;
-            strcpy(exist_MAC_address_row->battery,value->battery_voltage);
-            strcpy(exist_MAC_address_row->panic_button,value->panic_button);
-            exist_MAC_address_row->last_reported_timestamp = get_system_time();
-            
-            //match lbeacon
-            index_not_used = -1;
-            for(i = 0; i < record_table_size; i++){
-
-                if(index_not_used == -1 &&
-                   !exist_MAC_address_row -> uuid_record_table_array[i].is_in_use){
-
-                   // record the index of not used space of uuid array for not-found case 
-                   // below.
-                       index_not_used = i;
-
-                }else if(exist_MAC_address_row -> uuid_record_table_array[i].is_in_use && 
-                   0 == strcmp(value -> lbeacon_uuid,
-                               exist_MAC_address_row -> 
-                               uuid_record_table_array[i].uuid)){
-
-                    // fill the missing rssi signal as zero.
-                    time_gap = atoi(value -> final_timestamp_GMT) - 
-                               atoi(exist_MAC_address_row ->
-                               uuid_record_table_array[i].final_timestamp);
-
-                    strcpy(exist_MAC_address_row ->
-                           uuid_record_table_array[i].final_timestamp,
-                           value -> final_timestamp_GMT);
-
-                    exist_MAC_address_row -> 
-                    uuid_record_table_array[i].last_reported_timestamp = 
-                        get_system_time();
-
-                    write_index = exist_MAC_address_row -> 
-                        uuid_record_table_array[i].write_index;
-
-                    // fill zero to rssi_array[] for the missing seconds.
-                    if(time_gap > 1){
-
-                        for(j = 2 ; j <= time_gap ; j++){
-                        
-                            write_index++;
-                            if(write_index == 
-                               number_of_rssi_signals_under_tracked){
-
-                                write_index = 0;
-                            }
-
-                            exist_MAC_address_row -> 
-                            uuid_record_table_array[i].
-                            rssi_array[write_index] = 0;
-                        }
-                    }
-                    
-                    write_index++;
-                    if(write_index == 
-                        number_of_rssi_signals_under_tracked){
-
-                        write_index = 0;
-                    }
-                   
-                    exist_MAC_address_row ->
-                    uuid_record_table_array[i].
-                    rssi_array[write_index] = value->rssi;
-
-                    exist_MAC_address_row ->
-                    uuid_record_table_array[i].write_index = write_index;
- 
-                    return 1;
-                }
-            }
-            
-            // case of new lbeacon uuid
-            if(index_not_used != -1){
-                
-                strcpy(exist_MAC_address_row -> 
-                       uuid_record_table_array[index_not_used].uuid,
-                       value->lbeacon_uuid);
-
-                strcpy(exist_MAC_address_row -> 
-                       uuid_record_table_array[index_not_used].
-                       initial_timestamp, 
-                       value -> initial_timestamp_GMT);
-
-                strcpy(exist_MAC_address_row -> 
-                       uuid_record_table_array[index_not_used].
-                       final_timestamp, 
-                       value->final_timestamp_GMT);
-
-                exist_MAC_address_row ->
-                uuid_record_table_array[index_not_used].
-                last_reported_timestamp  = get_system_time();
-
-                write_index = 0;
-                exist_MAC_address_row -> 
-                uuid_record_table_array[index_not_used].rssi_array[write_index] = 
-                value->rssi;
-
-                exist_MAC_address_row -> 
-                uuid_record_table_array[index_not_used].write_index = 
-                write_index;
-                
-                memcpy(coordinateX,value -> 
-                       lbeacon_uuid + INDEX_OF_COORDINATE_X_IN_UUID, 
-                       LENGTH_OF_COORDINATE_IN_UUID);
-                coordinateX[LENGTH_OF_COORDINATE_IN_UUID]='\0';
-                
-                exist_MAC_address_row -> 
-                uuid_record_table_array[index_not_used].coordinateX = 
-                atof(coordinateX);          
-
-                memcpy(coordinateY,value -> 
-                       lbeacon_uuid + INDEX_OF_COORDINATE_Y_IN_UUID, 
-                       LENGTH_OF_COORDINATE_IN_UUID);
-                coordinateY[LENGTH_OF_COORDINATE_IN_UUID]='\0';
-
-                exist_MAC_address_row -> 
-                uuid_record_table_array[index_not_used].coordinateY = 
-                atof(coordinateY);
-                
-                exist_MAC_address_row -> 
-                uuid_record_table_array[index_not_used].is_in_use = true;
-                
-            }else{
-                zlog_error(category_debug,"need more uuid record table");
-            }                   
-            
-            return 1;
+            ret_index = index;
+            break;
         }
         curr = curr->next;
     }
 
-    return 0;
+    if(ret_index != -1)
+        return ret_index;
+    
+   
+    // create new node for input mac_address key
+
+    // code to add key and value in O(1) time.
+    hash_val = h_table -> hash(key, key_len);
+    prev_head = h_table -> table[index];  
+
+    new_head = malloc(sizeof(HNode));
+    if(new_head == NULL){
+        zlog_error(category_debug,"malloc failed");
+
+        return ret_index;
+    }
+    memset(new_head, 0, sizeof(HNode));
+               
+    MAC_address = mp_alloc(&mac_address_mempool);
+    if(MAC_address == NULL){
+        free(new_head);
+        zlog_error(category_debug,"malloc failed");
+
+        return ret_index;
+    }
+    memset(MAC_address, 0, LENGTH_OF_MAC_ADDRESS);
+    strcpy(MAC_address, key);
+            
+    hash_table_row_for_new_MAC = mp_alloc(&hash_table_row_mempool);
+    if(hash_table_row_for_new_MAC == NULL){
+        free(new_head);
+        mp_free(&hash_table_row_mempool, MAC_address);
+
+        return;
+    }
+    memset(hash_table_row_for_new_MAC, 0, sizeof(hash_table_row));
+
+    pthread_mutex_init(&hash_table_row_for_new_MAC -> node_lock, NULL);
+            
+    for(i = 0; i < number_of_lbeacons_under_tracked; i++){
+        hash_table_row_for_new_MAC -> 
+            uuid_record_table_array[i].is_in_use = false;
+        hash_table_row_for_new_MAC ->
+            uuid_record_table_array[i].write_index = 0;
+    }
+
+    hash_table_row_for_new_MAC -> number_uuid_size = 
+        number_of_lbeacons_under_tracked;
+
+    // for node of hashtable structure
+    new_head->key = MAC_address;
+    new_head->key_len = LENGTH_OF_MAC_ADDRESS;
+            
+    new_head->value = hash_table_row_for_new_MAC;
+    new_head->value_len = sizeof(hash_table_row_for_new_MAC);         
+            
+    new_head->deleteKey = h_table->deleteKey;
+    new_head->deleteValue = h_table->deleteValue;
+    new_head->next = NULL;
+        
+    new_head->next = prev_head;
+            
+    h_table->count = h_table->count + 1;
+    h_table->table[index] = new_head;   
+
+    return ret_index;
+
 }
 
 void hashtable_put_mac_table(HashTable * h_table, 
@@ -508,163 +441,205 @@ void hashtable_put_mac_table(HashTable * h_table,
                              const int number_of_lbeacons_under_tracked,
                              const int number_of_rssi_signals_under_tracked){
 
-    int res;
-    uint32_t hash_val;
     uint32_t index;
-    HNode * prev_head;
-    HNode * new_head;
-    hash_table_row* hash_table_row_for_new_MAC;
+    HNode * curr = NULL;
     char coordinateX[LENGTH_OF_COORDINATE];
     char coordinateY[LENGTH_OF_COORDINATE];
     char* MAC_address;
     int i;
     int write_index = 0;
+    int time_gap = 0;
+    
+    int j = 0;
+    int index_not_used = 0;
+    int record_table_size;
+    hash_table_row* hash_table_row_for_new_MAC;
+    hash_table_row * exist_MAC_address_row;
+    const int MISSED_SINGAL_SINCE_SECONDS = 2;
+
     //try to replace existing key's value if possible
     pthread_mutex_t * ht_mutex = h_table->ht_mutex; 
 
 
     pthread_mutex_lock(ht_mutex);
 
-    res = hashtable_update_and_insert_uuid(
+    index = -1;
+    index = hashtable_maintain_key_part(
         h_table, 
         key, 
         key_len, 
-        value, 
+        number_of_lbeacons_under_tracked,
         number_of_rssi_signals_under_tracked);
     
-    // for a new mac_address
-    if (res == 0 ) {
-
-       
-        //code to add key and value in O(1) time.
-        hash_val = h_table -> hash(key, key_len);
-        index = hash_val % h_table->size;       
-        prev_head = h_table -> table[index];  
-
-        new_head = malloc(sizeof(HNode));
-        if(new_head == NULL){
-            zlog_error(category_debug,"malloc failed");
-
-            pthread_mutex_unlock(ht_mutex);   
-            return;
-        }
-
-        memset(new_head,0,sizeof(HNode));
-               
-        MAC_address = mp_alloc(&mac_address_mempool);
-        if(MAC_address == NULL){
-            free(new_head);
-            zlog_error(category_debug,"malloc failed");
-
-            pthread_mutex_unlock(ht_mutex);   
-            return;
-        }
-        memset(MAC_address, 0, LENGTH_OF_MAC_ADDRESS);
-        strcpy(MAC_address, key);
-            
-        hash_table_row_for_new_MAC = mp_alloc(&hash_table_row_mempool);
-        if(hash_table_row_for_new_MAC == NULL){
-            free(new_head);
-            mp_free(&hash_table_row_mempool, MAC_address);
-
-            pthread_mutex_unlock(ht_mutex);   
-            return;
-        }
-
-        memset(hash_table_row_for_new_MAC, 0, sizeof(hash_table_row));
-            
-        // for summary information
-        strcpy(hash_table_row_for_new_MAC -> summary_uuid, 
-               value -> lbeacon_uuid);
-        strcpy(hash_table_row_for_new_MAC -> panic_button,
-               value -> panic_button);   
-            
-        memcpy(coordinateX,
-               value -> lbeacon_uuid + INDEX_OF_COORDINATE_X_IN_UUID,
-               LENGTH_OF_COORDINATE_IN_UUID);
-        coordinateX[LENGTH_OF_COORDINATE_IN_UUID] = '\0';
-        
-        hash_table_row_for_new_MAC -> summary_coordinateX = atof(coordinateX);
-
-        memcpy(coordinateY,
-               value -> lbeacon_uuid + INDEX_OF_COORDINATE_Y_IN_UUID, 
-               LENGTH_OF_COORDINATE_IN_UUID);
-        coordinateY[LENGTH_OF_COORDINATE_IN_UUID] = '\0';
-
-        hash_table_row_for_new_MAC -> summary_coordinateY = atof(coordinateY);
-
-        strcpy(hash_table_row_for_new_MAC -> battery, value->battery_voltage);
-        hash_table_row_for_new_MAC -> average_rssi = INITIAL_AVERAGE_RSSI;
-        strcpy(hash_table_row_for_new_MAC -> initial_timestamp,
-               value->initial_timestamp_GMT);         
-        strcpy(hash_table_row_for_new_MAC -> final_timestamp,
-               value->final_timestamp_GMT);
-            
-        hash_table_row_for_new_MAC -> last_reported_timestamp = 
-            get_system_time();
-            
-        // for first lbeacon uuid information
-        strcpy(hash_table_row_for_new_MAC -> uuid_record_table_array[0].uuid,
-               value->lbeacon_uuid);                
-
-        strcpy(hash_table_row_for_new_MAC -> 
-               uuid_record_table_array[0].initial_timestamp,
-               value -> initial_timestamp_GMT);
-
-        strcpy(hash_table_row_for_new_MAC -> 
-               uuid_record_table_array[0].final_timestamp,
-               value -> final_timestamp_GMT);
-
-        for(i = 0; i < MAX_NUMBER_OF_LBEACON_UNDER_TRACKING; i++){
-            hash_table_row_for_new_MAC->uuid_record_table_array[i].is_in_use = 
-                false;
-        }
-
-        hash_table_row_for_new_MAC -> number_uuid_size = 
-            number_of_lbeacons_under_tracked;
-
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].
-            last_reported_timestamp = get_system_time();
-
-        write_index = 0;
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].
-            rssi_array[write_index] = value->rssi;           
-
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].
-            write_index = write_index;
-
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].
-            coordinateX = atof(coordinateX);          
-
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].
-            coordinateY = atof(coordinateY);
-
-        hash_table_row_for_new_MAC -> 
-            uuid_record_table_array[0].is_in_use = true;    
-
-        // for node of hashtable structure
-        new_head->key = MAC_address;
-        new_head->key_len = LENGTH_OF_MAC_ADDRESS;
-            
-        new_head->value = hash_table_row_for_new_MAC;
-        new_head->value_len = sizeof(hash_table_row_for_new_MAC);         
-            
-        new_head->deleteKey = h_table->deleteKey;
-        new_head->deleteValue = h_table->deleteValue;
-        new_head->next = NULL;
-        
-        new_head->next = prev_head;
-            
-        h_table->count = h_table->count + 1;
-        h_table->table[index] = new_head;                                   
+    if(index == -1){
+        pthread_mutex_unlock(ht_mutex);
+        return;
     }
-    
-    pthread_mutex_unlock(ht_mutex);   
+
+    if(index != -1){
+        
+        curr = h_table->table[index];
+
+        while(curr){
+            if(1 == h_table->equal(curr->key, key)){
+
+                exist_MAC_address_row = curr -> value;
+
+                // lock node of mac_address and release whole hashtable lock
+                pthread_mutex_lock(&exist_MAC_address_row -> node_lock);
+                pthread_mutex_unlock(ht_mutex);
+
+
+                // update real-time information 
+                record_table_size = exist_MAC_address_row -> number_uuid_size;
+                strcpy(exist_MAC_address_row -> battery, 
+                       value -> battery_voltage);
+                strcpy(exist_MAC_address_row -> panic_button,
+                       value->panic_button);
+                exist_MAC_address_row -> last_reported_timestamp = 
+                    get_system_time();
+
+                //search lbeacon uuid in the array of recently scanned 
+                //lbeacon uuid
+                index_not_used = -1;
+
+                for(i = 0; i < record_table_size; i++){
+
+                    if(index_not_used == -1 &&
+                       !exist_MAC_address_row ->
+                        uuid_record_table_array[i].is_in_use){
+
+                       // record the index of not used space of uuid array for 
+                       // not-found case below.
+                       index_not_used = i;
+
+                    }else if(exist_MAC_address_row -> 
+                             uuid_record_table_array[i].is_in_use && 
+                             0 == strcmp(value -> lbeacon_uuid,
+                                         exist_MAC_address_row -> 
+                                         uuid_record_table_array[i].uuid)){
+
+                        // fill the missing rssi signal as zero.
+                        time_gap = atoi(value -> final_timestamp_GMT) - 
+                                   atoi(exist_MAC_address_row ->
+                                   uuid_record_table_array[i].final_timestamp);
+
+                        strcpy(exist_MAC_address_row ->
+                               uuid_record_table_array[i].final_timestamp,
+                               value -> final_timestamp_GMT);
+
+                        exist_MAC_address_row -> 
+                        uuid_record_table_array[i].last_reported_timestamp = 
+                            get_system_time();
+
+                        write_index = exist_MAC_address_row -> 
+                            uuid_record_table_array[i].write_index;
+
+                        // fill zero to rssi_array[] for the missing seconds.
+                        if(time_gap >= MISSED_SINGAL_SINCE_SECONDS){
+
+                            for(j = MISSED_SINGAL_SINCE_SECONDS ; 
+                                j <= time_gap ; j++){
+                        
+                                write_index++;
+                                if(write_index == 
+                                   number_of_rssi_signals_under_tracked){
+
+                                    write_index = 0;
+                                }
+
+                                exist_MAC_address_row -> 
+                                uuid_record_table_array[i].
+                                rssi_array[write_index] = 0;
+                            }
+                        }
+                    
+                        write_index++;
+                        if(write_index == 
+                            number_of_rssi_signals_under_tracked){
+
+                            write_index = 0;
+                        }
+                   
+                        exist_MAC_address_row ->
+                        uuid_record_table_array[i].
+                        rssi_array[write_index] = value->rssi;
+
+                        exist_MAC_address_row ->
+                        uuid_record_table_array[i].write_index = write_index;
+ 
+                        pthread_mutex_unlock(&exist_MAC_address_row -> node_lock);
+                        return;
+                    } // else
+                } // for-loop
+            
+                // case of new lbeacon uuid
+                if(index_not_used != -1){
+                
+                    strcpy(exist_MAC_address_row -> 
+                           uuid_record_table_array[index_not_used].uuid,
+                           value->lbeacon_uuid);
+
+                    strcpy(exist_MAC_address_row -> 
+                           uuid_record_table_array[index_not_used].
+                           initial_timestamp, 
+                           value -> initial_timestamp_GMT);
+
+                    strcpy(exist_MAC_address_row -> 
+                           uuid_record_table_array[index_not_used].
+                           final_timestamp, 
+                           value->final_timestamp_GMT);
+
+                    exist_MAC_address_row ->
+                    uuid_record_table_array[index_not_used].
+                    last_reported_timestamp  = get_system_time();
+
+                    write_index = 0;
+                    exist_MAC_address_row -> 
+                    uuid_record_table_array[index_not_used].
+                    rssi_array[write_index] = value->rssi;
+
+                    exist_MAC_address_row -> 
+                    uuid_record_table_array[index_not_used].
+                    write_index = write_index;
+                
+                    memcpy(coordinateX,value -> 
+                           lbeacon_uuid + INDEX_OF_COORDINATE_X_IN_UUID, 
+                           LENGTH_OF_COORDINATE_IN_UUID);
+                    coordinateX[LENGTH_OF_COORDINATE_IN_UUID]='\0';
+                
+                    exist_MAC_address_row -> 
+                    uuid_record_table_array[index_not_used].
+                    coordinateX = atof(coordinateX);          
+
+                    memcpy(coordinateY,value -> 
+                           lbeacon_uuid + INDEX_OF_COORDINATE_Y_IN_UUID, 
+                           LENGTH_OF_COORDINATE_IN_UUID);
+                    coordinateY[LENGTH_OF_COORDINATE_IN_UUID]='\0';
+
+                    exist_MAC_address_row -> 
+                    uuid_record_table_array[index_not_used].
+                    coordinateY = atof(coordinateY);
+                
+                    exist_MAC_address_row -> 
+                    uuid_record_table_array[index_not_used].is_in_use = true;
+                
+                }else{
+                    zlog_error(category_debug,"need more uuid record table");
+                } 
+
+                pthread_mutex_unlock(&exist_MAC_address_row->node_lock);
+
+                break;
+
+            } // if
+
+            curr = curr->next;
+        } // while
+    }
+
+    pthread_mutex_unlock(ht_mutex);
+    return;
 }
 
 int get_rssi_weight(float average_rssi,
@@ -734,7 +709,6 @@ void hashtable_summarize_location_information(
     char strongest_initial_timestamp[LENGTH_OF_EPOCH_TIME];
     char strongest_final_timestamp[LENGTH_OF_EPOCH_TIME];
 
-//    pthread_mutex_lock(ht_mutex);       
 
     for (i = 0; i < size; i++) {
 
@@ -760,6 +734,8 @@ void hashtable_summarize_location_information(
           
             table_row = curr -> value; 
 
+            pthread_mutex_lock(&table_row->node_lock);
+
            
             //calculate the average rssi signal of current summary lbeacon uuid
             for(m = 0; m < table_row -> number_uuid_size; m++){
@@ -774,8 +750,8 @@ void hashtable_summarize_location_information(
                        last_reported_timestamp < 
                        current_time - number_of_rssi_signals_under_tracked){
 
-                        table_row -> uuid_record_table_array[m].is_in_use = 
-                            false;
+                        table_row -> uuid_record_table_array[m].
+                            is_in_use = false;
                        
                         break;
                     }
@@ -847,7 +823,8 @@ void hashtable_summarize_location_information(
                    last_reported_timestamp < 
                    current_time - number_of_rssi_signals_under_tracked){
 
-                    table_row -> uuid_record_table_array[j].is_in_use = false;
+                    table_row -> uuid_record_table_array[j].
+                        is_in_use = false;
                     continue;
                 }
                 
@@ -954,18 +931,19 @@ void hashtable_summarize_location_information(
                 strcpy(table_row->final_timestamp,
                        summary_final_timestamp); 
             }
-        }
-        curr->value = table_row;
-        curr = curr->next;
-        }
+            pthread_mutex_unlock(&table_row->node_lock);
+            } // if
+        
+            curr->value = table_row;
+            curr = curr->next;
+        } // while
+
         if(summarized_count == table_count){
 
- //         pthread_mutex_unlock(ht_mutex);
-            return;
+           return;
         }
-    }
+    } // for-loop
 
-//    pthread_mutex_unlock(ht_mutex);
 }
 
 void hashtable_traverse_areas_to_upload_latest_location(
