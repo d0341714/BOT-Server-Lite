@@ -669,6 +669,43 @@ int get_rssi_weight(float average_rssi,
     return 0;
 }
 
+int get_average_rssi(const int *rssi_array,
+                     const int number_of_rssi_signals_under_tracked,
+                     const int unreasonable_rssi_change){
+
+    int k = 0;
+    int valid_rssi_count = 0;
+    int prev_index = 0;
+    int sum_rssi = 0;
+    int ret_avg_rssi = 0;
+
+    for(k = 0; k < number_of_rssi_signals_under_tracked; k++){
+
+        if(rssi_array[k] == 0)
+            continue;
+
+        prev_index = 
+            (k - 1 + number_of_rssi_signals_under_tracked) % 
+            number_of_rssi_signals_under_tracked;
+
+        // ignore abnormal signal
+        if(rssi_array[prev_index] != 0 && 
+           abs(rssi_array[k] - rssi_array[prev_index]) > 
+           unreasonable_rssi_change){
+                        
+            continue;
+        }
+                            
+        sum_rssi += rssi_array[k];
+        valid_rssi_count++; 
+    }
+    if(valid_rssi_count == 0 )
+        return ret_avg_rssi;
+
+    ret_avg_rssi = sum_rssi / valid_rssi_count;
+    return ret_avg_rssi;
+}
+
 void hashtable_summarize_location_information(
     HashTable * h_table,
     const int number_of_rssi_signals_under_tracked,
@@ -686,13 +723,11 @@ void hashtable_summarize_location_information(
     int k = 0;
     int prev_index = 0;
     int m = 0;
-    int sum_rssi;
-    float avg_rssi;
+    int avg_rssi;
     float weight_x;
     float weight_y;
     int weight_count;
     int weight_count_for_specific_uuid;
-    int valid_rssi_count;   
     float summary_coordinateX_this_turn;
     float summary_coordinateY_this_turn;
     hash_table_row* table_row;  
@@ -757,47 +792,17 @@ void hashtable_summarize_location_information(
                     }
 
                     // calculate the average rssi
-                    sum_rssi = 0;
-                    valid_rssi_count = 0;
-                    
-                    for(k = 0; k < number_of_rssi_signals_under_tracked; k++){
+                    avg_rssi = get_average_rssi(table_row->uuid_record_table_array[m].rssi_array,
+                                                number_of_rssi_signals_under_tracked,
+                                                unreasonable_rssi_change);
 
-                        if(table_row->uuid_record_table_array[m].
-                           rssi_array[k] == 0)
-                            continue;
-
-                        prev_index = 
-                            (k - 1 + number_of_rssi_signals_under_tracked) % 
-                            number_of_rssi_signals_under_tracked;
-
-                        // ignore abnormal signal
-                        if(table_row -> uuid_record_table_array[m].
-                           rssi_array[prev_index] != 0 && 
-                           abs(table_row->uuid_record_table_array[m].
-                               rssi_array[k] - 
-                               table_row->uuid_record_table_array[m].
-                               rssi_array[prev_index]) > unreasonable_rssi_change){
-                        
-                            continue;
-                        }
-                            
-                        sum_rssi += 
-                            table_row -> uuid_record_table_array[m].rssi_array[k];
-                        valid_rssi_count++; 
-
-                    }
-                    
-                    if(valid_rssi_count > 0){
-                        avg_rssi = sum_rssi / valid_rssi_count;
-
+                    if(avg_rssi != 0){
                         summary_index = m;
-                        summary_avg_rssi = (int)avg_rssi;
+                        summary_avg_rssi = avg_rssi;
                         strcpy(summary_uuid, 
                                table_row->uuid_record_table_array[m].uuid);
                         strcpy(summary_final_timestamp,
-                               table_row->uuid_record_table_array[m].final_timestamp);
-
-                      
+                               table_row->uuid_record_table_array[m].final_timestamp);  
                     }
 
                     break;
@@ -829,44 +834,19 @@ void hashtable_summarize_location_information(
                 }
                 
                 // calculate the average rssi
-                sum_rssi = 0;
-                valid_rssi_count = 0; 
                 weight_count_for_specific_uuid = 0;
 
-                for(k = 0; k < number_of_rssi_signals_under_tracked; k++){
-
-                    if(table_row -> uuid_record_table_array[j].
-                        rssi_array[k] == 0){
-                        continue;
-                    }
-
-                    prev_index = 
-                        (k - 1 + number_of_rssi_signals_under_tracked) % 
-                        number_of_rssi_signals_under_tracked;
-
-                    if(table_row -> uuid_record_table_array[j].
-                       rssi_array[prev_index] != 0 &&
-                       abs(table_row -> uuid_record_table_array[j].
-                           rssi_array[k] - 
-                           table_row->uuid_record_table_array[j].
-                           rssi_array[prev_index]) > unreasonable_rssi_change){
-                        
-                        continue;
-                    }
-
-                    sum_rssi += 
-                        table_row -> uuid_record_table_array[j].rssi_array[k];
-                    valid_rssi_count++;   
-
-                }
+                // calculate the average rssi
+                avg_rssi = get_average_rssi(
+                    table_row->uuid_record_table_array[j].rssi_array,
+                    number_of_rssi_signals_under_tracked,
+                    unreasonable_rssi_change);
 
                 // ignore this lbeacon uuid if no signal data is used.
-                if(valid_rssi_count == 0){
+                if(avg_rssi == 0){
                     continue;
                 }
  
-                avg_rssi = sum_rssi / valid_rssi_count; 
-
                 if(j != summary_index && avg_rssi > strongest_avg_rssi){
 
                     strongest_avg_rssi = (int) avg_rssi;

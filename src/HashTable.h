@@ -365,6 +365,32 @@ int get_rssi_weight(float average_rssi,
                     const int rssi_weight_multiplier);
 
 /*
+  get_average_rssi:
+
+     This function calculates the running average of rssi signals in the array
+     of rssi_array without considering the dramatical rssi values.
+
+  Parameters:
+
+     rssi_array - the array of rssi signals 
+
+     number_of_rssi_signals_under_tracked - 
+         the number of rssi signals which are kept in hashtable to calculate
+         location of objects. This setting is configurable in server.conf
+
+     unreasonable_rssi_change - the abnormal rssi signal strength change in 
+                                adjacent seconds. When this happens, the rssi
+                                singal will be ingored in the calculation.
+
+  Return value:
+
+     The running average of rssi signals in the input rssi_array array
+ */
+int get_average_rssi(const int *rssi_array,
+                     const int number_of_rssi_signals_under_tracked,
+                     const int unreasonable_rssi_change);
+
+/*
   hashtable_summarize_location_information:
 
      This function determines the lbeacon uuid closest to objects and 
