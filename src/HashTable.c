@@ -192,6 +192,8 @@ HashTable * hash_table_of_specific_area_id(int area_id){
         }
     }
 
+    next_index_area_table++;
+
     // create new hashtable for input area_id    
     if(next_index_area_table >= area_table_max_size){
 
@@ -899,8 +901,10 @@ void hashtable_summarize_location_information(
                 table_row->average_rssi = strongest_avg_rssi;
                 strcpy(table_row->summary_uuid,
                        strongest_uuid);
+                // MUST use final_timestamp but not initiali_timesatmp to have 
+                // correct lasting time under this newly closest lbeacon uuid.
                 strcpy(table_row->initial_timestamp,
-                       strongest_initial_timestamp);  
+                       strongest_final_timestamp);  
                 strcpy(table_row->final_timestamp,
                        strongest_final_timestamp);
             }else{
