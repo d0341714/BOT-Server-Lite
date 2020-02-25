@@ -192,8 +192,6 @@ HashTable * hash_table_of_specific_area_id(int area_id){
         }
     }
 
-    next_index_area_table++;
-
     // create new hashtable for input area_id    
     if(next_index_area_table >= area_table_max_size){
 
@@ -223,6 +221,8 @@ HashTable * hash_table_of_specific_area_id(int area_id){
 
     area_table[next_index_area_table].area_id = area_id;
     area_table[next_index_area_table].area_hash_ptr = h_table;
+
+    next_index_area_table++;
 
     pthread_mutex_unlock(&area_table_lock);
     return h_table;
