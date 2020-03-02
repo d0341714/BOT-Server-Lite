@@ -110,6 +110,7 @@ typedef struct {
 
     /* The last reported timestamp to this mac_address */
    int last_reported_timestamp;
+
    char battery[LENGTH_OF_BATTERY_VOLTAGE];
    char panic_button[LENGTH_OF_PANIC_BUTTON];  
     

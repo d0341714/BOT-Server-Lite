@@ -662,6 +662,11 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(
 
      filename - the specified file name containing location information of 
                 objects
+
+     number_of_rssi_signals_under_tracked -
+         the time length in seconds used to determine whether the last reported
+         timestamp of objects are valid and should be treated as existing in 
+         the covered area
      
   Return Value:
 
@@ -670,7 +675,8 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(
 */
 ErrorCode SQL_upload_hashtable_summarize(
     DBConnectionListHead *db_connection_list_head,
-    char* filename);
+    char* filename,
+    int number_of_rssi_signals_under_tracked);
 
 /*
   SQL_upload_location_history

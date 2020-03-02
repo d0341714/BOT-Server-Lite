@@ -498,9 +498,7 @@ void hashtable_put_mac_table(HashTable * h_table,
                        value -> battery_voltage);
                 strcpy(exist_MAC_address_row -> panic_button,
                        value->panic_button);
-                exist_MAC_address_row -> last_reported_timestamp = 
-                    get_system_time();
-
+                
                 //search lbeacon uuid in the array of recently scanned 
                 //lbeacon uuid
                 index_not_used = -1;
@@ -756,7 +754,6 @@ void hashtable_summarize_location_information(
         if(curr != NULL){
 
             summarized_count++;
-
         
             //reset the summary data
             summary_index = -1;
@@ -890,31 +887,35 @@ void hashtable_summarize_location_information(
                     //coordinateY
                     table_row->summary_coordinateY = 
                         summary_coordinateY_this_turn;
-                }                
+                }  
+
+                // update the closest lbeacon
+                if(summary_index == -1 || 
+                   (strongest_avg_rssi - summary_avg_rssi > 
+                    rssi_difference_of_location_accuracy_tolerance) ){
+
+                    table_row->average_rssi = strongest_avg_rssi;
+                    strcpy(table_row->summary_uuid,
+                           strongest_uuid);
+                   // MUST use final_timestamp but not initiali_timesatmp to have 
+                   // correct lasting time under this newly closest lbeacon uuid.
+                   strcpy(table_row->initial_timestamp,
+                          strongest_final_timestamp);  
+                   strcpy(table_row->final_timestamp,
+                           strongest_final_timestamp);
+               
+                }else{
+            
+                    table_row->average_rssi = summary_avg_rssi;
+                    strcpy(table_row->summary_uuid,
+                           summary_uuid);
+                    strcpy(table_row->final_timestamp,
+                            summary_final_timestamp); 
+                }
+
+                table_row->last_reported_timestamp = get_system_time();
             }  
 
-            // update the closest lbeacon
-            if(summary_index == -1 || 
-               (strongest_avg_rssi - summary_avg_rssi > 
-                rssi_difference_of_location_accuracy_tolerance) ){
-
-                table_row->average_rssi = strongest_avg_rssi;
-                strcpy(table_row->summary_uuid,
-                       strongest_uuid);
-                // MUST use final_timestamp but not initiali_timesatmp to have 
-                // correct lasting time under this newly closest lbeacon uuid.
-                strcpy(table_row->initial_timestamp,
-                       strongest_final_timestamp);  
-                strcpy(table_row->final_timestamp,
-                       strongest_final_timestamp);
-            }else{
-            
-                table_row->average_rssi = summary_avg_rssi;
-                strcpy(table_row->summary_uuid,
-                       summary_uuid);
-                strcpy(table_row->final_timestamp,
-                       summary_final_timestamp); 
-            }
             pthread_mutex_unlock(&table_row->node_lock);
             } // if
         
@@ -964,6 +965,7 @@ void hashtable_traverse_areas_to_upload_latest_location(
 
         hashtable_upload_location_to_database(
             area_table[start_index].area_hash_ptr,
+            area_table[start_index].area_id,
             db_connection_list_head,
             server_installation_path,
             LATEST_LOCATION_INFO,
@@ -997,6 +999,7 @@ void hashtable_traverse_areas_to_upload_history_data(
 
         hashtable_upload_location_to_database(
             area_table[start_index].area_hash_ptr,
+            area_table[start_index].area_id,
             db_connection_list_head,
             server_installation_path,
             LOCATION_FOR_HISTORY,
@@ -1008,6 +1011,7 @@ void hashtable_traverse_areas_to_upload_history_data(
     
 void hashtable_upload_location_to_database(
     HashTable * h_table,
+    int area_id,
     DBConnectionListHead *db_connection_list_head,
     const char *server_installation_path,
     const LocationInfoType location_type,
@@ -1074,6 +1078,7 @@ void hashtable_upload_location_to_database(
 
             table_row = curr->value;  
 
+
             if(current_time - table_row->last_reported_timestamp < 
                number_of_rssi_signals_under_tracked){  
             /*
@@ -1119,7 +1124,7 @@ void hashtable_upload_location_to_database(
                     strftime(buf_last_reported_time, sizeof(buf_last_reported_time), 
                              "%Y-%m-%d %H:%M:%S", &ts);
                     
-                    fprintf(file, "%s,%d,%s,%s,%s,%s,%d,%d,%s\n",
+                    fprintf(file, "%s,%d,%s,%s,%s,%s,%d,%d,%s,%d\n",
                             table_row->summary_uuid,
                             table_row->average_rssi,
                             table_row->battery,
@@ -1128,7 +1133,8 @@ void hashtable_upload_location_to_database(
                             buf_last_reported_time,
                             (int)table_row->summary_coordinateX,
                             (int)table_row->summary_coordinateY,
-                            curr->key);
+                            curr->key,
+                            area_id);
                 }
                 
             }               
@@ -1145,6 +1151,7 @@ void hashtable_upload_location_to_database(
     }else{
         fclose(file);   
         SQL_upload_hashtable_summarize(db_connection_list_head,
-                                       filename);
+                                       filename,
+                                       number_of_rssi_signals_under_tracked);
     }   
 }

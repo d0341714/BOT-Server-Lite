@@ -1931,7 +1931,8 @@ ErrorCode SQL_dump_mac_address_under_geo_fence_monitor(
 
 ErrorCode SQL_upload_hashtable_summarize(
     DBConnectionListHead *db_connection_list_head,
-    char* filename){
+    char* filename,
+    int number_of_rssi_signals_under_tracked){
 		
     PGconn *db_conn = NULL;
     int db_serial_id = -1;
@@ -1948,7 +1949,8 @@ ErrorCode SQL_upload_hashtable_summarize(
         "battery_voltage smallint , " \
         "base_x bigint , " \
         "base_y bigint , " \
-        "mac_address macaddr not null primary key " \
+        "mac_address macaddr not null primary key , " \
+        "updated_by_area integer " \
         "); ";
 	 
     char* sql_bulk_insert=
@@ -1962,7 +1964,9 @@ ErrorCode SQL_upload_hashtable_summarize(
         "last_reported_timestamp , " \
         "base_x , " \
         "base_y , " \
-        "mac_address)" \
+        "mac_address , " \
+        "updated_by_area " \
+        ")" \
         "FROM " \
         "\'%s\' " \
         "DELIMITER \',\' CSV; ";
@@ -1977,7 +1981,8 @@ ErrorCode SQL_upload_hashtable_summarize(
         "last_seen_timestamp , " \
         "last_reported_timestamp , " \
         "base_x , " \
-        "base_y  " \
+        "base_y , " \
+        "updated_by_area " \
         ") = (" \
         "t.uuid , " \
         "t.rssi , " \
@@ -1986,9 +1991,19 @@ ErrorCode SQL_upload_hashtable_summarize(
         "t.last_seen_timestamp , " \
         "t.last_reported_timestamp , " \
         "t.base_x , " \
-        "t.base_y  ) " \
+        "t.base_y , " \
+        "t.updated_by_area) " \
         "FROM updates_table t " \
-        "WHERE s.mac_address = t.mac_address; ";
+        "WHERE s.mac_address = t.mac_address " \
+        "AND " \
+        "( " \
+        " s.updated_by_area = t.updated_by_area  " \
+        "OR " \
+        " s.last_reported_timestamp < NOW() - INTERVAL \'%d seconds\'  " \
+        "OR " \
+        " s.rssi < t.rssi " \
+        " ) " \
+        "; ";
 			 
     char* drop_temp=
         "DROP TABLE updates_table; ";
@@ -2040,7 +2055,8 @@ ErrorCode SQL_upload_hashtable_summarize(
 
     // use temp table to update object_summary_table
     memset(sql, 0, sizeof(sql));
-    sprintf(sql, sql_update);
+    sprintf(sql, sql_update, 
+            number_of_rssi_signals_under_tracked);
     ret_val = SQL_execute(db_conn, sql);
 
     if(WORK_SUCCESSFULLY != ret_val){

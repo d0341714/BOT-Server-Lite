@@ -525,6 +525,8 @@ void hashtable_traverse_areas_to_upload_history_data(
 
      h_table - the pointer to specific hashtable of one covered area
 
+     area_id - area id of specific covered area
+
      db_connection_list_head - the list head of database connection pool
 
      server_installation_path - the installation of server
@@ -544,6 +546,7 @@ void hashtable_traverse_areas_to_upload_history_data(
 
 void hashtable_upload_location_to_database(
     HashTable * h_table,
+    int area_id, 
     DBConnectionListHead *db_connection_list_head,
     const char *server_installation_path,
     const LocationInfoType location_type,
