@@ -103,7 +103,9 @@ typedef uint32_t (* HashFunc)(const void *, size_t);
 
 typedef int (* EqualityFunc)(void *, void *);
 
+/*
 typedef void (* IteratorCallback)(void *, size_t, void *, size_t);
+*/
 
 typedef void (* DeleteData)(void *);
 

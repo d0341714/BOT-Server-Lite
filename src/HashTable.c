@@ -73,6 +73,7 @@ Please note, that the rest of the code is my own.
 */
 
 static uint32_t _hashtable_hash_adler32(const void *buf, size_t buflength) {
+
      char * buffer;
      uint32_t s1;
      uint32_t s2;
@@ -81,7 +82,6 @@ static uint32_t _hashtable_hash_adler32(const void *buf, size_t buflength) {
 
      s1 = 1;
      s2 = 0;    
-     
      
      for (n = 0; n < buflength; n++) {
         s1 = (s1 + buffer[n]) % 65521;
@@ -99,7 +99,6 @@ int equal_string(void * a, void * b) {
     else {return 0;}
 }
 
-// useful for non-heap allocated data
 void destroy_nop(void * a) {
     return;
 }
