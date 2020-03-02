@@ -60,7 +60,7 @@
 /* The prefix of file path of the dumped location history information */
 #define FILE_PREFIX_DUMP_LOCATION_HISTORY_INFORMATION "./temp/locationtrack"
 
-/* The number of slots in the memory pool for the value part of all the 
+/* The number of slots in the memory pool for the node of all the 
 hashtables. Value of this constant must be bigger than the total number 
 of objects to be tracked in the system. */
 #define SLOTS_IN_MEM_POOL_HASH_TABLE_NODE 65536
@@ -70,15 +70,20 @@ hashtables. Value of this constant must be bigger than the total number
 of objects to be tracked in the system. */
 #define SLOTS_IN_MEM_POOL_MAC_ADDRESS 65536
 
-/* The number of objects to be tracked in each covered area in the system. */
-#define NUMBER_OBJECTS_UNDER_TRACKED_IN_ONE_AREA 2048 
+/* The number of slots in the memory pool for the value part of all the 
+hashtables. Value of this constant must be bigger than the total number 
+of objects to be tracked in the system. */
+#define SLOTS_IN_MEM_POOL_HASH_TABLE_VALUE 65536
+
+/* The number of entries in each hashtable. */
+#define NUMBER_ENTRIES_IN_ONE_HASH_TABLE 256
 
 /* The default average rssi vlaue for the newly created node in hashtable */
 #define INITIAL_AVERAGE_RSSI -100
 
 /* The default number of hashtables to be created to support covered areas 
 in the system. */
-#define INITIAL_AREA_TABLE_MAX_SIZE 256
+#define INITIAL_AREA_TABLE_MAX_SIZE 4
 
 /* Type of location information. */
 typedef enum _LocationInfoType {
@@ -138,11 +143,14 @@ typedef struct AreaTable{
 
 /* Global variables */
 
-/* The memory pool for the value part of all the hashtables. */
-Memory_Pool hash_table_row_mempool;
+/* The memory pool for the each node structure of hashtable. */
+Memory_Pool hash_table_node_mempool;
 
 /* The memory pool for the key part of all the hashtables. */
 Memory_Pool mac_address_mempool;
+
+/* The memory pool for the value part of all the hashtables. */
+Memory_Pool hash_table_value_mempool;
 
 /* The pointer to the head of the array of hashtables for all covered areas */
 AreaTable* area_table;

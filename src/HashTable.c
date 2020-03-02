@@ -52,7 +52,7 @@ HashTable * hashtable_new_default(
     DeleteData deleteValue
 ) {
 
-    return hashtable_new(NUMBER_OBJECTS_UNDER_TRACKED_IN_ONE_AREA, 
+    return hashtable_new(NUMBER_ENTRIES_IN_ONE_HASH_TABLE, 
                          1, 
                          1, 
                          equal, 
@@ -114,6 +114,13 @@ ErrorCode initialize_area_table(){
 
     zlog_debug(category_debug,">>initial_area_table");
 
+    if(MEMORY_POOL_SUCCESS != mp_init( &hash_table_node_mempool, 
+                                       sizeof(HNode), 
+                                       SLOTS_IN_MEM_POOL_HASH_TABLE_NODE))
+    {
+        zlog_error(category_debug,"initial fail hash_table_node_mempool");
+        return E_MALLOC;
+    }
     
     if(MEMORY_POOL_SUCCESS != mp_init( &mac_address_mempool, 
                                        LENGTH_OF_MAC_ADDRESS, 
@@ -124,11 +131,11 @@ ErrorCode initialize_area_table(){
     }
 
 
-    if(MEMORY_POOL_SUCCESS != mp_init( &hash_table_row_mempool, 
+    if(MEMORY_POOL_SUCCESS != mp_init( &hash_table_value_mempool, 
                                        sizeof(hash_table_row), 
-                                       SLOTS_IN_MEM_POOL_HASH_TABLE_NODE))
+                                       SLOTS_IN_MEM_POOL_HASH_TABLE_VALUE))
     {
-        zlog_error(category_debug,"initial fail hash_table_row_mempool");
+        zlog_error(category_debug,"initial fail hash_table_value_mempool");
         return E_MALLOC;
     }
    
@@ -377,9 +384,9 @@ uint32_t hashtable_maintain_key_part(
     hash_val = h_table -> hash(key, key_len);
     prev_head = h_table -> table[index];  
 
-    new_head = malloc(sizeof(HNode));
+    new_head = mp_alloc(&hash_table_node_mempool);
     if(new_head == NULL){
-        zlog_error(category_debug,"malloc failed");
+        zlog_error(category_debug,"malloc failed: HNode");
 
         return ret_index;
     }
@@ -387,18 +394,19 @@ uint32_t hashtable_maintain_key_part(
                
     MAC_address = mp_alloc(&mac_address_mempool);
     if(MAC_address == NULL){
-        free(new_head);
-        zlog_error(category_debug,"malloc failed");
+        free(new_head); 
+        zlog_error(category_debug,"malloc failed: mac_address");
 
         return ret_index;
     }
     memset(MAC_address, 0, LENGTH_OF_MAC_ADDRESS);
     strcpy(MAC_address, key);
             
-    hash_table_row_for_new_MAC = mp_alloc(&hash_table_row_mempool);
+    hash_table_row_for_new_MAC = mp_alloc(&hash_table_value_mempool);
     if(hash_table_row_for_new_MAC == NULL){
         free(new_head);
-        mp_free(&hash_table_row_mempool, MAC_address);
+        zlog_error(category_debug, "malloc failed: hashtable value");
+        mp_free(&hash_table_value_mempool, MAC_address);
 
         return;
     }
