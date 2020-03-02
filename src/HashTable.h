@@ -78,12 +78,16 @@ of objects to be tracked in the system. */
 /* The number of entries in each hashtable. */
 #define NUMBER_ENTRIES_IN_ONE_HASH_TABLE 256
 
+/* The length of time in seconds to allow a node not to be scanned and 
+updated. */
+#define TOLERANT_NOT_SCANNING_TIME_IN_SEC 120 
+
 /* The default average rssi vlaue for the newly created node in hashtable */
 #define INITIAL_AVERAGE_RSSI -100
 
 /* The default number of hashtables to be created to support covered areas 
 in the system. */
-#define INITIAL_AREA_TABLE_MAX_SIZE 4
+#define INITIAL_AREA_TABLE_MAX_SIZE 32
 
 /* Type of location information. */
 typedef enum _LocationInfoType {
@@ -312,7 +316,7 @@ int hashtable_maintain_key_part(HashTable * h_table,
                                 const int number_of_rssi_signals_under_tracked);
 
 /*
-  hashtable_put_mac_table:
+  hashtable_put_new_tracking_data:
 
      This function adds the tracking data with pair of lbeacon uuid and 
      mac_address information to nodes of hashtable. If the node of mac_address 
@@ -346,12 +350,13 @@ int hashtable_maintain_key_part(HashTable * h_table,
      None
  */
 
-void hashtable_put_mac_table(HashTable * h_table, 
-                             const void * key, 
-                             const size_t key_len, 
-                             DataForHashtable * value, 
-                             const int number_of_lbeacons_under_tracked,
-                             const int number_of_rssi_signals_under_tracked);
+void hashtable_put_new_tracking_data(
+    HashTable * h_table, 
+    const void * key, 
+    const size_t key_len, 
+    DataForHashtable * value, 
+    const int number_of_lbeacons_under_tracked,
+    const int number_of_rssi_signals_under_tracked);
 
 /*
   get_rssi_weight:

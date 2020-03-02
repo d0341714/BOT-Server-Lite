@@ -332,12 +332,13 @@ ErrorCode hashtable_update_object_tracking_data(
             strcpy(data_row.battery_voltage, battery_voltage);
             strcpy(data_row.panic_button, panic_button);    
             
-            hashtable_put_mac_table(area_table_ptr, 
-                                    object_mac_address,
-                                    LENGTH_OF_MAC_ADDRESS, 
-                                    &data_row, 
-                                    number_of_lbeacons_under_tracked,
-                                    number_of_rssi_signals_under_tracked);    
+            hashtable_put_new_tracking_data(
+                area_table_ptr, 
+                object_mac_address,
+                LENGTH_OF_MAC_ADDRESS, 
+                &data_row, 
+                number_of_lbeacons_under_tracked,
+                number_of_rssi_signals_under_tracked);    
         }
     }
 
@@ -444,12 +445,13 @@ uint32_t hashtable_maintain_key_part(
 
 }
 
-void hashtable_put_mac_table(HashTable * h_table, 
-                             const void * key, 
-                             const size_t key_len, 
-                             DataForHashtable * value, 
-                             const int number_of_lbeacons_under_tracked,
-                             const int number_of_rssi_signals_under_tracked){
+void hashtable_put_new_tracking_data(
+    HashTable * h_table, 
+    const void * key, 
+    const size_t key_len, 
+    DataForHashtable * value, 
+    const int number_of_lbeacons_under_tracked,
+    const int number_of_rssi_signals_under_tracked){
 
     uint32_t index;
     HNode * curr = NULL;
@@ -773,11 +775,15 @@ void hashtable_summarize_location_information(
             memset(strongest_initial_timestamp, 0, sizeof(strongest_initial_timestamp));
             memset(strongest_final_timestamp, 0, sizeof(strongest_final_timestamp));
           
-          
             table_row = curr -> value; 
 
             pthread_mutex_lock(&table_row->node_lock);
 
+            //delete too old HNode from hashtable
+            if(table_row->last_reported_timestamp < current_time - 
+               TOLERANT_NOT_SCANNING_TIME_IN_SEC){
+
+            }
            
             //calculate the average rssi signal of current summary lbeacon uuid
             for(m = 0; m < table_row -> number_uuid_size; m++){
