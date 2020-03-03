@@ -391,6 +391,9 @@ int get_rssi_weight(float average_rssi,
 
      rssi_array - the array of rssi signals 
 
+     rssi_threashold_for_summarize_location_pin -
+         the rssi threshold used to filter out tracking data from poor lbeacons
+
      number_of_rssi_signals_under_tracked - 
          the number of rssi signals which are kept in hashtable to calculate
          location of objects. This setting is configurable in server.conf
@@ -404,6 +407,7 @@ int get_rssi_weight(float average_rssi,
      The running average of rssi signals in the input rssi_array array
  */
 int get_average_rssi(const int *rssi_array,
+                     const int rssi_threashold_for_summarize_location_pin,
                      const int number_of_rssi_signals_under_tracked,
                      const int unreasonable_rssi_change);
 
@@ -418,6 +422,8 @@ int get_average_rssi(const int *rssi_array,
 
      h_table - the pointer to specific hashtable of one covered area
 
+     rssi_threashold_for_summarize_location_pin -
+         the rssi threshold used to filter out tracking data from poor lbeacons
      number_of_rssi_signals_under_tracked - 
          the number of rssi signals which are kept in hashtable to calculate
          location of objects. This setting is configurable in server.conf
@@ -443,6 +449,7 @@ int get_average_rssi(const int *rssi_array,
 
 void hashtable_summarize_location_information(
     HashTable * h_table,
+    const int rssi_threashold_for_summarize_location_pin,
     const int number_of_rssi_signals_under_tracked,
     const int unreasonable_rssi_change,
     const int rssi_weight_multiplier,
@@ -464,6 +471,9 @@ void hashtable_summarize_location_information(
 
      area_set - the list of areas under with the location information of 
                 objects should be summarized and uploaded
+
+     rssi_threashold_for_summarize_location_pin -
+         the rssi threshold used to filter out tracking data from poor lbeacons
 
      number_of_rssi_signals_under_tracked - 
          the number of rssi signals which are kept in hashtable to calculate
@@ -492,6 +502,7 @@ void hashtable_traverse_areas_to_upload_latest_location(
     DBConnectionListHead *db_connection_list_head,
     const char *server_installation_path,
     AreaSet *area_set,
+    const int rssi_threashold_for_summarize_location_pin,
     const int number_of_rssi_signals_under_tracked,
     const int unreasonable_rssi_change,
     const int rssi_weight_multiplier,

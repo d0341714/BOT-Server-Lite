@@ -693,6 +693,7 @@ int get_rssi_weight(float average_rssi,
 }
 
 int get_average_rssi(const int *rssi_array,
+                     const int rssi_threashold_for_summarize_location_pin,
                      const int number_of_rssi_signals_under_tracked,
                      const int unreasonable_rssi_change){
 
@@ -704,7 +705,12 @@ int get_average_rssi(const int *rssi_array,
 
     for(k = 0; k < number_of_rssi_signals_under_tracked; k++){
 
+        // ignore the timing at which no rssi signal was scanned
         if(rssi_array[k] == 0)
+            continue;
+   
+        // ignore weak rssi signals from poor lbeacons
+        if(rssi_array[k] < rssi_threashold_for_summarize_location_pin)
             continue;
 
         prev_index = 
@@ -731,6 +737,7 @@ int get_average_rssi(const int *rssi_array,
 
 void hashtable_summarize_location_information(
     HashTable * h_table,
+    const int rssi_threashold_for_summarize_location_pin,
     const int number_of_rssi_signals_under_tracked,
     const int unreasonable_rssi_change,
     const int rssi_weight_multiplier,
@@ -856,9 +863,11 @@ void hashtable_summarize_location_information(
                     }
 
                     // calculate the average rssi
-                    avg_rssi = get_average_rssi(table_row->uuid_record_table_array[m].rssi_array,
-                                                number_of_rssi_signals_under_tracked,
-                                                unreasonable_rssi_change);
+                    avg_rssi = get_average_rssi(
+                        table_row->uuid_record_table_array[m].rssi_array,
+                        rssi_threashold_for_summarize_location_pin,
+                        number_of_rssi_signals_under_tracked,
+                        unreasonable_rssi_change);
 
                     if(avg_rssi != 0){
                         summary_index = m;
@@ -903,6 +912,7 @@ void hashtable_summarize_location_information(
                 // calculate the average rssi
                 avg_rssi = get_average_rssi(
                     table_row->uuid_record_table_array[j].rssi_array,
+                    rssi_threashold_for_summarize_location_pin,
                     number_of_rssi_signals_under_tracked,
                     unreasonable_rssi_change);
 
@@ -997,6 +1007,7 @@ void hashtable_traverse_areas_to_upload_latest_location(
     DBConnectionListHead *db_connection_list_head,
     const char *server_installation_path,
     AreaSet *area_set,
+    const int rssi_threashold_for_summarize_location_pin,
     const int number_of_rssi_signals_under_tracked,
     const int unreasonable_rssi_change,
     const int rssi_weight_multiplier,
@@ -1019,6 +1030,7 @@ void hashtable_traverse_areas_to_upload_latest_location(
 
         hashtable_summarize_location_information(
             area_table[start_index].area_hash_ptr, 
+            rssi_threashold_for_summarize_location_pin,
             number_of_rssi_signals_under_tracked,
             unreasonable_rssi_change,
             rssi_weight_multiplier,

@@ -199,6 +199,9 @@ typedef struct {
     /* The number of areas for which each upload history thread is responsible*/
     int number_areas_per_upload_history_thread;
 
+    /* The RSSI threshold used to filter out tracking data from poor lbeacons*/
+    int rssi_threashold_for_summarize_location_pin;
+
     /* The number of lbeacons to be kept to calculate location of objects */
     int number_of_lbeacons_under_tracked;
 

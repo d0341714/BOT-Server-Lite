@@ -768,6 +768,11 @@ ErrorCode get_server_config(ServerConfig *config,
               "The number_areas_per_upload_history_thread is [%d]",
               config->number_areas_per_upload_history_thread);
 
+    fetch_next_string(file, config_message, sizeof(config_message));
+    config->rssi_threashold_for_summarize_location_pin = atoi(config_message);
+    zlog_info(category_debug,
+              "The rssi_threashold_for_summarize_location_pin is [%d]",
+              config->rssi_threashold_for_summarize_location_pin);
 
     fetch_next_string(file, config_message, sizeof(config_message));
     config->number_of_lbeacons_under_tracked = atoi(config_message);
@@ -1841,6 +1846,7 @@ void* summarize_and_upload_location_information_in_areas(void *area_set){
             &config.db_connection_list_head,
             config.server_installation_path,
             area_list,
+            config.rssi_threashold_for_summarize_location_pin,
             config.number_of_rssi_signals_under_tracked,
             config.unreasonable_rssi_change,
             config.rssi_weight_multiplier,
