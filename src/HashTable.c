@@ -9,11 +9,13 @@
 
 static uint32_t _hashtable_hash_adler32(const void *buf, size_t buflength);
 
+/*
 static int _hashtable_replace(HashTable * h_table, 
                               void * key, 
                               size_t key_len, 
                               void * value, 
                               size_t value_len);
+*/
 
 // Helper function implementation
 
@@ -362,7 +364,7 @@ uint32_t hashtable_maintain_key_part(
     HNode * prev_head = NULL;
     HNode * new_head = NULL;
 
-    char *MAC_address;
+    char *MAC_address = NULL;
 
 
     while (curr) {      
