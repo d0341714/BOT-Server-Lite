@@ -80,7 +80,7 @@ of objects to be tracked in the system. */
 
 /* The length of time in seconds to allow a node not to be scanned and 
 updated. */
-#define TOLERANT_NOT_SCANNING_TIME_IN_SEC 120 
+#define TOLERANT_NOT_SCANNING_TIME_IN_SEC 300
 
 /* The default average rssi vlaue for the newly created node in hashtable */
 #define INITIAL_AVERAGE_RSSI -100
@@ -198,7 +198,9 @@ HashTable * hashtable_new_default(
 
 int equal_string(void * a, void * b);
 
-void destroy_nop(void * a);
+void destroy_key_part(void *key);
+
+void destroy_value_part(void *value);
 
 // Function for server
 

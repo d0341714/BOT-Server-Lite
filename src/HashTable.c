@@ -101,7 +101,17 @@ int equal_string(void * a, void * b) {
     else {return 0;}
 }
 
-void destroy_nop(void * a) {
+void destroy_key_part(void * key) {
+    // nothing need to do
+    return;
+}
+
+void destroy_value_part(void * value){
+    hash_table_row * value_part = (hash_table_row*) value;
+
+    pthread_mutex_unlock(&value_part->node_lock);
+    pthread_mutex_destroy(&value_part->node_lock);
+
     return;
 }
 
@@ -224,8 +234,8 @@ HashTable * hash_table_of_specific_area_id(int area_id){
     }
 
     h_table = hashtable_new_default(equal_string, 
-                                    destroy_nop, 
-                                    destroy_nop);
+                                    destroy_key_part, 
+                                    destroy_value_part);
 
     area_table[next_index_area_table].area_id = area_id;
     area_table[next_index_area_table].area_hash_ptr = h_table;
@@ -380,7 +390,7 @@ uint32_t hashtable_maintain_key_part(
         return ret_index;
     
    
-    // create new node for input mac_address key
+    // Not found and need to create new node for input mac_address key
 
     // code to add key and value in O(1) time.
     hash_val = h_table -> hash(key, key_len);
@@ -415,6 +425,8 @@ uint32_t hashtable_maintain_key_part(
     memset(hash_table_row_for_new_MAC, 0, sizeof(hash_table_row));
 
     pthread_mutex_init(&hash_table_row_for_new_MAC -> node_lock, NULL);
+
+    hash_table_row_for_new_MAC->last_reported_timestamp = get_system_time();
             
     for(i = 0; i < number_of_lbeacons_under_tracked; i++){
         hash_table_row_for_new_MAC -> 
@@ -727,7 +739,7 @@ void hashtable_summarize_location_information(
 
     int size = h_table->size;
     int table_count = h_table->count;
-    int summarized_count = 0;
+    int count = 0;
     HNode ** table = h_table->table;
     int i = 0;
     int j = 0;
@@ -754,17 +766,21 @@ void hashtable_summarize_location_information(
     char strongest_uuid[LENGTH_OF_UUID];
     char strongest_initial_timestamp[LENGTH_OF_EPOCH_TIME];
     char strongest_final_timestamp[LENGTH_OF_EPOCH_TIME];
+    HNode * curr = NULL;
+    HNode * node_to_release = NULL;
+    HNode * prev_node = NULL;
 
-
+    
     for (i = 0; i < size; i++) {
 
-        HNode * curr = table[i];
-
+        curr = table[i];
+        prev_node = NULL;
+      
         while(curr != NULL){
 
         if(curr != NULL){
 
-            summarized_count++;
+            count++;
         
             //reset the summary data
             summary_index = -1;
@@ -780,10 +796,44 @@ void hashtable_summarize_location_information(
 
             pthread_mutex_lock(&table_row->node_lock);
 
-            //delete too old HNode from hashtable
-            if(table_row->last_reported_timestamp < current_time - 
-               TOLERANT_NOT_SCANNING_TIME_IN_SEC){
+            //release the old HNode from hashtable to have more space
+            if(table_row -> last_reported_timestamp < 
+               current_time - 
+               TOLERANT_NOT_SCANNING_TIME_IN_SEC ){
+               
+                // lock hashtable
+                pthread_mutex_lock(ht_mutex);
 
+                // re-link the HNode to remove HNode fro hashtable
+                if(prev_node == NULL){
+                    table[i] = curr -> next;
+                }else{
+                    prev_node -> next = curr -> next;
+                }
+                node_to_release = curr;
+                curr = curr -> next;
+                node_to_release -> next = NULL;
+
+                h_table -> count = h_table->count - 1;
+                
+                // unlock hashtable
+                pthread_mutex_unlock(ht_mutex);
+
+                // destroy key part and release from mempool
+                h_table->deleteKey(node_to_release->key);
+                mp_free(&mac_address_mempool, 
+                        node_to_release->key);
+                
+                // destroy value part and release from mempool 
+                h_table->deleteValue(node_to_release->value);
+                mp_free(&hash_table_value_mempool, 
+                        node_to_release -> value);
+
+                // destroy HNode part and release from mempool
+                mp_free(&hash_table_node_mempool, 
+                        node_to_release);
+  
+                continue;
             }
            
             //calculate the average rssi signal of current summary lbeacon uuid
@@ -934,16 +984,13 @@ void hashtable_summarize_location_information(
             pthread_mutex_unlock(&table_row->node_lock);
             } // if
         
-            curr->value = table_row;
+            curr -> value = table_row;
+            prev_node = curr;
             curr = curr->next;
         } // while
-
-        if(summarized_count == table_count){
-
-           return;
-        }
+     
     } // for-loop
-
+    
 }
 
 void hashtable_traverse_areas_to_upload_latest_location(
