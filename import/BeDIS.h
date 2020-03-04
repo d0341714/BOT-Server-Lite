@@ -106,8 +106,11 @@
 /* The category of log file used for health report */
 #define LOG_CATEGORY_HEALTH_REPORT "Health_Report"
 
-/* The category of the printf during debugging */
+/* The category of log file used for debugging */
 #define LOG_CATEGORY_DEBUG "LBeacon_Debug"
+
+/* The category of log file used for dumping tracking data */
+#define LOG_CATEGORY_DUMP_TRACKING "Dump_Tracking"
 
 /* Parameter that marks the start of the config file */
 #define DELIMITER "="
@@ -460,6 +463,10 @@ bool ready_to_work;
 
 /* The pointer to the category of the log file */
 zlog_category_t *category_health_report, *category_debug;
+
+/* The pointer to the category of the log file */
+zlog_category_t *category_dump;
+
 
 /* FUNCTIONS */
 
