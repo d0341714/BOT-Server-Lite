@@ -279,6 +279,10 @@ ErrorCode hashtable_update_object_tracking_data(
     
     DataForHashtable data_row;
     int i;
+
+    time_t rawtime;
+    struct tm ts;
+    char buf_record_time[LENGTH_OF_TIME_FORMAT];
     
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -350,6 +354,18 @@ ErrorCode hashtable_update_object_tracking_data(
                 &data_row, 
                 number_of_lbeacons_under_tracked,
                 number_of_rssi_signals_under_tracked);    
+
+            //dump tracking data for rssi signal tool
+            rawtime = get_system_time();
+            ts = *gmtime(&rawtime);
+            strftime(buf_record_time, sizeof(buf_record_time), 
+                     "%Y-%m-%d %H:%M:%S", &ts);
+
+            zlog_debug(category_dump, "%s,%s,%s,%s",
+                       object_mac_address, 
+                       lbeacon_uuid,
+                       rssi,
+                       buf_record_time);
         }
     }
 

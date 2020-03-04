@@ -114,6 +114,10 @@ int main(int argc, char **argv)
         category_debug = zlog_get_category(LOG_CATEGORY_DEBUG);
         if (!category_debug)
             zlog_fini();
+
+        category_dump = zlog_get_category(LOG_CATEGORY_DUMP_TRACKING);
+        if (!category_dump)
+            zlog_fini();
     }
 
     zlog_info(category_debug,"Start Server");
