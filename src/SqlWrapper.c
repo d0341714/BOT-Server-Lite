@@ -1996,6 +1996,8 @@ ErrorCode SQL_upload_hashtable_summarize(
         "FROM updates_table t " \
         "WHERE s.mac_address = t.mac_address " \
         "AND " \
+        " s.updated_by_area IS NULL " \
+        "OR " \
         "( " \
         " s.updated_by_area = t.updated_by_area  " \
         "OR " \
