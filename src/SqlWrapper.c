@@ -1996,6 +1996,7 @@ ErrorCode SQL_upload_hashtable_summarize(
         "FROM updates_table t " \
         "WHERE s.mac_address = t.mac_address " \
         "AND " \
+        " ( " \
         " s.updated_by_area IS NULL " \
         "OR " \
         "( " \
@@ -2004,6 +2005,7 @@ ErrorCode SQL_upload_hashtable_summarize(
         " s.last_reported_timestamp < NOW() - INTERVAL \'%d seconds\'  " \
         "OR " \
         " s.rssi < t.rssi " \
+        " ) " \
         " ) " \
         "; ";
 			 
