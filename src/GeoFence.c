@@ -99,8 +99,17 @@ ErrorCode construct_geo_fence_list(DBConnectionListHead * db_connection_list_hea
     while(fgets(setting_buf, sizeof(setting_buf), file_geo_fence) != NULL){
             
         area_id = strtok_save(setting_buf, DELIMITER_SEMICOLON, &save_ptr);
+        if(area_id == NULL)
+            continue;
+
         is_global_fence = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+        if(is_global_fence == NULL)
+            continue;
+
         id = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
+        if(id == NULL)
+            continue;
+
         name = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
         perimeters = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
         fences = strtok_save(NULL, DELIMITER_SEMICOLON, &save_ptr);
@@ -187,7 +196,7 @@ ErrorCode construct_geo_fence_list(DBConnectionListHead * db_connection_list_hea
 
                 number_beacons = strtok(perimeters, 
                                         DELIMITER_COMMA, 
-                                        &save_ptr_per_setting);          
+                                        &save_ptr_per_setting); 
                 number = atoi(number_beacons);
                 while(number--){
                     beacon_uuid = strtok(NULL, 
