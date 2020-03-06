@@ -108,17 +108,29 @@ int main(int argc, char **argv)
         category_health_report = 
             zlog_get_category(LOG_CATEGORY_HEALTH_REPORT);
 
-        if (!category_health_report)
+        if (!category_health_report){
             zlog_fini();
+            printf("failed to initialize health report logger\n");
+            return E_MODULE_INITIALIZATION;
+        }
 
         category_debug = zlog_get_category(LOG_CATEGORY_DEBUG);
-        if (!category_debug)
+
+        if (!category_debug){
             zlog_fini();
+            printf("failed to initialize debuglog logger\n");
+            return E_MODULE_INITIALIZATION;
+        }
 
         category_dump = zlog_get_category(LOG_CATEGORY_DUMP_TRACKING);
-        if (!category_dump)
+
+        if (!category_dump){
             zlog_fini();
+            printf("failed to initialize dump track logger\n");
+            return E_MODULE_INITIALIZATION;
+        }
     }
+    printf("Start server and initialized logger module..\n"); 
 
     zlog_info(category_debug,"Start Server");
 
@@ -129,6 +141,8 @@ int main(int argc, char **argv)
                                        sizeof(BufferNode), 
                                        SLOTS_IN_MEM_POOL_BUFFER_NODE))
     {
+        zlog_error(category_debug, 
+                   "Failed to initialize memory pool for buffer");
         return E_MALLOC;
     }
 
@@ -137,6 +151,8 @@ int main(int argc, char **argv)
                                        sizeof(GeoFenceAreaNode), 
                                        SLOTS_IN_MEM_POOL_GEO_FENCE_AREA))
     {
+        zlog_error(category_debug, 
+                   "Failed to initialize memory pool for geofence_area");
         return E_MALLOC;
     }
 
@@ -145,6 +161,8 @@ int main(int argc, char **argv)
                                        sizeof(GeoFenceSettingNode), 
                                        SLOTS_IN_MEM_POOL_GEO_FENCE_SETTING))
     {
+        zlog_error(category_debug, 
+                   "Failed to initialize memory pool for geofence_setting");
         return E_MALLOC;
     }
 
@@ -153,6 +171,8 @@ int main(int argc, char **argv)
                                        sizeof(ObjectWithGeoFenceAreaNode), 
                                        SLOTS_IN_MEM_POOL_GEO_FENCE_OBJECTS_SETTING))
     {
+        zlog_error(category_debug, 
+                   "Failed to initialize memory pool for geofence_objects");
         return E_MALLOC;
     }
 
@@ -161,6 +181,8 @@ int main(int argc, char **argv)
                                        sizeof(GeoFenceViolationNode), 
                                        SLOTS_IN_MEM_POOL_GEO_FENCE_VIOLATIONS))
     {
+        zlog_error(category_debug, 
+                   "Failed to initialize memory pool for geofence_violation");
         return E_MALLOC;
     }
 
@@ -169,6 +191,8 @@ int main(int argc, char **argv)
                                        sizeof(NotificationListNode), 
                                        SLOTS_IN_MEM_POOL_NOTIFICATION))
     {
+        zlog_error(category_debug, 
+                   "Failed to initialize memory pool for notifications");
         return E_MALLOC;
     }
 

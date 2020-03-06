@@ -536,22 +536,20 @@ ErrorCode SQL_update_lbeacon_registration_status_less_ver22(
         "health_status, " \
         "gateway_ip_address, " \
         "registered_timestamp, " \
-        "last_report_timestamp, " \
-        "coordinate_x, " \
-        "coordinate_y) " \
+        "last_report_timestamp " \
+        ") " \
         "VALUES " \
         "(%s, %s, \'%d\', %s, " \
         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
-        "NOW(), " \
-        "%d, %d) " \
+        "NOW() " \
+        ") " \
         "ON CONFLICT (uuid) " \
         "DO UPDATE SET " \
         "ip_address = %s, " \
         "health_status = \'%d\', " \
         "gateway_ip_address = %s, " \
-        "last_report_timestamp = NOW(), " \
-        "coordinate_x = %d, " \
-        "coordinate_y = %d;";
+        "last_report_timestamp = NOW() " \
+        " ;";
 
     HealthStatus health_status = S_NORMAL_STATUS;
     char *uuid = NULL;
@@ -563,10 +561,6 @@ ErrorCode SQL_update_lbeacon_registration_status_less_ver22(
     char *pqescape_gateway_ip = NULL;
     char *pqescape_registered_timestamp_GMT = NULL;
     char str_uuid[LENGTH_OF_UUID];
-    char coordinate_x[LENGTH_OF_UUID];
-    char coordinate_y[LENGTH_OF_UUID];
-    int int_coordinate_x = 0;
-    int int_coordinate_y = 0;
     int current_time = get_system_time();
     
 	
@@ -598,22 +592,6 @@ ErrorCode SQL_update_lbeacon_registration_status_less_ver22(
     while( numbers-- ){
         uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-        memset(str_uuid, 0, sizeof(str_uuid));
-        strcpy(str_uuid, uuid);
-
-        memset(coordinate_x, 0, sizeof(coordinate_x));
-        memset(coordinate_y, 0, sizeof(coordinate_y));
-        
-        strncpy(coordinate_x, 
-                &str_uuid[INDEX_OF_COORDINATE_X_IN_UUID], 
-                LENGTH_OF_COORDINATE_IN_UUID);
-        strncpy(coordinate_y, 
-                &str_uuid[INDEX_OF_COORDINATE_Y_IN_UUID], 
-                LENGTH_OF_COORDINATE_IN_UUID);
-
-        int_coordinate_x = atoi(coordinate_x);
-        int_coordinate_y = atoi(coordinate_y);
-
         registered_timestamp_GMT = 
             strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
  
@@ -641,13 +619,9 @@ ErrorCode SQL_update_lbeacon_registration_status_less_ver22(
                 health_status,
                 pqescape_gateway_ip,
                 pqescape_registered_timestamp_GMT,
-                int_coordinate_x,
-                int_coordinate_y,
                 pqescape_lbeacon_ip,
                 health_status,
-                pqescape_gateway_ip,
-                int_coordinate_x,
-                int_coordinate_y);
+                pqescape_gateway_ip);
 
         PQfreemem(pqescape_uuid);
         PQfreemem(pqescape_lbeacon_ip);
@@ -696,24 +670,22 @@ ErrorCode SQL_update_lbeacon_registration_status(
         "gateway_ip_address, " \
         "registered_timestamp, " \
         "last_report_timestamp, " \
-        "api_version, " \
-        "coordinate_x, " \
-        "coordinate_y) " \
+        "api_version " \
+        ") " \
         "VALUES " \
         "(%s, %s, \'%d\', %s, " \
         "TIMESTAMP \'epoch\' + %s * \'1 second\'::interval, " \
         "NOW(), " \
-        "%s, " \
-        "%d, %d) " \
+        "%s " \
+        ") " \
         "ON CONFLICT (uuid) " \
         "DO UPDATE SET " \
         "ip_address = %s, " \
         "health_status = \'%d\', " \
         "gateway_ip_address = %s, " \
         "last_report_timestamp = NOW(), " \
-        "api_version = %s, " \
-        "coordinate_x = %d, " \
-        "coordinate_y = %d;";
+        "api_version = %s " \
+        ";";
 
     HealthStatus health_status = S_NORMAL_STATUS;
     char *uuid = NULL;
@@ -727,11 +699,7 @@ ErrorCode SQL_update_lbeacon_registration_status(
     char *pqescape_registered_timestamp_GMT = NULL;
     char *pqescape_api_version = NULL;
     char str_uuid[LENGTH_OF_UUID];
-    char coordinate_x[LENGTH_OF_UUID];
-    char coordinate_y[LENGTH_OF_UUID];
-    int int_coordinate_x = 0;
-    int int_coordinate_y = 0;
-
+  
     
     memset(temp_buf, 0, sizeof(temp_buf));
     memcpy(temp_buf, buf, buf_len);
@@ -762,25 +730,8 @@ ErrorCode SQL_update_lbeacon_registration_status(
     while( numbers-- ){
         uuid = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
-        memset(str_uuid, 0, sizeof(str_uuid));
-        strcpy(str_uuid, uuid);
-
-        memset(coordinate_x, 0, sizeof(coordinate_x));
-        memset(coordinate_y, 0, sizeof(coordinate_y));
-        
-        strncpy(coordinate_x, 
-                &str_uuid[INDEX_OF_COORDINATE_X_IN_UUID], 
-                LENGTH_OF_COORDINATE_IN_UUID);
-        strncpy(coordinate_y, 
-                &str_uuid[INDEX_OF_COORDINATE_Y_IN_UUID], 
-                LENGTH_OF_COORDINATE_IN_UUID);
-
-        int_coordinate_x = atoi(coordinate_x);
-        int_coordinate_y = atoi(coordinate_y);
-
         registered_timestamp_GMT = 
             strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
-        
 
         lbeacon_ip = strtok_save(NULL, DELIMITER_SEMICOLON, &saveptr);
 
@@ -815,14 +766,10 @@ ErrorCode SQL_update_lbeacon_registration_status(
                 pqescape_gateway_ip,
                 pqescape_registered_timestamp_GMT,
                 pqescape_api_version,
-                int_coordinate_x,
-                int_coordinate_y,
                 pqescape_lbeacon_ip,
                 health_status,
                 pqescape_gateway_ip,
-                pqescape_api_version,
-                int_coordinate_x,
-                int_coordinate_y);
+                pqescape_api_version);
 
         PQfreemem(pqescape_uuid);
         PQfreemem(pqescape_lbeacon_ip);
@@ -1999,13 +1946,11 @@ ErrorCode SQL_upload_hashtable_summarize(
         " ( " \
         " s.updated_by_area IS NULL " \
         "OR " \
-        "( " \
         " s.updated_by_area = t.updated_by_area  " \
         "OR " \
         " s.last_reported_timestamp < NOW() - INTERVAL \'%d seconds\'  " \
         "OR " \
         " s.rssi < t.rssi " \
-        " ) " \
         " ) " \
         "; ";
 			 

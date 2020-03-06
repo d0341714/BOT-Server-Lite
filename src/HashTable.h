@@ -415,8 +415,7 @@ int get_average_rssi(const int *rssi_array,
   hashtable_summarize_location_information:
 
      This function determines the lbeacon uuid closest to objects and 
-     calculates the estimated coordinate_x and coordinate_y of 
-     objects.
+     calculates the estimated base_x and base_y of objects.
 
   Parameters:
 
