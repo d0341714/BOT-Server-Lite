@@ -1,0 +1,6 @@
+﻿  YunlinVeteranNotify.cpp
+C:\Users\sokel\source\repos\YunlinVeteranNotify\YunlinVeteranNotify\YunlinVeteranNotify.cpp(46,1): warning C4996: 'gethostbyname': Use getaddrinfo() or GetAddrInfoW() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\um\winsock2.h(2219): message : 請參閱 'gethostbyname' 的宣告
+C:\Users\sokel\source\repos\YunlinVeteranNotify\YunlinVeteranNotify\YunlinVeteranNotify.cpp(39,15): warning C4101: 'checkRes': 未參考的區域變數
+C:\Users\sokel\source\repos\YunlinVeteranNotify\YunlinVeteranNotify\YunlinVeteranNotify.cpp(39,8): warning C4101: 'res': 未參考的區域變數
+  YunlinVeteranNotify.vcxproj -> C:\Users\sokel\source\repos\YunlinVeteranNotify\Debug\YunlinVeteranNotify.exe
